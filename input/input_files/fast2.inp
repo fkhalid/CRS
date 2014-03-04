@@ -1,0 +1,14 @@
+OutputForecastFile=output/fast2
+Logfile=output/fast2.log
+InputModelParametersFile=input/parameter_files/toho_no.txt
+IssueDate=2011-11-16T14:46:18Z
+ForecastStartDate=2011-03-11T14:46:18Z
+ForecastEndDate=2011-11-16T14:46:18Z
+InputCatalogFile=input/catalogs/jma_cat_2010_2013_update20130329_sel_3.0.dat
+CmbFormat=pscmp
+InputCoulombFile=input/slipmodels/Tohoku_new.inp
+InputListSlipModels=input/slipmodels/tohokuSM.dat
+InputCatalogFocMecFile=input/catalogs/NIED_GMTformat.dat
+ForecastTemplate=input/other/tohoku_template_sparse.dat
+RandomSeedValue=-37284630
+ExtendedOutput=1;

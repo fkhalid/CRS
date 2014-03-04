@@ -1,0 +1,2 @@
+_above, _below, _onfault obtained with C program dist2fault_cmt. Indicate points at d>20km above or below the Tohoku fault, or within 20km of it.
+_XX_d55	excludes events deeper than 55km: this is better since slip models used end at around this depth, and the definition of location doesn't hold for deeper events (an alternative would be to extend the fault further, to maintain a meaningful division of the 3 sets.)

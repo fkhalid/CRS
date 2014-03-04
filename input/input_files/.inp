@@ -1,0 +1,14 @@
+OutputForecastFile=output//
+Logfile=output//.log
+InputModelParametersFile=input/parameter_files/.txt
+IssueDate=2005-06-05T17:15:24Z
+ForecastStartDate=2004-09-28T17:15:24Z
+ForecastEndDate=2005-06-05T17:15:24Z
+InputCatalogFile=/home/des/camcat/Data/Catalogs/RS_ETASformat/peng-ANSS-combined.2.0.dat
+CmbFormat=pscmp
+InputCoulombFile=/home/des/camcat/Code/CRS_1.0/INPUT/Parkfield.inp
+InputListSlipModels=input/slipmodels/parkfield.dat
+InputCatalogFocMecFile=/home/des/camcat/Data/focalmechanisms/Parkfield/7col/YSH_2010_selpre.2.0.hash
+ForecastTemplate=input/other/parkfield_template.dat
+RandomSeedValue=-37284630
+ExtendedOutput=1;

@@ -1,0 +1,14 @@
+This directory contains the slip distributions we have obtained so far for
+the Canterbury earthquake sequence. This includes slip distributions for
+the following events:
+
+Sept., 2011 Darfield event
+Feb., 2011 Christchurch event
+June, 2011 Christchurch event
+Dec., 2011 Pegasus Bay events (both M5.8 and M6.0)
+
+The slip distributions were obtained by John Beavan and by Caroline Holden
+at various times following each event. The slip distributions are in the 
+format used by the Farfalle Coulomb stress code. An example top-level
+Farfalle file is included in the top-level of this directory. Note that the
+files that include slip distributions are included in this file.

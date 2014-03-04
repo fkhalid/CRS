@@ -1,0 +1,273 @@
+/*
+ * read_crust.c
+ *
+ *  Created on: Jan 16, 2013
+ *      Author: camcat
+ */
+
+#include "read_crust.h"
+
+//TODO: if more slip models are contained, make sure they have consistent geometry (they must cover all sampling points).
+
+int read_crust(char *fname, char *fnametemplate, struct crust *crst, double resxy, double resz){
+/* fname=inputfile (fname)
+ * crst= structure containing info about the domain;
+ * resxy, resz= resired grid resolution (for calculations);
+ *
+ */
+
+	int err=0;
+	int NG, ind, NLat, NLon, Nd, NGout;
+	int no_subpointsx, no_subpointsy, no_subpointsz;
+	int no_magbins;
+	double mag1, mag2;
+	double dx, dy, dAeq;
+	double lat0, lat1,lon0, lon1, d0, d1;
+
+	if (verbose_level>0) printf("Loading model setup...");
+	if (flog) fprintf(flog,"\nEntering read_crust...\n");
+
+	double *olats, *olons, *odeps;
+
+	//--------------read general crust information:-------------//
+
+	init_crst(crst);
+	if (!(strcmp(cmb_format,"farfalle"))) {
+		err=read_farfalle_crust(fname, crst);
+		if (flog) fprintf(flog,"reading farfalle format (file %s)\n",fname);
+	}
+	else {
+		if (!(strcmp(cmb_format,"pscmp"))) {
+			err=read_pscmp_crust(fname, crst);
+			if (flog) fprintf(flog,"reading pscmp format (file %s)\n",fname);
+		}
+		else {
+			if (flog) fprintf(flog,"Unknown format: %s.\n", cmb_format);
+		}
+	}
+	if (err) {
+		if (flog) fprintf(flog,"Error while reading input file. Exiting.\n");
+		if (verbose_level>0) error_quit(" ** Error while reading input file. Exiting. **\n");
+		else return 1;
+	}
+
+	//--------------read xml file:------------------------------//
+	//txt format:
+	err=read_csep_template(fnametemplate, &no_magbins, &((*crst).nLat_out), &((*crst).nLon_out),&((*crst).nD_out), &((*crst).N_allP), &((*crst).dlat_out), &((*crst).dlon_out),
+			&((*crst).ddepth_out), &((*crst).dmags), &olats, &olons, &odeps, 0, &((*crst).latmin), &((*crst).latmax), &((*crst).lonmin), &((*crst).lonmax), &((*crst).depmin),
+			&((*crst).depmax), &mag1, &mag2, &((*crst).uniform));
+
+	if (flog && err) fprintf(flog, "Error while reading xml template (%s). Exiting.\n", fnametemplate);
+	if (verbose_level>0 && err!=0) error_quit(" ** Error while reading xml template. Exiting. **\n");
+
+	lat0=(*crst).latmin;
+	lat1=(*crst).latmax;
+	lon0=(*crst).lonmin;
+	lon1=(*crst).lonmax;
+	d0=(*crst).depmin;
+	d1=(*crst).depmax;
+
+	(*crst).lat_out=olats;
+	(*crst).lon_out=olons;
+	(*crst).depth_out=odeps;
+	(*crst).lat0=0.5*(lat1+lat0);
+	(*crst).lon0=0.5*(lon1+lon0);
+
+	if (flog) {
+		fprintf(flog, "Model domain: \n lat=[%.2lf, %.2lf], %d points; \n lon=[%.2lf, %.2lf], %d points; \n dep=[%.2lf, %.2lf], %d points; \n",
+				lat0, lat1, (*crst).nLat_out, lon0, lon1, (*crst).nLon_out, d0, d1, (*crst).nD_out);
+		fprintf(flog, " %s grid found.\n", ((*crst).uniform)? "Uniform" : "Non uniform");
+	}
+
+
+	//--------------calculate magnitude bins:-------------//
+
+	(*crst).nmags=no_magbins;
+	(*crst).mags=dvector(1,no_magbins);
+
+	for (int i=1; i<=no_magbins; i++) (*crst).mags[i]=mag1+(i-1)*(*crst).dmags;
+
+	if (flog) fprintf(flog, " mag=[%.2lf, %.2lf], %d bins.\n", (*crst).mags[1], (*crst).mags[(*crst).nmags], (*crst).nmags);
+
+
+	//--------------calculate refined geometry:-------------//
+
+	dy=Re*DEG2RAD*(*crst).dlat_out;
+	dx=Re*DEG2RAD*cos(DEG2RAD*(0.5*(lat1+lat0)))*(*crst).dlon_out;
+	no_subpointsx= (int) (0.01+ceil(dx/resxy));
+	no_subpointsy= (int) (0.01+ceil(dy/resxy));
+	no_subpointsz= (int) (0.01+ceil((*crst).ddepth_out/resz));
+
+	if ((*crst).uniform){
+		NLat=(*crst).nLat_out;
+		NLon=(*crst).nLon_out;
+		Nd=(*crst).nD_out;
+		NGout=(*crst).N_allP;
+
+		NLat*=no_subpointsy;
+		NLon*=no_subpointsx;
+		Nd*=no_subpointsz;
+		(*crst).nLat=NLat;
+		(*crst).nLon=NLon;
+		(*crst).nD=Nd;
+		(*crst).N_allP=NG=(*crst).nLat*(*crst).nLon*(*crst).nD;
+
+		//assume that lat0, lat1 are the boundaries of the domain (*not* the coordinates of the outermost cell centers).
+		(*crst).dlat=(lat1-lat0)/(*crst).nLat;
+		(*crst).dlon=(lon1-lon0)/(*crst).nLon;
+		(*crst).ddepth=(d1-d0)/(*crst).nD;
+		(*crst).lat=dvector(1,NG);
+		(*crst).lon=dvector(1,NG);
+		(*crst).depth=dvector(1,NG);
+		(*crst).x=dvector(1,NG);
+		(*crst).y=dvector(1,NG);
+		(*crst).dAgrid=dvector(1,NG);
+		(*crst).list_allP=ivector(1,NG);
+		for (int i=1; i<=NG; i++) (*crst).list_allP[i]=i;
+
+		for (int d=1; d<=Nd; d++){
+			for (int lo=1; lo<=NLon; lo++){
+				for (int la=1; la<=NLat; la++){
+					ind=(d-1)*NLat*NLon+(lo-1)*NLat+la;
+					(*crst).lat[ind]=lat0+(la-0.5)*(*crst).dlat;
+					(*crst).lon[ind]=lon0+(lo-0.5)*(*crst).dlon;
+					(*crst).depth[ind]=d0+(d-0.5)*(*crst).ddepth;
+				}
+			}
+		}
+	}
+
+	else {
+		if (no_subpointsx!=1 || no_subpointsy!=1 || no_subpointsz!=1 && verbose_level>0) {
+			if (verbose_level>1) printf("** Warning: non uniform grid in file %s, can not refine geometry (read_crust.c).**\n",fnametemplate);
+			if (flog) fprintf(flog,"** Warning: non uniform grid in file %s, can not refine geometry (read_crust.c).**\n",fnametemplate);
+		}
+		(*crst).nLat=0;
+		(*crst).nLon=0;
+		(*crst).nD=0;
+		NG=(*crst).N_allP;
+
+		//assume that lat0, lat1 are the boundaries of the domain (*not* the coordinates of the outermost cell centers).
+		(*crst).dlat=(*crst).dlat_out;
+		(*crst).dlon=(*crst).dlon_out;
+		(*crst).ddepth=(*crst).ddepth_out;
+		(*crst).lat=(*crst).lat_out;
+		(*crst).lon=(*crst).lon_out;
+		(*crst).depth=(*crst).depth_out;
+		(*crst).x=dvector(1,NG);
+		(*crst).y=dvector(1,NG);
+		(*crst).dAgrid=dvector(1,NG);
+		(*crst).list_allP=ivector(1,NG);
+		for (int i=1; i<=NG; i++) (*crst).list_allP[i]=i;
+	}
+
+	if (flog) fprintf(flog, "Forecast resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km;\n", dy, dx, (*crst).ddepth_out);
+	if (flog) fprintf(flog, "Internal resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km -> %d x %d x %d = %d grid points.\n", resxy, resxy, resz, NLat, NLon, Nd, NG);
+	if (flog) fprintf(flog, "Real int.resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km.\n", dy/no_subpointsy, dx/no_subpointsx, (*crst).ddepth_out/no_subpointsz);
+
+	//--------------calculate area of each grid cell, and local coordinates:-------------//
+
+	dAeq=pow(Re*PI/180,2)*(*crst).dlon*(*crst).dlat;
+	for (int k=1; k<=NG;k++){
+		(*crst).dAgrid[k]= dAeq*cos((*crst).lat[k]*PI/180);
+		latlon2localcartesian((*crst).lat[k], (*crst).lon[k], (*crst).lat0, (*crst).lon0, (*crst).y+k, (*crst).x+k);
+	}
+
+	if (verbose_level>0)  printf("done\n");
+	return(err!=0);
+}
+
+int read_farfalle_crust(char * file, struct crust *crst){
+
+	FILE *fin;
+	int Nchar=200, err=0, junk;
+	char line[Nchar];
+	double s[3];	//regional stress field description;
+	double st[3];	//regional stress field description;
+	double di[3];	//regional stress field description;
+
+	fin=fopen(file,"r");
+	if (!fin) {
+		if (verbose_level) printf("**Error: can not find input file %s (read_farfalle_crust).**", file);
+		if (flog) fprintf(flog, "**Error: can not find input file %s (read_farfalle_crust).**", file);
+		return (1);
+	}
+
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin); //useless field (controls Farfalle output).
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin);
+	err+=ferror(fin);
+	sscanf(line,"%lf %lf", &((*crst).lambda), &((*crst).mu));
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin); //useless field ('Adding regional stress field').
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin);
+	err+=ferror(fin);
+	sscanf(line,"%lf %lf %lf", s, s+1, s+2);
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin);
+	err+=ferror(fin);
+	sscanf(line,"%lf %lf", st, di);
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin);
+	err+=ferror(fin);
+	sscanf(line,"%lf %lf", st+1, di+1);
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin);
+	err+=ferror(fin);
+	sscanf(line,"%lf %lf", st+2, di+2);
+	for (int i=1; i<=8; i++){
+		line[0]='!';
+		while (line[0]=='!') fgets(line,Nchar,fin);	//useless fields.
+	}
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin);
+	sscanf(line,"%lf %lf", &((*crst).fric), &((*crst).skepton));
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin);
+	sscanf(line,"%d %lf", &junk, &((*crst).str0));
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin);
+	sscanf(line,"%d %lf", &junk, &((*crst).dip0));
+	line[0]='!';
+	while (line[0]=='!') fgets(line,Nchar,fin);
+	sscanf(line,"%d %lf", &junk, &((*crst).rake0));
+
+	fclose(fin);
+
+	(*crst).S=prestress_eigen(s, st, di);
+
+	return (err!=0);
+
+}
+
+int read_pscmp_crust(char *fname, struct crust *crst){
+	FILE *fin;
+	int dumerror=0;
+	double junk;
+	int nchar=200;
+	char line[nchar];
+	char comm[]="#";
+	double s1, s2, s3;	//regional stress field description (see Wang input file).
+
+	(*crst).lambda=31226, (*crst).mu=26624;//calculated for Vp=5.7,Vs=3.2, rho=2600 (from Wang psgrn input file for Parkfield). MPa.
+	if (verbose_level>1) printf("Loading model setup...");
+
+	if (!(fin=fopen(fname,"r"))) {
+		if (verbose_level) printf("Error: can not open file %s (read_pscmp_crust), Exiting.\n", fname);
+		if (flog) fprintf(flog, "Error: can not open file %s (read_pscmp_crust), Exiting.\n", fname);
+		return 1;
+	}
+
+	line[0]=comm[0];
+	while(line[0]==comm[0]) fgets(line,nchar,fin);
+	while(line[0]!=comm[0]) fgets(line,nchar,fin);
+	while(line[0]==comm[0]) fgets(line,nchar,fin);
+	fgets(line,nchar,fin);
+	dumerror = sscanf(line, " %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf", &junk, &((*crst).fric), &((*crst).skepton), &((*crst).str0), &((*crst).dip0), &((*crst).rake0), &s1, &s2, &s3);
+	fclose(fin);
+
+	prestress(s1, s2, s3, (*crst).str0, (*crst).dip0, (*crst).rake0, 0.0,(*crst).fric, &((*crst).S));
+	return (dumerror!=9);
+}
