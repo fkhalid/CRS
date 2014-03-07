@@ -1,0 +1,257 @@
+Fri Mar  7 17:37:10 UTC 2014
+!--------------------------!
+!------input file: --------!
+!--------------------------!
+OutputForecastFile=output/fast2
+Logfile=output/fast2.log
+InputModelParametersFile=input/parameter_files/toho_no.txt
+IssueDate=2011-11-16T14:46:18Z
+ForecastStartDate=2011-03-11T14:46:18Z
+ForecastEndDate=2011-11-16T14:46:18Z
+InputCatalogFile=input/catalogs/jma_cat_2010_2013_update20130329_sel_3.0.dat
+CmbFormat=pscmp
+InputCoulombFile=input/slipmodels/Tohoku_new.inp
+InputListSlipModels=input/slipmodels/tohokuSM.dat
+InputCatalogFocMecFile=input/catalogs/NIED_GMTformat.dat
+ForecastTemplate=input/other/tohoku_template_sparse.dat
+RandomSeedValue=-37284630
+ExtendedOutput=1;
+
+
+!--------------------------!
+!------param file: --------!
+!--------------------------!
+#======================================#
+#  		  Physical parameters		   #
+#======================================#
+# min no. of events for LL inversion.
+# fixr		r0
+# fixAsig	Asig0	Asig1	Asig2	nAsig	dAsig
+# fixta		ta0		ta1		ta2		nta		dta
+# fixCV		CV0		CV1		CV2		nCV			//obsolete! fixCV must be set to 1.
+ 100
+ 1	0.2
+ 1      80000   25000   40000   5       5000.0
+ 1      8000    5000    8000    3       1000.0
+#======================================#
+#  		  Time of inversion	 	   	   #
+#======================================#
+#tstartLL	start time LogLikelihood inv.
+#tw			time window after mainshock.
+#extra_time	time period before tstartLL for which sources should be included (only relevant if aftershocks==1,or large events are present). 
+2011-03-11T14:46:18Z
+5.0
+0.0
+#======================================#
+#  		  Time of forecast	 	   	   #
+#======================================#
+# dt			forecast time interval (not used in CSEP mode).
+0.1
+#======================================#
+#  		  	Flags etc.		   		   #
+#======================================#
+# No. iterations	No. of slip models used
+# flags: vary_slip	vary_afterslip	Hurst coefficient.
+# flag: vary_fm
+# flag: grid_error
+# flag: OOPs
+# flag: afterslip
+# flags: (1)aftershocks	(2)use isotropic field when no foc mec available; (3)use fixed foc. mec. when no foc mec available;
+#  if flags (2), (3) are 0, will use Monte Carlo simulation of focal mechanisms from catalog.	  		
+# flag: use_background_rate
+5	5
+0	0	0.8
+1
+0
+0
+1
+0	0	0	
+0
+#======================================#
+#  	Other model parameters etc.		   #
+#======================================#
+# Mc (if set to value >20, the program will estimate the catalog completeness magnitude)
+# Mmain
+# DCFS_cap
+# gridPmax (max no of gridpoints associated with event from catalog).
+# dt (time tolerance when comparing catalogs)
+# dM (mag tolerance when comparing catalogs)
+# rtoll (horiz. distance tolerance when comparing catalogs)
+# ztoll (horiz. distance tolerance when comparing catalogs)
+# extra_R
+# final fault resolution
+# min. horizontal grid resolution
+# min. vertical grid resolution
+# dt, dM, dR: 0.0005, 0.9, 50
+# smoothing distance (for calculating background rate)
+# start time (for calculating background rate)
+4.0
+8.7
+1e7
+1000
+0.0005 	#about 1min (since seconds not reported in GMT catalog...)
+0.9
+50
+0
+0
+3000.0
+50.0
+10.0
+5.0
+1965-01-01T00:00:00Z
+#===========================================================#
+# Flag controlling if LL parameters should be inverted for.	#
+# Flag controlling if forecasted should be produced.		#
+#===========================================================#
+1
+1
+
+Running in CSEP mode...
+
+Entering read_crust...
+reading pscmp format (file input/slipmodels/Tohoku_new.inp)
+Model domain: 
+ lat=[34.40, 41.00], 10 points; 
+ lon=[138.90, 145.00], 10 points; 
+ dep=[0.00, 40.00], 5 points; 
+ Uniform grid found.
+ mag=[6.00, 6.00], 1 bins.
+Forecast resolution: dlat=73.38 km, dlon=53.66 km, ddep=8.00 km;
+Internal resolution: dlat=50.00 km, dlon=50.00 km, ddep=10.00 km -> 20 x 20 x 5 = 2000 grid points.
+Real int.resolution: dlat=36.69 km, dlon=26.83 km, ddep=8.00 km.
+dDCFS (min value for which calculation is done) = 8.00e+02 Pa
+
+Slip input file: input/slipmodels/tohokuSM.dat.
+1  slip models:
+	 time 	 mag 	 name
+	-250.00	9.00	input/slipmodels/fsp/s2011HONSHU01SHAO.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011HONSHU02SHAO.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011HONSHU03SHAO.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011HONSHU04SHAO.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01AMMO.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01FUJI.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01GUSM.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01HAYE.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01IDEx.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01LAYx.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01SATA.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01WEIx.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01YAGI.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01YAMA.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU01YUEx.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU02FUJI.fsp
+	-250.00	9.00	input/slipmodels/fsp/s2011TOHOKU02GUSM.fsp
+
+ Reading catalog file input/catalogs/jma_cat_2010_2013_update20130329_sel_3.0.dat.
+events in time span [-250.00 - 0.00]days initially selected for LL inversion.
+events in time span [-250.00 - 0.00]days initially selected as sources.
+extra area used for selection of sources [50.00 (horizontal) 0.00(vertical)]km. 
+only events with Mw>=4.00 will be used.
+23288 of 23289 lines are valid; 0 have missing values; 1 are empty
+2354 events selected for LL inversion. 
+14121 events selected as sources. 
+Estimated GR values for catalog: Mc=4.00, b=1.048
+
+Reading focal mechanisms from file input/catalogs/NIED_GMTformat.dat (format: CSEP).
+Using both focal mechanisms.
+7132 events selected as sample of focal planes, 1 selected as sources.
+2354 events used for catalog, 1 events used as sources, 1 of which mainshocks.
+
+2353 events from catalog can be used for LL inversion - enough to perform inversion (Nmin=100).
+
+Will use 5554 receiver focal mechanisms up to t=-250.00 (ForecastStartDate)
+
+Building mainshock slip models (eqkfm_addslipmodels).
+slip model input/slipmodels/fsp/s2011HONSHU01SHAO.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011HONSHU02SHAO.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011HONSHU03SHAO.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011HONSHU04SHAO.fsp is resampled to obtain square patches (setup.c).
+ **Warning: Epicenter is not on the fault! Will use a new epicenter ** 
+	Old epicenter: [lat, lon]= [37.008, 141.339]
+	New epicenter: [lat, lon]= [37.983, 141.467]
+slip model input/slipmodels/fsp/s2011TOHOKU01GUSM.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU01GUSM.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU01GUSM.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU01GUSM.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU01GUSM.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU01HAYE.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU01IDEx.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU01WEIx.fsp is resampled to obtain square patches (setup.c).
+** Warning: could not find field named RAKE. Will use global value (45.000). **
+ **Warning: Epicenter is not on the fault! Will use a new epicenter ** 
+	Old epicenter: [lat, lon]= [38.103, 142.860]
+	New epicenter: [lat, lon]= [40.081, 141.981]
+ **Warning: Epicenter is not on the fault! Will use a new epicenter ** 
+	Old epicenter: [lat, lon]= [38.107, 142.916]
+	New epicenter: [lat, lon]= [38.598, 143.274]
+slip model input/slipmodels/fsp/s2011TOHOKU02GUSM.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU02GUSM.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU02GUSM.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU02GUSM.fsp is resampled to obtain square patches (setup.c).
+slip model input/slipmodels/fsp/s2011TOHOKU02GUSM.fsp is resampled to obtain square patches (setup.c).
+Slip model set to no. 1.
+Inversion time period: [-250 -  0]days, starting with mainshock: t=-250.00, Mw=9.01, lat=38.32, lon=142.37
+Calculating Okada solutions (200 patches, 2000 grid points)...
+DCFS Coefficients structure calculated.
+
+Setting up time steps for calculations: 2 time steps between times [-250.00, 250.00].
+Setting up variables in CRSLogLikelihood...
+
+Setting up variables for calculating perturbed Coulomb fields.
+
+Using uniform background rate.
+Values of background rate: 
+Mw>=4.00	 r=0.20000
+Mw>=4.00	 r=0.20000
+
+Performing grid search...
+Asig 	 ta 	 r 	 LL 
+Slip model set to no. 1.
+Using slip models:
+	input/slipmodels/fsp/s2011HONSHU01SHAO.fsp
+80000.00000 	 8000.00000 	 0.20000 	 1014.18421 	1
+Slip model set to no. 2.
+Using slip models:
+	input/slipmodels/fsp/s2011HONSHU02SHAO.fsp
+Calculating Okada solutions (200 patches, 2000 grid points)...
+DCFS Coefficients structure calculated.
+80000.00000 	 8000.00000 	 0.20000 	 -2232.42065 	2
+Slip model set to no. 3.
+Using slip models:
+	input/slipmodels/fsp/s2011HONSHU03SHAO.fsp
+Calculating Okada solutions (190 patches, 2000 grid points)...
+DCFS Coefficients structure calculated.
+80000.00000 	 8000.00000 	 0.20000 	 1115.05795 	3
+Slip model set to no. 4.
+Using slip models:
+	input/slipmodels/fsp/s2011HONSHU04SHAO.fsp
+Calculating Okada solutions (190 patches, 2000 grid points)...
+DCFS Coefficients structure calculated.
+80000.00000 	 8000.00000 	 0.20000 	 -1457.31698 	4
+Slip model set to no. 5.
+Using slip models:
+	input/slipmodels/fsp/s2011TOHOKU01AMMO.fsp
+Calculating Okada solutions (560 patches, 2000 grid points)...
+DCFS Coefficients structure calculated.
+80000.00000 	 8000.00000 	 0.20000 	 -273.34767 	5
+Slip model set to no. 6.
+Using slip models:
+	input/slipmodels/fsp/s2011TOHOKU01FUJI.fsp
+Calculating Okada solutions (40 patches, 2000 grid points)...
+DCFS Coefficients structure calculated.
+80000.00000 	 8000.00000 	 0.20000 	 -5057.35625 	6
+Slip model set to no. 7.
+Using slip models:
+	input/slipmodels/fsp/s2011TOHOKU01GUSM.fsp
+Calculating Okada solutions (45 patches, 2000 grid points)...
+DCFS Coefficients structure calculated.
+80000.00000 	 8000.00000 	 0.20000 	 1234.98781 	7
+Slip model set to no. 8.
+Using slip models:
+	input/slipmodels/fsp/s2011TOHOKU01HAYE.fsp
+Calculating Okada solutions (325 patches, 2000 grid points)...
+DCFS Coefficients structure calculated.
+80000.00000 	 8000.00000 	 0.20000 	 1477.40410 	8
+Slip model set to no. 9.
+Using slip models:
+	input/slipmodels/fsp/s2011TOHOKU01IDEx.fsp

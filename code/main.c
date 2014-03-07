@@ -148,6 +148,8 @@ int main (int argc, char **argv){
 	double tnow;
 	int j0, N, N_min_events, current_ev;
 
+	omp_set_num_threads(2);
+
 	printf("Input file: %s\n", argv[1]);
 	sscanf(argv[1],"%s", infile);
 
