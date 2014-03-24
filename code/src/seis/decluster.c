@@ -83,6 +83,11 @@ int *decluster_catalog(struct catalog cat, double Mmain, double **weights, int d
 		}
 	}
 
+	for (int i=1; i<=cat.Z; i++) {
+		sel[i]=1;
+		if (weights) time_missing[i]=0.0;
+	}
+
 	for (int i=1; i<=cat.Z; i++){
 		if (cat.mag[i]>=Mmain){
 			KG74(cat.mag[i], &D, &T);
@@ -104,7 +109,7 @@ int *decluster_catalog(struct catalog cat, double Mmain, double **weights, int d
 	}
 
 	if (weights) {
-		for (int i=1; i<=cat.Z; i++) (*weights)[i]= (sel[i]==0)? 0.0 : (cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]);
+		for (int i=1; i<=cat.Z; i++) (*weights)[i]= (sel[i]==0)? 0.0 : fmin((cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]),1.0);
 		free_dvector(time_missing, 1, cat.Z);
 		free_dvector(tnow, 1, cat.Z);
 	}

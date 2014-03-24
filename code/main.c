@@ -57,11 +57,11 @@ int main (int argc, char **argv){
 
 	int err=0;
 
-	FILE *fout, *fin;
+	FILE *fout, *fin, *foutfore;
 
 	int LLinversion, forecast, extra_output;
 	int Nchar=120, Nchar_long=500;
-	char focmec_format[Nchar];
+	char focmec_format[5]="CSEP";
 	char fname[Nchar], msg[Nchar],	infile[Nchar], crust_file[Nchar], fore_template[Nchar], catname[Nchar], outname[Nchar],
 		syscopy[Nchar], background_rate_file[Nchar], slipmodelfile[Nchar], afterslipmodelfile[Nchar], modelparametersfile[Nchar],
 		logfile[Nchar], print_LL[Nchar], outnamemod[Nchar], error_msg[120];
@@ -90,7 +90,7 @@ int main (int argc, char **argv){
 	int NgridT, NFM=0;	//number of gridpoints, number of aftershocks for which foc.mec is known, number of foc.mec from past seismicity.
 	struct Coeff_LinkList *AllCoeff;
     int *which_main;
-    int sample_allFM=0, aftershock_mode, aftershocksMC, load_focmec;
+    int aftershocksMC, load_focmec;
     double  Mc_source;
 
 	//RateState variables
@@ -101,15 +101,15 @@ int main (int argc, char **argv){
 	int nAsig0, nAsig;
 	int nta0, nta;
 	double *maxAsig, *maxta, *maxr;
+	double *rate_dum;
 	double Asig, dAsig, ta, dta, r;
 
 	struct flags flags;
 	int Nsur, Nslipmod;
 	int no_fm_cats;
-	//int sample_allFM=0;
 
 	struct tm reftime, times;
-	double tstartLL, tendLL, Tend, Tstart, tw, t_oldsnap, tstart_calc;
+	double tstartLL, tendLL, Tend, Tstart, delta_tLL, tw, t_oldsnap, tstart_calc, tendCat, time_min_focmec;
 	double fore_dt;
 	double *tts;
 	int Ntts;
@@ -122,7 +122,7 @@ int main (int argc, char **argv){
 	int p=0, p_found;
 	int snapshot_exists, use_snap, multi_gammas, use_bg_rate, use_bg_rate_file;
 	long old_hash;
-	double *LLs, **LLs_old_matrix, *Ldums0, *Nev, *I, LLmax;
+	double *LLs, **LLs_old_matrix, *Ldums0, *Nev, *I, LLmax, LL;
 	double *gamma_bgrate=NULL;
 	double 	**gammas=NULL, \
 			**gammas_new=NULL, \
@@ -197,6 +197,14 @@ int main (int argc, char **argv){
 			&Nsur, &Nslipmod, &flags, &Hurst, &Mc_source, &use_bg_rate, &(cat.Mc), &Mag_main, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
+	if (err) {
+		sprintf(msg,"Error reading InputModelParametersFile file %s.\n", modelparametersfile);
+		error_quit(msg);
+	}
+	
+		//future events (cat.t[i]>0) are only needed to calculate LL for forecast, if forecast is produced.
+	tendCat= (forecast)? Tend : 0;
+
 //------- change flags if input files are missing:----//
 
 	if (!focmeccats && flags.err_recfault){
@@ -258,7 +266,7 @@ int main (int argc, char **argv){
 
 	if (flags.afterslip !=0) {
 		read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1);
-		err=setup_eqkfm(all_aslipmodels, crst, flags.err_slipmodel, &eqkfm_aft);
+		err=setup_afterslip_eqkfm(all_aslipmodels, crst, flags.err_slipmodel, &eqkfm_aft);
 		if (err!=0) error_quit("Error in setting up afterslip slip model - exiting.");
 	}
 	else eqkfm_aft=NULL;
@@ -269,14 +277,16 @@ int main (int argc, char **argv){
 //--------------Setup aftershocks, mainshocks --------------//
 //----------------------------------------------------------//
 
-	read_listslipmodel(slipmodelfile, reftime, &all_slipmodels, res, 0);
+	//read list of coseismic slip models.
+	err=read_listslipmodel(slipmodelfile, reftime, &all_slipmodels, res, 0);
+	if (err) error_quit("Error in reading slip model file. Exiting.\n");
 
 	aftershocksMC = (flags.aftershocks && flags.full_field && !flags.aftershocks_fixedmec);
 	load_focmec= (flags.err_recfault || aftershocksMC);
 
 	if (load_focmec)
-		 err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits, flags, &NFM, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL, tstartLL-extra_time, 30);
-	else err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1,   NULL , NULL, flags, NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL, tstartLL-extra_time, 30);
+		 err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits, flags, &NFM, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL-extra_time, tendCat, 30);
+	else err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1,   NULL , NULL, flags, NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL-extra_time, tendCat, 30);
 	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **");
 
 	if (flags.err_recfault && (no_fm_cats!=crst.nofmzones)){
@@ -294,6 +304,8 @@ int main (int argc, char **argv){
 //----------------------------------------------------------//
 //-----------------Setup LL inversion period ---------------//
 //----------------------------------------------------------//
+
+	if (LLinversion){
 
 	first_main=j0=1;
 	tnow=-1.0;
@@ -327,15 +339,25 @@ int main (int argc, char **argv){
 		if (flog) fprintf(flog, "\n%d events from catalog can be used for LL inversion - not enough to perform inversion (Nmin=%d).\n Searching past mainshocks...\n", N, N_min_events);
 		if (verbose_level>0) printf("** Warning: fewer than %d events in catalog can be used for LL inversion: will try to find large in the past to fit parameters... **\n", N_min_events);
 		cat2.Mc=Mag_main;
-		err+=readZMAP(&cat2, NULL, NULL, catname, crst, reftime, t_back, tstartLL, t_back, tstartLL, Mag_main, 0, 0, 0, dDCFS, 1);
+		//fixme remove first line (only there for compatibility with parkfield).
+		if (countcol(catname)==8)
+			 err+=read_RS(catname, &cat2, crst, -2, t_back, 0.0, tw, tstartLL, Mag_main, NULL, 0, NULL, 0);
+		else err+=readZMAP(&cat2, NULL, NULL, catname, crst, reftime, t_back, tstartLL, t_back, tstartLL, Mag_main, 0, 0, 0, dDCFS, 1);
 		if (cat2.Z!=0){
 			if (flog) fprintf(flog, "\nMainshocks found. Reloading catalog for new time period...\n");
+			delta_tLL=-tstartLL;//since tendLL=0, the length of the inversion period is -tstartLL:
 			tstartLL=cat2.t[cat2.Z];
-			tendLL=fmin(0.0, tstartLL+200);
+			tendLL=fmin(0.0, tstartLL+delta_tLL);
 			free_cat(cat);
 			free_eqkfmarray(eqkfm1, 0, Ntot-1);
-			err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1, NULL , NULL, flags, NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL, tstartLL-extra_time, 30);
-			if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **");
+			err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1, NULL , NULL, flags, NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL-extra_time, tendCat, 30);
+			if (err!=0) {
+				error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting.**\n");
+				if (flog) {
+					fprintf(flog,"Error in setting up catalog or associating events with mainshocks. Exiting.\n");
+					fflush(flog);
+				}
+			}
 			free_cat(cat2);
 		}
 		else {
@@ -346,6 +368,7 @@ int main (int argc, char **argv){
 			}
 			LLinversion=0;
 		}
+	}
 	}
 
 	if (load_focmec){
@@ -396,8 +419,9 @@ int main (int argc, char **argv){
 	if (!aftershocksMC && !flags.err_recfault && !flags.err_slipmodel && !flags.err_gridpoints) Nsur=Nslipmod=1;	//since there are not sources of uncertainties.
 	if (flags.err_recfault && no_fm_cats==1 && !flags.err_slipmodel && Nsur/Nslipmod>NFM) {
 	    	Nsur=NFM;
-	    	sample_allFM=1;	//To avoid doing more iterations than needed.
+			flags.sample_all=1;
 	    }
+	else flags.sample_all=0;
 
 	if (!flags.err_recfault && flags.OOPs) flags.err_recfault=2;	//by convention, this value means OOPs when passed to calculateDCFSrandomized.
 	if (!flags.err_recfault) {
@@ -556,8 +580,8 @@ int main (int argc, char **argv){
 			if (flog) fprintf(flog, "\nUsing background rate file %s.\n", background_rate_file);
 			read_rate(crst, background_rate_file,&crst.rate0, &minmag);
 			crst.r0=0;
-			for (int i=1; i<=NgridT; i++) crst.r0+= crst.rate0[i]/(1.0*NgridT);
-			for (int i=1; i<=NgridT; i++) crst.rate0[i]*=1.0/crst.r0;
+			for (int i=1; i<=NgridT; i++) crst.r0+= crst.rate0[i];
+			for (int i=1; i<=NgridT; i++) crst.rate0[i]*=crst.N_allP/crst.r0;
 			crst.r0*=pow(10,cat.b*(minmag-(crst.mags[1]-0.5*crst.dmags)));
 			r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
 		}
@@ -566,20 +590,33 @@ int main (int argc, char **argv){
 				sprintf(background_rate_file,"%s/%s",old_LLfolder,"backgroundrate.dat");
 				if (flog) fprintf(flog, "\nUsing background rate file from previous inversion (%s).\n", background_rate_file);
 				read_rate(crst, background_rate_file, &crst.rate0, NULL);
-				crst.r0=0;
-				for (int i=1; i<=NgridT; i++) crst.r0+= crst.rate0[i];
-				for (int i=1; i<=NgridT; i++) crst.rate0[i]*=1.0/crst.r0;
-				r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
+				r0=0;
+				for (int i=1; i<=NgridT; i++) r0+= crst.rate0[i];
+				for (int i=1; i<=NgridT; i++) crst.rate0[i]*=crst.N_allP/r0;
+				crst.r0=r0*pow(10,cat.b*(cat.Mc-crst.mags[1]+0.5*crst.dmags));
 			}
 			else {
 				if (flog) fprintf(flog, "\nCalculating background rate using smoothed catalog.\n");
-				background_rate2(catname, &crst, reftime, 20.0, Mag_main, &(cat.Mc), &r0, 1, t_back, t_firstmain, xytoll, ztoll, smoothing, 2);
+				err=background_rate2(catname, &crst, reftime, 20.0, Mag_main, &(cat.Mc), &r0, 1, t_back, t_firstmain, xytoll, ztoll, smoothing, 2);
+				crst.r0=r0*pow(10,cat.b*(cat.Mc-crst.mags[1]+0.5*crst.dmags));
+				if (err){
+					if (verbose_level) printf("Could not calculate background rate from smoothed catalog. will use uniform background rate.\n");
+					if (flog) {
+						fprintf(flog, "Could not calculate background rate from smoothed catalog. will use uniform background rate.\n");
+						fflush(flog);
+					}
+					crst.r0=r0;
+					r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
+					use_bg_rate=0;
+					crst.rate0=NULL;	//by convention, this is equivalent to all 1s.
+				}
 			}
 		}
 	}
 	else {
 		crst.r0=r0;
 		r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
+		crst.rate0=NULL;	//by convention, this is equivalent to all 1s.
 	}
 
 	if (flog) fprintf(flog, "Values of background rate: \nMw>=%.2lf\t r=%.5lf\nMw>=%.2lf\t r=%.5lf\n", cat.Mc, r0, crst.mags[1]-0.5*crst.dmags, crst.r0);
@@ -616,137 +653,23 @@ int main (int argc, char **argv){
 
 		if (use_bg_rate && !use_bg_rate_file){
 			sprintf(fname,"%s/%s",old_LLfolder,"backgroundrate.dat");
-			print_rate(fname, crst, NULL);
+			rate_dum=dvector(1,crst.N_allP);
+			for (int i=1; i<=NgridT; i++) rate_dum[i]=crst.rate0[i]*r0/crst.N_allP;
+			print_rate(fname, crst, cat.Mc, rate_dum);
 		}
 	}
 	else {
 		sprintf(fname,"%s_ParamSearch.dat", outname);
 		fout=fopen(fname,"w");
+		sprintf(fname,"%s_LogLikelihood.dat", outname);
+		foutfore=fopen(fname,"w");
 	}
 
 	if (flog) fflush(flog);
 
-	//------------------------------------------------------------------------------------------------------//
-	//											 Grid search												//
-	//------------------------------------------------------------------------------------------------------//
-
-	dim=ivector(0,Nm-1);
-	for (int n=0; n<Nm; n++) {
-		slipmodel_combinations*=eqkfm0res[nf].parent_set_of_models->Nmod;
-		dim[n]=eqkfm0res[nf].parent_set_of_models->Nmod;
-		nf+=Nfaults_all[n];
-	}
-
-	maxAsig=dvector(1,slipmodel_combinations);
-	maxta=dvector(1,slipmodel_combinations);
-	maxr=dvector(1,slipmodel_combinations);
-
-	if (LLinversion){
-		if (verbose_level>0) printf("Performing grid search...\n");
-		if (flog) fprintf(flog, "\nPerforming grid search...\nAsig \t ta \t r \t LL \n");
-
-		//loop over all slip models:
-		for (int mod=1; mod<=slipmodel_combinations; mod++){
-			if (verbose_level) printf("Slip model(s) no. %d\n", mod);
-			Nsm=nth_index(mod, Nm, dim);
-			nf=0;
-			for (int n=0; n<Nm; n++) {
-				set_current_slip_model(eqkfm0res+nf,Nsm[n]);
-				nf+=Nfaults_all[n];
-			}
-			if (flog) {
-				fprintf(flog, "Using slip models:\n");
-				for (int n=0; n<Nm; n++) {
-					int i=0;
-					for (int nn=0; nn<n; nn++) i*=dim[nn];
-					i+=Nsm[n]-1;
-					fprintf(flog, "\t%s\n",all_slipmodels.slipmodels[i]);
-					fflush(flog);
-				}
-			}
-
-			if (mod!=1 && !all_slipmodels.constant_geometry){
-				free_f3tensor(AllCoeff->Coeffs_dip, 1,0,1,0,1,0);
-				free_f3tensor(AllCoeff->Coeffs_st, 1,0,1,0,1,0);
-				free(AllCoeff);
-				setup_CoeffsDCFS(&AllCoeff, NULL, crst, eqkfm0res, eqkfm1, Nm, Ntot, Nfaults_all, which_main);
-			}
-
-			p=0;
-			LLmax=-1e300;
-
-			if (!use_snap){
-				for (int p=1; p<=(nAsig+1)*(nta+1); p++)  {
-					Ldums0[p]=0.0;
-					Nev[p]=0.0;
-					I[p]=0.0;
-				}
-			}
-
-			for (int as=0; as<=nAsig; as++){
-				Asig= (fixAsig)? Asig0 : Asig_min+as*dAsig;
-				for (int tai=0; tai<=nta; tai++){
-					ta= (fixta)? ta0 : ta_min+tai*dta;
-					p+=1;
-					if (use_snap){
-						load_gammas(old_LLfolder, p, gammas_old, NgridT);
-						gammas=gammas_old;
-					}
-
-					else {
-						if (use_bg_rate) for (int i=1; i<=NgridT; i++) gammas[0][i]=(ta/Asig)*gamma_bgrate[i];
-						else gammas=NULL;
-					}
-
-					err+=CRSLogLikelihood (LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, Hurst, tevol_afterslip, crst, AllCoeff,
-							L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2, tstartLL, tstartLL, tendLL, tw, Asig, ta, r0, fixr, gammas,
-							gammas_new, use_snap, 1, 0, 0, 0, !tai && !as);
-
-					if (CSEPmode) write_gammas(old_LLfolder, p, gammas_new, Nsur, NgridT);
-
-					if (LLs[p]>LLmax){
-						LLmax=LLs[p];
-						maxAsig[mod]=Asig;
-						maxta[mod]=ta;
-						maxr[mod]=r;
-						if (forecast) copy_matrix(gammas_new, &gammas_maxLL, Nsur, NgridT);
-					}
-					fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",Asig,ta,r,Ldums0[p],Nev[p],I[p],LLs[p], mod);
-					if (flog) fprintf(flog, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n", Asig, ta, r, LLs[p], mod);
-					fflush(flog);
-				}
-			}
-		}
-	}
-
-	else {
-		for (int mod=1; mod<=slipmodel_combinations; mod++){
-			maxta[mod]=ta0;
-			maxAsig[mod]=Asig0;
-			maxr[mod]=crst.r0;
-			fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig[mod],maxta[mod],0.0,0.0,0.0, mod);
-		}
-	}
-	fclose(fout);
-	if (flog) {
-		fprintf(flog, "\nFinal Rate-and-State parameters:\n");
-		for (int mod=1; mod<=slipmodel_combinations; mod++){
-			fprintf(flog, "Slip model(s) no. %d:\t->\t", mod);
-			fprintf(flog, "Asig=%.5lf \t ta=%.5lf \t r=%.5lf \n", maxAsig[mod], maxta[mod], maxr[mod]);
-		}
-	}
-
-	//todo also write out LL for each slip model combination.
-
-	//------------------------------------------------------------------------------------------------------//
-	//											 Forecast													//
-	//------------------------------------------------------------------------------------------------------//
+	//-----------Setup variable needed for forecast:------------//
 
 	if (forecast){
-
-		if (verbose_level>0) printf("Calculating forecast...\n");
-		if (flog) fprintf(flog, "\nCalculating forecast...\n");
-
 		crst.GRmags=assign_GRnorm(crst.mags, crst.nmags, cat.b, 1);
 
 		if (CSEPmode && !extra_output){
@@ -761,34 +684,132 @@ int main (int argc, char **argv){
 			tts[0]=Tstart;
 			for (int t=1; t<=Ntts; t++) tts[t]=Tstart+fore_dt*t;
 		}
+	}
 
+	//------------------------------------------------------------------------------------------------------//
+	//								  Grid search and forecast												//
+	//------------------------------------------------------------------------------------------------------//
+
+	dim=ivector(0,Nm-1);
+	for (int n=0; n<Nm; n++) {
+		if (eqkfm0res[nf].parent_set_of_models->Nmod) slipmodel_combinations*=eqkfm0res[nf].parent_set_of_models->Nmod;
+		dim[n]=MAX(eqkfm0res[nf].parent_set_of_models->Nmod, 1);
+		nf+=Nfaults_all[n];
+	}
+
+	maxAsig=dvector(1,slipmodel_combinations);
+	maxta=dvector(1,slipmodel_combinations);
+	maxr=dvector(1,slipmodel_combinations);
+
+		//loop over all slip models:
 		for (int mod=1; mod<=slipmodel_combinations; mod++){
-				Nsm=nth_index(mod, Nm, dim);
-				nf=0;
+			if (verbose_level) printf("Slip model(s) no. %d\n", mod);
+			Nsm=nth_index(mod, Nm, dim);
+			nf=0;
+			for (int n=0; n<Nm; n++) {
+				set_current_slip_model(eqkfm0res+nf,Nsm[n]);
+				nf+=Nfaults_all[n];
+			}
+			if (flog) {
+			nf=0;
+				fprintf(flog, "Using slip models:\n");
+			int i=0, nn0=0; //counter: slip model names, events which have a slip model.
 				for (int n=0; n<Nm; n++) {
-					set_current_slip_model(eqkfm0res+nf,Nsm[n]);
-					nf+=Nfaults_all[n];
+				if (eqkfm0res[nf].parent_set_of_models->Nmod) {
+					fprintf(flog, "\t%s\n",all_slipmodels.slipmodels[i+Nsm[n]-1]);
+					i+=all_slipmodels.no_slipmodels[nn0];
+					nn0+=1;
 				}
-				if (flog) {
-					fprintf(flog, "mod=%d. Using slip models:\n", mod);
-					for (int n=0; n<Nm; n++) {
-						int i=0;
-						for (int nn=0; nn<n; nn++) i*=dim[nn];
-						i+=Nsm[n]-1;
-						fprintf(flog, "\t%s\n",all_slipmodels.slipmodels[i]);
-						fflush(flog);
-					}
+				else fprintf(flog, "\t%s\n","Synthetic slip model (or isotropic field)");
+					fflush(flog);
+				nf+=Nfaults_all[n];
 				}
+			}
 
-				if (!all_slipmodels.constant_geometry){
-					free_f3tensor(AllCoeff->Coeffs_dip, 1,0,1,0,1,0);
-					free_f3tensor(AllCoeff->Coeffs_st, 1,0,1,0,1,0);
-					free(AllCoeff);
-					setup_CoeffsDCFS(&AllCoeff, NULL, crst, eqkfm0res, eqkfm1, Nm, Ntot, Nfaults_all, which_main);
+			if (mod!=1 && !all_slipmodels.constant_geometry){
+				if (AllCoeff->Coeffs_dip) free_f3tensor(AllCoeff->Coeffs_dip, 1,0,1,0,1,0);
+				if (AllCoeff->Coeffs_st) free_f3tensor(AllCoeff->Coeffs_st, 1,0,1,0,1,0);
+				if (AllCoeff) free(AllCoeff);
+				setup_CoeffsDCFS(&AllCoeff, NULL, crst, eqkfm0res, eqkfm1, Nm, Ntot, Nfaults_all, which_main);
+			}
+
+			
+		//------------------------------------------//
+		//				Grid Search					//
+		//------------------------------------------//
+
+		if (LLinversion){
+			if (verbose_level>0) printf("Performing grid search...\n");
+			if (flog) fprintf(flog, "\nPerforming grid search...\nAsig \t ta \t r \t LL \n");		
+			p=0;
+			LLmax=-1e300;
+
+			if (!use_snap){
+				for (int p=1; p<=(nAsig+1)*(nta+1); p++)  {
+					Ldums0[p]=0.0;
+					Nev[p]=0.0;
+					I[p]=0.0;
 				}
+			}
+
+			for (int as=0; as<=nAsig; as++){
+				Asig= (fixAsig)? Asig0 : Asig_min+as*dAsig;
+				for (int tai=0; tai<=nta; tai++){
+					err=0;
+					ta= (fixta)? ta0 : ta_min+tai*dta;
+					p+=1;
+					if (use_snap){
+						load_gammas(old_LLfolder, p, gammas_old, NgridT);
+						gammas=gammas_old;
+					}
+
+					else gammas=NULL;
+
+					err+=CRSLogLikelihood (LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, Hurst, tevol_afterslip, crst, AllCoeff,
+							L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2, tstartLL, tstartLL, tendLL, tw, Asig, ta, r0, fixr, gammas,
+							gammas_new, use_snap, 1, 0, 0, 0, !tai && !as);
+
+					if (!err){
+					if (CSEPmode) write_gammas(old_LLfolder, p, gammas_new, Nsur, NgridT);
+
+					if (LLs[p]>LLmax){
+						LLmax=LLs[p];
+						maxAsig[mod]=Asig;
+						maxta[mod]=ta;
+						maxr[mod]=r;
+						if (forecast) copy_matrix(gammas_new, &gammas_maxLL, Nsur, NgridT);
+					}
+					fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",Asig,ta,r,Ldums0[p],Nev[p],I[p],LLs[p], mod);
+					if (flog) fprintf(flog, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n", Asig, ta, r, LLs[p], mod);
+					fflush(flog);
+				}
+					else{
+						fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t NaN \t NaN \t NaN \t NaN \t%d\n",Asig,ta,r,mod);
+						if (flog) fprintf(flog, "%.5lf \t %.5lf \t %.5lf \t NaN \t%d\n", Asig, ta, r, mod);
+						fflush(flog);
+			}
+		}
+	}
+	}
+
+	else {
+			maxta[mod]=ta0;
+			maxAsig[mod]=Asig0;
+			maxr[mod]=crst.r0;
+			fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig[mod],maxta[mod],maxr[mod],0.0,0.0, mod);
+		}
+
+		//------------------------------------------//
+	//											 Forecast													//
+		//------------------------------------------//
+
+	if (forecast){
+
+		if (verbose_level>0) printf("Calculating forecast...\n");
+		if (flog) fprintf(flog, "\nCalculating forecast...\n");
 
 			if (LLinversion &&  tendLL<=Tstart){
-				if (flog && mod==1) fprintf(flog, "Using starting rates results from this LL inversion: ");
+				if (flog && mod==1) fprintf(flog, "Using starting rates results from LL inversion: ");
 				gammas=gammas_maxLL;
 				tstart_calc=tendLL;
 				multi_gammas=1;
@@ -827,28 +848,40 @@ int main (int argc, char **argv){
 			else sprintf(outnamemod,"%s",outname);
 			if (CSEPmode && !extra_output){
 				sprintf(print_forex,"%s_foremap.dat", outnamemod);
-				CRSforecast(NULL, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff, L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM,
+				CRSforecast(&LL, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff, L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM,
 						&seed, cat,	times2,tstart_calc, tts, Ntts, tw, maxAsig[mod], maxta[mod], maxr[mod], gammas, multi_gammas, 1, Hurst, 0, print_forex, 0, 0, 0, 0, 0);
 
 				if (flog) fprintf(flog, "Output file written: %s.\n",print_forex);
 			}
 
 			else {
-				sprintf(print_cmb,"%s_cmbmap.dat", outnamemod);
-				sprintf(print_forex,"%s_foremap.dat", outnamemod);
-				sprintf(print_foret,"%s_forecast.dat", outnamemod);
-				sprintf(printall_cmb,"%s_cmbmap_all.dat", outnamemod);
-				sprintf(printall_forex,"%s_foremap_all.dat", outnamemod);
+				sprintf(print_cmb,"%s_cmbmap", outnamemod);
+				sprintf(print_forex,"%s_foremap", outnamemod);
+				sprintf(print_foret,"%s_forecast", outnamemod);
+				sprintf(printall_cmb,"%s_cmbmap_all", outnamemod);
+				sprintf(printall_forex,"%s_foremap_all", outnamemod);
 				sprintf(printall_foret,"%s_forecast_all", outnamemod);
 				sprintf(print_LL,"%s_LLevents", outnamemod);
 
-				CRSforecast(NULL, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff, L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM,
+				CRSforecast(&LL, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff, L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM,
 						&seed, cat, times2,tstart_calc, tts, Ntts, tw, maxAsig[mod], maxta[mod], maxr[mod], gammas, multi_gammas, 1, Hurst,
 						 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 
 				if (flog) fprintf(flog, "Output files written: %s, %s, %s, %s, %s, %s, %s.\n", print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 
 			}
+
+			fprintf(foutfore, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",maxAsig[mod], maxta[mod], maxr[mod], LL, mod);
+		}
+	}
+
+	fclose(fout);
+	fclose(foutfore);
+	if (flog) {
+		fprintf(flog, "\nFinal Rate-and-State parameters:\n");
+		for (int mod=1; mod<=slipmodel_combinations; mod++){
+			fprintf(flog, "Slip model(s) no. %d:\t->\t", mod);
+			fprintf(flog, "Asig=%.5lf \t ta=%.5lf \t r=%.5lf \n", maxAsig[mod], maxta[mod], maxr[mod]);
 		}
 	}
 

@@ -93,9 +93,9 @@ int print_cat(char *fname, struct catalog cat){
 	return 0;
 }
 
-int print_rate(char *fname, struct crust crst, double *rate){
+int print_rate(char *fname, struct crust crst, double Mmin, double *rate){
 /* line print_grid, but doesn't use struct pscmp.
- * if rate==NULL, will printout (crst.r0)*(crst.rate0).
+ * if rate==NULL, will printout (crst.r0)*(crst.rate0)/Ntot.
  */
 
 		double Lon1, Lon2, Lat1, Lat2, D1, D2;
@@ -105,7 +105,7 @@ int print_rate(char *fname, struct crust crst, double *rate){
 
 		if (rate) {
 			r=rate;
-			r0=1.0;
+			r0=1.0*Ntot;	//since will printout rate/Ntot (due to definition of crst.rate0).
 		}
 
 		else {
@@ -127,7 +127,7 @@ int print_rate(char *fname, struct crust crst, double *rate){
 			Lat2=crst.lat[k]+crst.dlat/2.0;
 			D1=crst.depth[k]-crst.ddepth/2.0;
 			D2=crst.depth[k]+crst.ddepth/2.0;
-			fprintf(fout,"%.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \n", Lon1, Lon2, Lat1, Lat2, D1,D2, 3.0, 8.0, r0*r[k]);
+			fprintf(fout,"%.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \n", Lon1, Lon2, Lat1, Lat2, D1,D2, Mmin, 8.0, r0*r[k]/(1.0*Ntot));
 		}
 		fclose(fout);
 

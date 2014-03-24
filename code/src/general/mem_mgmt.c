@@ -71,6 +71,7 @@ void init_cat1(struct catalog *cat, int Zsel, int gridMax){
 	(*cat).ngrid = ivector(1, Zsel);
 	(*cat).ngridpoints=imatrix(1,Zsel,1,gridMax);
 	(*cat).weights=dmatrix(1,Zsel,0,gridMax);		// weights[0] indicates the fraction of the Gaussian ellipsoid outside the grid.
+	(*cat).b=1.0;
 //	(*cat).xgrid=dvector(1,N);
 //	(*cat).ygrid=dvector(1,N);
 //	(*cat).dAgrid=dvector(1,N);

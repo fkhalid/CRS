@@ -11,7 +11,7 @@
 
 int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_format, struct tm reftime, double dDCFS, double Mag_main, struct crust crst,
 		struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec, int **firstelements, struct flags flag, int *NFM, int *Ntot, int *Nmain,
-		double dt, double dM, double xytoll, double ztoll, double dR, double tw, double tstartLL, double tstartData, double Mc_source){
+		double dt, double dM, double xytoll, double ztoll, double dR, double tw, double tstart, double tend, double Mc_source){
 //  focmec will contain matrix with focal mechanisms (*NFM of them). can be null, and will be ignored.
 //	double t0, double tw1, double tw2, double t1 =	tstartLL, tmain[0], tmain[0]+tw, fmax(tendLL,Tend)
 //  dt, dM, xytoll, ztoll: expected difference b/t/ events from catalog and focmec catalog; dR= extra distance to be considered for sources.
@@ -31,35 +31,43 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 	int Nfm;
 	if (verbose_level>0) printf("Setting up catalog...\n");
 
-	tstartS=tstartCat=tstartData;
-	tendS=tendCat=0;		//this is the "IssueDate", up to which data is available.
+	tendS=0;		//this is the "IssueDate", up to which data is available.
+	tendCat=tend;	//this is (presumably) the "ForecastDate", up to which data is available. Events after t=0 used to calculate LL of forecast.
 
 	//select events within some tolerance level, since they will have to be matched with focal mechanisms.
 	//todo remove this line (only for making it work for Parkfield).
-	if (countcol(catname)==8) err+=read_RS(catname, cat, crst, countline(catname), -250, tstartCat, 0.0, tw, tendCat, 0.0, eqkfm1, dDCFS, Ntot, 1);
-	else err+=readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstartS, tendS, tstartCat, tendCat, Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
+	if (countcol(catname)==8) {
+		err+=read_RS(catname, cat, crst, -2.0, tstart, 0.0, tw, tendCat, 0.0, eqkfm1, dDCFS, Ntot, 1);
+		for (int eq=0; eq<*Ntot; eq++) {
+			if ((*eqkfm1)[eq].t>0.0) {
+				*Ntot=eq;
+				break;
+			}
+		}
+	}
+	else err+=readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat, Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
 
 	//fixme check that foc mec are read when aftershocks==1.
 	if (flag.aftershocks){
-		if (focmeccat){
+		if (focmec){
 			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
-					reftime, tstartS, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
+					reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
 			//err+=readfocmec(focmeccat[0], fm_format, crst, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, reftime, tstartS, tendS, tendS, (*cat).Mc, focmec, NFM, &Nfm, &eqkfm1fm, 1, 1);
 			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
 			//err+=(errP==NULL);	//commented since foc mec catalog may not be available.
 		}
-		eqk_filter(eqkfm1, Ntot, (Mc_source>20) ? (*cat).Mc : Mc_source, crst.depmax+fmax(dR,ztoll), 1);
+		eqk_filter(eqkfm1, Ntot, (Mc_source>20) ? (*cat).Mc : Mc_source, crst.depmax+fmax(dR,ztoll));
 		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
 	}
 
 	else {
 		if (focmec){
 			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
-					reftime, tstartS, tendS, tendS, Mag_main, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
+					reftime, tstart, tendS, tendS, Mag_main, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
 			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
 		}
-		eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll), 1);	//only keep mainshocks.
-		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
+		eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll));	//only keep mainshocks.
+		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 0);
 	}
 
 	if (Nmain) *Nmain=0;
@@ -83,7 +91,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 
 }
 
-int setup_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, int resample, struct eqkfm **eqkfm0res){
+int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, int resample, struct eqkfm **eqkfm0res){
 //input models are the models to be used at a given time (NB: only one model per event).
 //is_afterslip indicates that all models have same geometry: Nfaults and no_slipmodels only have 1 element.
 
@@ -93,53 +101,34 @@ int setup_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, int r
 	int *no_slipmodels=list_slipmodels.no_slipmodels;
 	double *disc=list_slipmodels.disc;
 	int *Nfaults=list_slipmodels.Nfaults;
-	int is_afterslip=list_slipmodels.is_afterslip;
 	double d_touching_faults=3.0;	//todo: set somewhere else.
     int NFtot=0;
     int err=0;
-    int nn2;
 
-    if (is_afterslip==0) {
-    	for (int nn=0; nn<Nm; nn++) {
-        	if (!(strcmp(cmb_format,"farfalle"))) err+=read_farfalle_eqkfm(slipmodels[nn], NULL, Nfaults+nn);
-			else {
-				if (!(strcmp(cmb_format,"pscmp"))) err+=read_pscmp_eqkfm(slipmodels[nn], NULL, Nfaults+nn);
-				else {
-					if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(slipmodels[nn], NULL, Nfaults+nn);
-					else {
-						if (flog) fprintf(flog,"Unknown slip model format %s (setup_eqkfm).\n", cmb_format);
-						return 1;
-					}
-				}
-			}
-			NFtot+=Nfaults[nn];
-    	}
-    }
-    else {
+
     	if (!(strcmp(cmb_format,"farfalle"))) err+=read_farfalle_eqkfm(slipmodels[0], NULL, Nfaults);
     	else {
 			if (!(strcmp(cmb_format,"pscmp"))) err+=read_pscmp_eqkfm(slipmodels[0], NULL, Nfaults);
 			else {
 				if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(slipmodels[0], NULL, Nfaults);
 				else {
-					if (flog) fprintf(flog,"Unknown slip model format %s (setup_eqkfm).\n", cmb_format);
+				if (flog) {
+					fprintf(flog,"Unknown slip model format %s (setup_afterslip_eqkfm).\n", cmb_format);
+					fflush(flog);
+				}
 					return 1;
 				}
 			}
     	}
     	NFtot=Nfaults[0]*Nm;
-    }
 
     *eqkfm0res=eqkfm_array(0, NFtot-1);
 
     //TODO: implement multiple slip models with non strike slip event.
     NFtot=0;
     for (int nn=0; nn<Nm; nn++){
-
-    	nn2= is_afterslip? 0 : nn;	//for afterslip, all snapshots have same no. of slip models and faults.
-    	//don't pass mmain since it should already be defined
-    	setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, no_slipmodels[nn2], crst.mu, disc[nn2], tmain[nn], d_touching_faults, crst.N_allP, crst.list_allP, NULL, resample, (is_afterslip+1)%2, Nfaults+nn2, crst.lat0, crst.lon0);
-		NFtot+=Nfaults[nn2];
+    	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, no_slipmodels[0], crst.mu, disc[0], tmain[nn], d_touching_faults, crst.N_allP, crst.list_allP, NULL, resample, 0, Nfaults, crst.lat0, crst.lon0);
+		NFtot+=Nfaults[0];
 	}
 
     return(err);
@@ -188,7 +177,14 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 			if (resample) {
 			  	discx=eqkfm0[nf].L/eqkfm0[nf].np_st;
 			  	discy=eqkfm0[nf].W/eqkfm0[nf].np_di;
-			  	if (discx>disc || discy>disc) suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, disc, 0.0);	//create a slip model with right resolution.
+			  	//if current discretization is larger than required, resample:
+			  	if (discx>disc || discy>disc) {
+			  		suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, disc, 0.0);
+			  		if (flog){
+						fprintf(flog, "slip model %s is resampled from res=[str=%.3lf, dip=%.3lf] to res=%.3lf (setup.c).\n", slipmodels[m], discx, discy, disc);
+						fflush(flog);
+					}
+			  	}
 			  	else {
 					if (fabs(discx-discy)>toll) {
 						err+=suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, fmin(discx, discy), 0.0);	//create a slip model with square patches.
@@ -207,7 +203,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 	}
 
 	set_current_slip_model(eqkfm0res,1);
-	if (NF0) *NF0=NF;
+	if (NF0) *NF0=nfmax;
 	return err;
 }
 
@@ -218,8 +214,13 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 	struct set_of_models allmod= *(eqkfm0[0].parent_set_of_models);
 	struct eqkfm* eqkfmall=allmod.set_of_eqkfm;
 
-	for (int i=1; i<slipmodel_index; i++) nftot+=allmod.NF_models[i];
+	// allmod.Nmod==0 means that no slip model is used for this event: do nothing.
+	if (!allmod.Nmod) return;
 
+	// find where slip model no.slipmodel_index starts;
+	// copy slip models from eqkfmall to eqkfm0;
+	// delete all info from remaining elements of eqkfm0;
+	for (int i=1; i<slipmodel_index; i++) nftot+=allmod.NF_models[i];
 	for (int nf=0; nf<allmod.NF_models[slipmodel_index]; nf++) copy_eqkfm_all(eqkfmall[nf+nftot], eqkfm0+nf);
 	for (int nf=allmod.NF_models[slipmodel_index]; nf<allmod.NFmax; nf++) empty_eqkfm(eqkfm0+nf);
 
@@ -261,12 +262,16 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			else temp->next=(struct Coeff_LinkList *) 0;
 		}
 		*Coefficients=AllCoeff;
+	    if (flog){
+	    	fprintf(flog,"Okada Coefficients structure set up.\n");
+	    	fflush(flog);
+	    }
     }
 
     //--------------set up DCFS-------------------//
 
     if (DCFS_out!=NULL){
-		Nsteps= (Ntot>Nm) ? Ntot : Nm;
+		Nsteps= fmax(Ntot,Nm);
 		DCFS=pscmp_arrayinit(crst,0,Nsteps-1);
 
 		for (int eq1=0; eq1<Ntot; eq1++){
@@ -312,12 +317,12 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 		}
 
 		*DCFS_out=DCFS;
+    	if (flog){
+	    	fprintf(flog,"DCFS structure set up.\n");
+    		fflush(flog);
+    	}
     }
 
-    if (flog){
-    	fprintf(flog,"DCFS Coefficients structure calculated.\n");
-    	fflush(flog);
-    }
     return(0);
 }
 

@@ -13,19 +13,20 @@
 #define Maxeq 10000
 
 int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1, double Asig, double ta,
-			int points[], double *out_NeX, double *NeT, double *Rate_end, int N, int NTS, int Neqks, double *gamma_init, double *R, int last){
+			int points[], double *out_NeX, double *NeT, double *Rate_end, int N, int NTS, int Neqks, double *gamma_init, double *back_rate, double *R, int last){
 //assumes stress grows linearly during each time step.
 //NB assumes that times, cat, DCFS, NTS are always the same (each time function is called).
 // if points==NULL, use sequence [1,2,3,...,N].
 // cmbdata can be NULL, and will be ignored.
+// if backrate==1, will assume it's 1 for all points. If not, it should be an array containing NgridT times the ratio between avg rate and rate at that point. (so that the sum of back_rate is NgridT).
 	//fixme check: indices of R[0...cat.Z-1] or {[1...cat.Z]
 
   double  tau, dtau_dt, dtau_dt0;
   int     TS0, TS1, n;
   double  Tpre=0, dt1;
-  double  gamma, gamma0;
+  double  gamma, gamma0, back_rate_n;
   static double **events;	//will contain times, magnitudes of all earthquakes (both from catalog and from DCFS).
-  int Neq, err=0;
+  int Neq, err=0, errtot=0;
   int is_incat, is_inDCFS;
   int j0, next_eqk, counter_eqk;
   int next_TS, cat_i, DCFS_i;
@@ -140,7 +141,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 	  for (int eq=0; eq<=cat.Z; eq++) Rprivate[t][eq]=0.0;
   }
 
-#pragma omp parallel for private(err, n, gamma,gamma0,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, dtau_dt0, counter_eqk)
+#pragma omp parallel for private(err, n, gamma,gamma0,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, dtau_dt0, counter_eqk, back_rate_n) reduction(+:errtot)
   for(int m=1;m<=N;m++){
 
 	nthreads=omp_get_num_threads();
@@ -149,6 +150,8 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 	//printf("Entered parallel section - %d threads running. \n",omp_get_num_threads());
 
 	n=(points==0)? m : points[m];
+
+	back_rate_n= (back_rate) ? back_rate[n] : 1.0;
 	if (NeX) NeX[m]=Tpre;
 	gamma=gamma_init[m];
 
@@ -188,7 +191,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			if (NeX) {
 				a=gamma*(dtau_dt)-1;
 				b=log(a*exp(-t_pre/ta)+1);
-				NeX[m]+= fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*(dtau_dt)))),0);	//due to numerical error it can give -ve values. todo find taylor exp and use it.
+				NeX[m]+= back_rate_n*fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*(dtau_dt)))),0);	//due to numerical error it can give -ve values. todo find taylor exp and use it.
 			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
 			dtau_dt0=dtau_dt;
@@ -202,7 +205,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			if (NeX) {
 				a=gamma*(tau/dt[j])-1;
 				b=log(a*exp(-dt[j]/ta)+1);
-				NeX[m]+=fmax((dtau_dt/dtau_dt0)*(dt[j]+ta*(b-log(gamma*(dtau_dt)))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
+				NeX[m]+=back_rate_n*fmax((dtau_dt/dtau_dt0)*(dt[j]+ta*(b-log(gamma*(dtau_dt)))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
 			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-dt[j]/(tau))*exp(-tau/Asig)+dt[j]/(tau) : gamma*(1-tau/Asig)+dt[j]/Asig;
 			dtau_dt0=dtau_dt;
@@ -217,7 +220,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			if (NeX) {
 				a=gamma*(dtau_dt)-1;
 				b=log(a*exp(-t_pre/ta)+1);
-				NeX[m]+=fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*(dtau_dt)))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
+				NeX[m]+=back_rate_n*fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*(dtau_dt)))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
 			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
 			dtau_dt0=dtau_dt;
@@ -228,16 +231,20 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 		if (reach_end==0){
 			gamma0=gamma;
 			if (cat_i!=0) {
-				Rprivate[omp_get_thread_num()][cat_i]+= cat_weights[n][counter_eqk]*(ta/Asig)/gamma;
+				Rprivate[omp_get_thread_num()][cat_i]+= back_rate_n*cat_weights[n][counter_eqk]*(ta/Asig)/gamma;
 			}
 			gamma= (DCFS_i==-1 | DCFS_whichpt[n][counter_eqk]==0)? gamma : gamma*exp(-DCFS[DCFS_i].cmb[DCFS_whichpt[n][counter_eqk]]/Asig);
-			if (isinf(gamma)==1){
-				if (verbose_level>0) printf("*Warning: gamma==Inf, must choose larger Asig!*\n");
+			if (isinf(gamma)){
+				if (verbose_level>0) {
+					printf("*Warning: gamma==Inf, must choose larger Asig!*\n");
+					fflush(stdout);
+				}
 				if (flog) {
 					fprintf(flog,"*Warning: gamma==Inf, must choose larger Asig!*\n");
 					fflush(flog);
 				}
 				err=1;
+				errtot+=1;
 			}
 		}
 		j0=next_TS+1;
@@ -245,7 +252,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 	}
 
 	if (last) gamma_init[m]=gamma;
-	if (Rate_end) ReX[m]=(ta/Asig)/gamma;
+	if (Rate_end) ReX[m]=back_rate_n*(ta/Asig)/gamma;
 
   }
 
@@ -261,6 +268,6 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   }
 
   free_dmatrix(Rprivate,0,nthreadstot-1, 0, cat.Z);
-  return(err);
+  return(errtot);
 
 }

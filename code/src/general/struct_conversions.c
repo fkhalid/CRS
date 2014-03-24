@@ -19,33 +19,27 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2, d
 	int selected, *sel, *sel1;
 	int N20=N2, N10=N1;
 	double dx, dy, dz, r;
-	int verbose;
+	int verbose=0;	//can be reactivated for printing out selected events (e.g. for debugging).
 	char fname[120];
 	FILE *fout;
 
-	verbose= (verbose_level>3)? 1 : 0;
-
-	N2=N1=0;	//are recalculated so as to stop before events after tend.
+	//recalculate N1, N2 to exclude events after tend.
+	N2=N1=0;
 	while (N2<N20 && eqkfm2[N2].t<=tend) N2++;
 	while (N1<N10 && eqkfm1[N1].t<=tend) N1++;
 
 	if (N1==0 | N2==0) {
 		if (verbose_level>1) printf("Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
+		if (flog) {
+			fprintf(flog, "Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
+			fflush(flog);
+		}
 		return NULL;
 	}
 
 	sel=ivector(0,N2-1);
 	sel1=ivector(0,N1-1);
 	for (int n=0; n<N1; n++) sel1[n]=0;
-
-	sprintf(fname,"%s/list_cat.dat",logfolder);
-	if (verbose==1) {
-		fout=fopen(fname,"w");
-		if (fout==NULL) {
-			printf("** Warning: output file could not be opened - combined_eqkfm produced no output file. \n**");
-			verbose=0;
-		}
-	}
 
 	for (int n2=0; n2<N2; n2++){
 		selected=0;
@@ -88,8 +82,13 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2, d
 
 		if (selected!=1 && eqkfm2[n2].t<tend) {
 			sel[n2]=-1;
-			if (selected==0) printf("*Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!*\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
-			else printf("*Warning: element %d [t=%lf, Mw=%lf, mag=%.3l, d=%.3l] from eqkfm2 selected multiple times in combine_eqkfm!!*\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
+			if (!selected) {
+				if (verbose_level) printf("Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
+				if (flog) {
+					fprintf(flog, "Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
+					fflush(flog);
+				}
+			}
 		}
 	}
 
@@ -271,7 +270,7 @@ double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int 
 
 //------------------ filtering -------------------//
 
-void eqk_filter(struct eqkfm **eqkfm1, int *Ntot, double Mag, double Depth, int free){
+void eqk_filter(struct eqkfm **eqkfm1, int *Ntot, double Mag, double Depth){
 	//inefficient (3 loops), but uses as little memory as possible.
 	//if free==1, frees memory.
 	struct eqkfm *eqkfm0;
@@ -295,85 +294,12 @@ void eqk_filter(struct eqkfm **eqkfm1, int *Ntot, double Mag, double Depth, int 
 
 	for (int i=0; i<Ntot_new; i++) copy_eqkfm_all(eqkfm0[i],(*eqkfm1)+i);
 	*Ntot=Ntot_new;
-	if (verbose_level>2) printf("%d events selected from eqkfm (eqk_filter).\n",Ntot_new);
+	if (verbose_level>2) printf("%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
+	if (flog){
+		fprintf(flog,"%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
+		fflush(flog);
+	}	
 	return;
-}
-
-int * cat_filter(struct catalog *cat, double Mag, double Depth){
-	//inefficient (3 loops), but uses as little memory as possible.
-	int j=0;
-	int Ntot_new=0;
-	double *t_new;
-	double *mag_new;
-	double *lat0_new;
-	double *lon0_new;
-	double *x0_new;
-	double *y0_new;
-	double *depths0_new;
-	int *ngrid_new;
-	int **ngridpoints_new;
-	double **weights_new;
-
-	int *sel_pts;
-
-	sel_pts=ivector(1,(*cat).Z);
-
-	for (int i=1; i<=(*cat).Z; i++){
-		if ((*cat).mag[i]>=Mag && (*cat).depths0[i]<=Depth) {
-	        Ntot_new+=1;
-			sel_pts[Ntot_new]=i;
-		}
-	}
-
-	t_new=dvector(1,Ntot_new);
-	mag_new=dvector(1,Ntot_new);
-	lat0_new=dvector(1,Ntot_new);
-	lon0_new=dvector(1,Ntot_new);
-	x0_new=dvector(1,Ntot_new);
-	y0_new=dvector(1,Ntot_new);
-	depths0_new=dvector(1,Ntot_new);
-	ngrid_new=ivector(1,Ntot_new);
-	ngridpoints_new=(int **) malloc((size_t)((Ntot_new+1)*sizeof(int*)));
-	weights_new=(double **) malloc((size_t)((Ntot_new+1)*sizeof(double*)));
-
-	for (int i=1; i<=Ntot_new; i++){
-		j=sel_pts[i];
-		t_new[i]=(*cat).t[j];
-		mag_new[i]=(*cat).mag[j];
-		lat0_new[i]=(*cat).lat0[j];
-		lon0_new[i]=(*cat).lon0[j];
-		x0_new[i]=(*cat).x0[j];
-		y0_new[i]=(*cat).y0[j];
-		depths0_new[i]=(*cat).depths0[j];
-		ngrid_new[i]=(*cat).ngrid[j];
-		ngridpoints_new[i]=(*cat).ngridpoints[j];
-		weights_new[i]=(*cat).weights[j];
-		}
-
-	free_dvector((*cat).t,1, 0);
-	free_dvector((*cat).mag,1, 0);
-	free_dvector((*cat).lat0,1, 0);
-	free_dvector((*cat).lon0,1, 0);
-	free_dvector((*cat).x0,1, 0);
-	free_dvector((*cat).y0,1, 0);
-	free_dvector((*cat).depths0,1, 0);
-	free_ivector((*cat).ngrid,1, 0);
-
-	(*cat).t=t_new;
-	(*cat).mag=mag_new;
-	(*cat).lat0=lat0_new;
-	(*cat).lon0=lon0_new;
-	(*cat).x0=x0_new;
-	(*cat).y0=y0_new;
-	(*cat).depths0=depths0_new;
-	(*cat).ngrid=ngrid_new;
-	(*cat).ngridpoints=ngridpoints_new;
-	(*cat).weights=weights_new;
-
-	(*cat).Z=Ntot_new-1;
-	printf("%d events selected from catalog.\n",Ntot_new-1);
-	return sel_pts;
-
 }
 
 //--------------------extracting 1d arrays------------------------//

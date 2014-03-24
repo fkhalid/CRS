@@ -34,7 +34,10 @@ int readmultiplefocmec(char **focmecfiles, int nofiles, char *which_format, stru
 		err+=readfocmec(focmecfiles[n], which_format, crst, border, dz, dDCFS, reftime, t0, t1, tfocmec, mag, (focmec)? &focmectemp : NULL,	&nfmtemp, &nfmtemp2, (eqkfm)? &eqkfmtemp : NULL, sel, fm2);
 		if (focmec && !nfmtemp){
 			if (verbose_level) printf("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
-			if (flog) fprintf(flog, "**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
+			if (flog) {
+				fprintf(flog, "**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
+				fflush(flog);
+			}
 		}
 		if (firstelements) (*firstelements)[n]=nfm_sofar+1;
 		if (focmec) {
@@ -73,13 +76,17 @@ int readfocmec(char *focmecfile, char *which_format, struct crust crst, double b
 		fprintf(flog, "\nReading focal mechanisms from file %s (format: %s).\n", focmecfile, which_format);
 		if (fm2) fprintf(flog, "Using both focal mechanisms.\n");
 		else fprintf(flog, "Using only first focal mechanism.\n");
+		fflush (flog);
 	}
 
 
 	FILE *fin;
 	if ((fin=fopen(focmecfile,"r"))==NULL){
 		if (verbose_level>1) printf("** Error: could not open focal mechanisms catalog %s (readfocmec.c). **\n", focmecfile);
-		if (flog) fprintf(flog, "Error: could not open focal mechanisms catalog (readfocmec.c).\n");
+		if (flog) {
+			fprintf(flog, "Error: could not open focal mechanisms catalog (readfocmec.c).\n");
+			fflush (flog);
+		}
 		return (1);
 	}
 	else fclose(fin);
@@ -181,7 +188,10 @@ int readfocmec(char *focmecfile, char *which_format, struct crust crst, double b
 		}
 	}
 
-	if (flog) fprintf(flog, "%d events selected as sample of focal planes, %d selected as sources.\n", NFM2, NFM2sources);
+	if (flog) {
+		fprintf(flog, "%d events selected as sample of focal planes, %d selected as sources.\n", NFM2, NFM2sources);
+		fflush(flog);
+	}
 
 
 	//-------------fill in matrix of focal mechanisms-----------------//
@@ -266,6 +276,9 @@ int readfocmec(char *focmecfile, char *which_format, struct crust crst, double b
 	}
 
 	free_dmatrix(focmec0,1,NC,1,NFMmax);
+	free_ivector(selected,1,NFMmax);
+	free_ivector(selectedsources,1,NFMmax);
+	free_dvector(times,1,NFMmax);
 
 	if (verbose_level>1) printf("done.\n");
 	return (err!=0);

@@ -37,6 +37,26 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime, dou
 	}
 	T=cat.tend-cat.tstart;
 
+	if (cat.Z<=100){
+		if (cat.Z<=1 || T<1.0)	{
+			if (verbose_level) printf("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+			if (flog) {
+				fprintf(flog,"**Warning: to few events, or too short a valid time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+				fflush(flog);
+			}
+			return 1;
+		}
+		else{
+			if (verbose_level || flog){
+				if (verbose_level) printf("**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
+				if (flog) {
+					fprintf(flog,"**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
+					fflush(flog);
+				}
+			}
+		}
+	}
+
 	//find rate by counting events of required magnitude; is too few (<10), use GR instead.
 
 	(*crst_in).r0=0.0;
@@ -69,7 +89,7 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime, dou
 	for (int p=1; p<=crst.N_allP; p++) {
 		h_ind=(p-1)%NP+1;
 		v_ind=(p-1)/NP+1;
-		(*crst_in).rate0[p]=rate_h[h_ind]*rate_v[v_ind];
+		(*crst_in).rate0[p]=rate_h[h_ind]*rate_v[v_ind]*crst.N_allP;
 	}
 
 	free_cat(cat);
@@ -94,22 +114,46 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	double *zlist;
 	int NP=crst.nLat*crst.nLon;
 	double T, *rate_h, *rate_v;
-	double Mc, b, Mc_final=crst.mags[1]+0.5*(crst.dmags), rcat;
-	int ne, h_ind, v_ind;
+	double Mc, b, Mc_final=crst.mags[1]-0.5*(crst.dmags), rcat;
+	int ne, h_ind, v_ind, *sel, sel_no=0;
 	double *weights=NULL;
 	cat.Mc=Mcut;
 
 	zlist=dvector(1,crst.nD);
 	for (int i=1; i<=crst.nD; i++) zlist[i]=crst.depth[1+(i-1)*NP];
 
-	readZMAP(&cat, NULL, NULL, catfile, crst, reftime, t0, t1, t0, t1, 10, 0.0, dR, dZ, 0.0, 0);
+	//todo remove first line.
+	if (countcol(catfile)==8) read_RS(catfile, &cat, crst, -2, t0, 0.0, 0.0, t1, 0.0, (struct eqkfm **) 0, 0, NULL, 0);
+	else readZMAP(&cat, (struct eqkfm **) 0, NULL, catfile, crst, reftime, t0, t1, t0, t1, 10, 0.0, dR, dZ, 0.0, 0);
 	if (cat.Z==0) return 1;
 
-	decluster_catalog(cat, Mmain, &weights, 0);
+	sel=decluster_catalog(cat, Mmain, &weights, 0);
 
-	for (int i=1; i<=cat.Z; i++) cat.err[i]=fmax(cat.err[i], min_smoothing);	//values used later (in Helmstetter.c).
+	for (int i=1; i<=cat.Z; i++) {
+		cat.err[i]=fmax(cat.err[i], min_smoothing);	//values used later (in Helmstetter.c).
+		sel_no+=sel[i];
+	}
 
 	T=cat.tend-cat.tstart;
+	if (sel_no<=100){
+		if (sel_no<=1 || T<1.0)	{
+			if (verbose_level) printf("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+			if (flog) {
+				fprintf(flog,"**Warning: to few events, or too short a valid time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+				fflush(flog);
+			}
+			return 1;
+		}
+		else{
+			if (verbose_level || flog){
+				if (verbose_level) printf("**Warning: only %ld events used to calculate background seismicity rate.** \n", cat.Z);
+				if (flog) {
+					fprintf(flog,"**Warning: only %ld events used to calculate background seismicity rate.** \n", cat.Z);
+					fflush(flog);
+				}
+			}
+		}
+	}
 
 	//find rate of events in catalog:
 	if (Mcut>=20) {
@@ -138,6 +182,7 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	}
 
 	//do same for crst:
+	//too few events (<10), use GR instead.
 	(*crst_in).r0=0.0;
 	for (int e=1; e<=cat.Z; e++) if (cat.mag[e]>=Mc_final) (*crst_in).r0+=1;
 	if ((*crst_in).r0>=10) (*crst_in).r0*=1.0/T;
@@ -153,7 +198,7 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	for (int p=1; p<=crst.N_allP; p++) {
 		h_ind=(p-1)%NP+1;
 		v_ind=(p-1)/NP+1;
-		(*crst_in).rate0[p]=rate_h[h_ind]*rate_v[v_ind];
+		(*crst_in).rate0[p]=rate_h[h_ind]*rate_v[v_ind]*crst.N_allP;
 	}
 
 	free_cat(cat);
@@ -202,6 +247,25 @@ int background_rate3(char *catfile, struct crust *crst_in, struct tm reftime, do
 	}
 
 	T=cat.tend-cat.tstart;
+	if (cat.Z<=100){
+		if (cat.Z<=1 || T<1.0)	{
+			if (verbose_level) printf("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+			if (flog) {
+				fprintf(flog,"**Warning: to few events, or too short a valid time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+				fflush(flog);
+			}
+			return 1;
+		}
+		else{
+			if (verbose_level || flog){
+				if (verbose_level) printf("**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
+				if (flog) {
+					fprintf(flog,"**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
+					fflush(flog);
+				}
+			}
+		}
+	}
 
 	//find rate by counting events of required magnitude; is too few (<10), use GR instead.
 	(*crst_in).r0=0.0;
@@ -233,7 +297,7 @@ int background_rate3(char *catfile, struct crust *crst_in, struct tm reftime, do
 	for (int p=1; p<=crst.N_allP; p++) {
 		h_ind=(p-1)%NP+1;
 		v_ind=(p-1)/NP+1;
-		(*crst_in).rate0[p]=rate_h[h_ind]*rate_v[v_ind];
+		(*crst_in).rate0[p]=rate_h[h_ind]*rate_v[v_ind]*crst.N_allP;
 	}
 
 	if (first_out) shift_cat(&cat, 2-1*first_out);

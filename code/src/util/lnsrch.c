@@ -2,7 +2,6 @@
 #include <math.h>
 #define NRANSI
 #include "nrutil.h"
-#include "nrutil2.h"
 #define ALF 1.0e-4
 #define TOLX 1.0e-7
 

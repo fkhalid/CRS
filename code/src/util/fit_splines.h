@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include "nr.h"
-#include "nrutil2.h"
 #include "gasdev.h"
 #include "interp_quad.h"
 #include "spline.h"

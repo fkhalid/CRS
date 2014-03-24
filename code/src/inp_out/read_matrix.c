@@ -34,7 +34,10 @@ int read_matrix(char *infile, int columns, int headerlines, double **data, long 
 
 	if((fin = fopen(infile, "r"))==NULL){
 		if (verbose_level) printf("**Error: unable to open input file %s (inread_matrix).**\n", infile);
-		if (flog) fprintf(flog,"**Error: unable to open input file %s (inread_matrix).**\n", infile);
+		if (flog) {
+			fprintf(flog,"**Error: unable to open input file %s (inread_matrix).**\n", infile);
+			fflush(flog);
+		}
 		return (1);
 	}
 

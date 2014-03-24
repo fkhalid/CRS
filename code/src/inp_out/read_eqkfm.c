@@ -35,6 +35,8 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int c2=0, c3=0;	//counters.
 	int err=0, j;
 	double d_close=10.0;	//todo read somewhere.
+	static struct set_of_models dummy_parentsetofmodels;
+	dummy_parentsetofmodels.Nmod=0;	//this value indicates than no slip model is available (will use synthetic slip model from foc. mec. or isotropic field).
 
 	if (flog) fprintf(flog, "\nBuilding mainshock slip models (eqkfm_addslipmodels).\n");
 
@@ -85,16 +87,23 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 
 	for (int i=0; i<N1; i++) {
 		if (eqfm1[i].is_mainshock){
+			eqfm1[i].nsel=0;	//deactivate it as source aftershock;
+			(*eqfm_comb)[c3].nsel=crst.N_allP;
 			if (which_slipmod[i]==-1) {
 				copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
 				if (which_events!=NULL) (*which_events)[c3]=i;
+				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 				if (!eqfm1[i].is_slipmodel){
-					if (verbose_level>0) printf(" ** Warning: slip model or focal mechanism not available for large event at t=%.2lf, mag=%.2lf -> will use isotropic field. **\n", eqfm1[i].t, eqfm1[i].mag);
-					if (flog) fprintf(flog, "Warning: slip model or focal mechanism not available for large event at t=%.2lf, mag=%.2lf -> will use isotropic field.\n", eqfm1[i].t, eqfm1[i].mag);
+					if (verbose_level>0) printf(" ** Warning: slip model or focal mechanism not available for large event at t=%.5e, mag=%.2lf -> will use isotropic field. **\n", eqfm1[i].t, eqfm1[i].mag);
+					if (flog) fprintf(flog, "Warning: slip model or focal mechanism not available for large event at t=%.5e, mag=%.2lf -> will use isotropic field.\n", eqfm1[i].t, eqfm1[i].mag);
 				}
 				else {
 					err=focmec2slipmodel(crst, (*eqfm_comb)+c3, res, refine, taper);
 					if (err && verbose_level>0) printf("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+					else{
+						if (verbose_level>0) printf("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+						if (flog) fprintf(flog, "Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+					}
 				}
 				(*nfout)[*Ncomb]=1;
 				c3+=1;
@@ -106,11 +115,14 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				nsm=0;
 				for (int n=0; n<j; n++) nsm+=all_slipmodels.no_slipmodels[n];
 				c2=0;
+				if (verbose_level>0) printf("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
+				if (flog) fprintf(flog, "Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
 				err+=setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm,
 						all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j], all_slipmodels.tmain[j],
 						d_close, crst.N_allP, crst.list_allP, all_slipmodels.mmain+j, 1, 1, NULL, crst.lat0, crst.lon0);
 				if (which_events!=NULL) (*which_events)[c3]=i;
 				if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
+				for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) (*eqfm_comb)[c3].distance=eqfm1[i].distance;
 				c3+=nf2[which_slipmod[i]];
 				c_evfound+=1;
 				*Ncomb+=1;

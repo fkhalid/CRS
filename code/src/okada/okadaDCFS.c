@@ -84,9 +84,10 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
 
 	if (DCFS.nsel!=(*eqkfm1).nsel){
-		if (verbose_level>1) printf("**Warning: DCFS.nsel!=eqkfm.nsel in okadaDCFSc. Will choose the one with more points selected.**\n");
-		DCFS.nsel=(*eqkfm1).nsel=fmax(DCFS.nsel,(*eqkfm1).nsel);
+		if (verbose_level>1) printf("**Warning: DCFS.nsel!=eqkfm.nsel in okadaDCFSc.**\n");
+		if (flog) fprintf(flog,"**Error: DCFS.nsel!=eqkfm.nsel in okadaDCFSc. Will choose the one with more points selected.**\n");
 		DCFS.which_pts=(*eqkfm1).selpoints= (DCFS.nsel>(*eqkfm1).nsel) ? DCFS.which_pts : (*eqkfm1).selpoints;
+		DCFS.nsel=(*eqkfm1).nsel=fmax(DCFS.nsel,(*eqkfm1).nsel);
 	}
 
 	Nsel=DCFS.nsel;
@@ -252,6 +253,7 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, struct pscmp DCFS, st
 
 	if ((DCFS.nsel!=(*eqkfm1).nsel)){
 		if (verbose_level>1) printf("**Warning: DCFS.nsel!=eqkfm.nsel in okadaCoeff2DCFS. Will use those from eqkfm1. **\n");
+		if (flog) fprintf(flog,"**Error: DCFS.nsel!=eqkfm1.nsel (%d, %d) in okadaCoeff2DCFS.**\n", DCFS.nsel, (*eqkfm1).nsel);
 		DCFS.nsel=(*eqkfm1).nsel;
 		DCFS.which_pts=(*eqkfm1).selpoints;
 	}
@@ -400,7 +402,8 @@ int resolvedCoeff2DCFS(float **Coeffs_st, float **Coeffs_d, struct pscmp DCFS, s
 	int NF=DCFS.NF;
 
 	if ((DCFS.nsel!=(*eqkfm1).nsel)){
-		if (verbose_level>1) printf("**Warning: DCFS.nsel!=eqkfm.nsel in okadaCoeff2DCFS. Will use those from eqkfm1. **\n");
+		if (flog) fprintf(flog,"**Error: DCFS.nsel!=eqkfm.nsel in resolvedCoeff2DCFS.**\n");
+		if (verbose_level>1) printf("**Warning: DCFS.nsel!=eqkfm.nsel in resolvedCoeff2DCFS. Will use those from eqkfm1. **\n");
 		DCFS.nsel=(*eqkfm1).nsel;
 		DCFS.which_pts=(*eqkfm1).selpoints;
 	}
@@ -435,7 +438,8 @@ int isoDCFS(struct pscmp DCFS, struct eqkfm eqkfm1){
 	double DCFSmax=DCFS_cap;
 
 	if (DCFS.nsel!=eqkfm1.nsel){
-		if (verbose_level>1) printf("**Warning: DCFS.nsel!=eqkfm.nsel in isoDCFS. Will choose the one from isoDCFS.**\n");
+		if (flog) fprintf(flog,"**Error: DCFS.nsel!=eqkfm.nsel in isoDCFS.**\n");
+		if (verbose_level>1) printf("**Warning: DCFS.nsel!=eqkfm.nsel in isoDCFS. Will choose the one from DCFS.**\n");
 		eqkfm1.nsel=DCFS.nsel;
 		eqkfm1.selpoints=DCFS.which_pts;
 	}

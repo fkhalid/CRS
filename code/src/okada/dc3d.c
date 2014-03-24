@@ -484,13 +484,13 @@ void DCCON2(double XI, double ET, double Q, double KXI, double KET, double SD, d
 	*HZ = (*Y) * Q * (*X32) + XI * Q * (*Y32) * CD;
 }
 
-void DC3D(double ALPHA, double X, double Y, double Z, double DEPTH, double DIP, double AL1, double AL2, double AW1, double AW2, double DISL1, double DISL2, double DISL3, double *UX, double *UY, double *UZ, double *UXX, double *UYX,
+void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP, double AL1, double AL2, double AW1, double AW2, double DISL1, double DISL2, double DISL3, double *UX, double *UY, double *UZ, double *UXX, double *UYX,
 		double *UZX, double *UXY, double *UYY, double *UZY, double *UXZ, double *UYZ, double *UZZ, int *IRET) {
 
 //for geometry, see	http://www.bosai.go.jp/study/application/dc3d/DC3Dhtml_E.html
 
 	double XI[3], ET[3], KXI[3], KET[3], U[13], DU[13], DUA[13], DUB[13], DUC[13];
-	double EPS, AALPHA, DDIP, ZZ, DD1, DD2, DD3, R12, R21, R22, P, Q;
+	double EPS, AALPHA, DDIP, ZZ, DD1, DD2, DD3, R12, R21, R22, P, Q, Y;
 	int i, j, k;
 	double ALP1, ALP2, ALP3, ALP4, ALP5, SD, CD, SDSD, CDCD, SDCD, S2D, C2D;
 	double XI2, ET2, Q2, R, R2, R3, R5, D, TT, ALX, ALE, X11, Y11, X32, Y32, EY, EZ, FY, FZ, GY, GZ, HY, HZ;
@@ -535,8 +535,8 @@ void DC3D(double ALPHA, double X, double Y, double Z, double DEPTH, double DIP, 
 	/* C=====  REAL-SOURCE CONTRIBUTION  =====     */
 	/* C======================================     */
 	D = DEPTH + Z;
-	P = Y * CD + D * SD;
-	Q = Y * SD - D * CD;
+	P = YY * CD + D * SD;
+	Q = YY * SD - D * CD;
 	ET[1] = P - AW1;
 	ET[2] = P - AW2;
 	if (fabs(Q) < EPS) Q = 0.0;
@@ -587,8 +587,8 @@ void DC3D(double ALPHA, double X, double Y, double Z, double DEPTH, double DIP, 
 	/* C=====  IMAGE-SOURCE CONTRIBUTION  ===== */
 	/* C======================================= */
 	D = DEPTH - Z;
-	P = Y * CD + D * SD;
-	Q = Y * SD - D * CD;
+	P = YY * CD + D * SD;
+	Q = YY * SD - D * CD;
 	ET[1] = P - AW1;
 	ET[2] = P - AW2;
 	if (fabs(Q) < EPS) Q = 0.0;

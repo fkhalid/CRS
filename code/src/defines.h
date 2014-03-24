@@ -66,9 +66,10 @@ struct flags{
 	int only_aftershocks_withfm;
 	int full_field;			  //if (2): full field for all events.  (1) use available foc mec. (0) use isotropic field for all.
 	int aftershocks_fixedmec; //controls is fixed foc. mec. should be used for events w/o foc mec, when fullfield=2 (otherwise, will draw a random one).
+	int aftershocks_mode;
 	//these can change with each iteration:
 	int new_slipmodel;
-	int which_recfault;
+	int sample_all;
 };
 
 struct set_of_models{

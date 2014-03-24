@@ -15,4 +15,4 @@
 #include "../seis/WellsCoppersmith.h"
 #include "../util/nrutil.h"
 
-int read_RS(char * filename, struct catalog *cat, struct crust, int N, double time0, double tstart, double tW1, double tW2, double Mag, double tend, struct eqkfm **eqkfm1, double dDCFS, int *nev, int);
+int read_RS(char * filename, struct catalog *cat, struct crust crst, double time0, double tstart, double tW1, double tW2, double tend, double Mag, struct eqkfm **eqfm2, double dDCFS, int *nev, int sources);

@@ -205,7 +205,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 				if (verbose_level>2) printf("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
 				if (background_rate_file) strcpy(background_rate_file,"");
 				break;
-			case 12:
+			case 14:
 				if (Logfile) strcpy(Logfile,"");
 				break;
 			case 13:
@@ -220,7 +220,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 		}
 	}
 
-	return 0;
+	return err;
 }
 
 int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles){
@@ -232,7 +232,10 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles){
 
 	if (!(fin=fopen(inputfile,"r"))) {
 		if (verbose_level) printf("Error: can not open file %s (read_slipformecfiles), Exiting.\n", inputfile);
-		if (flog) fprintf(flog, "Error: can not open file %s (read_slipformecfiles), Exiting.\n", inputfile);
+		if (flog) {
+			fprintf(flog, "Error: can not open file %s (read_slipformecfiles), Exiting.\n", inputfile);
+			fflush(flog);
+		}
 		*listfiles=NULL;
 		return 1;
 	}
@@ -269,8 +272,11 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	int Nm0, nsm, no_slipmod;
 
 	if((fin = fopen(input_fname, "r"))==NULL) {
-		if (verbose_level>1) fprintf(stderr, "Warning read_input: no slip model file found (read_listslipmodel).\n");
-		if (flog) fprintf(flog, "\nWarning read_input: no slip model file found (read_listslipmodel).\n");
+		if (verbose_level>1) fprintf(stderr, "Warning read_input: slip model file %s not found (read_listslipmodel).\n", input_fname);
+		if (flog) {
+			fprintf(flog, "\nWarning read_input: slip model file %s not found (read_listslipmodel).\n", input_fname);
+			fflush(flog);
+		}
 		(*allslipmodels).NSM=0;
 		(*allslipmodels).is_afterslip=is_afterslip;
 		(*allslipmodels).tmain= NULL;
@@ -287,8 +293,8 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data (file: %s) using fgets!\n", input_fname);
 		sscanf(line,"%d", &Nm0);
 		fgets(line,Nchar,fin);
-		sscanf(line,"%s %d", cmb_format, &((*allslipmodels).constant_geometry));
 		if (is_afterslip) {
+			sscanf(line,"%s", cmb_format);
 			fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 			sscanf(line, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
 			times.tm_year-=1900;
@@ -296,6 +302,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			times.tm_isdst=0;
 			t0=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
 		}
+		else sscanf(line,"%s %d", cmb_format, &((*allslipmodels).constant_geometry));
 		(*allslipmodels).NSM=Nm0;
 		(*allslipmodels).is_afterslip=is_afterslip;
 		(*allslipmodels).tmain=dvector(0,Nm0-1);

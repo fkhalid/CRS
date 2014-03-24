@@ -9,7 +9,7 @@
 
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf, struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flag,
 		double *tevol, double *times, int Nmain, struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont, int NTSdisc, double **focmec, int *fmzoneslim,
-		int NFM, long *seed, int *fm_number, double tdata0, double tdata1, double H, int refresh){
+		int NFM, long *seed, int *fm_number, double tdata0, double tdata1, double H, int refresh, int which_recfault){
 
 /* DCFSrand[i][j] contains the ith stress change at gridpoint j due to continuous processes (modeled linearly between time steps).
  * DCFS[k].cmp[j] contains the stress change due to kth event at gridpoint j (modeled as a step).
@@ -27,7 +27,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	int	afterslip=flag.afterslip, \
 		aftershocks=flag.aftershocks, \
 		vary_recfault=flag.err_recfault, \
-		which_recfault=flag.which_recfault, \
 		vary_slipmodel=flag.err_slipmodel, \
 		new_slipmodel=flag.new_slipmodel, \
 		gridpoints_err=flag.err_gridpoints, \
@@ -55,8 +54,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	int NF_max=0, NP_max=0;
 	static int time_in=0;
 	static int **nn;	//nearest neighbours points.
-	double **interp_DCFS;
-	double *mycmb;
+	static double **interp_DCFS;
+	static double *mycmb=NULL;
 	static double *cmb_cumu;
 	int n_withslimodel, n_withoutslimodel;
 //	FILE *fout;
@@ -186,7 +185,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			lon0=crst.lon0;
 			n_withslimodel=n_withoutslimodel=0;
 			for (int eq1=0; eq1<NTSdisc; eq1++){
-				if (eqkfm1[eq1].nsel!=0){
+				if (!eqkfm1[eq1].is_mainshock && eqkfm1[eq1].nsel!=0){
 					if (eqkfm1[eq1].is_slipmodel){
 						n_withslimodel+=1;
 						okadaDCFS(DCFS[eq1], eqkfm1+eq1, 1, crst, NULL, NULL, 1);
@@ -496,9 +495,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			if (eqkfm1[eq1].t <tdata0 || eqkfm1[eq1].t>tdata1) continue;
 
-			if (eqkfm1[eq1].nsel!=0){
-
-
+			if (!eqkfm1[eq1].is_mainshock && eqkfm1[eq1].nsel!=0){
 				if (eqkfm1[eq1].is_slipmodel) {
 					if (eqkfm1[eq1].whichfm==0){
 						//half of the time, swap them.

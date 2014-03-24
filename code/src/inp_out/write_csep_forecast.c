@@ -1,21 +1,35 @@
 #include "write_csep_forecast.h"
 
-void csep_forecast(char *filename, struct crust crst, double *rates){
+void csep_forecast(char *filename, struct crust crst, double *rates, int calculation_grid){
 
 	double *lats, *lons, *deps, *mags, *magGR;
 	double dlat, dlon, ddep, dmag;
 	int NG, Nmag;
 
+	if (calculation_grid){
+		lats=crst.lat;
+		lons=crst.lon;
+		deps=crst.depth;
+		dlat=crst.dlat;
+		dlon=crst.dlon;
+		ddep=crst.ddepth;
+		NG=crst.uniform? (crst.nD*crst.nLat*crst.nLon) : crst.N_allP;
+	}
+
+	else{
 	lats=crst.lat_out;
 	lons=crst.lon_out;
 	deps=crst.depth_out;
-	mags=crst.mags;
-	magGR=crst.GRmags;
 	dlat=crst.dlat_out;
 	dlon=crst.dlon_out;
 	ddep=crst.ddepth_out;
-	dmag=crst.dmags;
 	NG=crst.uniform? (crst.nD_out*crst.nLat_out*crst.nLon_out) : crst.N_allP;
+	}
+
+
+	mags=crst.mags;
+	magGR=crst.GRmags;
+	dmag=crst.dmags;
 	Nmag=crst.nmags;
 
 	write_csep_forecast(filename, lats, lons, deps, dlat, dlon, ddep, mags, dmag, rates, magGR, NG, Nmag);

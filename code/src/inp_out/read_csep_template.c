@@ -10,24 +10,27 @@
 int read_fmindex(struct crust crst, char *fname, int **fm_index, int *no_zones){
 
 	double *dum=NULL;
+	int err;
 
 	*fm_index=ivector(1,crst.N_allP);
 
-	read_rate(crst, fname, &dum, NULL);
+	err=read_rate(crst, fname, &dum, NULL);
 	for (int n=1; n<=crst.N_allP; n++) (*fm_index)[n]= (int)dum[n] -1;
 
 	*no_zones=(int) max_v(dum+1,crst.N_allP);
 	free_dvector(dum,1,1);
 
-	return 0;
+	return err;
 }
 
 int read_rate(struct crust crst, char *fname, double **bg_rate, double *minmag){
 	double *dum_rate, dmag;
-	read_csep_template(fname, 0,0,0,0,0,0,0,0,&dmag,0,0,0,&dum_rate,0,0,0,0,0,0,minmag,0, NULL);
-	convert_geometry(crst, dum_rate, bg_rate, 1, 1);
+	int err;
+
+	err=read_csep_template(fname, 0,0,0,0,0,0,0,0,&dmag,0,0,0,&dum_rate,0,0,0,0,0,0,minmag,0, NULL);
+	err+=convert_geometry(crst, dum_rate, bg_rate, 1, 1);
 	if (minmag) *minmag-=0.5*dmag;
-	return 0;
+	return err;
 }
 
 int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon, int *ndep, int *ng, double *dlat, double *dlon, double *ddep, double *dmag,
@@ -52,7 +55,7 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon, int *
  * */
 
 	int NC=countcol(fname), NL=countline(fname), NH=0, NP;
-	int n1, nmag;
+	int n1, nmag, err=0;
 	long NR;
 	double **data;
 	double lat0=1e30, lat1=-1e30, lon0=1e30, lon1=-1e30, dep0=1e30, dep1=-1e30, mag0, mag1;
@@ -62,7 +65,8 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon, int *
 
 	if (NL>0 && NC>0) {
 		data=dmatrix(1,NC, 1, NL+1);
-		read_matrix(fname, NC, NH, data, &NR);
+		err=read_matrix(fname, NC, NH, data, &NR);
+		if (err) return 1;
 	}
 	else return 1;
 

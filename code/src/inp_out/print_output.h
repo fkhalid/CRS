@@ -15,7 +15,7 @@
 
 //void printCSEPforecast(char *filename, double *lats, double *lons, double *deps, double *mags, double *rates, double *mag_fact, int NG, int Nmag);
 int sum_DCFS(struct pscmp *DCFS, double **cmb, int N, int Ntot);
-int print_rate(char *fname, struct crust crst, double *rate);
+int print_rate(char *fname, struct crust crst, double Mc, double *rate);
 int print_grid(char *fname, struct pscmp DCFS, struct crust, double *rate);
 int print_slipmodel(char* filename, struct eqkfm *eqfm1, int NF);
 int print_cat(char *fname, struct catalog cat);

@@ -40,13 +40,26 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 	double year, this_year;
 	time_t t;
 
+	int eq1=0, eq2=0, eq;
+	int errP=0;
+	int *seleq1, *seleq2, *catindex;	//catindex: indices of events in catalog, to be copied into eqkfm.
+	double SD, SDd, SDlat, SDlon, f=1.0;
+	double lat0l, lat1l, lon0l, lon1l, dep0l, dep1l;
+	double x,y;
+	double Mc;
+	double 	*xgrid=crst.x, \
+			*ygrid=crst.y, \
+			*depgrid=crst.depth, \
+			*dAgrid=crst.dAgrid;
+	int N=crst.N_allP;
+
 	t=time(NULL);
 	this_year=(*localtime(&t)).tm_year+1900;
 	if (Z<=0) return 1;
 
 	if (flog) {
 		fprintf(flog, "\n Reading catalog file %s.\n", file);
-		fprintf(flog, "events in time span [%.2lf - %.2lf]days initially selected for LL inversion.\n", t0c, t1c);
+		fprintf(flog, "events in time span [%.2lf - %.2lf]days initially selected for catalog.\n", t0c, t1c);
 		fprintf(flog, "events in time span [%.2lf - %.2lf]days initially selected as sources.\n", t0s, t1s);
 		fprintf(flog, "extra area used for selection of sources [%.2lf (horizontal) %.2lf(vertical)]km. \n", border, extra_d);
 		if ((*cat).Mc<20) fprintf(flog, "only events with Mw>=%.2lf will be used.\n", (*cat).Mc);
@@ -120,8 +133,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 			min= (int) flmin;
 			sec= (int) fsec;
 		}
-
-		//else hh=sscanf(line, "%lf %lf %lf %d %d %lf %lf %d %d %lf %lf %lf %lf\n",	lon+valid+1, lat+valid+1, &year, &mon, &day, mag+valid+1, dep+valid+1, &hour, &min, &sec, herr+valid+1, verr+valid+1, merr+valid+1);
 
 		else {
 			hh=sscanf(line, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",	lon+valid+1, lat+valid+1, &fyear, &fmon, &fday, mag+valid+1, dep+valid+1, &fhour, &flmin, &fsec, herr+valid+1, verr+valid+1, merr+valid+1);
@@ -204,19 +215,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 	}
 
 	//------------------------------select events:-------------------------//
-
-	int eq1=0, eq2=0, eq;
-	int errP=0;
-	int *seleq1, *seleq2, *catindex;	//catindex: indices of events in catalog, to be copied into eqkfm.
-	double SD, SDd, SDlat, SDlon, f=1.0;
-	double lat0l, lat1l, lon0l, lon1l, dep0l, dep1l;
-	double x,y;
-	double Mc;
-	double 	*xgrid=crst.x, \
-			*ygrid=crst.y, \
-			*depgrid=crst.depth, \
-			*dAgrid=crst.dAgrid;
-	int N=crst.N_allP;
 
 	//by convention, Mc>20 means that Mc should be calculated y program (later).
 	if (!cat || (*cat).Mc>=20) Mc=-10;	//select all events.
@@ -335,19 +333,22 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 			(*cat).y0[i]=y;
 	    	if (findgridpoints){
 				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, gridPMax, y, x, SD, dep[i], SDd, cut_sd, (*cat).ngrid + i, (*cat).ngridpoints[i], (*cat).weights[i], 1);
-				if (*((*cat).ngrid + i)==0){
-					if (verbose_level>1) printf("*** Warning: no grid points selected for event eq=%d! (%lf,%lf,%lf' SD=%lf)\n",eq,lat[i],lon[i],dep[i], SD);
-				}
+				if (errP) break;
 			}
 		}
 		(*cat).tstart=fmax(t0c, (*cat).t[1]);
 		(*cat).tend=fmin(t1c, (*cat).t[(*cat).Z]);
-	}
 
-	if ((*cat).Mc>=20) (*cat).Mc=Mc_maxcurv((*cat).mag+1, (*cat).Z)+Mc_offset;
-	(*cat).b=calculatebvalue((*cat).mag+1, (*cat).Z, (*cat).Mc);
-	if (verbose_level>1) printf("Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
-	if (flog) fprintf(flog, "Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
+		if (!errP) {
+		if ((*cat).Mc>=20) (*cat).Mc=Mc_maxcurv((*cat).mag+1, (*cat).Z)+Mc_offset;
+		(*cat).b=calculatebvalue((*cat).mag+1, (*cat).Z, (*cat).Mc);
+		if (verbose_level>1) printf("Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
+			if (flog) {
+				fprintf(flog, "Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
+				fflush(flog);
+			}
+		}
+	}
 
 	//------------------------------fill in eqkfm:-------------------------//
 
@@ -370,6 +371,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 	    	if (findgridpoints){
 				if (catindex[i]!=0) errP+=find_gridpoints_d(ygrid, xgrid, depgrid, (*cat).ngridpoints[catindex[i]], (*cat).ngrid[catindex[i]], N, (*eqfm)[i].y, (*eqfm)[i].x, (*eqfm)[i].depth,  (*eqfm)[i].mag, dDCFS,  &((*eqfm)[i].nsel), &((*eqfm)[i].selpoints));
 				else errP+=find_gridpoints_d(ygrid, xgrid, depgrid, (int *) 0, 0, N, (*eqfm)[i].y, (*eqfm)[i].x, (*eqfm)[i].depth,  (*eqfm)[i].mag, dDCFS,  &((*eqfm)[i].nsel), &((*eqfm)[i].selpoints));
+				if (errP) break;
 	    	}
 
 		}

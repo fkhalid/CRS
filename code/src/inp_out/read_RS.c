@@ -11,7 +11,7 @@ int gridPMax=1000;	// max no. points associated with event.
 
 //todo delete this file, is only here for backward compatibility with Parkfield.
 
-int read_RS(char * filename, struct catalog *cat, struct crust crst, int N, double time0, double tstart, double tW1, double tW2, double tend, double Mag, struct eqkfm **eqfm2, double dDCFS, int *nev, int sources){
+int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0, double tstart, double tW1, double tW2, double tend, double Mag, struct eqkfm **eqfm2, double dDCFS, int *nev, int sources){
 //sources indicate if events should be used as sources (boolean "aftershocks" in main).
 //nev is the total number of events as sources is sources==1, else the total number of events in catalog.
 
@@ -85,8 +85,8 @@ int read_RS(char * filename, struct catalog *cat, struct crust crst, int N, doub
 		}
 	}
 	Zsel=eq1;
-	*nev=(sources==1)? Zsel : eq2-n_tw;
-	eqfm1 = eqkfm_array(0, *nev-1);
+	if (nev) *nev=(sources==1)? Zsel : eq2-n_tw;
+	if (sources) eqfm1 = eqkfm_array(0, *nev-1);
 
 	init_cat1(cat, eq2, gridPMax);
 
@@ -123,7 +123,7 @@ int read_RS(char * filename, struct catalog *cat, struct crust crst, int N, doub
 			latlon2localcartesian(Lat, Lon, 0.5*(crst.latmax+crst.latmin), 0.5*(crst.lonmax+crst.lonmin), &y, &x);
 			cat->x0[Z0]=x;
 			cat->y0[Z0]=y;
-			errP+=find_gridpoints(crst.y, crst.x, crst.dAgrid, crst.depth, N, gridPMax, y, x, SD, Depth, SDd, 3.0,  cat->ngrid + Z0, cat->ngridpoints[Z0], cat->weights[Z0], inside);
+			errP+=find_gridpoints(crst.y, crst.x, crst.dAgrid, crst.depth, crst.N_allP, gridPMax, y, x, SD, Depth, SDd, 3.0,  cat->ngrid + Z0, cat->ngridpoints[Z0], cat->weights[Z0], inside);
 			if (*(cat->ngrid + Z0)==0){
 				printf("*** Warning: no grid points selected for event eq=%d! (%lf,%lf,%lf' SD=%lf)\n",eq,Lat,Lon,Depth, SD);
 			}
@@ -131,118 +131,120 @@ int read_RS(char * filename, struct catalog *cat, struct crust crst, int N, doub
 
 		//TODO make this function more general and use it even for the case aftershocks!=1?
 
-		if (sources==1){
-			eqfm1[eq0].t=datas[2][eq];
-			eqfm1[eq0].lat=datas[3][eq];
-			eqfm1[eq0].lon=datas[4][eq];
-			eqfm1[eq0].depth=datas[5][eq];
-			eqfm1[eq0].mag=datas[6][eq];
-			eqfm1[eq0].noise=0;
-			eqfm1[eq0].index_cat= (is_in_catalog==1)? Z0 : 0;
-			if (is_in_catalog==1) errP+=find_gridpoints_d(crst.y, crst.x, crst.depth, cat->ngridpoints[Z0], cat->ngrid[Z0], N, eqfm1[eq0].y, eqfm1[eq0].y, eqfm1[eq0].depth,  eqfm1[eq0].mag, dDCFS,  &(eqfm1[eq0].nsel), &(eqfm1[eq0].selpoints));
-			else errP+=find_gridpoints_d(crst.y, crst.x, crst.depth, (int *) 0, 0, N, eqfm1[eq0].y, eqfm1[eq0].x, eqfm1[eq0].depth,  eqfm1[eq0].mag, dDCFS,  &(eqfm1[eq0].nsel), &(eqfm1[eq0].selpoints));
+		if (eqfm2){
+			if (sources==1){
+				eqfm1[eq0].t=datas[2][eq];
+				eqfm1[eq0].lat=datas[3][eq];
+				eqfm1[eq0].lon=datas[4][eq];
+				eqfm1[eq0].depth=datas[5][eq];
+				eqfm1[eq0].mag=datas[6][eq];
+				eqfm1[eq0].noise=0;
+				eqfm1[eq0].index_cat= (is_in_catalog==1)? Z0 : 0;
+				latlon2localcartesian(eqfm1[eq0].lat, eqfm1[eq0].lat, 0.5*(crst.latmax+crst.latmin), 0.5*(crst.lonmax+crst.lonmin), &(eqfm1[eq0].y), &(eqfm1[eq0].x));
+				if (is_in_catalog==1) errP+=find_gridpoints_d(crst.y, crst.x, crst.depth, cat->ngridpoints[Z0], cat->ngrid[Z0], crst.N_allP, eqfm1[eq0].y, eqfm1[eq0].x, eqfm1[eq0].depth,  eqfm1[eq0].mag, dDCFS,  &(eqfm1[eq0].nsel), &(eqfm1[eq0].selpoints));
+				else errP+=find_gridpoints_d(crst.y, crst.x, crst.depth, (int *) 0, 0, crst.N_allP, eqfm1[eq0].y, eqfm1[eq0].x, eqfm1[eq0].depth,  eqfm1[eq0].mag, dDCFS,  &(eqfm1[eq0].nsel), &(eqfm1[eq0].selpoints));
+				switch (S){
 
-			switch (S){
+				case 14:
+					eqfm1[eq0].is_slipmodel=1;
+					eqfm1[eq0].np_st=1;
+					eqfm1[eq0].np_di=1;
+					eqfm1[eq0].slip_str=dvector(1,1);
+					eqfm1[eq0].slip_dip=dvector(1,1);
+					eqfm1[eq0].pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
+					eqfm1[eq0].pos_d=dvector(1,1);
+					eqfm1[eq0].pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
+					eqfm1[eq0].pos_d[1]=0;
+					eqfm1[eq0].str1=datas[9][eq];
+					eqfm1[eq0].dip1=datas[10][eq];
+					eqfm1[eq0].rake1=fmod(datas[11][eq]+360.0,360.0);
+					eqfm1[eq0].str2=datas[12][eq];
+					eqfm1[eq0].dip2=datas[13][eq];
+					eqfm1[eq0].rake2=fmod(datas[14][eq]+360.0,360.0);	//so don't have -ve values.
 
-			case 14:
-				eqfm1[eq0].is_slipmodel=1;
-				eqfm1[eq0].np_st=1;
-				eqfm1[eq0].np_di=1;
-				eqfm1[eq0].slip_str=dvector(1,1);
-				eqfm1[eq0].slip_dip=dvector(1,1);
-				eqfm1[eq0].pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
-				eqfm1[eq0].pos_d=dvector(1,1);
-				eqfm1[eq0].pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
-				eqfm1[eq0].pos_d[1]=0;
-				eqfm1[eq0].str1=datas[9][eq];
-				eqfm1[eq0].dip1=datas[10][eq];
-				eqfm1[eq0].rake1=fmod(datas[11][eq]+360.0,360.0);
-				eqfm1[eq0].str2=datas[12][eq];
-				eqfm1[eq0].dip2=datas[13][eq];
-				eqfm1[eq0].rake2=fmod(datas[14][eq]+360.0,360.0);	//so don't have -ve values.
+					//TODO in theory, should find L and W for both mech. (rake differs).
+					WellsCoppersmith(eqfm1[eq0].mag, eqfm1[eq0].rake1, &(eqfm1[eq0].L), &(eqfm1[eq0].W), &slip);
+					eqfm1[eq0].tot_slip=pow(10,(1.5*(eqfm1[eq0].mag+6)))*(1.0/(crst.mu*pow(10,12)*eqfm1[eq0].W*eqfm1[eq0].L));
+					eqfm1[eq0].whichfm=0;	//this means to preference, hence don't calculate eqfm1[eq].slip_str[1], eqfm1[eq].slip_dip[1]. //TODO need to make this consistent in future functions.
 
-				//TODO in theory, should find L and W for both mech. (rake differs).
-				WellsCoppersmith(eqfm1[eq0].mag, eqfm1[eq0].rake1, &(eqfm1[eq0].L), &(eqfm1[eq0].W), &slip);
-				eqfm1[eq0].tot_slip=pow(10,(1.5*(eqfm1[eq0].mag+6)))*(1.0/(crst.mu*pow(10,12)*eqfm1[eq0].W*eqfm1[eq0].L));
-				eqfm1[eq0].whichfm=0;	//this means to preference, hence don't calculate eqfm1[eq].slip_str[1], eqfm1[eq].slip_dip[1]. //TODO need to make this consistent in future functions.
+					//find which plane is best oriented to regional stress field (this part is a bottleneck when repeated over thousands of f.m.):
+					//n1[1]=-sin(eqfm1[eq].str1*DEG2RAD)*sin(eqfm1[eq].dip1*DEG2RAD);
+					//n1[2]=cos(eqfm1[eq].str1*DEG2RAD)*sin(eqfm1[eq].dip1*DEG2RAD);
+					//n1[3]=-cos(eqfm1[eq].dip1*DEG2RAD);
+					//n2[1]=-sin(eqfm1[eq].str2*DEG2RAD)*sin(eqfm1[eq].dip2*DEG2RAD);
+					//n2[2]=cos(eqfm1[eq].str2*DEG2RAD)*sin(eqfm1[eq].dip2*DEG2RAD);
+					//n2[3]=-cos(eqfm1[eq].dip2*DEG2RAD);
+					//
+					//sl1[1]=cos(eqfm1[eq].str1*DEG2RAD)*cos(eqfm1[eq].rake1*DEG2RAD)+sin(eqfm1[eq].str1*DEG2RAD)*sin(eqfm1[eq].rake1*DEG2RAD)*cos(eqfm1[eq].dip1*DEG2RAD);
+					//sl1[2]=sin(eqfm1[eq].str1*DEG2RAD)*cos(eqfm1[eq].rake1*DEG2RAD)-cos(eqfm1[eq].str1*DEG2RAD)*sin(eqfm1[eq].rake1*DEG2RAD)*cos(eqfm1[eq].dip1*DEG2RAD);
+					//sl1[3]=-sin(eqfm1[eq].rake1*DEG2RAD)*sin(eqfm1[eq].dip1*DEG2RAD);
+					//sl2[1]=cos(eqfm1[eq].str2*DEG2RAD)*cos(eqfm1[eq].rake2*DEG2RAD)+sin(eqfm1[eq].str2*DEG2RAD)*sin(eqfm1[eq].rake2*DEG2RAD)*cos(eqfm1[eq].dip2*DEG2RAD);
+					//sl2[2]=sin(eqfm1[eq].str2*DEG2RAD)*cos(eqfm1[eq].rake2*DEG2RAD)-cos(eqfm1[eq].str2*DEG2RAD)*sin(eqfm1[eq].rake2*DEG2RAD)*cos(eqfm1[eq].dip2*DEG2RAD);
+					//sl2[3]=-sin(eqfm1[eq].rake2*DEG2RAD)*sin(eqfm1[eq].dip2*DEG2RAD);
+					//
+					//mtimesv(crst.S,n1,stress1,3,3);
+					//mtimesv(crst.S,n2,stress2,3,3);
+					//vdotv(stress1,n1,&sigma1,3);
+					//vdotv(stress2,n2,&sigma2,3);
+					//vdotv(stress1,sl1,&tau1,3);
+					//vdotv(stress2,sl2,&tau2,3);
+					//
+					//if (tau1+crst.fric*sigma1>tau2+crst.fric*sigma2){
+					//eqfm1[eq0].slip_str[1]=slip*cos(DEG2RAD*eqfm1[eq0].rake1);
+					//eqfm1[eq0].slip_dip[1]=slip*sin(DEG2RAD*eqfm1[eq0].rake1);
+					//eqfm1[eq0].whichfm=1;
+					//}
+					//else{
+					//	eqfm1[eq0].slip_str[1]=slip*cos(DEG2RAD*eqfm1[eq0].rake2);
+					//	eqfm1[eq0].slip_dip[1]=slip*sin(DEG2RAD*eqfm1[eq0].rake2);
+					//	eqfm1[eq0].whichfm=2;
+					//}
+					break;
 
-				//find which plane is best oriented to regional stress field (this part is a bottleneck when repeated over thousands of f.m.):
-				//n1[1]=-sin(eqfm1[eq].str1*DEG2RAD)*sin(eqfm1[eq].dip1*DEG2RAD);
-				//n1[2]=cos(eqfm1[eq].str1*DEG2RAD)*sin(eqfm1[eq].dip1*DEG2RAD);
-				//n1[3]=-cos(eqfm1[eq].dip1*DEG2RAD);
-				//n2[1]=-sin(eqfm1[eq].str2*DEG2RAD)*sin(eqfm1[eq].dip2*DEG2RAD);
-				//n2[2]=cos(eqfm1[eq].str2*DEG2RAD)*sin(eqfm1[eq].dip2*DEG2RAD);
-				//n2[3]=-cos(eqfm1[eq].dip2*DEG2RAD);
-				//
-				//sl1[1]=cos(eqfm1[eq].str1*DEG2RAD)*cos(eqfm1[eq].rake1*DEG2RAD)+sin(eqfm1[eq].str1*DEG2RAD)*sin(eqfm1[eq].rake1*DEG2RAD)*cos(eqfm1[eq].dip1*DEG2RAD);
-				//sl1[2]=sin(eqfm1[eq].str1*DEG2RAD)*cos(eqfm1[eq].rake1*DEG2RAD)-cos(eqfm1[eq].str1*DEG2RAD)*sin(eqfm1[eq].rake1*DEG2RAD)*cos(eqfm1[eq].dip1*DEG2RAD);
-				//sl1[3]=-sin(eqfm1[eq].rake1*DEG2RAD)*sin(eqfm1[eq].dip1*DEG2RAD);
-				//sl2[1]=cos(eqfm1[eq].str2*DEG2RAD)*cos(eqfm1[eq].rake2*DEG2RAD)+sin(eqfm1[eq].str2*DEG2RAD)*sin(eqfm1[eq].rake2*DEG2RAD)*cos(eqfm1[eq].dip2*DEG2RAD);
-				//sl2[2]=sin(eqfm1[eq].str2*DEG2RAD)*cos(eqfm1[eq].rake2*DEG2RAD)-cos(eqfm1[eq].str2*DEG2RAD)*sin(eqfm1[eq].rake2*DEG2RAD)*cos(eqfm1[eq].dip2*DEG2RAD);
-				//sl2[3]=-sin(eqfm1[eq].rake2*DEG2RAD)*sin(eqfm1[eq].dip2*DEG2RAD);
-				//
-				//mtimesv(crst.S,n1,stress1,3,3);
-				//mtimesv(crst.S,n2,stress2,3,3);
-				//vdotv(stress1,n1,&sigma1,3);
-				//vdotv(stress2,n2,&sigma2,3);
-				//vdotv(stress1,sl1,&tau1,3);
-				//vdotv(stress2,sl2,&tau2,3);
-				//
-				//if (tau1+crst.fric*sigma1>tau2+crst.fric*sigma2){
-				//eqfm1[eq0].slip_str[1]=slip*cos(DEG2RAD*eqfm1[eq0].rake1);
-				//eqfm1[eq0].slip_dip[1]=slip*sin(DEG2RAD*eqfm1[eq0].rake1);
-				//eqfm1[eq0].whichfm=1;
-				//}
-				//else{
-				//	eqfm1[eq0].slip_str[1]=slip*cos(DEG2RAD*eqfm1[eq0].rake2);
-				//	eqfm1[eq0].slip_dip[1]=slip*sin(DEG2RAD*eqfm1[eq0].rake2);
-				//	eqfm1[eq0].whichfm=2;
-				//}
-				break;
+				case 11:
+					eqfm1[eq0].is_slipmodel=1;
+					eqfm1[eq0].np_st=1;
+					eqfm1[eq0].np_di=1;
+					eqfm1[eq0].slip_str=dvector(1,1);
+					eqfm1[eq0].slip_dip=dvector(1,1);
+					eqfm1[eq0].pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
+					eqfm1[eq0].pos_d=dvector(1,1);
+					eqfm1[eq0].pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
+					eqfm1[eq0].pos_d[1]=0;
+					eqfm1[eq0].str1=datas[9][eq];
+					eqfm1[eq0].dip1=datas[10][eq];
+					eqfm1[eq0].rake1=fmod(datas[11][eq]+360.0,360.0);
+					WellsCoppersmith(eqfm1[eq0].mag, eqfm1[eq0].rake1, &(eqfm1[eq0].L), &(eqfm1[eq0].W), &slip);
+					eqfm1[eq0].tot_slip=pow(10,(1.5*(eqfm1[eq0].mag+6)))*(1.0/(crst.mu*pow(10,12)*eqfm1[eq0].W*eqfm1[eq0].L));
+					eqfm1[eq0].whichfm=1;
+					eqfm1[eq0].slip_str[1]=slip*cos(DEG2RAD*eqfm1[eq0].rake1);
+					eqfm1[eq0].slip_dip[1]=slip*sin(DEG2RAD*eqfm1[eq0].rake1);
+					break;
 
-			case 11:
-				eqfm1[eq0].is_slipmodel=1;
-				eqfm1[eq0].np_st=1;
-				eqfm1[eq0].np_di=1;
-				eqfm1[eq0].slip_str=dvector(1,1);
-				eqfm1[eq0].slip_dip=dvector(1,1);
-				eqfm1[eq0].pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
-				eqfm1[eq0].pos_d=dvector(1,1);
-				eqfm1[eq0].pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
-				eqfm1[eq0].pos_d[1]=0;
-				eqfm1[eq0].str1=datas[9][eq];
-				eqfm1[eq0].dip1=datas[10][eq];
-				eqfm1[eq0].rake1=fmod(datas[11][eq]+360.0,360.0);
-				WellsCoppersmith(eqfm1[eq0].mag, eqfm1[eq0].rake1, &(eqfm1[eq0].L), &(eqfm1[eq0].W), &slip);
-				eqfm1[eq0].tot_slip=pow(10,(1.5*(eqfm1[eq0].mag+6)))*(1.0/(crst.mu*pow(10,12)*eqfm1[eq0].W*eqfm1[eq0].L));
-				eqfm1[eq0].whichfm=1;
-				eqfm1[eq0].slip_str[1]=slip*cos(DEG2RAD*eqfm1[eq0].rake1);
-				eqfm1[eq0].slip_dip[1]=slip*sin(DEG2RAD*eqfm1[eq0].rake1);
-				break;
+				case 8:
+					eqfm1[eq0].is_slipmodel=0;
+					eqfm1[eq0].np_st= eqfm1[eq0].np_di=0;
+					break;
 
-			case 8:
-				eqfm1[eq0].is_slipmodel=0;
-				eqfm1[eq0].np_st= eqfm1[eq0].np_di=0;
-				break;
-
-			default:
-				printf("*Wrong number of columns (%d) in input file: %s*\n", S, filename);
+				default:
+					printf("*Wrong number of columns (%d) in input file: %s*\n", S, filename);
+				}
 			}
-		}
 
-		else {
-			//this is only used to calculate rates in forecast function.
-			if (is_in_catalog==1){
-				eqfm1[Z0-1].is_slipmodel=0;
-				eqfm1[Z0-1].t=datas[2][eq];
-				eqfm1[Z0-1].lat=datas[3][eq];
-				eqfm1[Z0-1].lon=datas[4][eq];
-				eqfm1[Z0-1].depth=datas[5][eq];
-				eqfm1[Z0-1].mag=datas[6][eq];
-				eqfm1[Z0-1].noise=0;
-				eqfm1[Z0-1].index_cat= Z0;
-				eqfm1[Z0-1].selpoints=cat->ngridpoints[Z0];
-				eqfm1[Z0-1].nsel=cat->ngrid[Z0];
+			else {
+				//this is only used to calculate rates in forecast function.
+				if (is_in_catalog==1){
+					eqfm1[Z0-1].is_slipmodel=0;
+					eqfm1[Z0-1].t=datas[2][eq];
+					eqfm1[Z0-1].lat=datas[3][eq];
+					eqfm1[Z0-1].lon=datas[4][eq];
+					eqfm1[Z0-1].depth=datas[5][eq];
+					eqfm1[Z0-1].mag=datas[6][eq];
+					eqfm1[Z0-1].noise=0;
+					eqfm1[Z0-1].index_cat= Z0;
+					eqfm1[Z0-1].selpoints=cat->ngridpoints[Z0];
+					eqfm1[Z0-1].nsel=cat->ngrid[Z0];
+				}
 			}
 		}
 
@@ -256,7 +258,7 @@ int read_RS(char * filename, struct catalog *cat, struct crust crst, int N, doub
 	cat->tstart=cat->t[1];
 	cat->tend=tend;
 
-	*eqfm2=eqfm1;
+	if (eqfm2)*eqfm2=eqfm1;
 	free_dmatrix(datas, 1, S, 1, Zmax);
 	free_ivector(selpts, 0, Z1);
 	free_ivector(sel, 0, Z1);
