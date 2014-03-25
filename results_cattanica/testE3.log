@@ -1,0 +1,184 @@
+Tue Mar 25 12:36:14 UTC 2014
+!--------------------------!
+!------input file: --------!
+!--------------------------!
+OutputForecastFile=output_testcases/testE3
+Logfile=output_testcases/testE3.log
+InputModelParametersFile=input_testcases/testE/temp_par.txt
+IssueDate=2004-09-30T17:15:24Z
+ForecastStartDate=2004-09-30T17:15:24Z
+ForecastEndDate=2004-10-15T17:15:24Z
+InputCatalogFile=input_testcases/catalog5b.dat
+CmbFormat=pscmp
+InputCoulombFile=input_testcases/coulomb.inp
+InputListSlipModels=input_testcases/slipmodelslist.dat
+InputCatalogFocMecFile=input_testcases/focmecfile.dat
+ForecastTemplate=input_testcases/template.dat
+RandomSeedValue=-37284630
+ExtendedOutput=1;
+
+
+!--------------------------!
+!------param file: --------!
+!--------------------------!
+#======================================#
+#  		  Physical parameters		   #
+#======================================#
+# min no. of events for LL inversion.
+# fixr		r0
+# fixAsig	Asig0	Asig1	Asig2	nAsig	dAsig
+# fixta		ta0		ta1		ta2		nta		dta
+# fixCV		CV0		CV1		CV2		nCV			//obsolete! fixCV must be set to 1.
+ 100
+ 1	0.022
+ 0      6000   8000   10000   1       5000.0
+ 0      10000   7000  10000   1       1000.0
+#======================================#
+#  		  Time of inversion	 	   	   #
+#======================================#
+#tstartLL	start time LogLikelihood inv.
+#tw			time window after mainshock.
+#extra_time	time period before tstartLL for which sources should be included (only relevant if aftershocks==1,or large events are present). 
+2004-09-28T17:15:24Z
+0.0012
+0.0
+#======================================#
+#		  Time of forecast	 	   	   #
+#======================================#
+# dt			forecast time interval (not used in CSEP mode).
+0.1
+#======================================#
+#  		  	Flags etc.		   		   #
+#======================================#
+# No. iterations	No. of slip models used
+# flags: vary_slip	vary_afterslip	Hurst coefficient.
+# flag: vary_fm
+# flag: grid_error
+# flag: OOPs
+# flag: afterslip
+# aftershock_mode=       
+#                       0       use all events, isotropic field for all.
+#                       1       use all events, use available foc. mech. otherwise, use istropic field.
+#                       2       use all, but use available foc. mech. otherwise, use fixed mech. 
+#                       3       use all events, use available foc. mech. otherwise, use monte carlo sample of old foc mec.
+#                       4       use only events with foc mec. uses foc mec to create synthetic slip model.
+# flag: use_background_rate
+9	3
+1	0	0.8
+1
+1
+0
+0
+0	3.0	X	
+1
+#======================================#
+#  	Other model parameters etc.		   #
+#======================================#
+# Mc (if set to value >20, the program will estimate the catalog completeness magnitude)
+# Mmain
+# DCFS_cap
+# gridPmax (max no of gridpoints associated with event from catalog).
+# dt (time tolerance when comparing catalogs)
+# dM (mag tolerance when comparing catalogs)
+# rtoll (horiz. distance tolerance when comparing catalogs)
+# ztoll (horiz. distance tolerance when comparing catalogs)
+# extra_R
+# final fault resolution
+# min. horizontal grid resolution
+# min. vertical grid resolution
+# smoothing distance (for calculating background rate)
+# start time (for calculating background rate)
+2.0
+5.95
+1e6
+1000
+0.0005 	#about 1min (since seconds not reported in GMT catalog...)
+0.9
+50
+0
+0
+3000.0
+5000.0
+1000.0
+10.0
+1965-01-01T00:00:00Z
+#===========================================================#
+# Flag controlling if LL parameters should be inverted for.	#
+# Flag controlling if forecasted should be produced.		#
+#===========================================================#
+1
+1
+
+Running in CSEP mode...
+
+Entering read_crust...
+reading pscmp format (file input_testcases/coulomb.inp)
+Model domain: 
+ lat=[35.30, 36.45], 46 points; 
+ lon=[-120.91, -119.89], 41 points; 
+ dep=[0.00, 10.00], 2 points; 
+ Uniform grid found.
+ mag=[5.00, 5.00], 1 bins.
+Forecast resolution: dlat=2.78 km, dlon=2.25 km, ddep=5.00 km;
+Internal resolution: dlat=5000.00 km, dlon=5000.00 km, ddep=1000.00 km -> 46 x 41 x 2 = 3772 grid points.
+Real int.resolution: dlat=2.78 km, dlon=2.25 km, ddep=5.00 km.
+dDCFS (min value for which calculation is done) = 8.00e+01 Pa
+
+Slip input file: input_testcases/slipmodelslist.dat.
+2  slip models:
+	 time 	 mag 	 name
+	-2.00	6.00	/home/des/camcat/Data/slipmodels/Parkfield/srcmod/fsp/s2004PARKFI01CUST.fsp
+	-1.00	6.00	/home/des/camcat/Data/slipmodels/Parkfield/srcmod/fsp/s2004PARKFI01DREG.fsp
+
+Reading focal mechanisms from file input_testcases/focmecfile.dat (format: CSEP).
+Using both focal mechanisms.
+69 events selected as sample of focal planes, 0 selected as sources.
+Warning - one of the eqkfm structures is empty! (combine_eqkfm) 
+1 events with Mw>=5.950, z<=10.000 selected from eqkfm (eqk_filter).
+216 events used for catalog, 1 events used as sources, 1 of which mainshocks.
+**Error: not enough catalogs of focal mechanisms given! (1 given, at least 3 required)**
+
+119 events from catalog can be used for LL inversion - enough to perform inversion (Nmin=100).
+
+Will use 138 receiver focal mechanisms up to t=0.00 (ForecastStartDate)
+
+Building mainshock slip models (eqkfm_addslipmodels).
+Using slip model /home/des/camcat/Data/slipmodels/Parkfield/srcmod/fsp/s2004PARKFI01CUST.fsp from focal mechanism for large event at t=-2.00000e+00, mag=5.97
+slip model /home/des/camcat/Data/slipmodels/Parkfield/srcmod/fsp/s2004PARKFI01CUST.fsp is resampled to obtain square patches (setup.c).
+Slip model set to no. 1.
+Warning: some slip models are not used, since events were not found in catalog (or are outside time boundaries)! (function: eqkfm_addslipmodels)
+Inversion time period: [-2 -  0]days, starting with mainshock: t=-2.00, Mw=6.03, lat=35.82, lon=-120.37
+Calculating Okada solutions (189 patches, 3772 grid points)...
+Okada Coefficients structure set up.
+DCFS structure set up.
+
+Setting up time steps for calculations: 2 time steps between times [-2.00, 32.00].
+Setting up variables in CRSLogLikelihood...
+
+Setting up variables for calculating perturbed Coulomb fields.
+
+Using non uniform background rate.
+
+Calculating background rate using smoothed catalog.
+**Background seismicity rate calculated from catalog input_testcases/catalog5b.dat (1334 events between t=[-977.72300, -2.00000]).** 
+Values of background rate: 
+Mw>=2.00	 r=1.36719
+Mw>=2.00	 r=1.36719
+Slip model set to no. 1.
+Using slip models:
+	/home/des/camcat/Data/slipmodels/Parkfield/srcmod/fsp/s2004PARKFI01CUST.fsp
+
+Performing grid search...
+Asig 	 ta 	 r 	 LL 
+8000.00000 	 7000.00000 	 1.36719 	 -49.44536 	1
+8000.00000 	 10000.00000 	 1.36719 	 -852.82997 	1
+10000.00000 	 7000.00000 	 1.36719 	 52.83413 	1
+10000.00000 	 10000.00000 	 1.36719 	 464.97578 	1
+
+Calculating forecast...
+Using starting rates results from LL inversion: Calculation starting time 0.00. Forecast start time 0.00.
+Output files written: output_testcases/testE3_cmbmap, output_testcases/testE3_foremap, output_testcases/testE3_forecast, output_testcases/testE3_cmbmap_all, output_testcases/testE3_foremap_all, output_testcases/testE3_forecast_all, output_testcases/testE3_LLevents.
+
+Final Rate-and-State parameters:
+Slip model(s) no. 1:	->	Asig=10000.00000 	 ta=10000.00000 	 r=1.36719 
+Program completed successfully.
