@@ -1,0 +1,3 @@
+catalog.dat: normal catalog (Parkfield).
+catalog2.dat: first 200 events moved back by 100 days (to simlate case in which old event should to estimate parameters).
+catalog3.dat: first few lines deleted (to simulate case in which no past event can be found).

@@ -109,7 +109,7 @@ int main (int argc, char **argv){
 	int no_fm_cats;
 
 	struct tm reftime, times;
-	double tstartLL, tendLL, Tend, Tstart, delta_tLL, tw, t_oldsnap, tstart_calc, tendCat, time_min_focmec;
+	double tstartLL, tendLL, Tend, Tstart, tw, t_oldsnap, tstart_calc, tendCat, time_min_focmec;
 	double fore_dt;
 	double *tts;
 	int Ntts;
@@ -345,9 +345,8 @@ int main (int argc, char **argv){
 		else err+=readZMAP(&cat2, NULL, NULL, catname, crst, reftime, t_back, tstartLL, t_back, tstartLL, Mag_main, 0, 0, 0, dDCFS, 1);
 		if (cat2.Z!=0){
 			if (flog) fprintf(flog, "\nMainshocks found. Reloading catalog for new time period...\n");
-			delta_tLL=-tstartLL;//since tendLL=0, the length of the inversion period is -tstartLL:
 			tstartLL=cat2.t[cat2.Z];
-			tendLL=fmin(0.0, tstartLL+delta_tLL);
+			tendLL=fmin(0.0, tstartLL+200);
 			free_cat(cat);
 			free_eqkfmarray(eqkfm1, 0, Ntot-1);
 			err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1, NULL , NULL, flags, NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL-extra_time, tendCat, 30);
@@ -799,9 +798,9 @@ int main (int argc, char **argv){
 			fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig[mod],maxta[mod],maxr[mod],0.0,0.0, mod);
 		}
 
-		//------------------------------------------//
-	//											 Forecast													//
-		//------------------------------------------//
+	//------------------------------------------//
+	//			 	Forecast					//
+	//------------------------------------------//
 
 	if (forecast){
 

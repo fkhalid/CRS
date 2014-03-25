@@ -117,6 +117,8 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 			cat->lat0[Z0]=Lat;
 			cat->lon0[Z0]=Lon;
 			cat->depths0[Z0]=Depth;
+			cat->err[Z0]=SD;
+			cat->verr[Z0]=SDd;
 			*(cat->ngrid + Z0)=0;
 			inside =0;
 			if (Lat>=crst.latmin && Lat<=crst.latmax && Lon>=crst.lonmin && Lon<=crst.lonmax) inside=1;

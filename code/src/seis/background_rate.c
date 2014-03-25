@@ -57,6 +57,13 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime, dou
 		}
 	}
 
+	else{
+		if (flog) {
+			fprintf(flog,"**Background seismicity rate calculated from catalog %s (%d events between t=[%.5lf, %.5lf]).** \n", catfile, cat.Z, t0, t1);
+			fflush(flog);
+		}
+	}
+
 	//find rate by counting events of required magnitude; is too few (<10), use GR instead.
 
 	(*crst_in).r0=0.0;
@@ -123,7 +130,7 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	for (int i=1; i<=crst.nD; i++) zlist[i]=crst.depth[1+(i-1)*NP];
 
 	//todo remove first line.
-	if (countcol(catfile)==8) read_RS(catfile, &cat, crst, -2, t0, 0.0, 0.0, t1, 0.0, (struct eqkfm **) 0, 0, NULL, 0);
+	if (countcol(catfile)==8) read_RS(catfile, &cat, crst, -2, t0, 0.0, 0.0, t1, 0.0, NULL, 0, NULL, 0);
 	else readZMAP(&cat, (struct eqkfm **) 0, NULL, catfile, crst, reftime, t0, t1, t0, t1, 10, 0.0, dR, dZ, 0.0, 0);
 	if (cat.Z==0) return 1;
 
@@ -152,6 +159,13 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 					fflush(flog);
 				}
 			}
+		}
+	}
+
+	else{
+		if (flog) {
+			fprintf(flog,"**Background seismicity rate calculated from catalog %s (%d events between t=[%.5lf, %.5lf]).** \n", catfile, sel_no, cat.tstart, cat.tend);
+			fflush(flog);
 		}
 	}
 

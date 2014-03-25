@@ -282,11 +282,11 @@ int test_background_rate(){
 
 	sprintf(fname, "%s/Background_Darf_hr.dat", testfolder);
 	for (int i=1; i<=crst.N_allP; i++) crst.rate0[i]*=crst.r0;
-	print_rate(fname, crst, crst.rate0);
+	print_rate(fname, crst, 3.0, crst.rate0);
 
 	convert_geometry(crst, crst.rate0, &rates, 1, 0);
 	sprintf(fname, "%s/Background_Darf.dat", testfolder);
-	csep_forecast(fname, crst, rates);
+	csep_forecast(fname, crst, rates, 0);
 
 //	sprintf(fname, "%s/Helm_rate_Darf_3d_MC3.0.dat", testfolder);
 //	fout=fopen(fname,"w");
@@ -784,7 +784,7 @@ int test_forecast_stepG2_new(){
 	gamma0=dvector(1,NP);
 	for (int j=1; j<=NP; j++) gamma0[j]=Asig/ta;
 
-	for (int t=1; t<=n_samples; t++) forecast_stepG2_new(cat, times, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, Nend+t, Rend+t, NP, NTS, Neq, gamma0, NULL, 1);
+	//for (int t=1; t<=n_samples; t++) forecast_stepG2_new(cat, times, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, Nend+t, Rend+t, NP, NTS, Neq, gamma0, NULL, 1);
 
 	sprintf(fname, "%s/forecast_stepG2_new3/%s.readme", testfolder, name);
 	fout=fopen(fname,"w");

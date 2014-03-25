@@ -1,0 +1,4 @@
+3
+input_testcases/focmecfile1.dat
+input_testcases/focmecfile2.dat
+input_testcases/focmecfile3.dat
