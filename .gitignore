@@ -1,0 +1,7 @@
+*.o
+*.d
+*~
+Debug/CRS_3.0
+Release/CRS_3.0
+gmon.out
+output_testcases*

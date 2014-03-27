@@ -36,7 +36,7 @@ all: CRS_3.0
 CRS_3.0: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -lm -lgomp -pg -o"CRS_3.0" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -pg -o"CRS_3.0" $(OBJS) $(USER_OBJS) $(LIBS) -lm -lgomp
 	@echo 'Finished building target: $@'
 	@echo ' '
 

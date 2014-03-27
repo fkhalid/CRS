@@ -1,5 +1,5 @@
-OutputForecastFile=output/medium
-Logfile=output/medium.log
+OutputForecastFile=output/medium1
+Logfile=output/medium1.log
 InputModelParametersFile=input/parameter_files/toho_no.txt
 IssueDate=2011-11-16T14:46:18Z
 ForecastStartDate=2011-03-11T14:46:18Z
