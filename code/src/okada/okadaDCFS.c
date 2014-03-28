@@ -7,6 +7,8 @@
 
 #include "okadaDCFS.h"
 
+#include "mpi.h"
+
 //todo make all these functions return error code.
 //todo check if there are memory leaks.
 
@@ -15,31 +17,40 @@
 //---------------------------------------------------------------------//
 
 int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double *dipRs, double *rake, int optrake){
-//To be called after filling in DCFS.S. (with functions below).
-//todo make vectors static to avoid repeated memory allocations?
-double *sigma0s;
-double **stress0s;
-double **n, **s;
-double MaxDCFS=DCFS_cap;
-int Nsel=DCFS.nsel;
-int fm;
-double strikeR, dipR;
-int no_fm_zones=crst.nofmzones;
+	//To be called after filling in DCFS.S. (with functions below).
+	//todo make vectors static to avoid repeated memory allocations?
 
-n=malloc((no_fm_zones)*sizeof(double *));
-s=malloc((no_fm_zones)*sizeof(double *));
-stress0s=malloc((no_fm_zones)*sizeof(double *));
-sigma0s=dvector(0,no_fm_zones-1);
+	// [Fahad] Variables used for MPI
+	int procId = 0;
 
-	for (int i=0; i<no_fm_zones; i++){
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
+	double *sigma0s;
+	double **stress0s;
+	double **n, **s;
+	double MaxDCFS=DCFS_cap;
+	int Nsel=DCFS.nsel;
+	int fm;
+	double strikeR, dipR;
+	int no_fm_zones=crst.nofmzones;
+
+	n=malloc((no_fm_zones)*sizeof(double *));
+	s=malloc((no_fm_zones)*sizeof(double *));
+	stress0s=malloc((no_fm_zones)*sizeof(double *));
+	sigma0s=dvector(0,no_fm_zones-1);
+
+	for (int i=0; i<no_fm_zones; i++) {
 		strikeR=strikeRs[i];
 		dipR=dipRs[i];
 		n[i]=normal_vector(strikeR, dipR);
 
 		if (!optrake){
 			if (!rake) {
-				if (verbose_level>1) printf("** Warning: optrake=0, but rake is NULL: will use optimal rake (resolve_DCFS).**\n");
+				if(procId == 0) {
+					if (verbose_level>1) printf("** Warning: optrake=0, but rake is NULL: will use optimal rake (resolve_DCFS).**\n");
+				}
 				optrake=1;
 			}
 			s[i]=slip_vector(strikeR, dipR, *rake);
@@ -74,6 +85,13 @@ sigma0s=dvector(0,no_fm_zones-1);
 
 int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst, double *strikeR, double *dipR, int full_tensor){
 
+	// [Fahad] Variables used for MPI
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
 	double north, east, eqnorth, eqeast;
 	double len, width, depth; //for individual patches.
 	double strike, dip, rake;
@@ -84,8 +102,10 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
 
 	if (DCFS.nsel!=(*eqkfm1).nsel){
-		if (verbose_level>1) printf("**Warning: DCFS.nsel!=eqkfm.nsel in okadaDCFSc.**\n");
-		if (flog) fprintf(flog,"**Error: DCFS.nsel!=eqkfm.nsel in okadaDCFSc. Will choose the one with more points selected.**\n");
+		if(procId == 0) {
+			if (verbose_level>1) printf("**Warning: DCFS.nsel!=eqkfm.nsel in okadaDCFSc.**\n");
+			if (flog) fprintf(flog,"**Error: DCFS.nsel!=eqkfm.nsel in okadaDCFSc. Will choose the one with more points selected.**\n");
+		}
 		DCFS.which_pts=(*eqkfm1).selpoints= (DCFS.nsel>(*eqkfm1).nsel) ? DCFS.which_pts : (*eqkfm1).selpoints;
 		DCFS.nsel=(*eqkfm1).nsel=fmax(DCFS.nsel,(*eqkfm1).nsel);
 	}
@@ -113,12 +133,14 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 		width=eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
 
 		if ((err=choose_focmec(eqkfm1[j], &strike, &dip, &rake))!=0){
-			if (verbose_level>0) printf("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
+			if(procId == 0) {
+				if (verbose_level>0) printf("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
+			}
+
 			return(1);
 		}
 
-		for (int p=1; p<=eqkfm1[j].np_di*eqkfm1[j].np_st; p++){
-
+		for (int p=1; p<=eqkfm1[j].np_di*eqkfm1[j].np_st; p++) {
 			// calculate patch position:
 			patch_pos(eqkfm1[j], p, &eqeast, &eqnorth, &depth);
 
@@ -128,7 +150,9 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 				i2=DCFS.which_pts[i];
 				north=crst.y[i2];
 				east=crst.x[i2];
-				pscokada(eqnorth, eqeast, depth,  strike,  dip, len, width,  eqkfm1[j].slip_str[p],  -1.0*eqkfm1[j].slip_dip[p], north, east, crst.depth[i2], &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+				pscokada(eqnorth, eqeast, depth, strike, dip, len, width, eqkfm1[j].slip_str[p],
+						 -1.0*eqkfm1[j].slip_dip[p], north, east, crst.depth[i2], &Sxx, &Syy,
+						 &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 				DCFS.S[i][1][1]+=1e6*Sxx;
 				DCFS.S[i][2][2]+=1e6*Syy;
 				DCFS.S[i][3][3]+=1e6*Szz;
@@ -139,7 +163,7 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 		}
 	}
 
-	for (int i=1; i<=Nsel; i++){
+	for (int i=1; i<=Nsel; i++) {
 		DCFS.S[i][2][1]=DCFS.S[i][1][2];
 		DCFS.S[i][3][2]=DCFS.S[i][2][3];
 		DCFS.S[i][3][1]=DCFS.S[i][1][3];
@@ -156,6 +180,12 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 
 int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths){
 	//lats, lons, depths contain complete list of grid points. Only the ones with indices eqkfm1.selpoints will be used.
+
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	double north, east, eqnorth, eqeast;
 	double len, width, depth; //for individual patches.
@@ -189,8 +219,11 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
 	//-----------------------------------------------------------------------------------------//
 
-	if (verbose_level) printf("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
-	if (flog) fprintf(flog, "Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
+	if(procId == 0) {
+		if (verbose_level) printf("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
+		if (flog) fprintf(flog, "Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
+	}
+
 	p1=0;	//count total number of patches (in all faults);
 	for (int j=0; j<NF; j++){
 		pure_thrustnorm=pure_strslip=0;
@@ -199,7 +232,10 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 //		if (fmod(eqkfm1[j].rake1,180.0)!=0) pure_strslip=0;
 
 		if ((err=choose_focmec(eqkfm1[j], &strike, &dip, &rake))!=0){
-			if (verbose_level>0) printf("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
+			if(procId == 0) {
+				if (verbose_level>0) printf("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
+			}
+
 			return(1);
 		}
 

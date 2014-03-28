@@ -12,7 +12,7 @@
 
 // ----- [Fahad] Added for MPI -----
 #define _CRS_MPI						// FIXME: Should be set depending on whether of not mpicc is used ...
-#define BCAST_FLAGS_SIZE 13				// No. of scalar variables in 'struct flags'
+#define BCAST_FLAGS_SIZE 14				// No. of scalar variables in 'struct flags'
 #define SIZE_BCAST_MODEL_PARAMETERS 38	// No. of scalar variables in 'struct BCast_Model_Parameters'
 // ---------------------------------
 
