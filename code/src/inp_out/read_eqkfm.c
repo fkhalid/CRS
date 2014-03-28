@@ -10,6 +10,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include "mpi.h"
 
 #include "../defines.h"
 #include "../general/eqkfm_copy.h"
@@ -21,13 +22,21 @@
 #include "../util/nrutil.h"
 #include "read_eqkfm_fsp.h"
 
-int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb, int **which_events, int N1, int *Ncomb, int **nfout,
-		double dt, double dmag, double res, struct crust crst, int refine, int taper){
+int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb,
+						int **which_events, int N1, int *Ncomb, int **nfout,
+						double dt, double dmag, double res, struct crust crst,
+						int refine, int taper) {
 /* assumes that eqfm1 only has single fault events, but slip models may have more...
  * does not do spatial selection (unlike combine_eqkfm).
  * return combined catalog, rather than list of indices mapping one catalog to the other.
  * return error code (1 if not all events from second catalog are selected).
  */
+	// [Fahad] Variables used for MPI
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	int *which_slipmod;
 	int N2, N3=0, c_evfound=0;
@@ -38,7 +47,9 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	static struct set_of_models dummy_parentsetofmodels;
 	dummy_parentsetofmodels.Nmod=0;	//this value indicates than no slip model is available (will use synthetic slip model from foc. mec. or isotropic field).
 
-	if (flog) fprintf(flog, "\nBuilding mainshock slip models (eqkfm_addslipmodels).\n");
+	if(procId == 0) {
+		if (flog) fprintf(flog, "\nBuilding mainshock slip models (eqkfm_addslipmodels).\n");
+	}
 
 	N2=all_slipmodels.NSM;
 	nf2=all_slipmodels.Nfaults;
@@ -69,57 +80,73 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	}
 
 	if (err){
-		if (verbose_level) printf("Error in reading input files. Exiting.\n");
-		if (flog) fprintf(flog, "Error in reading input files. Exiting.\n");
+		if(procId == 0) {
+			if (verbose_level) printf("Error in reading input files. Exiting.\n");
+			if (flog) fprintf(flog, "Error in reading input files. Exiting.\n");
+		}
+
 		return 1;
 	}
 
 	//todo make sure mmain is already assigned here!! (NB: all this may not be needed if clear association b/w cat and foc mec is given).
-	which_slipmod=combine_cats(all_slipmodels.tmain, timesfromeqkfm(eqfm1, N1, (int *) 0), all_slipmodels.mmain, magssfromeqkfm(eqfm1, N1, (int *) 0 ), all_slipmodels.NSM, N1, dt, dmag);
+	which_slipmod = combine_cats(all_slipmodels.tmain, timesfromeqkfm(eqfm1, N1, (int *) 0),
+								 all_slipmodels.mmain, magssfromeqkfm(eqfm1, N1, (int *) 0 ),
+								 all_slipmodels.NSM, N1, dt, dmag);
 
 	for (int i=0; i<N1; i++){
 		N3= (which_slipmod[i]==-1)? N3+1 : N3+ nf2[which_slipmod[i]];
 	}
 
 	*eqfm_comb=eqkfm_array(0,N3-1);
-	if (which_events!=NULL) *which_events=ivector(0,N3-1);
+	if (which_events!=NULL) {
+		*which_events=ivector(0,N3-1);
+	}
 	if (nfout) *nfout=ivector(0,N1-1);
 
-	for (int i=0; i<N1; i++) {
-		if (eqfm1[i].is_mainshock){
+	for(int i=0; i<N1; i++) {
+		if(eqfm1[i].is_mainshock) {
 			eqfm1[i].nsel=0;	//deactivate it as source aftershock;
 			(*eqfm_comb)[c3].nsel=crst.N_allP;
-			if (which_slipmod[i]==-1) {
+
+			if(which_slipmod[i]==-1) {
 				copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
 				if (which_events!=NULL) (*which_events)[c3]=i;
 				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 				if (!eqfm1[i].is_slipmodel){
-					if (verbose_level>0) printf(" ** Warning: slip model or focal mechanism not available for large event at t=%.5e, mag=%.2lf -> will use isotropic field. **\n", eqfm1[i].t, eqfm1[i].mag);
-					if (flog) fprintf(flog, "Warning: slip model or focal mechanism not available for large event at t=%.5e, mag=%.2lf -> will use isotropic field.\n", eqfm1[i].t, eqfm1[i].mag);
+					if(procId == 0) {
+						if (verbose_level>0) printf(" ** Warning: slip model or focal mechanism not available for large event at t=%.2lf, mag=%.2lf -> will use isotropic field. **\n", eqfm1[i].t, eqfm1[i].mag);
+						if (flog) fprintf(flog, "Warning: slip model or focal mechanism not available for large event at t=%.2lf, mag=%.2lf -> will use isotropic field.\n", eqfm1[i].t, eqfm1[i].mag);
+					}
 				}
 				else {
-					err=focmec2slipmodel(crst, (*eqfm_comb)+c3, res, refine, taper);
-					if (err && verbose_level>0) printf("Error in creating slip model (function: eqkfm_addslipmodels)\n");
-					else{
-						if (verbose_level>0) printf("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
-						if (flog) fprintf(flog, "Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, refine, taper);
+					if(procId == 0) {
+						if (err && verbose_level>0) printf("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+						else {
+							if (verbose_level>0) printf("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+							if (flog) fprintf(flog, "Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+						}
 					}
 				}
 				(*nfout)[*Ncomb]=1;
 				c3+=1;
 				*Ncomb+=1;
-				}
-
-			else{
+			}
+			else {
 				j=which_slipmod[i];
 				nsm=0;
 				for (int n=0; n<j; n++) nsm+=all_slipmodels.no_slipmodels[n];
 				c2=0;
-				if (verbose_level>0) printf("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
-				if (flog) fprintf(flog, "Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
-				err+=setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm,
-						all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j], all_slipmodels.tmain[j],
-						d_close, crst.N_allP, crst.list_allP, all_slipmodels.mmain+j, 1, 1, NULL, crst.lat0, crst.lon0);
+				if(procId == 0) {
+					if (verbose_level>0) printf("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
+					if (flog) fprintf(flog, "Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
+				}
+
+				err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm,
+										   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
+										   all_slipmodels.tmain[j], d_close, crst.N_allP, crst.list_allP,
+										   all_slipmodels.mmain+j, 1, 1, NULL, crst.lat0, crst.lon0);
+
 				if (which_events!=NULL) (*which_events)[c3]=i;
 				if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
 				for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) (*eqfm_comb)[c3].distance=eqfm1[i].distance;
@@ -131,12 +158,13 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	}
 
 	if (c_evfound<N2){
-		if (verbose_level>0) printf("** Warning: some slip models are not used, since events were not found in catalog (or are outside time boundaries)! (function: eqkfm_addslipmodels)\n");
-		if (flog) fprintf(flog, "Warning: some slip models are not used, since events were not found in catalog (or are outside time boundaries)! (function: eqkfm_addslipmodels)\n");
+		if(procId == 0) {
+			if (verbose_level>0) printf("** Warning: some slip models are not used, since events were not found in catalog (or are outside time boundaries)! (function: eqkfm_addslipmodels)\n");
+			if (flog) fprintf(flog, "Warning: some slip models are not used, since events were not found in catalog (or are outside time boundaries)! (function: eqkfm_addslipmodels)\n");
+		}
 	}
 
 	return (err);
-
 }
 
 int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int refine, int taper){
@@ -210,7 +238,13 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 
 //--------------------------read slip model files----------------------//
 
-int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, double mu){
+int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, double mu) {
+	// [Fahad] Variables used for MPI.
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	int NF, NP, err=0;
 	double slip, dip_slip=0.0, strike_slip=0.0, M0=0.0;
@@ -221,15 +255,20 @@ int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, doubl
 		else{
 			if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(fname, eqfm1, &NF);
 			else {
-				if (flog) fprintf(flog,"Unknown slip model format %s (read_eqkfm).\n", cmb_format);
-				if (verbose_level>0) printf(" ** Error: could not read slip model file %s (read_slipmodel). ** \n ", fname);
+				if(procId == 0) {
+					if (flog) fprintf(flog,"Unknown slip model format %s (read_eqkfm).\n", cmb_format);
+					if (verbose_level>0) printf(" ** Error: could not read slip model file %s (read_slipmodel). ** \n ", fname);
+				}
 				err=1;
 			}
 		}
 	}
 
 	if (err==1){
-		if (verbose_level>0) printf(" ** Error: could not read slip model file %s (read_slipmodel). ** \n ", fname);
+		if(procId == 0) {
+			if (verbose_level>0) printf(" ** Error: could not read slip model file %s (read_slipmodel). ** \n ", fname);
+		}
+
 		return (1);
 	}
 
@@ -257,8 +296,10 @@ int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, doubl
 	}
 	if (Mw) {
 		if (!eqfm1){
-			if (verbose_level) printf("*Warning: can not calculate Mw since eqfm1==NULL (read_eqkfm).*\n");
-			if (flog) printf("Warning: can not calculate Mw since eqfm1==NULL (read_eqkfm).\n");
+			if(procId == 0) {
+				if (verbose_level) printf("*Warning: can not calculate Mw since eqfm1==NULL (read_eqkfm).*\n");
+				if (flog) printf("Warning: can not calculate Mw since eqfm1==NULL (read_eqkfm).\n");
+			}
 		}
 		else *Mw=(2.0/3.0)*log10(M0)-6.0;
 	}
@@ -266,7 +307,14 @@ int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, doubl
 	return (0);
 }
 
-int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out){
+int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
+	// [Fahad] Variables used for MPI.
+	int fileError = 0;
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	FILE *fin;
 	struct eqkfm *eqfm;
@@ -277,36 +325,71 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out){
 	double plength, pwidth;
 	long file_pos;
 
-	fin=fopen(fname,"r");
-	if (fin==NULL){
-		if (verbose_level>0) printf("Invalid input file (%s).\n", fname);
-		if (flog) fprintf(flog,"Invalid input file passed to read_farfalle_eqkfm (%s).\n", fname);
-		return (1);
+	if(procId == 0) {
+		fin = fopen(fname,"r");
+		if(fin == NULL) {
+			fileError = 1;
+		}
 	}
 
+	#ifdef _CRS_MPI
+		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if(fileError) {
+		if(procId == 0) {
+			if (verbose_level>0) printf("Invalid input file (%s).\n", fname);
+			if (flog) fprintf(flog,"Invalid input file passed to read_farfalle_eqkfm (%s).\n", fname);
+		}
+
+		return (1);
+	}
 	else {
-		fgets(line,nchar,fin);
-		fgets(line,nchar,fin);
-		sscanf(line,"%d",&NF);
-			if (eqfm_out){
+		if(procId == 0) {
+			fgets(line,nchar,fin);
+			fgets(line,nchar,fin);
+			sscanf(line,"%d",&NF);
+		}
+
+		#ifdef _CRS_MPI
+			MPI_Bcast(&NF, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		#endif
+
+			if (eqfm_out) {
 			eqfm=eqkfm_array(0,NF-1);
 			for (int f=0; f<NF; f++){
-				fgets(line,nchar,fin);
-				fgets(line,nchar,fin);
-				sscanf(line,"%lf %lf %lf",&(eqfm[f].lat), &(eqfm[f].lon), &(eqfm[f].depth));
-				fgets(line,nchar,fin);
-				fgets(line,nchar,fin);
+				if(procId == 0) {
+					fgets(line,nchar,fin);
+					fgets(line,nchar,fin);
+					sscanf(line,"%lf %lf %lf",&(eqfm[f].lat), &(eqfm[f].lon), &(eqfm[f].depth));
+					fgets(line,nchar,fin);
+					fgets(line,nchar,fin);
+	//				eqfm[f].whichfm=1;	// [Fahad] Move it after the following statements for MPI
+					sscanf(line,"%lf %lf",&(eqfm[f].str1), &(eqfm[f].dip1));
+					fgets(line,nchar,fin);
+					fgets(line,nchar,fin);
+					sscanf(line,"%lf %lf",&(eqfm[f].L), &plength);
+					fgets(line,nchar,fin);
+					fgets(line,nchar,fin);
+					sscanf(line,"%lf %lf",&(eqfm[f].W), &pwidth);
+					fgets(line,nchar,fin);
+					fgets(line,nchar,fin);
+					sscanf(line,"%d %d",&(eqfm[f].np_st), &(eqfm[f].np_di));
+				}
 				eqfm[f].whichfm=1;
-				sscanf(line,"%lf %lf",&(eqfm[f].str1), &(eqfm[f].dip1));
-				fgets(line,nchar,fin);
-				fgets(line,nchar,fin);
-				sscanf(line,"%lf %lf",&(eqfm[f].L), &plength);
-				fgets(line,nchar,fin);
-				fgets(line,nchar,fin);
-				sscanf(line,"%lf %lf",&(eqfm[f].W), &pwidth);
-				fgets(line,nchar,fin);
-				fgets(line,nchar,fin);
-				sscanf(line,"%d %d",&(eqfm[f].np_st), &(eqfm[f].np_di));
+			#ifdef _CRS_MPI
+				MPI_Bcast(&(eqfm[f].lat), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm[f].lon), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm[f].depth), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm[f].str1), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm[f].dip1), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm[f].L), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&plength, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm[f].W), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&pwidth, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm[f].np_st), 1, MPI_INT, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm[f].np_di), 1, MPI_INT, 0, MPI_COMM_WORLD);
+			#endif
 				NP=eqfm[f].np_st*eqfm[f].np_di;
 				eqfm[f].pos_s=dvector(1,NP);
 				eqfm[f].pos_d=dvector(1,NP);
@@ -320,13 +403,17 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out){
 					slips=dvector(1,NP);
 					rakes=dvector(1,NP);
 				}
-				fgets(line,nchar,fin);
-				file_pos=ftell(fin);
+				if(procId == 0) {
+					fgets(line,nchar,fin);
+					file_pos=ftell(fin);
+				}
 				dlen=eqfm[f].L/eqfm[f].np_st;
 				dwid=eqfm[f].W/eqfm[f].np_di;
 				for (int w=1; w<=eqfm[f].np_di; w++){
 					for (int l=1; l<=eqfm[f].np_st; l++){
-						fscanf(fin, "%lf", slips+(w-1)*eqfm[f].np_st+l);
+						if(procId == 0) {
+							fscanf(fin, "%lf", slips+(w-1)*eqfm[f].np_st+l);
+						}
 											//if points refer to center of the faut:
 					//eqfm[f].pos_s[(w-1)*eqfm[f].np_st+l]=-0.5*eqfm[f].L+(l-0.5)*dlen;
 					//eqfm[f].pos_d[(w-1)*eqfm[f].np_st+l]=-0.5*eqfm[f].W+(w-0.5)*dwid;
@@ -344,19 +431,30 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out){
 					eqfm[f].pos_d[(w-1)*eqfm[f].np_st+l]=(w-0.5)*dwid-pwidth;
 					}
 				}
-				fseek(fin,file_pos, SEEK_SET);		//since fscanf sometimes reads until next line, sometimes not (depending on small differences in the file, e.g. spaces).
-				for (int w=1; w<=eqfm[f].np_di; w++) fgets(line,nchar,fin);
-				fgets(line,nchar,fin);
-				for (int w=1; w<=eqfm[f].np_di; w++) fgets(line,nchar,fin);
-				fgets(line,nchar,fin);
-				file_pos=ftell(fin);
-				for (int w=1; w<=eqfm[f].np_di; w++){
-					for (int l=1; l<=eqfm[f].np_st; l++){
-						fscanf(fin, "%lf", rakes+(w-1)*eqfm[f].np_st+l);
+
+				#ifdef _CRS_MPI
+					MPI_Bcast(slips, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				#endif
+
+				if(procId == 0) {
+					fseek(fin,file_pos, SEEK_SET);		//since fscanf sometimes reads until next line, sometimes not (depending on small differences in the file, e.g. spaces).
+					for (int w=1; w<=eqfm[f].np_di; w++) fgets(line,nchar,fin);
+					fgets(line,nchar,fin);
+					for (int w=1; w<=eqfm[f].np_di; w++) fgets(line,nchar,fin);
+					fgets(line,nchar,fin);
+					file_pos=ftell(fin);
+					for (int w=1; w<=eqfm[f].np_di; w++){
+						for (int l=1; l<=eqfm[f].np_st; l++){
+							fscanf(fin, "%lf", rakes+(w-1)*eqfm[f].np_st+l);
+						}
 					}
+					fseek(fin,file_pos, SEEK_SET);		//since fscanf sometimes reads until next line, sometimes not (depending on small differences in the file, e.g. spaces).
+					for (int w=1; w<=eqfm[f].np_di; w++) fgets(line,nchar,fin);
 				}
-				fseek(fin,file_pos, SEEK_SET);		//since fscanf sometimes reads until next line, sometimes not (depending on small differences in the file, e.g. spaces).
-				for (int w=1; w<=eqfm[f].np_di; w++) fgets(line,nchar,fin);
+
+				#ifdef _CRS_MPI
+					MPI_Bcast(rakes, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				#endif
 
 				for (int p=1; p<=NP; p++) {
 					eqfm[f].slip_str[p]=slips[p]*cos(DEG2RAD*rakes[p]);
@@ -368,11 +466,20 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out){
 		}
 		*NF_out=NF;
 	}
+
 	return(0);
 }
 
 int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 //mu in same units as in crst.
+
+	// [Fahad] Variables used for MPI.
+	int fileError = 0;
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	FILE *fin;
 	int dumerror;
@@ -384,27 +491,68 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 	char comm[]="#";
 	char line[nchar];
 
-	fin = fopen(fname, "r");
-	if (fin==NULL){
-		if (verbose_level>0) printf("Invalid input file (%s).\n", fname);
-		if (flog) fprintf(flog,"Invalid input file passed to read_pscmp_eqkfm (%s).\n", fname);
+	if(procId == 0) {
+		fin = fopen(fname,"r");
+		if(fin == NULL) {
+			fileError = 1;
+		}
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if(fileError) {
+		if(procId == 0) {
+			if (verbose_level>0) printf("Invalid input file (%s).\n", fname);
+			if (flog) fprintf(flog,"Invalid input file passed to read_pscmp_eqkfm (%s).\n", fname);
+		}
+
 		return (1);
 	}
 
 	line[0]=comm[0];
-	while (line[0]==comm[0])fgets(line, nchar, fin);
-	for (int i=1; i<=3; i++){
-		while (line[0]!=comm[0])fgets(line, nchar, fin);
+	if(procId == 0) {
 		while (line[0]==comm[0])fgets(line, nchar, fin);
+		for (int i=1; i<=3; i++){
+			while (line[0]!=comm[0])fgets(line, nchar, fin);
+			while (line[0]==comm[0])fgets(line, nchar, fin);
+		}
+		sscanf(line, "%d", &NF);
 	}
-	sscanf(line, "%d", &NF);
-	if (eqfm_out){
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&NF, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if (eqfm_out) {
 		eqfm1=eqkfm_array(0,NF-1);
 		line[0]=comm[0];
-		while (line[0]==comm[0])fgets(line, nchar, fin);
+		if(procId == 0) {
+			while (line[0]==comm[0])fgets(line, nchar, fin);
+		}
 		for (int f=0; f<NF; f++){
-			sscanf(line, "%d   %lf   %lf   %lf   %lf   %lf   %lf   %lf   %d   %d   %lf", &djunk, &(eqfm1[f].lat), &(eqfm1[f].lon), &(eqfm1[f].depth), &(eqfm1[f].L), &(eqfm1[f].W), &(eqfm1[f].str1), &(eqfm1[f].dip1), &(eqfm1[f].np_st), &(eqfm1[f].np_di), &(eqfm1[f].t));
-			fgets(line, nchar, fin);
+			if(procId == 0) {
+				sscanf(line, "%d   %lf   %lf   %lf   %lf   %lf   %lf   %lf   %d   %d   %lf",
+						&djunk, &(eqfm1[f].lat), &(eqfm1[f].lon), &(eqfm1[f].depth), &(eqfm1[f].L),
+						&(eqfm1[f].W), &(eqfm1[f].str1), &(eqfm1[f].dip1), &(eqfm1[f].np_st),
+						&(eqfm1[f].np_di), &(eqfm1[f].t));
+				fgets(line, nchar, fin);
+			}
+
+			#ifdef _CRS_MPI
+				MPI_Bcast(&(eqfm1[f].lat), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm1[f].lon), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm1[f].depth), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm1[f].L), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm1[f].W), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm1[f].str1), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm1[f].dip1), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm1[f].np_st), 1, MPI_INT, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm1[f].np_di), 1, MPI_INT, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&(eqfm1[f].t), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			#endif
+
 			eqfm1[f].str2=eqfm1[f].str1; eqfm1[f].dip2=eqfm1[f].dip1;	//in this case there is no ambiguity (correct plane is known).
 			eqfm1[f].whichfm=1;
 			NP=eqfm1[f].np_st*eqfm1[f].np_di;
@@ -412,13 +560,28 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 			eqfm1[f].pos_d=dvector(1,NP);
 			eqfm1[f].slip_str=dvector(1,NP);
 			eqfm1[f].slip_dip=dvector(1,NP);
-			for (int p=1; p<=NP; p++) {
-				sscanf(line, "%lf   %lf    %lf   %lf   %lf", &(eqfm1[f].pos_s[p]), &(eqfm1[f].pos_d[p]), &(eqfm1[f].slip_str[p]), &(eqfm1[f].slip_dip[p]), &junk);
-				if (!feof(fin)) fgets(line, nchar, fin);
+			if(procId == 0) {
+				for (int p=1; p<=NP; p++) {
+						sscanf(line, "%lf   %lf    %lf   %lf   %lf",
+								&(eqfm1[f].pos_s[p]), &(eqfm1[f].pos_d[p]),
+								&(eqfm1[f].slip_str[p]), &(eqfm1[f].slip_dip[p]),
+								&junk);
+						if (!feof(fin)) fgets(line, nchar, fin);
+				}
 			}
+
+			#ifdef _CRS_MPI
+				MPI_Bcast(eqfm1[f].pos_s, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(eqfm1[f].pos_d, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(eqfm1[f].slip_str, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(eqfm1[f].slip_dip, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			#endif
 		}
 	}
-	fclose(fin);
+
+	if(procId == 0) {
+		fclose(fin);
+	}
 
 	if (NF2!= NULL) *NF2=NF;
 	if (eqfm_out) *eqfm_out=eqfm1;

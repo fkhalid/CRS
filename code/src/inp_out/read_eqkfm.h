@@ -21,8 +21,11 @@
 #include "../util/files.h"
 #include "../util/nrutil.h"
 
-int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb, int **which_events, int N1, int *Ncomb, int **nfout,
-		double dt, double dmag, double res, struct crust crst, int refine, int taper);
+int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels,
+						struct eqkfm **eqfm_comb, int **which_events, int N1,
+						int *Ncomb, int **nfout, double dt, double dmag, double res,
+						struct crust crst, int refine, int taper);
+
 int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int refine, int taper);
 int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, double mu);
 int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out);
