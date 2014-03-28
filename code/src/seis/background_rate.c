@@ -7,11 +7,22 @@
 
 #include "background_rate.h"
 
-int background_rate(char *catfile, struct crust *crst_in, struct tm reftime, double Mcut, double Mmain,  double t0, double t1, double dR, double dZ, int ord){
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
+
+int background_rate(char *catfile, struct crust *crst_in, struct tm reftime, double Mcut,
+					double Mmain,  double t0, double t1, double dR, double dZ, int ord) {
 	/* by convention, if Mcut>=20 the cutoff magnitude will be calculated based on completeness.
 	 * ord=1,2 indicatest if closest or second closest event should be used for smoothing distance.
 	 * does not decluster catalog.
 	 */
+
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	struct catalog cat;
 	struct crust crst=*crst_in;
@@ -37,30 +48,35 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime, dou
 	}
 	T=cat.tend-cat.tstart;
 
-	if (cat.Z<=100){
+	if (cat.Z<=100) {
 		if (cat.Z<=1 || T<1.0)	{
-			if (verbose_level) printf("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
-			if (flog) {
-				fprintf(flog,"**Warning: to few events, or too short a valid time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
-				fflush(flog);
+			if(procId == 0) {
+				if (verbose_level) printf("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+				if (flog) {
+					fprintf(flog,"**Warning: to few events, or too short a valid time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+					fflush(flog);
+				}
 			}
 			return 1;
 		}
-		else{
-			if (verbose_level || flog){
-				if (verbose_level) printf("**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
-				if (flog) {
-					fprintf(flog,"**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
-					fflush(flog);
+		else {
+			if(procId == 0) {
+				if (verbose_level || flog) {
+					if (verbose_level) printf("**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
+					if (flog) {
+						fprintf(flog,"**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
+						fflush(flog);
+					}
 				}
 			}
 		}
 	}
-
-	else{
-		if (flog) {
-			fprintf(flog,"**Background seismicity rate calculated from catalog %s (%d events between t=[%.5lf, %.5lf]).** \n", catfile, cat.Z, t0, t1);
-			fflush(flog);
+	else {
+		if(procId == 0) {
+			if (flog) {
+				fprintf(flog,"**Background seismicity rate calculated from catalog %s (%d events between t=[%.5lf, %.5lf]).** \n", catfile, cat.Z, t0, t1);
+				fflush(flog);
+			}
 		}
 	}
 
@@ -116,6 +132,12 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	 * declusters catalog using KG window method, and scales remaining events to compensate for removing background seismicity.
 	 */
 
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
 	struct catalog cat;
 	struct crust crst=*crst_in;
 	double *zlist;
@@ -144,28 +166,33 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	T=cat.tend-cat.tstart;
 	if (sel_no<=100){
 		if (sel_no<=1 || T<1.0)	{
-			if (verbose_level) printf("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
-			if (flog) {
-				fprintf(flog,"**Warning: to few events, or too short a valid time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
-				fflush(flog);
+			if(procId == 0) {
+				if (verbose_level) printf("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+				if (flog) {
+					fprintf(flog,"**Warning: to few events, or too short a valid time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+					fflush(flog);
+				}
 			}
 			return 1;
 		}
 		else{
-			if (verbose_level || flog){
-				if (verbose_level) printf("**Warning: only %ld events used to calculate background seismicity rate.** \n", cat.Z);
-				if (flog) {
-					fprintf(flog,"**Warning: only %ld events used to calculate background seismicity rate.** \n", cat.Z);
-					fflush(flog);
+			if(procId == 0) {
+				if (verbose_level || flog){
+					if (verbose_level) printf("**Warning: only %ld events used to calculate background seismicity rate.** \n", cat.Z);
+					if (flog) {
+						fprintf(flog,"**Warning: only %ld events used to calculate background seismicity rate.** \n", cat.Z);
+						fflush(flog);
+					}
 				}
 			}
 		}
 	}
-
-	else{
-		if (flog) {
-			fprintf(flog,"**Background seismicity rate calculated from catalog %s (%d events between t=[%.5lf, %.5lf]).** \n", catfile, sel_no, cat.tstart, cat.tend);
-			fflush(flog);
+	else {
+		if(procId == 0) {
+			if (flog) {
+				fprintf(flog,"**Background seismicity rate calculated from catalog %s (%d events between t=[%.5lf, %.5lf]).** \n", catfile, sel_no, cat.tstart, cat.tend);
+				fflush(flog);
+			}
 		}
 	}
 
@@ -231,6 +258,12 @@ int background_rate3(char *catfile, struct crust *crst_in, struct tm reftime, do
 	 * Mcut used to calculate smoothed seismicity, Mcutfinal (from crst_in) to calculate no. of events (instead of using Gutenberg Richter as in other functions.
 	 */
 
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
 	struct catalog cat;
 	struct crust crst=*crst_in;
 	double *zlist;
@@ -263,19 +296,23 @@ int background_rate3(char *catfile, struct crust *crst_in, struct tm reftime, do
 	T=cat.tend-cat.tstart;
 	if (cat.Z<=100){
 		if (cat.Z<=1 || T<1.0)	{
-			if (verbose_level) printf("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
-			if (flog) {
-				fprintf(flog,"**Warning: to few events, or too short a valid time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
-				fflush(flog);
+			if(procId == 0) {
+				if (verbose_level) printf("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+				if (flog) {
+					fprintf(flog,"**Warning: to few events, or too short a valid time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
+					fflush(flog);
+				}
 			}
 			return 1;
 		}
 		else{
-			if (verbose_level || flog){
-				if (verbose_level) printf("**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
-				if (flog) {
-					fprintf(flog,"**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
-					fflush(flog);
+			if(procId == 0) {
+				if (verbose_level || flog){
+					if (verbose_level) printf("**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
+					if (flog) {
+						fprintf(flog,"**Warning: only %ld events, used to calculate background seismicity rate.** \n", cat.Z);
+						fflush(flog);
+					}
 				}
 			}
 		}
@@ -321,6 +358,5 @@ int background_rate3(char *catfile, struct crust *crst_in, struct tm reftime, do
 	free_dvector(rate_v, 1, crst.nD);
 
 	return 0;
-
 }
 
