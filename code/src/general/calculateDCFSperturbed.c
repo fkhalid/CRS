@@ -7,9 +7,13 @@
 
 #include "calculateDCFSperturbed.h"
 
-void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf, struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flag,
-		double *tevol, double *times, int Nmain, struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont, int NTSdisc, double **focmec, int *fmzoneslim,
-		int NFM, long *seed, int *fm_number, double tdata0, double tdata1, double H, int refresh, int which_recfault){
+void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,
+							struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flag,
+							double *tevol, double *times, int Nmain, struct crust crst,
+							struct Coeff_LinkList *AllCoeff, int NTScont, int NTSdisc,
+							double **focmec, int *fmzoneslim, int NFM, long *seed,
+							int *fm_number, double tdata0, double tdata1, double H,
+							int refresh, int which_recfault) {
 
 /* DCFSrand[i][j] contains the ith stress change at gridpoint j due to continuous processes (modeled linearly between time steps).
  * DCFS[k].cmp[j] contains the stress change due to kth event at gridpoint j (modeled as a step).

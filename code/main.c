@@ -51,6 +51,8 @@ int main (int argc, char **argv) {
 	int numProcs = 1;	// [Fahad] Total number of MPI processes
 	double startTime, endTime;
 
+	omp_set_num_threads(2);
+
 	#ifdef _CRS_MPI
 		// [Fahad] Initialize MPI and get the rank and the total number of processes.
 		MPI_Init(&argc, &argv);
