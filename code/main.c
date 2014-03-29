@@ -826,9 +826,9 @@ int main (int argc, char **argv) {
 
 		if(procId == 0) {
 			if (flog) {
-			nf=0;
+				nf=0;
 				fprintf(flog, "Using slip models:\n");
-			int i=0, nn0=0; //counter: slip model names, events which have a slip model.
+				int i=0, nn0=0; //counter: slip model names, events which have a slip model.
 				for (int n=0; n<Nm; n++) {
 				if (eqkfm0res[nf].parent_set_of_models->Nmod) {
 					fprintf(flog, "\t%s\n",all_slipmodels.slipmodels[i+Nsm[n]-1]);

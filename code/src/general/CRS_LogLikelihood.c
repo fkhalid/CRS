@@ -681,7 +681,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
 								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
 								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst,
-								   refresh && nsur==1 && first_timein, which_recfault);
+								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
 				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
@@ -696,7 +696,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
 								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
 								   fmzonelim, NFM, seed, (int *) 0, tt0, tt1, Hurst,
-								   refresh && nsur==1 && first_timein, which_recfault);
+								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
 				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
