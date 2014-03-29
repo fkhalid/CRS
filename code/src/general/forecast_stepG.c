@@ -6,7 +6,7 @@
  */
 
 #include "forecast_stepG.h"
-
+#include "mpi.h"
 
 #define Max 100000
 #define MaxTS 1000
@@ -20,6 +20,13 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 // cmbdata can be NULL, and will be ignored.
 // if backrate==1, will assume it's 1 for all points. If not, it should be an array containing NgridT times the ratio between avg rate and rate at that point. (so that the sum of back_rate is NgridT).
 	//fixme check: indices of R[0...cat.Z-1] or {[1...cat.Z]
+
+	// [Fahad] Variables used for MPI.
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
   double  tau, dtau_dt, dtau_dt0;
   int     TS0, TS1, n;
@@ -91,7 +98,9 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			while(k<NTS && times[k]<events[1][i]) k++;
 			if(times[k]>=events[1][i]) k--;
 			TS_eqk[i]=k;
-			if (k<0 && events[1][i]>=tt0 && verbose_level>0) printf("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
+			if(procId == 0) {
+				if (k<0 && events[1][i]>=tt0 && verbose_level>0) printf("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
+			}
 		}
   }
 
@@ -107,22 +116,27 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   if (Rate_end) for(int m=1;m<=N;m++) ReX[m]=0.0;
   if (NeX) for(int m=1;m<=N;m++) NeX[m]=0.0;
 
-  if (tt1<tt0 && verbose_level>1) printf("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
-  if (times[NTS]>tt0 && times[NTS]<tt1 && verbose_level>1) {
-	  printf("\n** Warning: time steps in forecast_stepG don't cover entire forecast range!**\n");
+  if(procId == 0) {
+	  if (tt1<tt0 && verbose_level>1) printf("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
+	  if (times[NTS]>tt0 && times[NTS]<tt1 && verbose_level>1) {
+		  printf("\n** Warning: time steps in forecast_stepG don't cover entire forecast range!**\n");
+	  }
   }
 
   if (times[0]>=tt1){
 	  if (NeT!=(double *) 0) *NeT=N*(tt1-tt0);
 	  if (NeX) for(int m=1;m<=N;m++) NeX[m]=(tt1-tt0);
+
 	  return (1);
- 	  }
+  }
 
 //TS0= First time step after tt0.
   TS0=0;
   while(TS0<NTS-1 && times[TS0]<=tt0) TS0++;
-  if(times[TS0]<=tt0 && verbose_level>1) {
-	  printf("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
+  if(procId == 0) {
+	  if(times[TS0]<=tt0 && verbose_level>1) {
+		  printf("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
+	  }
   }
 
 //TS1= Last time step before tt1.
@@ -235,13 +249,15 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			}
 			gamma= (DCFS_i==-1 | DCFS_whichpt[n][counter_eqk]==0)? gamma : gamma*exp(-DCFS[DCFS_i].cmb[DCFS_whichpt[n][counter_eqk]]/Asig);
 			if (isinf(gamma)){
-				if (verbose_level>0) {
-					printf("*Warning: gamma==Inf, must choose larger Asig!*\n");
-					fflush(stdout);
-				}
-				if (flog) {
-					fprintf(flog,"*Warning: gamma==Inf, must choose larger Asig!*\n");
-					fflush(flog);
+				if(procId == 0) {
+					if (verbose_level>0) {
+						printf("*Warning: gamma==Inf, must choose larger Asig!*\n");
+						fflush(stdout);
+					}
+					if (flog) {
+						fprintf(flog,"*Warning: gamma==Inf, must choose larger Asig!*\n");
+						fflush(flog);
+					}
 				}
 				err=1;
 				errtot+=1;

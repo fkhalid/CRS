@@ -5,11 +5,20 @@
  *      Author: camcat
  */
 
-
 #include "find_timesteps.h"
+#include "mpi.h"
 
-int findtimestepsomori(double te, double t0,double t1, double tstart, double tend, double tau0, double Dtau, double p, double c, double *t, double *K_over_tau0, int *L){
+int findtimestepsomori(double te, double t0,double t1, double tstart, double tend,
+					   double tau0, double Dtau, double p, double c, double *t,
+					   double *K_over_tau0, int *L) {
 //te is earthquake time. tstart, tend are the start and end time of the measured value tau0. t0,t1 are the start and end time of the period for which time steps are calculated.
+	// [Fahad] Variables used for MPI
+	int procId = 0;
+
+#ifdef _CRS_MPI
+	MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+#endif
+
 	double dfdt, dt;
 	int N, j=0, err=0;
 
@@ -26,20 +35,24 @@ int findtimestepsomori(double te, double t0,double t1, double tstart, double ten
 		t[j+1]=t[j]+dt;
 		j+=1;
 		if (j==(*L)) {
-			printf("** Error: L too small in findtimestepsomori.c. Exiting. **\n");
-			if (flog){
-				fprintf(flog,"** Error: L too small in findtimestepsomori.c. Exiting. **\n");
-				fflush(flog);
+			if(procId == 0) {
+				printf("** Error: L too small in findtimestepsomori.c. Exiting. **\n");
+				if (flog){
+					fprintf(flog,"** Error: L too small in findtimestepsomori.c. Exiting. **\n");
+					fflush(flog);
+				}
 			}
 			err=1;
 			break;
 		}
 	}
 
-	if (j>1000) printf("\n ** Warning: findtimesteps.m produced %d time steps! **\n",j);
+	if(procId == 0) {
+		if (j>1000) printf("\n ** Warning: findtimesteps.m produced %d time steps! **\n",j);
+	}
 	*L=j;
-	return err;
 
+	return err;
 }
 
 void findtimestepslog(double t0,double t1, double tau0, double Dtau, double w, double **times, int *L){

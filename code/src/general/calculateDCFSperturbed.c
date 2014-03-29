@@ -277,7 +277,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				}
 			}
 		}
-
 	}
 		//-----------------------------------------------------------------//
 		//							Mainshock							   //
