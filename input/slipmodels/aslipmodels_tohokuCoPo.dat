@@ -1,0 +1,8 @@
+# no. of snapshots models (lines to read)
+# slip model format
+# reference time
+# time path_to_file 
+1
+pscmp
+2011-03-11T14:46:18Z
+360   input/slipmodels/360.inp
