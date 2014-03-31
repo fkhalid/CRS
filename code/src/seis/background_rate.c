@@ -124,7 +124,10 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime, dou
 
 }
 
-int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, double Mcut, double Mmain, double *target_mags, double *target_rates, int Ntarget, double t0, double t1, double dR, double dZ, double min_smoothing, int ord){
+int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, double Mcut,
+					 double Mmain, double *target_mags, double *target_rates, int Ntarget,
+					 double t0, double t1, double dR, double dZ, double min_smoothing,
+					 int ord) {
 	/* by convention, if Mcut>=20 the cutoff magnitude will be calculated based on completeness.
 	 * target_mags= array containing magnitudes above which rates should be estimated (counting events above Mw, or using GR if there are too few). [0....Ntarget-1];
 	 * target_rates will contain the results. If NULL (or if target_mags=NULL), ignored.
