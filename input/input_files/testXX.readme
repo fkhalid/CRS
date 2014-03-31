@@ -1,0 +1,20 @@
+(1): Models with different postseismic processes.
+testA1: only coseismic
+testA4, A5 (param file: toho_SM_aslip): with afterslip.
+testA2 (param: toho_SM_as1): aftershocks mode 0 (iso)
+testA3 (param: toho_SM_as2): aftershocks mode 3 (fm + mc)
+
+(2): grid resolution.
+parameter files toho_SM_#.txt (#=no. of grid points).
+
+testB1 (same as testA1, so there's no specific input file).
+	11.12 x 8.78 x 3 km = 66x61x13=52,338 pts
+testB2 	3.0 x 3.0 x 3.0 = 264 x 183 x 13 = 628,056 pts
+testB3	1.0 x 1.0 x 1.0 = 792 x 549 x 39 = 16,957,512 pts
+testB4	0.5 x 0.5 x 0.5 = 1518 x 1098 x 78 = 130,007,592 pts
+
+
+---------------------------------------------------------------
+NB: should quantify how much time spent by grid search/forecast.
+(since users may only be interested in forecast).
+
