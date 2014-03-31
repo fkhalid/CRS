@@ -646,7 +646,12 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 	#ifdef _CRS_MPI
 		if(first_timein != 1) {
+			// FIXME: Write a simple algorithm to fit lower Nsur values to numProcs ...
 			if(numProcs > Nsur) {
+				if(procId == 0) {
+					printf("\n Number of processes: %d", numProcs);
+					printf("\n Number of iterations: %d", Nsur);
+				}
 				error_quit("\n **Nsur must be greater than or equal to the number of processes ** \n");
 			}
 
