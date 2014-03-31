@@ -11,7 +11,9 @@ int gridPMax=1000;	// max no. points associated with event.
 
 //todo delete this file, is only here for backward compatibility with Parkfield.
 
-int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0, double tstart, double tW1, double tW2, double tend, double Mag, struct eqkfm **eqfm2, double dDCFS, int *nev, int sources){
+int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0,
+			double tstart, double tW1, double tW2, double tend, double Mag,
+			struct eqkfm **eqfm2, double dDCFS, int *nev, int sources) {
 //sources indicate if events should be used as sources (boolean "aftershocks" in main).
 //nev is the total number of events as sources is sources==1, else the total number of events in catalog.
 
