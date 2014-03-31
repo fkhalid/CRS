@@ -206,6 +206,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags. 'cmb_format' is used at
 		//		   multiple points where files are read.
+		// 		   catname is used in setup.c.
+		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_file,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(cmb_format, 			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
