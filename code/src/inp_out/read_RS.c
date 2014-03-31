@@ -6,6 +6,7 @@
  */
 
 #include "read_RS.h"
+#include "mpi.h"
 
 int gridPMax=1000;	// max no. points associated with event.
 
@@ -17,8 +18,15 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 //sources indicate if events should be used as sources (boolean "aftershocks" in main).
 //nev is the total number of events as sources is sources==1, else the total number of events in catalog.
 
+	// [Fahad] Variables used for MPI
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
 	int err=0, errP;
-	int S=countcol(filename), is_in_catalog;
+	int S, is_in_catalog;
 	int inside, *selpts, *sel, eq;
 	long Z1,Z0, Zsel;
 	double **datas;
@@ -27,14 +35,15 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 	double toll=1e-10;
 	double slip;
 	double f=1;	//SD is multiplied by this factor.
-	int n_tw=0, Zmax=countline(filename);
-	printf("Reading earthquake catalog...\n\n");
+	int n_tw=0, Zmax;
 
 	struct eqkfm* eqfm1;
 	double *n1, *n2, *sl1, *sl2, *stress1, *stress2;
 	double sigma1, sigma2, tau1, tau2;
 
-	if (Zmax<0) return 1;
+	if(procId == 0) {
+		printf("Reading earthquake catalog...\n\n");
+	}
 
 	//wider areas used to select sources:
 	//NB needs to be consistent with readfocmec.c
@@ -45,18 +54,50 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 	Depthmax=crst.depmax+10;
 	Depthmin=fmax(0,crst.depmin-10);
 
-	datas = dmatrix(1, S, 1, Zmax);
-	read_matrix(filename, S, 0, datas, &Z1);
+	if(procId == 0) {
+		S 	 = countcol(filename);
+		Zmax = countline(filename);
+	}
 
-	if (Z1>Zmax){
-		printf("Wrong number of lines found in catalog %s (Z1=%ld, Zmax=%d). Exiting. \n",filename, Z1, Zmax);
+	#ifdef _CRS_MPI
+		MPI_Bcast(&S, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&Zmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if(Zmax < 0) {
+		return 1;
+	}
+
+	datas = dmatrix(1, S, 1, Zmax);
+
+	if(procId == 0) {
+		read_matrix(filename, S, 0, datas, &Z1);
+	}
+	#ifdef _CRS_MPI
+		MPI_Bcast(&Z1, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+	#endif
+
+	if(Z1>Zmax) {
+		if(procId == 0) {
+			printf("Wrong number of lines found in catalog %s (Z1=%ld, Zmax=%d). Exiting. \n",filename, Z1, Zmax);
+		}
+
 		return (1);
 	}
+
+	#ifdef _CRS_MPI
+		long nrl=1, nrh=S, ncl=1, nch=Zmax;
+		long nrow=nrh-nrl+1, ncol=nch-ncl+1;
+		MPI_Bcast(datas[nrl], nrow*ncol+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	#endif
 
 	int eq00=1;
 	while (eq00<Z1 && datas[2][eq00]<tstart-toll) eq00++;
 	if (eq00==Z1) {
-		printf("All events in catalog are occur before starting time. Exiting.\n");
+		if(procId == 0) {
+			printf("All events in catalog are occur before starting time. Exiting.\n");
+		}
+
 		return (1);
 	}
 
@@ -129,7 +170,9 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 			cat->y0[Z0]=y;
 			errP+=find_gridpoints(crst.y, crst.x, crst.dAgrid, crst.depth, crst.N_allP, gridPMax, y, x, SD, Depth, SDd, 3.0,  cat->ngrid + Z0, cat->ngridpoints[Z0], cat->weights[Z0], inside);
 			if (*(cat->ngrid + Z0)==0){
-				printf("*** Warning: no grid points selected for event eq=%d! (%lf,%lf,%lf' SD=%lf)\n",eq,Lat,Lon,Depth, SD);
+				if(procId == 0) {
+					printf("*** Warning: no grid points selected for event eq=%d! (%lf,%lf,%lf' SD=%lf)\n",eq,Lat,Lon,Depth, SD);
+				}
 			}
 		}
 
@@ -231,7 +274,9 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 					break;
 
 				default:
-					printf("*Wrong number of columns (%d) in input file: %s*\n", S, filename);
+					if(procId == 0) {
+						printf("*Wrong number of columns (%d) in input file: %s*\n", S, filename);
+					}
 				}
 			}
 
@@ -258,7 +303,14 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 		}
 	}
 
-	if (err>0) {printf("*** %d errors in parallel section of readcatalogandfocmec.c. Exiting. ***\n",err); return(1);}
+	if (err>0) {
+		if(procId == 0) {
+			printf("*** %d errors in parallel section of readcatalogandfocmec.c. Exiting. ***\n",err);
+		}
+
+		return(1);
+	}
+
 	cat->tstart=cat->t[1];
 	cat->tend=tend;
 
@@ -266,7 +318,10 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 	free_dmatrix(datas, 1, S, 1, Zmax);
 	free_ivector(selpts, 0, Z1);
 	free_ivector(sel, 0, Z1);
-	printf("done.\n %ld events found, %ld used in catalog,  %ld used as sources.\n\n",Z1, cat->Z, sources*Zsel);
+
+	if(procId == 0) {
+		printf("done.\n %ld events found, %ld used in catalog,  %ld used as sources.\n\n",Z1, cat->Z, sources*Zsel);
+	}
 
 	return(0);
 
