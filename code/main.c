@@ -215,6 +215,19 @@ int main (int argc, char **argv) {
 		error_quit(msg);
 	}
 
+	#ifdef _CRS_MPI
+		// [Fahad] The file names are used in conditions in main.c for
+		// 		   setting certain flags. 'cmb_format' is used at
+		//		   multiple points where files are read.
+		MPI_Bcast(background_rate_file,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(cmb_format, 			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+	#endif
+
+//	printf("\n ProcId: %d -- background_rate_file: %s", procId, background_rate_file);
+//	printf("\n ProcId: %d -- afterslipmodelfile: %s", procId, afterslipmodelfile);
+//	printf("\n ProcId: %d -- cmb_format: %s", procId, cmb_format);
+
 	// FIXME [Fahad] Block ignored in MPI due to CSEPmode
 	//set things for Csep mode:
 	if (CSEPmode) {
@@ -311,6 +324,11 @@ int main (int argc, char **argv) {
 		if (flog) fprintf(flog, "dDCFS (min value for which calculation is done) = %.2e Pa\n", dDCFS);
 	}
 
+//	printf("\n ProcId: %d -- flags.afterslip: %d \n", procId, flags.afterslip);
+
+//	MPI_Barrier(MPI_COMM_WORLD);
+//	error_quit("\n MPI working fine so far \n");
+
 
 //---------------------------------------------//
 //--------------Setup afterslip----------------//
@@ -336,9 +354,19 @@ int main (int argc, char **argv) {
 	aftershocksMC = (flags.aftershocks && flags.full_field && !flags.aftershocks_fixedmec);
 	load_focmec= (flags.err_recfault || aftershocksMC);
 
-	if (load_focmec)
-		 err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits, flags, &NFM, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL-extra_time, tendCat, 30);
-	else err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1,   NULL , NULL, flags, NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL-extra_time, tendCat, 30);
+	if (load_focmec) {
+		err = setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime,
+							   dDCFS, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
+							   flags, &NFM, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
+							   tstartLL-extra_time, tendCat, 30);
+	}
+	else {
+		err = setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime,
+							   dDCFS, Mag_main, crst, &cat, &eqkfm1,   NULL , NULL, flags,
+							   NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
+							   tstartLL-extra_time, tendCat, 30);
+	}
+
 	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **");
 
 	if (flags.err_recfault && (no_fm_cats!=crst.nofmzones)){
@@ -788,18 +816,24 @@ int main (int argc, char **argv) {
 		MPI_Barrier(MPI_COMM_WORLD);
 	#endif
 
-//	// FIXME: [Fahad] For testing purposes only ...
-//	#ifdef _CRS_MPI
-//		endTime = MPI_Wtime();
-//		if(procId == 0) {
-//			printf("\nTime - I/O broadcast: %f seconds\n\n", (endTime - startTime));
-//		}
-//	#endif
-//
-//	// FIXME: [Fahad] For testing purposes only ...
-//	#ifdef _CRS_MPI
-//		startTime = MPI_Wtime();
-//	#endif
+	// FIXME: [Fahad] For testing purposes only ...
+	#ifdef _CRS_MPI
+		endTime = MPI_Wtime();
+		if(procId == 0) {
+			printf("\nTime - I/O broadcast: %f seconds\n\n", (endTime - startTime));
+		}
+	#endif
+
+	// FIXME: [Fahad] For testing purposes only ...
+	#ifdef _CRS_MPI
+		startTime = MPI_Wtime();
+	#endif
+
+	// FIXME: [Fahad] Time variables for computing individual grid search and
+	// forecast times ...
+	double dcfsStartTime, dcfsEndTime, dcfsTotalTime = 0.0;
+	double gridStartTime, gridEndTime, gridTotalTime = 0.0;
+	double forecastStartTime, forecastEndTime, forecastTotalTime = 0.0;
 
 	dim=ivector(0,Nm-1);
 	for (int n=0; n<Nm; n++) {
@@ -814,6 +848,11 @@ int main (int argc, char **argv) {
 
 	//loop over all slip models:
 	for (int mod=1; mod<=slipmodel_combinations; mod++) {
+		// FIXME: [Fahad] For testing purposes only ...
+		#ifdef _CRS_MPI
+			dcfsStartTime = MPI_Wtime();
+		#endif
+
 		if(procId == 0) {
 			if (verbose_level) printf("Slip model(s) no. %d\n", mod);
 		}
@@ -849,9 +888,22 @@ int main (int argc, char **argv) {
 			setup_CoeffsDCFS(&AllCoeff, NULL, crst, eqkfm0res, eqkfm1, Nm, Ntot, Nfaults_all, which_main);
 		}
 
+		// FIXME: [Fahad] For testing purposes only ...
+		#ifdef _CRS_MPI
+			MPI_Barrier(MPI_COMM_WORLD);
+
+			dcfsEndTime = MPI_Wtime();
+			dcfsTotalTime += dcfsEndTime - dcfsStartTime;
+		#endif
+
 		//------------------------------------------//
 		//				Grid Search					//
 		//------------------------------------------//
+
+		// FIXME: [Fahad] For testing purposes only ...
+		#ifdef _CRS_MPI
+			gridStartTime = MPI_Wtime();
+		#endif
 
 		if (LLinversion) {
 			if(procId == 0) {
@@ -939,6 +991,9 @@ int main (int argc, char **argv) {
 		#ifdef _CRS_MPI
 			// [Fahad] Make sure all processes are in synch at this point.
 			MPI_Barrier(MPI_COMM_WORLD);
+
+			gridEndTime = MPI_Wtime();
+			gridTotalTime += gridEndTime - gridStartTime;
 		#endif
 
 //		// FIXME: [Fahad] For testing purposes only ...
@@ -949,10 +1004,10 @@ int main (int argc, char **argv) {
 //			}
 //		#endif
 //
-//		// FIXME: [Fahad] For testing purposes only ...
-//		#ifdef _CRS_MPI
-//			startTime = MPI_Wtime();
-//		#endif
+		// FIXME: [Fahad] For testing purposes only ...
+		#ifdef _CRS_MPI
+			forecastStartTime = MPI_Wtime();
+		#endif
 
 		if (forecast) {
 			if(procId == 0) {
@@ -1039,7 +1094,27 @@ int main (int argc, char **argv) {
 				fprintf(foutfore, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",maxAsig[mod], maxta[mod], maxr[mod], LL, mod);
 			}
 		}
+
+		#ifdef _CRS_MPI
+		// FIXME: [Fahad] For testing purposes only ...
+			MPI_Barrier(MPI_COMM_WORLD);
+
+			forecastEndTime = MPI_Wtime();
+			forecastTotalTime += forecastEndTime - forecastStartTime;
+		#endif
 	}
+
+	// FIXME: [Fahad] For testing purposes only ...
+	#ifdef _CRS_MPI
+		MPI_Barrier(MPI_COMM_WORLD);
+		endTime = MPI_Wtime();
+		if(procId == 0) {
+			printf("\n\nTime - DCFS: %f seconds", dcfsTotalTime);
+			printf("\nTime - Grid Search: %f seconds", gridTotalTime);
+			printf("\nTime - Forecast: %f seconds", forecastTotalTime);
+			printf("\nTime - DCFS + Grid Search + Forecast: %f seconds\n\n", (endTime - startTime));
+		}
+	#endif
 
 	if(procId == 0) {
 		fclose(fout);
@@ -1056,15 +1131,6 @@ int main (int argc, char **argv) {
 		if (flog) fprintf(flog, "Program completed successfully.\n");
 		fclose(flog);
 	}
-
-	// FIXME: [Fahad] For testing purposes only ...
-	#ifdef _CRS_MPI
-		MPI_Barrier(MPI_COMM_WORLD);
-//		endTime = MPI_Wtime();
-//		if(procId == 0) {
-//			printf("\nTime - Forecast: %f seconds\n\n", (endTime - startTime));
-//		}
-	#endif
 
 	#ifdef _CRS_MPI
 		MPI_Finalize();
