@@ -196,10 +196,10 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		end = Nsur + 1;
 	#endif
 
-//	const long newSeed = *seed;
+	const long newSeed = *seed;
 //	for(int nsur = 1; nsur <= Nsur; nsur++) {
 	for(int nsur = start; nsur < end; nsur++) {
-//		*seed = newSeed * (long)nsur;
+		*seed = newSeed * (long)nsur;
 
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
@@ -465,23 +465,23 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		}
 	}
 
-	// FIXME: [Fahad] The following send/recv code block is used for testing with two
-	//		  MPI ranks only (on local machine). This is being done to ensure that
-	//		  both processes start with the same seed when the next slip model calls
-	//		  this function from the mod loop in main. This way, the result are exactly
-	//		  the same as with execution with one process. (The final seed value when
-	//		  run with one process is the same as the final seed value for process '1'
-	//		  when run with 2 processes. This is because the seed value depends on the
-	//		  nsur value; the latest of which only process '1' has ...
-	if(numProcs == 2) {
-		MPI_Status status;
-		if(procId == 1) {
-			MPI_Send(seed, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD);
-		}
-		else if(procId == 0) {
-			MPI_Recv(seed, 1, MPI_LONG, 1, 1, MPI_COMM_WORLD, &status);
-		}
-	}
+//	// FIXME: [Fahad] The following send/recv code block is used for testing with two
+//	//		  MPI ranks only (on local machine). This is being done to ensure that
+//	//		  both processes start with the same seed when the next slip model calls
+//	//		  this function from the mod loop in main. This way, the result are exactly
+//	//		  the same as with execution with one process. (The final seed value when
+//	//		  run with one process is the same as the final seed value for process '1'
+//	//		  when run with 2 processes. This is because the seed value depends on the
+//	//		  nsur value; the latest of which only process '1' has ...
+//	if(numProcs == 2) {
+//		MPI_Status status;
+//		if(procId == 1) {
+//			MPI_Send(seed, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD);
+//		}
+//		else if(procId == 0) {
+//			MPI_Recv(seed, 1, MPI_LONG, 1, 1, MPI_COMM_WORLD, &status);
+//		}
+//	}
 
 	if (flags.afterslip) free_dmatrix(DCFSrand, 0,NTScont,1,NgridT);
 	free_dvector(dumrate,1,cat.Z);
@@ -614,18 +614,20 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	integral=0.0;
 	for(int i=1;i<=cat.Z;i++) rate[i]=0.0;
 
-//	// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
-//	// parameters are the same ...
-//	if(first_timein != 1) {
-//		int nsur = 1;
-//		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
-//		flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
-//
-//		calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-//							   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-//							   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst,
-//							   refresh && nsur==1, which_recfault);
-//	}
+	// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
+	// parameters are the same ...
+	if(first_timein != 1) {
+		int nsur = 1;
+		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
+		flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
+
+		calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
+							   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
+							   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst,
+							   refresh && nsur==1, which_recfault);
+
+		refresh = 0;
+	}
 
 	if (all_new_gammas!=0 && (multiple_output_gammas==0)) {
 		for (int n=1; n<=NgridT; n++) {
@@ -665,10 +667,10 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		end = Nsur + 1;
 	#endif
 
-//	const long newSeed = *seed;
+	const long newSeed = *seed;
 //	for(int nsur=1; nsur<=Nsur; nsur++) {
 	for(int nsur = start; nsur < end; nsur++) {
-//		*seed = newSeed * (long)nsur;
+		*seed = newSeed * (long)nsur;
 
 		if (all_gammas0) {
 			gammas0= (multiple_input_gammas)? all_gammas0[nsur] : *all_gammas0;
@@ -759,6 +761,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		}
 	}
 
+//	printf("\n ProcId: %d -- Integral: %f \n", procId, integral);
+
 	#ifdef _CRS_MPI
 		double temp_integral;
 		double *recv_rate, *recv_rates_x;
@@ -791,6 +795,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	//		all_new_gammas[nrl] = recv_allNewGammas[nrl];
 	//	}
 	#endif
+
+//	printf("\n ProcId: %d -- Integral: %f \n", procId, integral);
 
 	//calculate average rate and LL:
 	if (!err){
@@ -851,28 +857,28 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 	first_timein = 0;
 
-	// FIXME: [Fahad] The following send/recv code block is used for testing with two
-	//		  MPI ranks only (on local machine). This is being done to ensure that
-	//		  both processes start with the same seed when the next slip model calls
-	//		  this function from the mod loop in main. This way, the result are exactly
-	//		  the same as with execution with one process. (The final seed value when
-	//		  run with one process is the same as the final seed value for process '1'
-	//		  when run with 2 processes. This is because the seed value depends on the
-	//		  nsur value; the latest of which only process '1' has ...
-	if(numProcs == 2) {
-		MPI_Status status;
-		if(procId == 1) {
-			MPI_Send(seed, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD);
-		}
-		else if(procId == 0) {
-			MPI_Recv(seed, 1, MPI_LONG, 1, 1, MPI_COMM_WORLD, &status);
-		}
-	}
+//	// FIXME: [Fahad] The following send/recv code block is used for testing with two
+//	//		  MPI ranks only (on local machine). This is being done to ensure that
+//	//		  both processes start with the same seed when the next slip model calls
+//	//		  this function from the mod loop in main. This way, the result are exactly
+//	//		  the same as with execution with one process. (The final seed value when
+//	//		  run with one process is the same as the final seed value for process '1'
+//	//		  when run with 2 processes. This is because the seed value depends on the
+//	//		  nsur value; the latest of which only process '1' has ...
+//	if(numProcs == 2) {
+//		MPI_Status status;
+//		if(procId == 1) {
+//			MPI_Send(seed, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD);
+//		}
+//		else if(procId == 0) {
+//			MPI_Recv(seed, 1, MPI_LONG, 1, 1, MPI_COMM_WORLD, &status);
+//		}
+//	}
 
-	// FIXME: [Fahad] For MPI testing only ...
-	if(LL) {
-		printf("\n ProcId: %d -- LL: %f \n", procId, *LL);
-	}
+//	// FIXME: [Fahad] For MPI testing only ...
+//	if(LL) {
+//		printf("\n ProcId: %d -- LL: %f \n", procId, *LL);
+//	}
 
 	return(err);
 }
