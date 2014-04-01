@@ -506,8 +506,23 @@ int main (int argc, char **argv) {
 
 	//--------------Setup Coefficients and DCFS struct--------------//
 
+	double coeffsStartTime, coeffsEndTime;
+
+	#ifdef _CRS_MPI
+		MPI_Barrier(MPI_COMM_WORLD);
+		coeffsStartTime = MPI_Wtime();
+	#endif
+
 	//todo move below (after checking if snapshot exists, and if so avoid Okada calculations).
 	setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, eqkfm1, Nm, Ntot, Nfaults_all, which_main);
+
+	#ifdef _CRS_MPI
+		MPI_Barrier(MPI_COMM_WORLD);
+		coeffsEndTime = MPI_Wtime();
+		if(procId == 0) {
+			printf("\nTime - setup_CoeffsDCFS(): %f seconds\n\n", (coeffsEndTime - coeffsStartTime));
+		}
+	#endif
 
 	//--------------------------------------------------------------//
 	//					Setup other things							//
