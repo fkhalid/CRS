@@ -487,14 +487,14 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 			}
 		}
 
-		printf("\n ProcId %d -- (*Coeffs_st)[1][1][1]: %f \n", procId, (*Coeffs_st)[1][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_st)[280][1][1]: %f \n", procId, (*Coeffs_st)[280][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_st)[281][1][1]: %f \n", procId, (*Coeffs_st)[281][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_st)[560][1][1]: %f \n", procId, (*Coeffs_st)[560][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_dip)[1][1][1]: %f \n", procId, (*Coeffs_dip)[1][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_dip)[280][1][1]: %f \n", procId, (*Coeffs_dip)[280][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_dip)[281][1][1]: %f \n", procId, (*Coeffs_dip)[281][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_dip)[560][1][1]: %f \n", procId, (*Coeffs_dip)[560][1][1]);
+//		printf("\n ProcId %d -- (*Coeffs_st)[1][1][1]: %f \n", procId, (*Coeffs_st)[1][1][1]);
+//		printf("\n ProcId %d -- (*Coeffs_st)[280][1][1]: %f \n", procId, (*Coeffs_st)[280][1][1]);
+//		printf("\n ProcId %d -- (*Coeffs_st)[281][1][1]: %f \n", procId, (*Coeffs_st)[281][1][1]);
+//		printf("\n ProcId %d -- (*Coeffs_st)[560][1][1]: %f \n", procId, (*Coeffs_st)[560][1][1]);
+//		printf("\n ProcId %d -- (*Coeffs_dip)[1][1][1]: %f \n", procId, (*Coeffs_dip)[1][1][1]);
+//		printf("\n ProcId %d -- (*Coeffs_dip)[280][1][1]: %f \n", procId, (*Coeffs_dip)[280][1][1]);
+//		printf("\n ProcId %d -- (*Coeffs_dip)[281][1][1]: %f \n", procId, (*Coeffs_dip)[281][1][1]);
+//		printf("\n ProcId %d -- (*Coeffs_dip)[560][1][1]: %f \n", procId, (*Coeffs_dip)[560][1][1]);
 	}
 
 	return(0);

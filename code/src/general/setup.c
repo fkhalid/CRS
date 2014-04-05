@@ -316,10 +316,10 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 		temp= AllCoeff;
 		for(int i=0; i<Nm; i++) {
 			if (eqkfm0[NFsofar].is_slipmodel) {
-//				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
-//						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
-				okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
 						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+//				okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+//						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
 			}
 			else {
 				temp->Coeffs_st=temp->Coeffs_dip=NULL;
