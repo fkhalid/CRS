@@ -292,8 +292,9 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 	return;
 }
 
-int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out, struct crust crst, struct eqkfm *eqkfm0,
-		struct eqkfm *eqkfm1, int Nm, int Ntot, int *Nfaults, int *which_main){
+int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out,
+		struct crust crst, struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, int Nm,
+		int Ntot, int *Nfaults, int *which_main) {
 	//set Ntot=0 if aftershocks should not be considered.
 
 	// [Fahad] Variables used for MPI
@@ -310,16 +311,25 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 
     //----------set up Coefficients----------------//
 
-    if (Coefficients!=NULL){
+    if (Coefficients!=NULL) {
 		AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
 		temp= AllCoeff;
-		for (int i=0; i<Nm; i++){
-			if (eqkfm0[NFsofar].is_slipmodel) okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar, Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
-			else temp->Coeffs_st=temp->Coeffs_dip=NULL;
+		for(int i=0; i<Nm; i++) {
+			if (eqkfm0[NFsofar].is_slipmodel) {
+//				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+//						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+				okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+			}
+			else {
+				temp->Coeffs_st=temp->Coeffs_dip=NULL;
+			}
 			temp->NgridT=eqkfm0[0].nsel;
 			temp->NF=Nfaults[i];
 			temp->NP=0;
-			for (int f=0; f<Nfaults[i]; f++) temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+			for(int f=0; f<Nfaults[i]; f++) {
+				temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+			}
 			temp->which_main=which_main[i];
 			NFsofar+=Nfaults[i];
 			if (i<Nm-1) {
