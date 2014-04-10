@@ -141,6 +141,7 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
+	int numCols;
 	struct catalog cat;
 	struct crust crst=*crst_in;
 	double *zlist;
@@ -154,10 +155,26 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	zlist=dvector(1,crst.nD);
 	for (int i=1; i<=crst.nD; i++) zlist[i]=crst.depth[1+(i-1)*NP];
 
+	if(procId == 0) {
+		numCols = countcol(catfile);
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&numCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
 	//todo remove first line.
-	if (countcol(catfile)==8) read_RS(catfile, &cat, crst, -2, t0, 0.0, 0.0, t1, 0.0, NULL, 0, NULL, 0);
-	else readZMAP(&cat, (struct eqkfm **) 0, NULL, catfile, crst, reftime, t0, t1, t0, t1, 10, 0.0, dR, dZ, 0.0, 0);
-	if (cat.Z==0) return 1;
+//	if (countcol(catfile)==8) read_RS(catfile, &cat, crst, -2, t0, 0.0, 0.0, t1, 0.0, NULL, 0, NULL, 0);
+	if(numCols == 8) {
+		read_RS(catfile, &cat, crst, -2, t0, 0.0, 0.0, t1, 0.0, NULL, 0, NULL, 0);
+	}
+	else {
+		readZMAP(&cat, (struct eqkfm **) 0, NULL, catfile, crst, reftime, t0, t1, t0, t1, 10, 0.0, dR, dZ, 0.0, 0);
+	}
+
+	if(cat.Z==0) {
+		return 1;
+	}
 
 	sel=decluster_catalog(cat, Mmain, &weights, 0);
 

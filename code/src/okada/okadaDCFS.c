@@ -391,7 +391,8 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 	return(0);
 }
 
-int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths){
+int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF,
+			   struct crust crst, double *lats, double *lons, double *depths) {
 	//lats, lons, depths contain complete list of grid points. Only the ones with indices eqkfm1.selpoints will be used.
 
 	int procId = 0;
@@ -465,7 +466,9 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 				north=crst.y[i];
 				east=crst.x[i];
 				if (pure_thrustnorm!=1) {
-					pscokada(eqnorth, eqeast, depth,  strike,  dip, len, width, 1, 0, north, east, depths[i], &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth,  strike,  dip, len, width, 1, 0,
+							 north, east, depths[i], &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
+							 alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_st)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_st)[p1][i0][2]+=1e6*Syy;
@@ -476,7 +479,10 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 				}
 
 				if (pure_strslip!=1){
-					pscokada(eqnorth, eqeast, depth,  strike, dip, len, width, 0, -1, north, east, depths[i], &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth,  strike, dip, len, width, 0, -1,
+							 north, east, depths[i], &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
+							 alpha, crst.lambda, crst.mu, crst.fric);
+
 					(*Coeffs_dip)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_dip)[p1][i0][2]+=1e6*Syy;
 					(*Coeffs_dip)[p1][i0][3]+=1e6*Szz;
