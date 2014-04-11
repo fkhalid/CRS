@@ -10,6 +10,14 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+// ----- [Fahad] Added for MPI -----
+//#define _CRS_MPI						// FIXME: Should be set depending on whether or not mpicc is used ...
+#ifdef _CRS_MPI
+	#define BCAST_FLAGS_SIZE 14				// No. of scalar variables in 'struct flags'
+	#define SIZE_BCAST_MODEL_PARAMETERS 38	// No. of scalar variables in 'struct BCast_Model_Parameters'
+#endif
+// ---------------------------------
+
 #define log10(A) (log(A)/log(10))
 #define sq(A) ((A)*(A))
 #define sign(A) ((int) (A/fabs(A)))
@@ -52,6 +60,9 @@ extern int gridPMax;	//todo global variables are bad...
 extern double DCFS_cap;
 extern FILE *flog;
 
+// Note: if the "flags" struct is updated, BCAST_FLAGS_SIZE should be updated
+//		 accordingly. Also, the broadcast code in read_modelparmeters() should
+//		 be updated as well.
 struct flags{
 	int err_recfault;
 	int err_slipmodel;
@@ -244,5 +255,53 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
     int index_cat;		//index of event in catalog.
     struct set_of_models *parent_set_of_models;	//if multiple models are present, this is a pointer to corresponding set_of_models structure.
 };
+
+// [Fahad] A complete collection of scalar model parameters used in
+//		   read_modelparmeters(). In terms of communications, it is
+//		   more efficient to pack all the variables in one struct
+//		   and then transport these to the other nodes over the network,
+//		   rather than sending each variable separately.
+#ifdef _CRS_MPI
+	struct BCast_Model_Parameters {
+		int N_min_events;
+		int fixr;
+		int fixAsig;
+		int fixta;
+		int nAsig0;
+		int nta0;
+		int Nsur;
+		int Nslipmod;
+		int use_bg_rate;
+		int gridPMax;
+		int LLinversion;
+		int forecast;
+		double r0;
+		double Asig0;
+		double ta0;
+		double Asig_min;
+		double Asig_max;
+		double ta_min;
+		double ta_max;
+		double tstartLL;
+		double extra_time;
+		double tw;
+		double fore_dt;
+		double t_back;
+		double Hurst;
+		double Mc_source;
+		double Mc;
+		double Mag_main;
+		double DCFS_cap;
+		double dt;
+		double dM;
+		double xytoll;
+		double ztoll;
+		double border;
+		double res;
+		double gridresxy;
+		double gridresz;
+		double smoothing;
+	};
+#endif // _CRS_MPI
 
 #endif //DEFINES_H

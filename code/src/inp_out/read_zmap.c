@@ -7,8 +7,14 @@
 
 #include "read_zmap.h"
 
-int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, struct crust crst, struct tm reftime, double t0s, double t1s,
-		double t0c, double t1c, double Mmain, double tw, double border, double extra_d, double dDCFS, int findgridpoints){
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
+
+int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
+			  struct crust crst, struct tm reftime, double t0s, double t1s,
+			  double t0c, double t1c, double Mmain, double tw, double border,
+			  double extra_d, double dDCFS, int findgridpoints) {
 /* t0s,t1s: for considering sources.
  * t0c,t1c: for catalog (LL periods).
  * a time window of length tw will be discarded after each event of magnitude >=Mmain in calculating Mc, b values. (these events should not be used in the LL calculations).
@@ -20,6 +26,14 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
  *
  *  * */
 
+	// [Fahad] Variables used for MPI
+	int fileError = 0;
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
 	double std_merr=0.1, std_verr=5.0, std_herr=4.0;	//todo read from somewhere!
 	int line_length=2000;
 	int hh, lines=0, valid=0, empty=0, missing_values=0;
@@ -27,7 +41,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 	FILE *fin;
 	char line[line_length], *st;
 	int no_expected_columns=13;	//ZMAP format as used by CSEP?
-	int Z=countline(file)+1;
+	int Z;
 	double Mc_offset=0.3, dM=0.9;	//todo don't hardwide Mc_offset. todo dM should be passed.
 	int cut_sd=3.0;	//no. of s.dev. for cutting off gaussian.	//todo read from somewhere?
 	double t_last_large;
@@ -53,18 +67,24 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 			*dAgrid=crst.dAgrid;
 	int N=crst.N_allP;
 
-	t=time(NULL);
-	this_year=(*localtime(&t)).tm_year+1900;
-	if (Z<=0) return 1;
-
-	if (flog) {
-		fprintf(flog, "\n Reading catalog file %s.\n", file);
-		fprintf(flog, "events in time span [%.2lf - %.2lf]days initially selected for catalog.\n", t0c, t1c);
-		fprintf(flog, "events in time span [%.2lf - %.2lf]days initially selected as sources.\n", t0s, t1s);
-		fprintf(flog, "extra area used for selection of sources [%.2lf (horizontal) %.2lf(vertical)]km. \n", border, extra_d);
-		if ((*cat).Mc<20) fprintf(flog, "only events with Mw>=%.2lf will be used.\n", (*cat).Mc);
+	if(procId == 0) {
+		Z = countline(file)+1;
 	}
 
+	#ifdef _CRS_MPI
+		MPI_Bcast(&Z, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	// FIXME: [Fahad] Any 'return' statement other than the one at the end of the function
+	//		   should be prominent enough so that it is not missed by another
+	//		   person looking at the code.
+//	if (Z<=0) return 1;
+	if (Z <= 0) {
+		return 1;
+	}
+
+	t=time(NULL);
+	this_year=(*localtime(&t)).tm_year+1900;
 
 	double 	lon0=crst.lonmin, \
 			lon1=crst.lonmax, \
@@ -84,12 +104,25 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 			*times=dvector(1,Z);  //days from start of catalog (t1c)?
 
 	setenv("TZ", "UTC", 1);
-	fin=fopen(file,"r");
+	
+	if(procId == 0) {	
+		fin = fopen(file,"r");
 
+		if(fin == NULL) {
+			fileError = 1;
+		}
+	}
 
-	if(!(fin=fopen(file,"r"))){
-		if (verbose_level) printf("**Error: unable to open input file %s (readZMAP).**\n", file);
-		if (flog) fprintf(flog,"**Error: unable to open input file %s (readZMAP).**\n", file);
+	#ifdef _CRS_MPI
+		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if(fileError) {
+		if(procId == 0) {
+			if (verbose_level) printf("**Error: unable to open input file %s (readZMAP).**\n", file);
+			if (flog) fprintf(flog,"**Error: unable to open input file %s (readZMAP).**\n", file);
+		}
+
 		return (1);
 	}
 
@@ -99,120 +132,141 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 	int exp_not=0;
 	char ex[]="e";
 
-	while (!feof(fin)){
-		lines+=1;
-		st=fgets(line,line_length,fin);
+	if(procId == 0) {
+		while (!feof(fin)) {
+			lines+=1;
+			st=fgets(line,line_length,fin);
 
-		if (lines==1) for (int i=0; i<strlen(line) && !exp_not; i++) if (line[i]==ex[0]) exp_not=1;
+			if (lines==1) {
+				for (int i=0; i<strlen(line) && !exp_not; i++) {
+					if (line[i]==ex[0]) exp_not=1;
+				}
+			}
 
-		//initialize to out of range values (so will notice if columns are missing):
-		lon[valid+1]=999;
-		lat[valid+1]=999;
-		year=0;
-		mon=12;
-		day=32;
-		mag[valid+1]=999;
-		dep[valid+1]=-999;
-		hour=25;
-		min=62;
-		sec=62.0;
+			//initialize to out of range values (so will notice if columns are missing):
+			lon[valid+1]=999;
+			lat[valid+1]=999;
+			year=0;
+			mon=12;
+			day=32;
+			mag[valid+1]=999;
+			dep[valid+1]=-999;
+			hour=25;
+			min=62;
+			sec=62.0;
 
-		//initialize to standard values (in case they are not given in catalog).
-		merr[valid+1]=std_merr;
-		verr[valid+1]=std_verr;
-		herr[valid+1]=std_herr;
+			//initialize to standard values (in case they are not given in catalog).
+			merr[valid+1]=std_merr;
+			verr[valid+1]=std_verr;
+			herr[valid+1]=std_herr;
 
-		if (exp_not) {
-			hh=sscanf(line, "%25le %25le %25le %25le %25le %25le %25le %25le %25le %25le %25le %25le %25le",
-						lon+valid+1, lat+valid+1, &fyear, &fmon, &fday, mag+valid+1, dep+valid+1, &fhour, &flmin, &fsec, herr+valid+1, verr+valid+1, merr+valid+1);
+			if (exp_not) {
+				hh=sscanf(line, "%25le %25le %25le %25le %25le %25le %25le %25le %25le %25le %25le %25le %25le",
+							lon+valid+1, lat+valid+1, &fyear, &fmon, &fday, mag+valid+1, dep+valid+1, &fhour, &flmin, &fsec, herr+valid+1, verr+valid+1, merr+valid+1);
 
-			year=(int) fyear;
-			mon=(int) fmon;
-			day=(int) fday;
-			hour=(int) fhour;
-			min= (int) flmin;
-			sec= (int) fsec;
-		}
+				year=(int) fyear;
+				mon=(int) fmon;
+				day=(int) fday;
+				hour=(int) fhour;
+				min= (int) flmin;
+				sec= (int) fsec;
+			}
+			else {
+				hh=sscanf(line, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",	lon+valid+1, lat+valid+1, &fyear, &fmon, &fday, mag+valid+1, dep+valid+1, &fhour, &flmin, &fsec, herr+valid+1, verr+valid+1, merr+valid+1);
+				year=(int) fyear;
+				mon=(int) fmon;
+				day=(int) fday;
+				hour=(int) fhour;
+				min= (int) flmin;
+				sec= (int) fsec;
+			}
 
-		else {
-			hh=sscanf(line, "%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",	lon+valid+1, lat+valid+1, &fyear, &fmon, &fday, mag+valid+1, dep+valid+1, &fhour, &flmin, &fsec, herr+valid+1, verr+valid+1, merr+valid+1);
-			year=(int) fyear;
-			mon=(int) fmon;
-			day=(int) fday;
-			hour=(int) fhour;
-			min= (int) flmin;
-			sec= (int) fsec;
-		}
+			if (fabs(herr[valid+1])<tol0) herr[valid+1]=std_herr;
+			if (fabs(verr[valid+1])<tol0) verr[valid+1]=std_herr;
+			if (fabs(merr[valid+1])<tol0) merr[valid+1]=std_herr;
 
-		if (fabs(herr[valid+1])<tol0) herr[valid+1]=std_herr;
-		if (fabs(verr[valid+1])<tol0) verr[valid+1]=std_herr;
-		if (fabs(merr[valid+1])<tol0) merr[valid+1]=std_herr;
+			ev.tm_year=floor(year)-1900;
+			ev.tm_mon=mon-1;
+			ev.tm_mday=day;
+			ev.tm_isdst=0;
+			ev.tm_hour=hour;
+			ev.tm_min=min;
+			ev.tm_sec=(int) sec;
 
-		ev.tm_year=floor(year)-1900;
-		ev.tm_mon=mon-1;
-		ev.tm_mday=day;
-		ev.tm_isdst=0;
-		ev.tm_hour=hour;
-		ev.tm_min=min;
-		ev.tm_sec=(int) sec;
+			times[valid+1]=difftime(mktime(&ev),mktime(&reftime))*SEC2DAY;
 
-		times[valid+1]=difftime(mktime(&ev),mktime(&reftime))*SEC2DAY;
+			if (st==NULL) empty+=1;
+			else {
+				lon_out_of_range = lat_out_of_range = date_out_of_range = time_out_of_range = mag_out_of_range = dep_out_of_range = 0;
 
-		if (st==NULL) empty+=1;
-		else {
-			lon_out_of_range = lat_out_of_range = date_out_of_range = time_out_of_range = mag_out_of_range = dep_out_of_range = 0;
+				if (lon[valid+1]<-180 || lon[valid+1]>360) lon_out_of_range=1;
+				if (lat[valid+1]<-90 || lat[valid+1]>90) 	 lat_out_of_range=1;
+				if (year<1000 || year>this_year ||	mon<1 || mon>12 || day<1 || day>31) date_out_of_range=1;
+				if (hour<0 || hour>24 ||	min<0 || min>59 || sec<0 || sec>61) time_out_of_range=1;
+				if (mag[valid+1]<-10 || mag[valid+1]>12) mag_out_of_range=1;
+				if (dep[valid+1]<0 || dep[valid+1]>2000) dep_out_of_range=1;
 
-			if (lon[valid+1]<-180 || lon[valid+1]>360) lon_out_of_range=1;
-			if (lat[valid+1]<-90 || lat[valid+1]>90) 	 lat_out_of_range=1;
-			if (year<1000 || year>this_year ||	mon<1 || mon>12 || day<1 || day>31) date_out_of_range=1;
-			if (hour<0 || hour>24 ||	min<0 || min>59 || sec<0 || sec>61) time_out_of_range=1;
-			if (mag[valid+1]<-10 || mag[valid+1]>12) mag_out_of_range=1;
-			if (dep[valid+1]<0 || dep[valid+1]>2000) dep_out_of_range=1;
-
-			if (lon_out_of_range || lat_out_of_range || date_out_of_range || time_out_of_range || mag_out_of_range || dep_out_of_range) {
-				missing_values+=1;
-				if (hh!=no_expected_columns || missing_values){
-					if (verbose_level>1) {
-						printf("** Warning: line %d has following columns out of range:", lines);
-						if (lon_out_of_range) printf("lon, ");
-						if (lat_out_of_range) printf("lat, ");
-						if (dep_out_of_range) printf("dep, ");
-						if (mag_out_of_range) printf("mag, ");
-						if (date_out_of_range) printf("date, ");
-						if (time_out_of_range) printf("time, ");
-						printf(" and will be skipped. ** \n");
+				if (lon_out_of_range || lat_out_of_range || date_out_of_range || time_out_of_range || mag_out_of_range || dep_out_of_range) {
+					missing_values+=1;
+					if (hh!=no_expected_columns || missing_values){
+						if (verbose_level>1) {
+							printf("** Warning: line %d has following columns out of range:", lines);
+							if (lon_out_of_range) printf("lon, ");
+							if (lat_out_of_range) printf("lat, ");
+							if (dep_out_of_range) printf("dep, ");
+							if (mag_out_of_range) printf("mag, ");
+							if (date_out_of_range) printf("date, ");
+							if (time_out_of_range) printf("time, ");
+							printf(" and will be skipped. ** \n");
+						}
+						if (flog) {
+							fprintf(flog, "Warning: line %d has following columns out of range:", lines);
+							if (lon_out_of_range) fprintf(flog, "lon (%.2lf), ", lon[valid+1]);
+							if (lat_out_of_range) fprintf(flog, "lat (%.2lf), ", lat[valid+1]);
+							if (dep_out_of_range) fprintf(flog, "dep (%.2lf), ", dep[valid+1]);
+							if (mag_out_of_range) fprintf(flog, "mag (%.2lf), ", mag[valid+1]);
+							if (date_out_of_range) fprintf(flog, "date (%2d-%2d-%4.lf), ", day, mon, year);
+							if (time_out_of_range) fprintf(flog, "time (%2d:%2d:%2d). ", hour, min, sec);
+							fprintf(flog, " and will be skipped.\n");
+						}
 					}
-					if (flog) {
-						fprintf(flog, "Warning: line %d has following columns out of range:", lines);
-						if (lon_out_of_range) fprintf(flog, "lon (%.2lf), ", lon[valid+1]);
-						if (lat_out_of_range) fprintf(flog, "lat (%.2lf), ", lat[valid+1]);
-						if (dep_out_of_range) fprintf(flog, "dep (%.2lf), ", dep[valid+1]);
-						if (mag_out_of_range) fprintf(flog, "mag (%.2lf), ", mag[valid+1]);
-						if (date_out_of_range) fprintf(flog, "date (%2d-%2d-%4.lf), ", day, mon, year);
-						if (time_out_of_range) fprintf(flog, "time (%2d:%2d:%2d). ", hour, min, sec);
-						fprintf(flog, " and will be skipped.\n");
-					}
+					else valid+=1;
 				}
 				else valid+=1;
 			}
-			else valid+=1;
+		}
+		fclose(fin);
+
+		if (verbose_level > 2) printf("%d of %d lines are valid; %d have missing values; %d are empty\n", valid, lines, missing_values, empty);
+		if (flog) fprintf(flog, "%d of %d lines are valid; %d have missing values; %d are empty\n", valid, lines, missing_values, empty);
+		else {
+			if (valid!=lines && verbose_level>0) {
+				printf("** Warning: %d invalid lines skipped in catalog: %s (%d lines have missing values; %d are empty). **\n", missing_values+empty, file, missing_values, empty);
+				if (flog) fprintf(flog, "Warning: %d invalid lines skipped in catalog: %s (%d lines have missing values; %d are empty).\n", missing_values+empty, file, missing_values, empty);
+			}
 		}
 	}
-	fclose(fin);
 
-	if (verbose_level > 2) printf("%d of %d lines are valid; %d have missing values; %d are empty\n", valid, lines, missing_values, empty);
-	if (flog) fprintf(flog, "%d of %d lines are valid; %d have missing values; %d are empty\n", valid, lines, missing_values, empty);
-	else {
-		if (valid!=lines && verbose_level>0) {
-			printf("** Warning: %d invalid lines skipped in catalog: %s (%d lines have missing values; %d are empty). **\n", missing_values+empty, file, missing_values, empty);
-			if (flog) fprintf(flog, "Warning: %d invalid lines skipped in catalog: %s (%d lines have missing values; %d are empty).\n", missing_values+empty, file, missing_values, empty);
-		}
-	}
+	#ifdef _CRS_MPI
+		MPI_Bcast(&valid, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
 
-	if (valid==0){
-		(*cat).Z=0;
+	if(valid == 0){
+		(*cat).Z = 0;
+
 		return(1);
 	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(lat, 	 Z+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(lon, 	 Z+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(mag, 	 Z+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(mag2,  Z+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(dep, 	 Z+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(herr,  Z+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(verr,  Z+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(times, Z+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	#endif
 
 	//------------------------------select events:-------------------------//
 
@@ -264,9 +318,11 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 		return 1;
 	}
 
-	if (flog){
-		fprintf(flog, "%d events selected for LL inversion. \n", eq2);
-		fprintf(flog, "%d events selected as sources. \n", eq1);
+	if(procId == 0) {
+		if (flog){
+			fprintf(flog, "%d events selected for LL inversion. \n", eq2);
+			fprintf(flog, "%d events selected as sources. \n", eq1);
+		}
 	}
 
 
@@ -303,10 +359,12 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 		}
 		eq1=k;
 
-		if (flog){
-			fprintf(flog, "Calculated completeness magnitude (using maximum curvature): Mc=%.2lf\n", (*cat).Mc);
-			fprintf(flog, "%d events selected for LL inversion. \n", eq2);
-			fprintf(flog, "%d events selected as sources. \n", eq1);
+		if(procId == 0) {
+			if (flog){
+				fprintf(flog, "Calculated completeness magnitude (using maximum curvature): Mc=%.2lf\n", (*cat).Mc);
+				fprintf(flog, "%d events selected for LL inversion. \n", eq2);
+				fprintf(flog, "%d events selected as sources. \n", eq1);
+			}
 		}
 	}
 
@@ -342,10 +400,13 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file, s
 		if (!errP) {
 		if ((*cat).Mc>=20) (*cat).Mc=Mc_maxcurv((*cat).mag+1, (*cat).Z)+Mc_offset;
 		(*cat).b=calculatebvalue((*cat).mag+1, (*cat).Z, (*cat).Mc);
-		if (verbose_level>1) printf("Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
-			if (flog) {
-				fprintf(flog, "Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
-				fflush(flog);
+
+		if(procId == 0) {
+			if (verbose_level>1) printf("Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
+				if (flog) {
+					fprintf(flog, "Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
+					fflush(flog);
+				}
 			}
 		}
 	}

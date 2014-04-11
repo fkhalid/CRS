@@ -7,12 +7,24 @@
 
 #include "struct_conversions.h"
 
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
+
 //------------------ combining -------------------//
 
-int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2, double tend, double dt, double dM, double dR, int overwrite){
+int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
+				   double tend, double dt, double dM, double dR, int overwrite) {
 //joins 2 eqkfm catalogs, where each member corresponds to an earthquake (i.e. no multifault events). Keeps event number of first catalog.
 //dt, dM are ranges within which earthquakes are considered to be the same.
 //indices range between [0,N1-1] and [0,N2-1].
+
+	// [Fahad] Variables used for MPI
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	int n1=0, n10=0, n12=0; //indices of next and previous event and closest in time.
 	double dist20, dist2, dlon;
@@ -29,11 +41,14 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2, d
 	while (N1<N10 && eqkfm1[N1].t<=tend) N1++;
 
 	if (N1==0 | N2==0) {
-		if (verbose_level>1) printf("Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
-		if (flog) {
-			fprintf(flog, "Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
-			fflush(flog);
+		if(procId == 0) {			
+			if (verbose_level>1) printf("Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
+			if (flog) {
+				fprintf(flog, "Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
+				fflush(flog);
+			}
 		}
+
 		return NULL;
 	}
 
@@ -67,7 +82,9 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2, d
 		r=sqrt(dx*dx+dy*dy);
 
 		if (fabs(eqkfm2[n2].mag-eqkfm1[n12].mag) <=(dM+0.001) && fabs(eqkfm2[n2].t-eqkfm1[n12].t) <=dt && r<=dR){
-			if (verbose==1) fprintf(fout,"%lf\t%lf\t%lf\t%lf\t%lf\t%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 1, eqkfm1[n12].t, eqkfm1[n12].lat, eqkfm1[n12].lon, eqkfm1[n12].depth, eqkfm1[n12].mag,r);
+			if(procId == 0) {
+				if (verbose==1) fprintf(fout,"%lf\t%lf\t%lf\t%lf\t%lf\t%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 1, eqkfm1[n12].t, eqkfm1[n12].lat, eqkfm1[n12].lon, eqkfm1[n12].depth, eqkfm1[n12].mag,r);
+			}
 			if (overwrite==1){
 				copy_eqkfm_nolocation_noindex_notime(eqkfm2[n2], eqkfm1+n12);
 			}
@@ -77,25 +94,30 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2, d
 		}
 
 		else {
-			if (verbose==1) fprintf(fout,"%.8lf\t%lf\t%lf\t%lf\t%lf\t%d\t%.8lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 0, 0.0 ,0.0 ,0.0 ,0.0, 0.0, 0.0);
+			if(procId == 0) {
+				if (verbose==1) fprintf(fout,"%.8lf\t%lf\t%lf\t%lf\t%lf\t%d\t%.8lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 0, 0.0 ,0.0 ,0.0 ,0.0, 0.0, 0.0);
+			}
 		}
 
 		if (selected!=1 && eqkfm2[n2].t<tend) {
 			sel[n2]=-1;
 			if (!selected) {
-				if (verbose_level) printf("Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
-				if (flog) {
-					fprintf(flog, "Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
-					fflush(flog);
+				if(procId == 0) {
+					if (verbose_level) printf("Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
+					if (flog) {
+						fprintf(flog, "Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
+						fflush(flog);
+					}
 				}
 			}
 		}
 	}
 
-	if (verbose==1) fclose(fout);
+	if(procId == 0) {
+		if (verbose==1) fclose(fout);
+	}
 
 	return sel;
-
 }
 
 int *combine_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2, double dt, double dM){

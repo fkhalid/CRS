@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../defines.h"
+
 void error_quit(char * message);
 
 #endif /* ERROR_H_ */

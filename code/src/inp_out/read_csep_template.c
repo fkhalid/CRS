@@ -7,6 +7,10 @@
 
 #include "read_csep_template.h"
 
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
+
 int read_fmindex(struct crust crst, char *fname, int **fm_index, int *no_zones){
 
 	double *dum=NULL;
@@ -33,9 +37,12 @@ int read_rate(struct crust crst, char *fname, double **bg_rate, double *minmag){
 	return err;
 }
 
-int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon, int *ndep, int *ng, double *dlat, double *dlon, double *ddep, double *dmag,
-		double **lats, double **lons, double **deps, double **rate, double *minlat, double *maxlat, double *minlon, double *maxlon, double *mindep, double *maxdep,
-		double *minmag, double *maxmag, int *uni){
+int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
+					   int *ndep, int *ng, double *dlat, double *dlon,
+					   double *ddep, double *dmag, double **lats, double **lons,
+					   double **deps, double **rate, double *minlat, double *maxlat,
+					   double *minlon, double *maxlon, double *mindep, double *maxdep,
+					   double *minmag, double *maxmag, int *uni) {
 
 /* input:
  * fname, name of txt file.
@@ -54,7 +61,13 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon, int *
  *
  * */
 
-	int NC=countcol(fname), NL=countline(fname), NH=0, NP;
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
+	int NC, NL, NH=0, NP;
 	int n1, nmag, err=0;
 	long NR;
 	double **data;
@@ -63,12 +76,42 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon, int *
 	double toll=1e-6;
 	double closest_lat, closest_lon, closest_dep;
 
-	if (NL>0 && NC>0) {
-		data=dmatrix(1,NC, 1, NL+1);
-		err=read_matrix(fname, NC, NH, data, &NR);
-		if (err) return 1;
+	if(procId == 0) {
+		NC = countcol(fname);
+		NL = countline(fname);
 	}
-	else return 1;
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&NC, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&NL, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if (NL>0 && NC>0) {
+		data = dmatrix(1,NC, 1, NL+1);
+
+		if(procId == 0) {
+			err = read_matrix(fname, NC, NH, data, &NR);
+		}
+
+		#ifdef _CRS_MPI
+			MPI_Bcast(&err, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+		#endif
+
+		if(err) {
+			return 1;
+		}
+
+		#ifdef _CRS_MPI
+			MPI_Bcast(&NR, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+
+			long nrl=1, nrh=NC, ncl=1, nch=NL+1;
+			long nrow=nrh-nrl+1, ncol=nch-ncl+1;
+			MPI_Bcast(data[nrl], nrow*ncol+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		#endif
+	}
+	else {
+		return 1;
+	}
 
 	nmag=2;
 	mag0=data[7][1];
@@ -153,7 +196,17 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon, int *
 	if (minmag) *minmag=mag0+0.5*dmagi;
 	if (maxmag) *maxmag=mag1-0.5*dmagi;
 
-	free_dmatrix(data,1,countcol(fname), 1, countline(fname)+1);
+	if(procId == 0) {
+		NC = countcol(fname);
+		NL = countline(fname);
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&NC, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&NL, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	free_dmatrix(data,1,NC, 1, NL+1);
 
 	return (0);
 }

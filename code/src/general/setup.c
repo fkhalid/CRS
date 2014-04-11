@@ -5,13 +5,18 @@
  *      Author: camcat
  */
 
-
 #include "setup.h"
 
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
-int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_format, struct tm reftime, double dDCFS, double Mag_main, struct crust crst,
-		struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec, int **firstelements, struct flags flag, int *NFM, int *Ntot, int *Nmain,
-		double dt, double dM, double xytoll, double ztoll, double dR, double tw, double tstart, double tend, double Mc_source){
+int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_format,
+					 struct tm reftime, double dDCFS, double Mag_main, struct crust crst,
+					 struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec,
+					 int **firstelements, struct flags flag, int *NFM, int *Ntot, int *Nmain,
+					 double dt, double dM, double xytoll, double ztoll, double dR, double tw,
+					 double tstart, double tend, double Mc_source) {
 //  focmec will contain matrix with focal mechanisms (*NFM of them). can be null, and will be ignored.
 //	double t0, double tw1, double tw2, double t1 =	tstartLL, tmain[0], tmain[0]+tw, fmax(tendLL,Tend)
 //  dt, dM, xytoll, ztoll: expected difference b/t/ events from catalog and focmec catalog; dR= extra distance to be considered for sources.
@@ -25,19 +30,39 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 //todo so far, many events are selected and  eqkfm[n].nsel=0 is used to deactivate them. This is a waste (donw this way to avoid messing up indices, but should be changed).
 //todo check Mc_source works.
 
+	// [Fahad] Variables used for MPI
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
 	struct eqkfm *eqkfm1fm;
 	double tstartS, tendS, tstartCat, tendCat;
 	int err=0, errP, NgridT=crst.N_allP;
 	int Nfm;
-	if (verbose_level>0) printf("Setting up catalog...\n");
+	int numCols;
+
+	if(procId == 0) {
+		if (verbose_level>0) printf("Setting up catalog...\n");
+	}
 
 	tendS=0;		//this is the "IssueDate", up to which data is available.
 	tendCat=tend;	//this is (presumably) the "ForecastDate", up to which data is available. Events after t=0 used to calculate LL of forecast.
 
 	//select events within some tolerance level, since they will have to be matched with focal mechanisms.
 	//todo remove this line (only for making it work for Parkfield).
-	if (countcol(catname)==8) {
-		err+=read_RS(catname, cat, crst, -2.0, tstart, 0.0, tw, tendCat, 0.0, eqkfm1, dDCFS, Ntot, 1);
+
+	if(procId == 0) {
+		numCols = countcol(catname);
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&numCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if(numCols == 8) {
+		err += read_RS(catname, cat, crst, -2.0, tstart, 0.0, tw, tendCat, 0.0, eqkfm1, dDCFS, Ntot, 1);
 		for (int eq=0; eq<*Ntot; eq++) {
 			if ((*eqkfm1)[eq].t>0.0) {
 				*Ntot=eq;
@@ -45,7 +70,10 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 			}
 		}
 	}
-	else err+=readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat, Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
+	else {
+		err += readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat,
+						Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
+	}
 
 	//fixme check that foc mec are read when aftershocks==1.
 	if (flag.aftershocks){
@@ -82,18 +110,27 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 		}
 	}
 
-	if (verbose_level>0) printf("%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
-	if (flog) {
-		fprintf(flog,"%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
-		fflush(flog);
+	if(procId == 0) {
+		if (verbose_level>0) printf("%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
+		if (flog) {
+			fprintf(flog,"%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
+			fflush(flog);
+		}
 	}
-	return (err!=0);
 
+	return (err!=0);
 }
 
 int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, int resample, struct eqkfm **eqkfm0res){
 //input models are the models to be used at a given time (NB: only one model per event).
 //is_afterslip indicates that all models have same geometry: Nfaults and no_slipmodels only have 1 element.
+
+	// [Fahad] Variables used for MPI.
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	int Nm=list_slipmodels.NSM;
 	double *tmain=list_slipmodels.tmain;
@@ -112,10 +149,13 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 			else {
 				if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(slipmodels[0], NULL, Nfaults);
 				else {
-				if (flog) {
-					fprintf(flog,"Unknown slip model format %s (setup_afterslip_eqkfm).\n", cmb_format);
-					fflush(flog);
-				}
+					if(procId == 0) {
+						if (flog) {
+							fprintf(flog,"Unknown slip model format %s (setup_afterslip_eqkfm).\n", cmb_format);
+							fflush(flog);
+						}
+					}
+
 					return 1;
 				}
 			}
@@ -134,15 +174,22 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     return(err);
 }
 
-int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipmodels, double mu, double disc,
-		double tmain, double d_close, int nsel, int *sel_pts, double *mmain, int resample, int tap_bot, int *NF0, double lat0, double lon0){
+int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipmodels,
+						double mu, double disc, double tmain, double d_close, int nsel,
+						int *sel_pts, double *mmain, int resample, int tap_bot, int *NF0,
+						double lat0, double lon0) {
+	// [Fahad] Variables used for MPI.
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	static struct set_of_models setmodels;
 	static struct eqkfm *eqkfmall;
 	struct eqkfm *eqkfm0;
 	int err=0, NF, nftot=0, nfmax=0;
 	double 	toll=1e-10, discx, discy;
-
 
 	(*eqkfm0res).parent_set_of_models=&setmodels;
 	setmodels.NF_models=ivector(1,no_slipmodels);
@@ -152,8 +199,11 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 	for (int m=0; m<no_slipmodels; m++){
 		err=read_eqkfm(slipmodels[m], NULL, &NF, NULL, mu);
 		if (err){
-			if (verbose_level>0) printf(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
-			if (flog) fprintf(flog, " ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
+			if(procId == 0) {
+				if (verbose_level>0) printf(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
+				if (flog) fprintf(flog, " ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
+			}
+
 			return (1);
 		}
 		setmodels.NF_models[m+1]=NF;
@@ -180,9 +230,11 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 			  	//if current discretization is larger than required, resample:
 			  	if (discx>disc || discy>disc) {
 			  		suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, disc, 0.0);
-			  		if (flog){
-						fprintf(flog, "slip model %s is resampled from res=[str=%.3lf, dip=%.3lf] to res=%.3lf (setup.c).\n", slipmodels[m], discx, discy, disc);
-						fflush(flog);
+					if(procId == 0) {
+				  		if (flog){
+							fprintf(flog, "slip model %s is resampled from res=[str=%.3lf, dip=%.3lf] to res=%.3lf (setup.c).\n", slipmodels[m], discx, discy, disc);
+							fflush(flog);
+						}
 					}
 			  	}
 			  	else {
@@ -210,6 +262,13 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 //sets variables in eqkfm0 to required slip model.
 
+	// [Fahad] Variables used for MPI.
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
 	int nftot=0;
 	struct set_of_models allmod= *(eqkfm0[0].parent_set_of_models);
 	struct eqkfm* eqkfmall=allmod.set_of_eqkfm;
@@ -224,17 +283,27 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 	for (int nf=0; nf<allmod.NF_models[slipmodel_index]; nf++) copy_eqkfm_all(eqkfmall[nf+nftot], eqkfm0+nf);
 	for (int nf=allmod.NF_models[slipmodel_index]; nf<allmod.NFmax; nf++) empty_eqkfm(eqkfm0+nf);
 
-	if (flog) {
-		fprintf(flog,"Slip model set to no. %d.\n", slipmodel_index);
-		fflush(flog);
+	if(procId == 0) {
+		if (flog) {
+			fprintf(flog,"Slip model set to no. %d.\n", slipmodel_index);
+			fflush(flog);
+		}
 	}
 
 	return;
 }
 
-int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out, struct crust crst, struct eqkfm *eqkfm0,
-		struct eqkfm *eqkfm1, int Nm, int Ntot, int *Nfaults, int *which_main){
+int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out,
+		struct crust crst, struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, int Nm,
+		int Ntot, int *Nfaults, int *which_main) {
 	//set Ntot=0 if aftershocks should not be considered.
+
+	// [Fahad] Variables used for MPI
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	struct pscmp *DCFS;
     struct Coeff_LinkList *AllCoeff, *temp;
@@ -243,16 +312,25 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 
     //----------set up Coefficients----------------//
 
-    if (Coefficients!=NULL){
+    if (Coefficients!=NULL) {
 		AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
 		temp= AllCoeff;
-		for (int i=0; i<Nm; i++){
-			if (eqkfm0[NFsofar].is_slipmodel) okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar, Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
-			else temp->Coeffs_st=temp->Coeffs_dip=NULL;
+		for(int i=0; i<Nm; i++) {
+			if (eqkfm0[NFsofar].is_slipmodel) {
+				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+//				okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+//						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+			}
+			else {
+				temp->Coeffs_st=temp->Coeffs_dip=NULL;
+			}
 			temp->NgridT=eqkfm0[0].nsel;
 			temp->NF=Nfaults[i];
 			temp->NP=0;
-			for (int f=0; f<Nfaults[i]; f++) temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+			for(int f=0; f<Nfaults[i]; f++) {
+				temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+			}
 			temp->which_main=which_main[i];
 			NFsofar+=Nfaults[i];
 			if (i<Nm-1) {
@@ -262,10 +340,12 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			else temp->next=(struct Coeff_LinkList *) 0;
 		}
 		*Coefficients=AllCoeff;
-	    if (flog){
-	    	fprintf(flog,"Okada Coefficients structure set up.\n");
-	    	fflush(flog);
-	    }
+		if(procId == 0) {
+			if (flog){
+				fprintf(flog,"Okada Coefficients structure set up.\n");
+				fflush(flog);
+			}
+		}
     }
 
     //--------------set up DCFS-------------------//
@@ -317,17 +397,21 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 		}
 
 		*DCFS_out=DCFS;
-    	if (flog){
-	    	fprintf(flog,"DCFS structure set up.\n");
-    		fflush(flog);
-    	}
+		if(procId == 0) {
+			if (flog){
+				fprintf(flog,"DCFS structure set up.\n");
+				fflush(flog);
+			}
+		}
     }
 
     return(0);
 }
 
-int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *ts, int Nfun, struct eqkfm **eqk_aft, double *t_afterslip, int Nas,int Nfaults,
-		int afterslip, int *L, double **times2, double **tevol_afterslip, long *seed){
+int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *ts,
+						 int Nfun, struct eqkfm **eqk_aft, double *t_afterslip,
+						 int Nas,int Nfaults, int afterslip, int *L, double **times2,
+						 double **tevol_afterslip, long *seed) {
 
 //if splines are, eqk_aft is substituted with more densily discretized version (L steps instead of Nas).
 //Cs, ts, coefficients of temporal evolution functions (See Savage Parkfield paper). Nfun: no. of such funtions.

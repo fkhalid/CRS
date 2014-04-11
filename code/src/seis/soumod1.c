@@ -19,6 +19,10 @@
 
 #include "soumod1.h"
 
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
+
 double tot_slip (struct eqkfm eqfm1){
 
 	double slip=0.0;
@@ -102,6 +106,12 @@ int adjust_faults(struct eqkfm *eqkfm0,  int NF, int vert){
 
 int which_taper(struct eqkfm *eqkfm0,  int NF, int tap_bot, int tap_top, double d_close_enough){
 //setup taper vectors in eqkfm0 (taper [1...4]=top,bottom,right,left) depending on how faults are oriented relative to each others.
+
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	double *P;
 	double cosH, H, Hdip;
@@ -209,7 +219,9 @@ int which_taper(struct eqkfm *eqkfm0,  int NF, int tap_bot, int tap_top, double 
 			}
 
 			else {
-				if (verbose_level>0)  printf("** Warning: could not determine relative orientation of faults - model is not tapered! **\n");
+				if(procId == 0) {
+					if (verbose_level>0)  printf("** Warning: could not determine relative orientation of faults - model is not tapered! **\n");
+				}
 				for (int n=0; n<NF-1; n++){
 					for (int i=1; i<=4; i++) eqkfm0[n].taper[i]=0;
 				}
@@ -239,6 +251,12 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 
   printout= (verbose_level>3) ? 1:0;
   print_Fourier= (verbose_level>3) ? 1:0;
+
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
     ns=eqkfm1.np_st*eqkfm1.np_di;
     REslipo= dvector(1,ns);
@@ -441,7 +459,11 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 
   //--------------Print things out-------------------//
 
-  if (printout==1) print_slipmodel(outname2,eqkfm2,1);
+  if (printout==1) {
+	  if(procId == 0) {
+		  print_slipmodel(outname2,eqkfm2,1);
+	  }
+  }
 
   //----------------Free memory----------------------//
 
@@ -482,6 +504,12 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 
 	printout= (verbose_level>3) ? 1:0;
 
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
 	top=eqkfm1.taper[1];
 	bottom=eqkfm1.taper[2];
 	right=eqkfm1.taper[3];
@@ -492,10 +520,12 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
     if (eqkfm1.np_di==1) top=bottom=0;
     if (ns==1) {
     	copy_eqkfm_slipmodel(eqkfm1, eqkfm2);
-    	if (verbose_level>0) printf("** Warning: model has a single patch, will not be tapered.**\n");
-    	if (flog) {
-    		fprintf(flog,"** Warning: model has a single patch, will not be tapered.**\n");
-    		fflush(flog);
+    	if(procId == 0) {
+    		if (verbose_level>0) printf("** Warning: model has a single patch, will not be tapered.**\n");
+        	if (flog) {
+        		fprintf(flog,"** Warning: model has a single patch, will not be tapered.**\n");
+        		fflush(flog);
+        	}
     	}
     	return 0;
     }
@@ -601,7 +631,11 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
   //--------------Print things out-------------------//
 
 
-	if (printout==1) print_slipmodel(outname2,eqkfm2,1);
+	if (printout==1) {
+		if(procId == 0) {
+			print_slipmodel(outname2,eqkfm2,1);
+		}
+	}
 
 
   //--------------Free memory-------------------//
