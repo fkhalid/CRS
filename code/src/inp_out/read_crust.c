@@ -6,7 +6,10 @@
  */
 
 #include "read_crust.h"
-#include "mpi.h"
+
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 //TODO: if more slip models are contained, make sure they have consistent geometry (they must cover all sampling points).
 
@@ -220,16 +223,16 @@ int read_farfalle_crust(char * file, struct crust *crst){
 	int procId = 0;
 	int fileError = 0;
 
-#ifdef _CRS_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-#endif
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	if(procId == 0) {
 		fin=fopen(file,"r");
 		if (!fin) {
 			if (verbose_level) printf("**Error: can not find input file %s (read_farfalle_crust).**", file);
 			if (flog) fprintf(flog, "**Error: can not find input file %s (read_farfalle_crust).**", file);
-//			return (1);
+
 			fileError = 1;
 		}
 
@@ -277,12 +280,15 @@ int read_farfalle_crust(char * file, struct crust *crst){
 		fclose(fin);
 	}
 
-#ifdef _CRS_MPI
-	MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#ifdef _CRS_MPI
+		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
 	if(fileError) {
 		return 1;
 	}
-	else {
+
+	#ifdef _CRS_MPI
 		MPI_Bcast(&((*crst).lambda), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&((*crst).mu), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&((*crst).fric), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -293,8 +299,7 @@ int read_farfalle_crust(char * file, struct crust *crst){
 		MPI_Bcast(s, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(st, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(di, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	}
-#endif
+	#endif
 
 	(*crst).S=prestress_eigen(s, st, di);
 
@@ -314,9 +319,9 @@ int read_pscmp_crust(char *fname, struct crust *crst){
 	int procId = 0;
 	int fileError = 0;
 
-#ifdef _CRS_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-#endif
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	(*crst).lambda=31226, (*crst).mu=26624;//calculated for Vp=5.7,Vs=3.2, rho=2600 (from Wang psgrn input file for Parkfield). MPa.
 
@@ -330,12 +335,14 @@ int read_pscmp_crust(char *fname, struct crust *crst){
 			fileError = 1;
 		}
 	}
-#ifdef _CRS_MPI
-	MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
 	if(fileError) {
 		return 1;
 	}
-#endif
 
 	if(procId == 0) {
 		line[0]=comm[0];
@@ -347,27 +354,18 @@ int read_pscmp_crust(char *fname, struct crust *crst){
 		fclose(fin);
 	}
 
-#ifdef _CRS_MPI
-	MPI_Bcast(&dumerror, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#ifdef _CRS_MPI
+		MPI_Bcast(&dumerror, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-	MPI_Bcast(&((*crst).fric), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&((*crst).skepton), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&((*crst).str0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&((*crst).dip0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&((*crst).rake0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&s1, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&s2, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	MPI_Bcast(&s3, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-#endif
-
-	// FIXME: [Fahad] For testing purposes only ...
-//	if(procId == 1) {
-//		printf("\n crst.fric: %f", (*crst).fric);
-//		printf("\n crst.skepton: %f", (*crst).skepton);
-//		printf("\n crst.str0: %f", (*crst).str0);
-//		printf("\n crst.dip0: %f", (*crst).dip0);
-//		printf("\n crst.rake0: %f", (*crst).rake0);
-//	}
+		MPI_Bcast(&((*crst).fric), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).skepton), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).str0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).dip0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).rake0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&s1, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&s2, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&s3, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	#endif
 
 	prestress(s1, s2, s3, (*crst).str0, (*crst).dip0, (*crst).rake0, 0.0,(*crst).fric, &((*crst).S));
 

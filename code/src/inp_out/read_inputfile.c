@@ -6,7 +6,10 @@
  */
 
 #include "read_inputfile.h"
-#include "mpi.h"
+
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *crust_file, char *fore_template,
 		char *catname, char ***focmeccat, char *background_rate_file, char *slipmodelfile, char *afterslipmodelfile,
@@ -79,7 +82,9 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	if(procId == 0) {
 		fin = fopen(input_fname, "r");
 		if(fin == NULL) {
-			if (verbose_level>1) fprintf(stderr, "Error read_input: unable to open input file %s.\n", input_fname);
+			if(verbose_level > 1) {
+				fprintf(stderr, "Error read_input: unable to open input file %s.\n", input_fname);
+			}
 
 			fileError = 1;
 		}
@@ -315,17 +320,18 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 				fflush(flog);
 			}
 
-			fileError = 1;	// [Fahad] Error flag.
+			fileError = 1;
 		}
 	}
 	#ifdef _CRS_MPI
 		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		if(fileError) {
-			*listfiles=NULL;
-
-			return 1;
-		}
 	#endif
+
+	if(fileError) {
+		*listfiles = NULL;
+
+		return 1;
+	}
 
 	if(procId == 0) {
 		line[0]=comm;
@@ -369,11 +375,11 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 	#ifdef _CRS_MPI
 		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-		if(fileError) {
-			return 1;
-		}
 	#endif
+
+	if(fileError) {
+		return 1;
+	}
 
 	return 0;
 }

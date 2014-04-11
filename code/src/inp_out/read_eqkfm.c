@@ -10,7 +10,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include "mpi.h"
+
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 #include "../defines.h"
 #include "../general/eqkfm_copy.h"

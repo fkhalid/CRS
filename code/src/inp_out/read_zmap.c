@@ -6,7 +6,10 @@
  */
 
 #include "read_zmap.h"
-#include "mpi.h"
+
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			  struct crust crst, struct tm reftime, double t0s, double t1s,

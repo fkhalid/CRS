@@ -5,10 +5,11 @@
  *      Author: camcat
  */
 
-
 #include "setup.h"
-#include "mpi.h"
 
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_format,
 					 struct tm reftime, double dDCFS, double Mag_main, struct crust crst,
@@ -40,7 +41,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 	double tstartS, tendS, tstartCat, tendCat;
 	int err=0, errP, NgridT=crst.N_allP;
 	int Nfm;
-	int columnCount;
+	int numCols;
 
 	if(procId == 0) {
 		if (verbose_level>0) printf("Setting up catalog...\n");
@@ -53,14 +54,14 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 	//todo remove this line (only for making it work for Parkfield).
 	// TODO: countcol needs to managed with broadcast ...
 	if(procId == 0) {
-		columnCount = countcol(catname);
+		numCols = countcol(catname);
 	}
 
 	#ifdef _CRS_MPI
-		MPI_Bcast(&columnCount, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&numCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
 
-	if(columnCount == 8) {
+	if(numCols == 8) {
 		err += read_RS(catname, cat, crst, -2.0, tstart, 0.0, tw, tendCat, 0.0, eqkfm1, dDCFS, Ntot, 1);
 		for (int eq=0; eq<*Ntot; eq++) {
 			if ((*eqkfm1)[eq].t>0.0) {

@@ -6,7 +6,10 @@
  */
 
 #include "read_RS.h"
-#include "mpi.h"
+
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 int gridPMax=1000;	// max no. points associated with event.
 
@@ -73,6 +76,7 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 	if(procId == 0) {
 		read_matrix(filename, S, 0, datas, &Z1);
 	}
+
 	#ifdef _CRS_MPI
 		MPI_Bcast(&Z1, 1, MPI_LONG, 0, MPI_COMM_WORLD);
 	#endif

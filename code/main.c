@@ -51,9 +51,9 @@ int main (int argc, char **argv) {
 	int numProcs = 1;	// [Fahad] Total number of MPI processes
 	double startTime, endTime;
 
-	omp_set_num_threads(2);
-
 	#ifdef _CRS_MPI
+		omp_set_num_threads(2);
+
 		// [Fahad] Initialize MPI and get the rank and the total number of processes.
 		MPI_Init(&argc, &argv);
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
@@ -225,10 +225,6 @@ int main (int argc, char **argv) {
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 	#endif
 
-//	printf("\n ProcId: %d -- background_rate_file: %s", procId, background_rate_file);
-//	printf("\n ProcId: %d -- afterslipmodelfile: %s", procId, afterslipmodelfile);
-//	printf("\n ProcId: %d -- cmb_format: %s", procId, cmb_format);
-
 	// FIXME [Fahad] Block ignored in MPI due to CSEPmode
 	//set things for Csep mode:
 	if (CSEPmode) {
@@ -237,7 +233,7 @@ int main (int argc, char **argv) {
 	}
 	else {	//todo only leave CSEP format for final version.
 		if(procId == 0) {
-			nc=countcol(focmeccats[0]);
+			nc = countcol(focmeccats[0]);
 		}
 
 		#ifdef _CRS_MPI
@@ -324,12 +320,6 @@ int main (int argc, char **argv) {
 	if(procId == 0) {
 		if (flog) fprintf(flog, "dDCFS (min value for which calculation is done) = %.2e Pa\n", dDCFS);
 	}
-
-//	printf("\n ProcId: %d -- flags.afterslip: %d \n", procId, flags.afterslip);
-
-//	MPI_Barrier(MPI_COMM_WORLD);
-//	error_quit("\n MPI working fine so far \n");
-
 
 //---------------------------------------------//
 //--------------Setup afterslip----------------//
@@ -427,10 +417,24 @@ int main (int argc, char **argv) {
 			if (verbose_level>0) printf("** Warning: fewer than %d events in catalog can be used for LL inversion: will try to find large in the past to fit parameters... **\n", N_min_events);
 		}
 		cat2.Mc=Mag_main;
+
+		int numCols;
+
+		if(procId == 0) {
+			numCols = countcol(catname);
+		}
+
+		#ifdef _CRS_MPI
+			MPI_Bcast(&numCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		#endif
+
 		//fixme remove first line (only there for compatibility with parkfield).
-		if (countcol(catname)==8)
-			 err+=read_RS(catname, &cat2, crst, -2, t_back, 0.0, tw, tstartLL, Mag_main, NULL, 0, NULL, 0);
-		else err+=readZMAP(&cat2, NULL, NULL, catname, crst, reftime, t_back, tstartLL, t_back, tstartLL, Mag_main, 0, 0, 0, dDCFS, 1);
+		if (numCols == 8) {
+			err += read_RS(catname, &cat2, crst, -2, t_back, 0.0, tw, tstartLL, Mag_main, NULL, 0, NULL, 0);
+		}
+		else {
+			err += readZMAP(&cat2, NULL, NULL, catname, crst, reftime, t_back, tstartLL, t_back, tstartLL, Mag_main, 0, 0, 0, dDCFS, 1);
+		}
 		if (cat2.Z!=0){
 			if(procId == 0) {
 				if (flog) fprintf(flog, "\nMainshocks found. Reloading catalog for new time period...\n");
@@ -506,9 +510,9 @@ int main (int argc, char **argv) {
 
 	//--------------Setup Coefficients and DCFS struct--------------//
 
-	double coeffsStartTime, coeffsEndTime;
-
 	#ifdef _CRS_MPI
+		double coeffsStartTime, coeffsEndTime;
+
 		MPI_Barrier(MPI_COMM_WORLD);
 		coeffsStartTime = MPI_Wtime();
 	#endif
@@ -519,6 +523,7 @@ int main (int argc, char **argv) {
 	#ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
 		coeffsEndTime = MPI_Wtime();
+
 		if(procId == 0) {
 			printf("\nTime - setup_CoeffsDCFS(): %f seconds\n\n", (coeffsEndTime - coeffsStartTime));
 		}
@@ -830,26 +835,19 @@ int main (int argc, char **argv) {
 	#ifdef _CRS_MPI
 		// [Fahad] Make sure all processes are in sync at this point.
 		MPI_Barrier(MPI_COMM_WORLD);
-	#endif
 
-	// FIXME: [Fahad] For testing purposes only ...
-	#ifdef _CRS_MPI
+		// Timing for benchmarking
 		endTime = MPI_Wtime();
 		if(procId == 0) {
-			printf("\nTime - I/O broadcast: %f seconds\n\n", (endTime - startTime));
+			printf("\nTime - I/O + broadcast: %f seconds\n\n", (endTime - startTime));
 		}
-	#endif
 
-	// FIXME: [Fahad] For testing purposes only ...
-	#ifdef _CRS_MPI
 		startTime = MPI_Wtime();
-	#endif
 
-	// FIXME: [Fahad] Time variables for computing individual grid search and
-	// forecast times ...
-	double dcfsStartTime, dcfsEndTime, dcfsTotalTime = 0.0;
-	double gridStartTime, gridEndTime, gridTotalTime = 0.0;
-	double forecastStartTime, forecastEndTime, forecastTotalTime = 0.0;
+		double dcfsStartTime, dcfsEndTime, dcfsTotalTime = 0.0;
+		double gridStartTime, gridEndTime, gridTotalTime = 0.0;
+		double forecastStartTime, forecastEndTime, forecastTotalTime = 0.0;
+	#endif
 
 	dim=ivector(0,Nm-1);
 	for (int n=0; n<Nm; n++) {
@@ -949,15 +947,11 @@ int main (int argc, char **argv) {
 					}
 					else gammas=NULL;
 
-//					printf("\n ProcId: %d -- Hurst: %f -- L: %d -- Nm: %d -- Ntot: %d -- NgridT: %d "
-//							"-- NFM: %d -- tstartLL: %f -- tendLL: %f -- tw: %f -- Asig: %f "
-//							"-- ta: %f -- r0: %f -- fixr: %d \n",
-//							procId, Hurst, L, Nm, Ntot, NgridT, NFM, tstartLL, tendLL, tw, Asig, ta, r0, fixr);
-					err+=CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, Nslipmod, DCFS, eqkfm_aft,
-										  eqkfm0res, eqkfm1, flags, Hurst, tevol_afterslip, crst, AllCoeff,
-										  L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat,
-										  times2, tstartLL, tstartLL, tendLL, tw, Asig, ta, r0, fixr, gammas,
-										  gammas_new, use_snap, 1, 0, 0, 0, !tai && !as);
+					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, Nslipmod, DCFS, eqkfm_aft,
+										  	eqkfm0res, eqkfm1, flags, Hurst, tevol_afterslip, crst, AllCoeff,
+										  	L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat,
+										  	times2, tstartLL, tstartLL, tendLL, tw, Asig, ta, r0, fixr, gammas,
+										  	gammas_new, use_snap, 1, 0, 0, 0, !tai && !as);
 
 					if (!err){
 						if (CSEPmode) write_gammas(old_LLfolder, p, gammas_new, Nsur, NgridT);
@@ -975,11 +969,6 @@ int main (int argc, char **argv) {
 							if (flog) fprintf(flog, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n", Asig, ta, r, LLs[p], mod);
 							fflush(flog);
 						}
-	//					// FIXME: [Fahad] For testing purposes only ...
-	//					if(procId == 1) {
-	//						printf("\n %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",
-	//								Asig,ta,r,Ldums0[p],Nev[p],I[p],LLs[p], mod);
-	//					}
 					}
 					else{
 						if(procId == 0) {
@@ -1010,18 +999,7 @@ int main (int argc, char **argv) {
 
 			gridEndTime = MPI_Wtime();
 			gridTotalTime += gridEndTime - gridStartTime;
-		#endif
 
-//		// FIXME: [Fahad] For testing purposes only ...
-//		#ifdef _CRS_MPI
-//			endTime = MPI_Wtime();
-//			if(procId == 0) {
-//				printf("\nTime - Grid search: %f seconds\n\n", (endTime - startTime));
-//			}
-//		#endif
-//
-		// FIXME: [Fahad] For testing purposes only ...
-		#ifdef _CRS_MPI
 			forecastStartTime = MPI_Wtime();
 		#endif
 
@@ -1112,7 +1090,7 @@ int main (int argc, char **argv) {
 		}
 
 		#ifdef _CRS_MPI
-		// FIXME: [Fahad] For testing purposes only ...
+			// FIXME: [Fahad] For testing purposes only ...
 			MPI_Barrier(MPI_COMM_WORLD);
 
 			forecastEndTime = MPI_Wtime();
@@ -1123,7 +1101,9 @@ int main (int argc, char **argv) {
 	// FIXME: [Fahad] For testing purposes only ...
 	#ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
+
 		endTime = MPI_Wtime();
+
 		if(procId == 0) {
 			printf("\n\nTime - DCFS: %f seconds", dcfsTotalTime);
 			printf("\nTime - Grid Search: %f seconds", gridTotalTime);

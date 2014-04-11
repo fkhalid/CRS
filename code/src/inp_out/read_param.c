@@ -7,12 +7,11 @@
 
 #include <stdio.h>
 #include <time.h>
-#include "mpi.h"
-
 #include "../defines.h"
 
-// TODO: Move this declaration to a header file ...
-//void bCastModelParams(struct BCast_Model_Parameters modelParams);
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 int read_modelparmeters(char * modelparametersfile, struct tm reftime, int *N_min_events,
 						int *fixr, int *fixAsig, int *fixta, double *r0, double *Asig0,

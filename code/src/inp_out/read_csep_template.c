@@ -6,7 +6,10 @@
  */
 
 #include "read_csep_template.h"
-#include "mpi.h"
+
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 int read_fmindex(struct crust crst, char *fname, int **fm_index, int *no_zones){
 
@@ -185,7 +188,17 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 	if (minmag) *minmag=mag0+0.5*dmagi;
 	if (maxmag) *maxmag=mag1-0.5*dmagi;
 
-	free_dmatrix(data,1,countcol(fname), 1, countline(fname)+1);
+	if(procId == 0) {
+		NC = countcol(fname);
+		NL = countline(fname);
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&NC, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&NL, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	free_dmatrix(data,1,NC, 1, NL+1);
 
 	return (0);
 }

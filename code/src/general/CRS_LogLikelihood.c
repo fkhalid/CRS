@@ -191,15 +191,17 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		if(procId == 0) {
 			start = 1;
 		}
+
+		const long newSeed = *seed;
 	#else
 		start = 1;
 		end = Nsur + 1;
 	#endif
 
-	const long newSeed = *seed;
-//	for(int nsur = 1; nsur <= Nsur; nsur++) {
 	for(int nsur = start; nsur < end; nsur++) {
-		*seed = newSeed * (long)nsur;
+		#ifdef _CRS_MPI
+			*seed = newSeed * (long)nsur;
+		#endif
 
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
@@ -600,8 +602,10 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if(procId == 0) {
 			if (flog) fprintf(flog,"Setting up variables in CRSLogLikelihood...\n"); fflush(flog);
 		}
-		// FIXME: [Fahad] Moved to the end of the function for MPI ...
-//		first_timein=0;
+		#ifndef _CRS_MPI
+			// [Fahad] Assignment happens at the end of the function when MPI is being used.
+			first_timein=0;
+		#endif
 		DCFSrand= (flags.afterslip) ? dmatrix(0,NTScont,1,NgridT) : NULL;
 		dumrate=dvector(1,cat.Z);
 		rate=dvector(1,cat.Z);
@@ -614,20 +618,22 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	integral=0.0;
 	for(int i=1;i<=cat.Z;i++) rate[i]=0.0;
 
-	// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
-	// parameters are the same ...
-	if(first_timein != 1) {
-		int nsur = 1;
-		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
-		flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
+	#ifdef _CRS_MPI
+		// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
+		// parameters are the same ...
+		if(first_timein != 1) {
+			int nsur = 1;
+			which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
+			flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
 
-		calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-							   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-							   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst,
-							   refresh && nsur==1, which_recfault);
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
+								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst,
+								   refresh && nsur==1, which_recfault);
 
-		refresh = 0;
-	}
+			refresh = 0;
+		}
+	#endif
 
 	if (all_new_gammas!=0 && (multiple_output_gammas==0)) {
 		for (int n=1; n<=NgridT; n++) {
@@ -667,15 +673,17 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			start = 1;
 			end = Nsur + 1;
 		}
+
+		const long newSeed = *seed;
 	#else
 		start = 1;
 		end = Nsur + 1;
 	#endif
 
-	const long newSeed = *seed;
-//	for(int nsur=1; nsur<=Nsur; nsur++) {
 	for(int nsur = start; nsur < end; nsur++) {
-		*seed = newSeed * (long)nsur;
+		#ifdef _CRS_MPI
+			*seed = newSeed * (long)nsur;
+		#endif
 
 		if (all_gammas0) {
 			gammas0= (multiple_input_gammas)? all_gammas0[nsur] : *all_gammas0;
@@ -860,7 +868,9 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (flog && first_timein) fprintf(flog,"done.\n");
 	}
 
-	first_timein = 0;
+	#ifdef _CRS_MPI
+		first_timein = 0;
+	#endif
 
 //	// FIXME: [Fahad] The following send/recv code block is used for testing with two
 //	//		  MPI ranks only (on local machine). This is being done to ensure that

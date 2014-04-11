@@ -6,9 +6,11 @@
  *      Author: camcat
  */
 
-
 #include "read_focmec.h"
-#include "mpi.h"
+
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 int readmultiplefocmec(char **focmecfiles, int nofiles, char *which_format,
 					  struct crust crst, double border, double dz, double dDCFS,
@@ -42,9 +44,11 @@ int readmultiplefocmec(char **focmecfiles, int nofiles, char *which_format,
 			}
 		}
 	}
+
 	#ifdef _CRS_MPI
 		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
+
 	if(fileError) {
 		return 1;
 	}
@@ -144,9 +148,11 @@ int readfocmec(char *focmecfile, char *which_format, struct crust crst,
 			fclose(fin);
 		}
 	}
+
 	#ifdef _CRS_MPI
 		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
+
 	if(fileError) {
 		return (1);
 	}
@@ -179,6 +185,7 @@ int readfocmec(char *focmecfile, char *which_format, struct crust crst,
 		NFMmax = (fm2==1)? 2*countline(focmecfile) : countline(focmecfile);
 		NC = countcol(focmecfile);
 	}
+
 	#ifdef _CRS_MPI
 		MPI_Bcast(&NFMmax, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&NC, 1, MPI_INT, 0, MPI_COMM_WORLD);

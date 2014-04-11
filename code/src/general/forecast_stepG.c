@@ -6,7 +6,10 @@
  */
 
 #include "forecast_stepG.h"
-#include "mpi.h"
+
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 #define Max 100000
 #define MaxTS 1000
