@@ -12,7 +12,7 @@
 #endif
 
 int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *crust_file, char *fore_template,
-		char *catname, char ***focmeccat, char *background_rate_file, char *slipmodelfile, char *afterslipmodelfile,
+		char *catname, char ***focmeccat, char *background_rate_file, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
 		char *model_parameters_file, char *Logfile, int *extraoutput, struct tm *reftime,
 		double *Tstart, double *Tend, long *seed, char *cmb_format, int *num_fm){
 
@@ -48,7 +48,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	int Nchar=1000;
 	char line[Nchar], listfocmeccat[Nchar];
 	char *key, *value;
-	int NP=17, i, err=0;
+	int NP=18, i, err=0;
 	struct tm times;
 	int value_found[NP], listfm=0, nofm=0;
 	char comment[]="#", comm=comment[0];
@@ -72,7 +72,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	/*13*/	"RandomSeedValue",\
 	/*14*/	"Logfile",\
 	/*15*/	"ExtendedOutput",\
-	/*16*/	"CmbFormat"
+	/*16*/	"CmbFormat", \
+	/*17*/	"FixedMecFile"
 	};
 
 	// [Fahad] If there is a file error, only root will know about it.
@@ -193,6 +194,9 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 				case 16:
 					if (cmb_format) sscanf(value,"%s",cmb_format);
 					break;
+				case 17:
+					if (fixedmecfile) sscanf(value,"%s",fixedmecfile);
+					break;
 			}
 		}
 
@@ -282,6 +286,9 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 				case 14:
 					if (Logfile) strcpy(Logfile,"");
 					break;
+			case 17:
+				if (fixedmecfile) strcpy(fixedmecfile,"");
+				break;
 				case 13:
 					if (extraoutput) extraoutput=0;
 					break;

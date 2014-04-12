@@ -27,7 +27,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 
 //todo make sure that first focal mechanism is the best oriented.
 //todo only include as sources events large enough to affect more than 1 grid point...
-//todo so far, many events are selected and  eqkfm[n].nsel=0 is used to deactivate them. This is a waste (donw this way to avoid messing up indices, but should be changed).
+//todo so far, many events are selected and  eqkfm[n].nsel=0 is used to deactivate them. This is a waste (done this way to avoid messing up indices, but should be changed).
 //todo check Mc_source works.
 
 	// [Fahad] Variables used for MPI
@@ -76,27 +76,29 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 	}
 
 	//fixme check that foc mec are read when aftershocks==1.
-	if (flag.aftershocks){
-		if (focmec){
+	//if (flag.aftershocks){
+		//if (focmec){
 			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
 					reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
 			//err+=readfocmec(focmeccat[0], fm_format, crst, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, reftime, tstartS, tendS, tendS, (*cat).Mc, focmec, NFM, &Nfm, &eqkfm1fm, 1, 1);
 			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
 			//err+=(errP==NULL);	//commented since foc mec catalog may not be available.
-		}
-		eqk_filter(eqkfm1, Ntot, (Mc_source>20) ? (*cat).Mc : Mc_source, crst.depmax+fmax(dR,ztoll));
-		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
-	}
+		//}
+		if (flag.aftershocks) eqk_filter(eqkfm1, Ntot, (Mc_source>20) ? (*cat).Mc : Mc_source, crst.depmax+fmax(dR,ztoll));
+		else eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll));	//only keep mainshocks.
 
-	else {
-		if (focmec){
-			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
-					reftime, tstart, tendS, tendS, Mag_main, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
-			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
-		}
-		eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll));	//only keep mainshocks.
-		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 0);
-	}
+		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
+	//}
+
+//	else {
+//		if (focmec){
+//			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
+//					reftime, tstart, tendS, tendS, Mag_main, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
+//			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
+//		}
+//		eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll));	//only keep mainshocks.
+//		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 0);
+//	}
 
 	if (Nmain) *Nmain=0;
 	for (int i=0; i<(*Ntot); i++) {
@@ -421,7 +423,7 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 	int err=0;
 	int L0=0, NFL, i;
 	int splines;
-	double TAU=200000, dtau=(afterslip==0)? 10000 : 700;
+	double TAU=200000, dtau=(afterslip==0)? 10000 : 700;	//todo allow to set from outside.
 	double Kotau;
 	double M0,mu;
 	double smallstepstime=10;
@@ -462,6 +464,10 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 		}
 		else{
 			//todo double check indexing of eqkfm_aftsplines (NB t_afterslip and afterslip_models has been changed, so indices are [0...Nas-1]).
+			//double *t_afterslip_dum=dvector(0,L);
+			for (int i=0; i<Nas; i++) t_afterslip[i]-=Teq;	//since functions below start from t=0;
+			for (int i=0; i<=*L; i++) (*times2)[i]-=Teq;	//since functions below start from t=0;
+
 			NFL=Nfaults*(*L);
 			eqkfm_aftsplines=eqkfm_array(0,Nfaults*(*L+1));
 			splines_eqkfm(eq_aft-1, Nas, Nfaults, t_afterslip-1, (*times2)-1, *L, eqkfm_aftsplines-1, seed);
@@ -491,6 +497,8 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 
 			}
 			*eqk_aft=eqkfm_aftsplines;
+			for (int i=0; i<Nas; i++) t_afterslip[i]+=Teq;	//revert shift from before;
+			for (int i=0; i<=*L; i++) (*times2)[i]+=Teq;	//revert shift from before;
 		}
 	}
 
@@ -500,54 +508,3 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 
 	return(err!=0);
 }
-
-//obsolete?//
-
-//int load_newdata(double *t0, double t1, struct set_of_models *allmodels, int Nmain, int *Nfaults, char **slipmodels, char **multimodels,
-//		int *no_slipmodels, int *Nmain_now){
-//
-////updates names of most recen slip models available, no. of mainshocks, etc. Returns boolean indicating if there were changes.
-//
-//	int c;
-//	int newdata=0, Npre=0;
-//
-//	for (int m=0; m<Nmain; m++){
-//
-//		if (allmodels[m].t0<=t1){
-//			Npre+=1;
-//			c=0;
-//			while (c+1<allmodels[m].Nmod && allmodels[m].t_mod[c+1]<=t1) c++;
-//			if (allmodels[m].t_mod[c]>*t0){
-//				newdata=1;
-//				strcpy(slipmodels[m],allmodels[m].filename[c]);
-//				if (multimodels!=0) sprintf(multimodels[m],"/0");
-//				no_slipmodels[m]=1;
-//				Nfaults[m]=allmodels[m].NF_models[c];
-//			}
-//		}
-//	}
-//
-//	*Nmain_now=Npre;
-//	return newdata;
-//
-//}
-
-//int mask_afterslip(double time, double *times, int L, double *evol_afterslip0, double **evol_afterslip, int *Lnow){
-//
-////Lnow contains no. of elements in evol_afterslip up to that point.
-//
-//	int counter=*Lnow;
-//	if (*Lnow==L) return(0);	//all elements already included.
-//
-//	if (*evol_afterslip==0) {
-//		(*evol_afterslip)=dvector(0,L-1);
-//		for (int j=0; j<L; j++) (*evol_afterslip)[j]=0.0;
-//	}
-//	while (counter < L && times[counter]<=time) {
-//		(*evol_afterslip)[counter]=evol_afterslip0[counter];
-//		counter++;
-//	}
-//
-//	return(0);
-//}
-

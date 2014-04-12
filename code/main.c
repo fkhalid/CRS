@@ -97,6 +97,7 @@ int main (int argc, char **argv) {
 	char print_cmb[Nchar],  print_forex[Nchar],  print_foret[Nchar],  printall_cmb[Nchar],  printall_forex[Nchar],  printall_foret[Nchar];
 	char line[Nchar_long];
 	char **focmeccats;
+	char fixedmecfile[Nchar];
 
 	//Slip model + catalog variables:
     struct slipmodels_list all_slipmodels, all_aslipmodels;
@@ -184,6 +185,7 @@ int main (int argc, char **argv) {
 
 	if(procId == 0) {
 		printf("Input file: %s\n", argv[1]);
+		fflush(stdout);
 		sscanf(argv[1],"%s", infile);
 
 		if (strcmp(infile,"clean")==0) clean=1;
@@ -206,7 +208,7 @@ int main (int argc, char **argv) {
 
 	//-----------------------read input file -------------------//
 
-	err=read_inputfile(infile, outname, NULL, crust_file, fore_template, catname, &focmeccats, background_rate_file,
+	err=read_inputfile(infile, outname, NULL, crust_file, fore_template, catname, &focmeccats, background_rate_file, fixedmecfile,
 			slipmodelfile, afterslipmodelfile,	modelparametersfile, logfile, &extra_output, &reftime, &Tstart, &Tend, &seed,
 			cmb_format, &no_fm_cats);
 
@@ -232,21 +234,23 @@ int main (int argc, char **argv) {
 		sprintf(cmb_format, "farfalle");
 	}
 	else {	//todo only leave CSEP format for final version.
-		if(procId == 0) {
-			nc = countcol(focmeccats[0]);
+		if (focmeccats){
+			if(procId == 0) {
+				nc = countcol(focmeccats[0]);
+			}
+
+			#ifdef _CRS_MPI
+				MPI_Bcast(&nc, 1, MPI_INT, 0, MPI_COMM_WORLD);
+			#endif
+
+			if ((nc==7) | (nc==10)) sprintf(focmec_format,"7col");
+			else sprintf(focmec_format,"CSEP");
 		}
-
-		#ifdef _CRS_MPI
-			MPI_Bcast(&nc, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		#endif
-
-		if ((nc==7) | (nc==10)) sprintf(focmec_format,"7col");
-		else sprintf(focmec_format,"CSEP");
 	}
 
 //-----------------------read model parameters-------------------//
 
-	read_modelparmeters(modelparametersfile, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
+	err=read_modelparmeters(modelparametersfile, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt, &t_back,
 			&Nsur, &Nslipmod, &flags, &Hurst, &Mc_source, &use_bg_rate, &(cat.Mc), &Mag_main, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
@@ -304,7 +308,7 @@ int main (int argc, char **argv) {
 		system(syscopy);
 	}
 
-	err=read_crust(crust_file, fore_template, &crst, gridresxy, gridresz);
+	err=read_crust(crust_file, fore_template, fixedmecfile , &crst, gridresxy, gridresz);
 	if (err) {
 		sprintf(error_msg, "Errors while reading crust file %s or template file %s. Exiting.", crust_file, fore_template);
 		error_quit(error_msg);
@@ -542,8 +546,15 @@ int main (int argc, char **argv) {
 
 	if (!flags.err_recfault && flags.OOPs) flags.err_recfault=2;	//by convention, this value means OOPs when passed to calculateDCFSrandomized.
 	if (!flags.err_recfault) {
-		crst.nofmzones=1;
-		crst.fmzone=NULL;
+		if (crst.variable_fixmec){
+			crst.nofmzones=crst.N_allP;
+			crst.fmzone=ivector(1,crst.N_allP);
+			for (int i=1; i<=crst.N_allP; i++) crst.fmzone[i]=i-1;
+		}
+		else{
+			crst.nofmzones=1;
+			crst.fmzone=NULL;
+		}
 	}
 
 	if (!crst.uniform && flags.err_gridpoints) {
@@ -615,7 +626,7 @@ int main (int argc, char **argv) {
 		sprintf(str_data, "%s%03d%03d",str_data, Nsur, Nslipmod);
 		sprintf(str_data, "%s%011.5lf",str_data, tstartLL-t_firstmain);
 		sprintf(str_data, "%s%s%s", str_data, crust_file, fore_template);
-		sprintf(str_data, "%s%s%s%s", str_data, catname, background_rate_file);
+		sprintf(str_data, "%s%s%s", str_data, catname, background_rate_file);
 		for (int nn=0; nn<no_fm_cats; nn++) sprintf(str_data,"%s%s",str_data, focmeccats[nn]);
 		if (flags.afterslip!=2) for (int nn=0; nn<all_slipmodels.NSM; nn++) sprintf(str_data,"%s%s",str_data, all_slipmodels.slipmodels[nn]);
 		if (flags.afterslip!=0) for (int nn=0; nn<all_aslipmodels.NSM; nn++) sprintf(str_data,"%s%s",str_data, all_aslipmodels.slipmodels[nn]);
@@ -919,6 +930,11 @@ int main (int argc, char **argv) {
 			gridStartTime = MPI_Wtime();
 		#endif
 
+		//set default values:
+		maxta[mod]=ta0;
+		maxAsig[mod]=Asig0;
+		maxr[mod]=crst.r0;
+
 		if (LLinversion) {
 			if(procId == 0) {
 				if (verbose_level>0) printf("Performing grid search...\n");
@@ -981,11 +997,8 @@ int main (int argc, char **argv) {
 			}
 		}
 		else {
-			maxta[mod]=ta0;
-			maxAsig[mod]=Asig0;
-			maxr[mod]=crst.r0;
 			if(procId == 0) {
-				fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig[mod],maxta[mod],0.0,0.0,0.0, mod);
+				fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig[mod],maxta[mod],maxr[mod],0.0,0.0, mod);
 			}
 		}
 
@@ -1027,7 +1040,8 @@ int main (int argc, char **argv) {
 						Asig= (fixAsig)? Asig0 : Asig_min+as*dAsig;
 						for (int tai=0; tai<=nta && !p_found; tai++){
 							ta= (fixta)? ta0 : ta_min+tai*dta;
-							p+=1;							if (Asig==maxAsig[mod] && ta==maxta[mod]) p_found=1;
+							p+=1;							
+							if (Asig==maxAsig[mod] && ta==maxta[mod]) p_found=1;
 						}
 					}
 					load_gammas(old_LLfolder, p, gammas_old, NgridT);
@@ -1124,7 +1138,12 @@ int main (int argc, char **argv) {
 		}
 
 		if (verbose_level>0) printf("Done.\n");
-		if (flog) fprintf(flog, "Program completed successfully.\n");
+		if (flog) {
+			fprintf(flog, "Program completed successfully.\n");
+			fflush(flog);
+			sprintf(syscopy,"date >> %s", logfile);
+			system(syscopy);
+		}
 		fclose(flog);
 	}
 

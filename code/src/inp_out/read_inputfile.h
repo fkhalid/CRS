@@ -18,7 +18,7 @@
 #include "../util/nrutil.h"
 
 int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *crust_file, char *fore_template,
-		char *catname, char ***focmeccat, char *background_rate_file, char *slipmodelfile, char *afterslipmodelfile,
+		char *catname, char ***focmeccat, char *background_rate_file, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
 		char *model_parameters_file, char *Logfile, int *extraoutput, struct tm *reftime,
 		double *Tstart, double *Tend, long *seed, char *cmb_format, int *num_fm);
 

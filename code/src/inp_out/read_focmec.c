@@ -183,7 +183,7 @@ int readfocmec(char *focmecfile, char *which_format, struct crust crst,
 
 	if(procId == 0) {
 		NFMmax = (fm2==1)? 2*countline(focmecfile) : countline(focmecfile);
-		NC = countcol(focmecfile);
+		NC = countcol(focmecfile); //fixme risky (if extra stuff is written in header): could check more than 1 line.
 	}
 
 	#ifdef _CRS_MPI

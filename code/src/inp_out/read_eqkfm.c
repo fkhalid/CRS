@@ -46,6 +46,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int *nf2, nsm, nfaults;
 	int c2=0, c3=0;	//counters.
 	int err=0, j;
+	int *all_pts;
 	double d_close=10.0;	//todo read somewhere.
 	static struct set_of_models dummy_parentsetofmodels;
 	dummy_parentsetofmodels.Nmod=0;	//this value indicates than no slip model is available (will use synthetic slip model from foc. mec. or isotropic field).
@@ -56,6 +57,8 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 
 	N2=all_slipmodels.NSM;
 	nf2=all_slipmodels.Nfaults;
+	all_pts=ivector(1,crst.N_allP);
+	for (int i=1; i<=crst.N_allP; i++) all_pts[i]=i;
 
 	if (refine==0) taper=0;
 	*Ncomb=0;
@@ -109,10 +112,10 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	for(int i=0; i<N1; i++) {
 		if(eqfm1[i].is_mainshock) {
 			eqfm1[i].nsel=0;	//deactivate it as source aftershock;
-			(*eqfm_comb)[c3].nsel=crst.N_allP;
-
 			if(which_slipmod[i]==-1) {
 				copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
+				(*eqfm_comb)[c3].nsel=crst.N_allP;
+				(*eqfm_comb)[c3].selpoints=all_pts;
 				if (which_events!=NULL) (*which_events)[c3]=i;
 				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 				if (!eqfm1[i].is_slipmodel){

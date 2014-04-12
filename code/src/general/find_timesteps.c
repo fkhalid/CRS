@@ -24,16 +24,17 @@ int findtimestepsomori(double te, double t0,double t1, double tstart, double ten
 
 	double dfdt, dt;
 	int N, j=0, err=0;
+	double K_over_tau;
 
-	*K_over_tau0=1/(pow(c+tend-te,1.0-p)-pow(c+tstart-te,1.0-p));
+	K_over_tau=1/(pow(c+tend-te,1.0-p)-pow(c+tstart-te,1.0-p));
 
-	dfdt=(1.0-p)*(*K_over_tau0)*tau0*pow(t0+c-te,-p);
+	dfdt=(1.0-p)*K_over_tau*tau0*pow(t0+c-te,-p);
 	dt=Dtau*(1.0/dfdt);
 	N=(int) (t1-t0)*(1.0/dt);			//N is always > than the needed number of elements since the first derivative is monotonically decreasing.
 
 	t[0]=t0;
 	while (t[j]<=t1){
-		dfdt=(1.0-p)*(*K_over_tau0)*tau0*pow(t[j]+c-te,-p);
+		dfdt=(1.0-p)*K_over_tau*tau0*pow(t[j]+c-te,-p);
 		dt=Dtau*(1.0/dfdt);
 		t[j+1]=t[j]+dt;
 		j+=1;
@@ -54,6 +55,7 @@ int findtimestepsomori(double te, double t0,double t1, double tstart, double ten
 		if (j>1000) printf("\n ** Warning: findtimesteps.m produced %d time steps! **\n",j);
 	}
 	*L=j;
+	if (K_over_tau0) *K_over_tau0=K_over_tau;
 
 	return err;
 }

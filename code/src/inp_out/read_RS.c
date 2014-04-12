@@ -172,7 +172,7 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 			latlon2localcartesian(Lat, Lon, 0.5*(crst.latmax+crst.latmin), 0.5*(crst.lonmax+crst.lonmin), &y, &x);
 			cat->x0[Z0]=x;
 			cat->y0[Z0]=y;
-			errP+=find_gridpoints(crst.y, crst.x, crst.dAgrid, crst.depth, crst.N_allP, gridPMax, y, x, SD, Depth, SDd, 3.0,  cat->ngrid + Z0, cat->ngridpoints[Z0], cat->weights[Z0], inside);
+			errP+=find_gridpoints(crst.y, crst.x, crst.dAgrid, crst.depth, crst.N_allP, gridPMax, y, x, SD, Depth, SDd, 3.0,  cat->ngrid + Z0, cat->ngridpoints[Z0], cat->weights[Z0], inside, 1);
 			if (*(cat->ngrid + Z0)==0){
 				if(procId == 0) {
 					printf("*** Warning: no grid points selected for event eq=%d! (%lf,%lf,%lf' SD=%lf)\n",eq,Lat,Lon,Depth, SD);

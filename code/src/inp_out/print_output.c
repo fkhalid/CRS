@@ -100,7 +100,7 @@ int print_rate(char *fname, struct crust crst, double Mmin, double *rate){
 
 		double Lon1, Lon2, Lat1, Lat2, D1, D2;
 		FILE *fout;
-		int i, Ntot=crst.nLat*crst.nLon*crst.nD;
+		int i, Ntot= crst.N_allP;
 		double *r, r0;
 
 		if (rate) {

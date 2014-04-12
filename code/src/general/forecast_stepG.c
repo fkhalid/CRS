@@ -130,7 +130,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 	  if (NeT!=(double *) 0) *NeT=N*(tt1-tt0);
 	  if (NeX) for(int m=1;m<=N;m++) NeX[m]=(tt1-tt0);
 
-	  return (1);
+	  return (0);
   }
 
 //TS0= First time step after tt0.
@@ -148,8 +148,8 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   if(times[TS1]>=tt1) TS1--;
   dt1=tt1-times[TS1];
 
-  if (NeT!= (double *) 0) *NeT=0;
-  if (Rate_end!= (double *) 0) *Rate_end=0;
+  if (NeT) *NeT=0;
+  if (Rate_end) *Rate_end=0;
 
 //  printf ("max no of threads=%d.\n", omp_get_max_threads());
 

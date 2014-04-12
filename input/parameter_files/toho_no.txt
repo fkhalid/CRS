@@ -36,7 +36,7 @@
 # flags: (1)aftershocks	(2)use isotropic field when no foc mec available; (3)use fixed foc. mec. when no foc mec available;
 #  if flags (2), (3) are 0, will use Monte Carlo simulation of focal mechanisms from catalog.	  		
 # flag: use_background_rate
-1	1
+5	5
 0	0	0.8
 1
 0

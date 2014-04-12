@@ -9,18 +9,20 @@
 
 
 int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, int Nselmax, double y, double x, double SD, double Depth, double SDd,
-		int cut_sd, int *ngridj, int *ngridpointj, double *weightsj, int inside){
+		int cut_sd, int *ngridj0, int *ngridpointj, double *weightsj, int inside, int d3){
 
 	double r, rmin=1e30, dz, probCum, *prob;
 	int p,p2;
 	int K, Kd;
 	int closestp;
+	int ngridj;
 	double y1, y2, x1, x2, D1, D2, A, Vfrac=1;
 
 	prob=dvector(0,N+1);
+	if (!dAs) inside=1; 	//can't calculate total area, so assume it's all inside.
 
 
-	*ngridj=0;
+	ngridj=0;
 	probCum=0;
 
 // K, Kd determine cutoff radius/depth.
@@ -37,18 +39,18 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	A=0;
 
 	for (p=1; p<=N; p++){
-		r=sqrt(pow(ys[p]-y,2)+pow(xs[p]-x,2)+pow(depths[p]-Depth,2));
+		r= (d3)? sqrt(pow(ys[p]-y,2)+pow(xs[p]-x,2)+pow(depths[p]-Depth,2)) : sqrt(pow(ys[p]-y,2)+pow(xs[p]-x,2));
 		if (r<rmin){
 			rmin=r;
 			closestp=p;
 		}
-		if (ys[p]>=y1 && ys[p]<=y2 && xs[p]>=x1 && xs[p]<=x2 && depths[p]>=D1 && depths[p]<=D2){
-			dz= depths[p]-Depth;
+		if (ys[p]>=y1 && ys[p]<=y2 && xs[p]>=x1 && xs[p]<=x2 && (!d3 || (depths[p]>=D1 && depths[p]<=D2))){
+			dz= (d3) ? depths[p]-Depth : 0.0;
 
 			if (r<=K*SD && dz<=Kd*SDd)
 			{
-				*ngridj+=1;
-				if (*ngridj>Nselmax){
+				ngridj+=1;
+				if (ngridj>Nselmax){
 					if (verbose_level) printf("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
 					if (flog){
 						fprintf(flog, "*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
@@ -57,10 +59,10 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 					}
 					return(1);
 				}
-				ngridpointj[*ngridj]=p;
-				prob[*ngridj]=exp(-pow(r,2)/(2*pow(SD,2)))*exp(-pow(dz,2)/(2*pow(SDd,2)));
-				probCum+=prob[*ngridj];
-				A+=dAs[p];
+				ngridpointj[ngridj]=p;
+				prob[ngridj]= (d3)? exp(-pow(r,2)/(2*pow(SD,2)))*exp(-pow(dz,2)/(2*pow(SDd,2))) : exp(-pow(r,2)/(2*pow(SD,2)));
+				probCum+=prob[ngridj];
+				if (dAs) A+= dAs[p];
 			}
 		}
 	}
@@ -93,16 +95,17 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	}
 	if (Vfrac>1) Vfrac=1;
 
-	for (p2=1; p2<=*ngridj; p2++) weightsj[p2]=Vfrac*prob[p2]/probCum;
+	for (p2=1; p2<=ngridj; p2++) weightsj[p2]=Vfrac*prob[p2]/probCum;
 	weightsj[0]=1-Vfrac;
 
 	//if no point is selected, select nearest point:
-	if (*ngridj==0){
-		*ngridj=1;
+	if (ngridj==0){
+		ngridj=1;
 		ngridpointj[1]=closestp;
 		weightsj[1]=1;
 	}
 
+	if (ngridj0) *ngridj0=ngridj;
 	free_dvector(prob, 0, N+1);
 	return(0);
 }
