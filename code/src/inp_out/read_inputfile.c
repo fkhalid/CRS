@@ -220,6 +220,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 		MPI_Bcast(background_rate_file,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(cmb_format, 			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(Tstart, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(Tend, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(seed, 				 1,   MPI_LONG,   0, MPI_COMM_WORLD);

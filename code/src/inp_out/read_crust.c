@@ -222,8 +222,7 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 //			}
 //		}
 //		else {
-			//todo: do MPI magic...
-			err1=read_focmecgridfile(focmecgridfile, crst);
+			err1 = read_focmecgridfile(focmecgridfile, crst);
 			if(err1 && procId == 0) {
 				printf("*Warning: errors occurred while reading refined grid file - using spatially uniform value. (read_crust.c)*\n");
 				if (flog) {
@@ -402,25 +401,51 @@ int read_pscmp_crust(char *fname, struct crust *crst){
 	return (dumerror!=9);
 }
 
-int read_focmecgridfile(char *fname, struct crust *crst){
+int read_focmecgridfile(char *fname, struct crust *crst) {
+	// Variables used for MPI
+	int procId = 0;
+	int fileError = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
 
 	double strtmp, diptmp, raketmp;
 	double **data;
 	int err=0, NL;
-	FILE *fin;
+	FILE *fin;		// FIXME: Redundant?
 
 	data=dmatrix(1,2,1,(*crst).N_allP);
-	err=read_matrix(fname, 2, 0, data, &NL);
+
+	if(procId == 0) {
+		err = read_matrix(fname, 2, 0, data, &NL);
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&NL, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&err, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+
+		long nrl=1, nrh=2, ncl=1, nch=(*crst).N_allP;
+		long nrow=nrh-nrl+1, ncol=nch-ncl+1;
+		MPI_Bcast(data[nrl], nrow*ncol+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	#endif
+
 	if (err || NL!=(*crst).N_allP){
 		if (NL!=(*crst).N_allP) {
-			if (verbose_level) printf("Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, (*crst).N_allP);
-			if (flog) fprintf(flog, "Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, (*crst).N_allP);
+			if(procId == 0) {
+				if (verbose_level) printf("Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, (*crst).N_allP);
+				if (flog) fprintf(flog, "Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, (*crst).N_allP);
+			}
 		}
 		else {
-			if (verbose_level) printf("Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
-			if (flog) fprintf(flog, "Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
+			if(procId == 0) {
+				if (verbose_level) printf("Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
+				if (flog) fprintf(flog, "Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
+			}
 		}
+
 		free_dmatrix(data, 1,2,1,(*crst).N_allP);
+
 		return 1;
 	}
 
@@ -440,7 +465,7 @@ int read_focmecgridfile(char *fname, struct crust *crst){
 	}
 
 	free_dmatrix(data, 1,2,1,(*crst).N_allP);
-	return 0;
 
+	return 0;
 }
 
