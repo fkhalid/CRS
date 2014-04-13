@@ -379,7 +379,10 @@ int read_pscmp_crust(char *fname, struct crust *crst){
 		while(line[0]!=comm[0]) fgets(line,nchar,fin);
 		while(line[0]==comm[0]) fgets(line,nchar,fin);
 		fgets(line,nchar,fin);
-	dumerror = sscanf(line, " %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf", &junk, &((*crst).fric), &((*crst).skepton), (*crst).str0, (*crst).dip0, (*crst).rake0, &s1, &s2, &s3);
+		dumerror = sscanf(line, " %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf",
+						  &junk, &((*crst).fric), &((*crst).skepton),
+						  (*crst).str0, (*crst).dip0, (*crst).rake0,
+						  &s1, &s2, &s3);
 		fclose(fin);
 	}
 
@@ -388,9 +391,9 @@ int read_pscmp_crust(char *fname, struct crust *crst){
 
 		MPI_Bcast(&((*crst).fric), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&((*crst).skepton), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).str0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).dip0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).rake0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast((*crst).str0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast((*crst).dip0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast((*crst).rake0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&s1, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&s2, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&s3, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
