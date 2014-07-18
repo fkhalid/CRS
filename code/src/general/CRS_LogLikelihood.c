@@ -223,6 +223,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
 								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst, 0,
 								   which_recfault);
+			//todo delete, only for testing:
+			fprintf(flog,"%.5e MPa\n", DCFS[0].cmb[1]);
 
 			for(int n=1; n<=NgridT; n++) {
 				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
@@ -242,6 +244,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
 								   fmzonelim, NFM, seed, (int *) 0, tt0, tt1, Hurst, 0,
 								   which_recfault);
+			//todo delete, only for testing:
+			fprintf(flog,"%.5e MPa\n", DCFS[0].cmb[1]);
 
 			for(int n=1; n<=NgridT; n++) {
 				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
@@ -263,6 +267,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
 											 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
 											 NTSdisc, gammas, crst.rate0, dumrate, 1);
+					//todo delete, only for testing:
+					fprintf(flog,"%.5e d-1\n", dumrate[1]);
 
 					for(int i=1; i<=NgridT; i++) {
 						ev_x[i]+=ev_x_dum[i];
@@ -277,6 +283,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 											   eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
 											   NgridT, NTScont, NTSdisc, gammas, crst.rate0,
 											   dumrate, 1);
+					//todo delete, only for testing:
+					fprintf(flog,"%.5e d-1\n", dumrate[1]);
 
 					tnow=eqkfm0[current_main].t+tw;
 				}
@@ -284,6 +292,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
 											 Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, NTSdisc, gammas,
 											 crst.rate0, dumrate, 1);
+					//todo delete, only for testing:
+					fprintf(flog,"%.5e d-1\n", dumrate[1]);
 
 					tnow=eqkfm0[current_main].t+tw;
 				}
@@ -295,6 +305,9 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, tt1, Asig, ta,
 										   0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
 										   NTSdisc, gammas, crst.rate0, dumrate, 1);
+				//todo delete, only for testing:
+				fprintf(flog,"%.5e d-1\n", dumrate[1]);
+
 
 				for(int i=1; i<=NgridT; i++) {
 					ev_x[i]+=ev_x_dum[i];
