@@ -14,6 +14,7 @@ RM := rm -rf
 -include code/src/inp_out/subdir.mk
 -include code/src/geom/subdir.mk
 -include code/src/general/subdir.mk
+-include code/src/subdir.mk
 -include code/subdir.mk
 -include subdir.mk
 -include objects.mk
@@ -35,7 +36,7 @@ all: CRS_3.0
 CRS_3.0: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -o "CRS_3.0" $(OBJS) $(USER_OBJS) $(LIBS) -lm -lgomp
+	gcc -lm -lgomp -o "CRS_3.0" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
