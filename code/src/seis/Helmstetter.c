@@ -18,7 +18,7 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 
 	double d, w;
 	double *dist=NULL;
-	int *ind, no_ind;
+	int *ind;
 	double *rate, *rate_tot;
 
 	ind=ivector(1,Ngrid);
@@ -41,50 +41,9 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 	for (int eq=1; eq<=N; eq++){	//todo parallel.
 		if (!weights || (weights[eq]>0.0)){
 			d=fmax(dist[eq],err[eq]);
-			find_gridpoints_exact(ygrid, xgrid, NULL, dx, dy, 0.0, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0, 10000, &no_ind, ind, rate, 1, 0);
+			find_gridpoints_exact(ygrid, xgrid, NULL, dx, dy, 0.0, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0, 10000, NULL, ind, rate, 1, 0);
 			w= (weights)? weights[eq] : 1.0;
-			for (int i=1; i<=no_ind; i++) rate_tot[ind[i]]+=w*rate[i];
-		}
-	}
-
-	return rate_tot;
-}
-
-double *Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord){
-/* weights: flags used for declustering (0/1 for excluded/selected events). if NULL, all events are selected with weight=1.
- * ord= 1,2: indicates if first o fsecond nnearest neighbour should be used.
- * does not use exact prop. inside grid point, but gaussian distr. based on distance from center point.
- *
- */
-
-	double d, w;
-	double *dist=NULL;
-	int *ind, no_ind;
-	double *rate, *rate_tot;
-
-	ind=ivector(1,Ngrid);
-	rate=dvector(1,Ngrid);
-	rate_tot=dvector(1,Ngrid);
-	for (int i=1; i<=Ngrid; i++) rate_tot[i]=0.0;
-
-	switch (ord){
-		case 1:
-			all_nearestneighbours(xs, ys, N, NULL, &dist);
-			break;
-		case 2:
-			all_2ndnearestneighbours(xs, ys, N, NULL, &dist);
-			break;
-		default:
-			if (verbose_level>0) printf("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
-			return NULL;
-	}
-
-	for (int eq=1; eq<=N; eq++){	//todo parallel.
-		if (!weights || (weights[eq]>0.0)){
-			d=fmax(dist[eq],err[eq]);
-			find_gridpoints(ygrid, xgrid, NULL, NULL, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0001, 1, &no_ind, ind, rate, 1, 0);
-			w= (weights)? weights[eq] : 1.0;
-			for (int i=1; i<=no_ind; i++) rate_tot[ind[i]]+=w*rate[i];
+			for (int i=1; i<=Ngrid; i++) rate_tot[ind[i]]+=w*rate[i];
 		}
 	}
 

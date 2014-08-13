@@ -153,7 +153,7 @@ struct crust{
 //describes elastic properties of the entire crustal volume.
 
 	//physical properties:
-	double *str0, *dip0, *rake0; // orientation of best oriented mechanism in regional stress field; may be uniform (given by stress tensor below) or not, if different setup provided by user.
+	double str0, dip0, rake0; // orientation of best oriented mechanism in regional stress field: this is redundant given stress tensor below, but easier to keep if for later.
 	double fric;		// coefficient of friction.
 	double skepton;		// skeption coefficient
 	double **S;			// regional stress tensor;
@@ -202,7 +202,6 @@ struct crust{
 	int nofmzones;	//no of zones characterized by a different set of receiver faults.
 	int *fmzone;		//list of fm zones for each grid point.
 	int uniform;
-	int variable_fixmec;
 };
 
 struct slipmodels_list{
