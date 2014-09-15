@@ -145,8 +145,8 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	struct catalog cat;
 	struct crust crst=*crst_in;
 	double *zlist;
-	int NP=crst.nLat*crst.nLon;
-	double T, *rate_h, *rate_v;
+	int NP= crst.uniform? (crst.nLat*crst.nLon) : crst.N_allP;
+	double T, *rate_h, *rate_v=NULL;
 	double Mc, b, Mc_final=crst.mags[1]-0.5*(crst.dmags), rcat;
 	int ne, h_ind, v_ind, *sel, sel_no=0;
 	double *weights=NULL;
@@ -249,6 +249,8 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	if ((*crst_in).r0>=10) (*crst_in).r0*=1.0/T;
 	else (*crst_in).r0*=pow(10,-b*Mc_final);
 
+	if (crst.uniform){
+
 	rate_h=Helmstetter_cat(cat, crst, weights, ord);
 	rate_v=fit_depth(zlist, zlist[2]-zlist[1], crst.nD, cat.depths0, cat.verr, weights, cat.Z);
 
@@ -261,11 +263,16 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 		v_ind=(p-1)/NP+1;
 		(*crst_in).rate0[p]=rate_h[h_ind]*rate_v[v_ind]*crst.N_allP;
 	}
+	}
+
+	else{
+		(*crst_in).rate0=Helmstetter_nonuni(crst.x, crst.y, crst.N_allP, cat.x0, cat.y0, cat.err, weights, cat.Z, ord);
+	}
 
 	free_cat(cat);
 	free_dvector(zlist,1,crst.nD);
 	free_dvector(rate_h, 1, NP);
-	free_dvector(rate_v, 1, crst.nD);
+	if (rate_v) free_dvector(rate_v, 1, crst.nD);
 
 	return 0;
 

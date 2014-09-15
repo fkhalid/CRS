@@ -92,7 +92,7 @@ int test_readmultiplefocmec(){
 	reftime.tm_mon-=1;
 	reftime.tm_isdst=0;
 
-	read_crust(crust_file, temp_file, &crst, res, res);
+	read_crust(crust_file, temp_file, &crst, NULL, res, res);
 	readmultiplefocmec(files, nf, "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec, &firstel, &NFM, &NFM2, &eqkfm, 1, 0);
 	readfocmec("input/other/NIED_GMTformat.dat", "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec0, &NFM0, &NFM20, &eqkfm0, 1, 0);
 
@@ -145,7 +145,7 @@ int test_read_inputfiles(){
 	struct slipmodels_list slip_list;
 	int nfm;
 
-	read_inputfile(file, outname, reftime_str, crust_file, fore_template, catname, focmeccat, background_rate_file,
+	read_inputfile(file, outname, reftime_str, crust_file, fore_template, catname, focmeccat, background_rate_file, NULL,
 			slipmodelfile, afterslipmodelfile, NULL, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
 
 	printf("outname=%s\n", outname);
@@ -267,7 +267,7 @@ int test_background_rate(){
 	reftime.tm_mon-=1;
 	reftime.tm_isdst=0;
 
-	read_crust(crust_file, fore_file, &crst, res, res_z);
+	read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
 	background_rate(cat_file, &crst, reftime, Mcut, Mmain, -1e30, 1e30,  dR, dZ, ord);
 
 	cat.Mc=Mcut;
@@ -324,7 +324,7 @@ int test_decluster_catalog(){
 	time(&t);
 	tt=*(localtime(&t));
 
-	read_crust(crust_file, fore_file, &crst, res, 100.0);
+	read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
 	cat.Mc=0.0;
 	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
 	weights=dvector(1,cat.Z);
@@ -386,7 +386,7 @@ int test_fit_depth(){
 	time(&t);
 	tt=*(localtime(&t));
 
-	read_crust(crust_file, fore_file, &crst, 100.0, 1.0);
+	read_crust(crust_file, fore_file,NULL,  &crst, 100.0, 1.0);
 //	gridPMax=crst.N_allP;
 	gridPMax=1000;
 	cat.Mc=0.0;
@@ -440,7 +440,7 @@ int test_Helmstetter_cat(){
 	reftime.tm_mon-=1;
 	reftime.tm_isdst=0;
 
-	read_crust(crust_file, fore_file, &crst, res, 100.0);
+	read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
 //	gridPMax=crst.N_allP;
 	gridPMax=1000;
 	cat.Mc=0.0;
@@ -725,7 +725,7 @@ int test_readZMAP_tw(){
 	reftime.tm_min=46;
 	reftime.tm_sec=18;
 
-	read_crust(crust_file, fore_template, &crst, res, res);
+	read_crust(crust_file, fore_template, NULL,  &crst, res, res);
 	readZMAP (&cat, NULL, &NT, file, crst, reftime, t0,t1, t0, t1, Mmain, 0.0, 0, 0, 1e5, 1);
 	sprintf(fname, "%s/cat_notw.dat", testfolder);
 	print_cat(fname, cat);
@@ -1523,7 +1523,7 @@ int test_matrix(){
 int test_read_crust(){
 
 	struct crust crst;
-	read_crust("input/inCan.dat", "input/nz_temp.forecast.xml", &crst, 3.0, 3.0);
+	read_crust("input/inCan.dat", "input/nz_temp.forecast.xml", NULL, &crst, 3.0, 3.0);
 	return (0);
 
 }
@@ -1557,7 +1557,7 @@ int test_readZMAP(){
 //	read_xmltemplate(xmlfile, &tnow, &t0c, &t1c, &junk, &junk, &crst, &djunk, &djunk);
 	//crst.x=crst.y=crst.dAgrid=crst.depth;
 
-	read_crust(crust_file, fore_file, &crst, res, res_z);
+	read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
 	readZMAP (&cat, &eqfm, NULL, file, crst, reftime, t0s, t1s, t0c, t1c, 10.0, 0.0, border, border, dDCFS, 0);
 
 //	readZMAP (&cat, &eqfm, NULL, file, crst, tnow, t0s, t1s, t0c, t1c, 10.0, 0.0, border, border, dDCFS, 1);
@@ -1666,7 +1666,7 @@ void test_convertgeometry(){
 
 	sprintf(cmb_format, "farfalle");
 //	read_crust("input/crust.dat", NULL, &cr, 3.0,5.0);
-	read_crust("input/inCan.dat", "input/darf_temp.txt", &cr, 3.0,5.0);
+	read_crust("input/inCan.dat", "input/darf_temp.txt", NULL, &cr, 3.0,5.0);
 	d=pscmp_arrayinit(cr, 0,0);	//used for output.
 	d[0].which_pts=ivector(1,cr.N_allP);
 

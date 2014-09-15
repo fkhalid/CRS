@@ -719,12 +719,6 @@ int isoDCFS(struct pscmp DCFS, struct eqkfm eqkfm1){
 		DCFS.cmb[i]=(M0/(6.0*PI))*pow(1000*r,-3.0);
 		if (fabs(DCFS.cmb[i])>DCFSmax) DCFS.cmb[i]=(DCFS.cmb[i]>0)? DCFSmax : -DCFSmax;
 	}
-
-			//todo delete
-			char name[200];
-			FILE *fout=fopen("eqk0.dat","w");
-			for (int ii=1; ii<=Nsel; ii++) fprintf(fout,"%lf\n",DCFS.fdist[ii]);
-			fclose(fout);
 	return(0);
 }
 

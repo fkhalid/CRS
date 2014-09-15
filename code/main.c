@@ -97,6 +97,7 @@ int main (int argc, char **argv) {
 	char print_cmb[Nchar],  print_forex[Nchar],  print_foret[Nchar],  printall_cmb[Nchar],  printall_forex[Nchar],  printall_foret[Nchar];
 	char line[Nchar_long];
 	char **focmeccats;
+	char fixedmecfile[Nchar];
 
 	//Slip model + catalog variables:
     struct slipmodels_list all_slipmodels, all_aslipmodels;
@@ -207,7 +208,7 @@ int main (int argc, char **argv) {
 
 	//-----------------------read input file -------------------//
 
-	err=read_inputfile(infile, outname, NULL, crust_file, fore_template, catname, &focmeccats, background_rate_file,
+	err=read_inputfile(infile, outname, NULL, crust_file, fore_template, catname, &focmeccats, background_rate_file, fixedmecfile,
 			slipmodelfile, afterslipmodelfile,	modelparametersfile, logfile, &extra_output, &reftime, &Tstart, &Tend, &seed,
 			cmb_format, &no_fm_cats);
 
@@ -223,6 +224,7 @@ int main (int argc, char **argv) {
 		MPI_Bcast(background_rate_file,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(cmb_format, 			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 	#endif
 
@@ -307,7 +309,7 @@ int main (int argc, char **argv) {
 		system(syscopy);
 	}
 
-	err=read_crust(crust_file, fore_template, &crst, gridresxy, gridresz);
+	err=read_crust(crust_file, fore_template, fixedmecfile , &crst, gridresxy, gridresz);
 	if (err) {
 		sprintf(error_msg, "Errors while reading crust file %s or template file %s. Exiting.", crust_file, fore_template);
 		error_quit(error_msg);
@@ -545,8 +547,15 @@ int main (int argc, char **argv) {
 
 	if (!flags.err_recfault && flags.OOPs) flags.err_recfault=2;	//by convention, this value means OOPs when passed to calculateDCFSrandomized.
 	if (!flags.err_recfault) {
-		crst.nofmzones=1;
-		crst.fmzone=NULL;
+		if (crst.variable_fixmec){
+			crst.nofmzones=crst.N_allP;
+			crst.fmzone=ivector(1,crst.N_allP);
+			for (int i=1; i<=crst.N_allP; i++) crst.fmzone[i]=i-1;
+		}
+		else{
+			crst.nofmzones=1;
+			crst.fmzone=NULL;
+		}
 	}
 
 	if (!crst.uniform && flags.err_gridpoints) {
@@ -1032,7 +1041,7 @@ int main (int argc, char **argv) {
 						Asig= (fixAsig)? Asig0 : Asig_min+as*dAsig;
 						for (int tai=0; tai<=nta && !p_found; tai++){
 							ta= (fixta)? ta0 : ta_min+tai*dta;
-							p+=1;
+							p+=1;							
 							if (Asig==maxAsig[mod] && ta==maxta[mod]) p_found=1;
 						}
 					}

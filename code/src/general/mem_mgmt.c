@@ -45,6 +45,9 @@ void init_crst(struct crust *crst){
 	(*crst).lon_out=NULL;
 	(*crst).depth_out=NULL;
 	(*crst).dAgrid=NULL;
+	(*crst).str0=ivector(0,0);
+	(*crst).dip0=ivector(0,0);
+	(*crst).rake0=ivector(0,0);
 	(*crst).x=NULL;
 	(*crst).y=NULL;
 	(*crst).rate0=NULL;
@@ -52,6 +55,7 @@ void init_crst(struct crust *crst){
 	(*crst).GRmags=NULL;
 	(*crst).nofmzones=1;
 	(*crst).fmzone=NULL;
+	(*crst).variable_fixmec=0;
 
 	return;
 }

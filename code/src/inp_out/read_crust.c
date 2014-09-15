@@ -13,7 +13,7 @@
 
 //TODO: if more slip models are contained, make sure they have consistent geometry (they must cover all sampling points).
 
-int read_crust(char *fname, char *fnametemplate, struct crust *crst, double resxy, double resz){
+int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct crust *crst, double resxy, double resz){
 /* fname=inputfile (fname)
  * crst= structure containing info about the domain;
  * resxy, resz= resired grid resolution (for calculations);
@@ -71,6 +71,12 @@ int read_crust(char *fname, char *fnametemplate, struct crust *crst, double resx
 		}
 		if (verbose_level>0) error_quit(" ** Error while reading input file. Exiting. **\n");
 		else return 1;
+	}
+	if(procId == 0) {
+		if (flog){
+			fprintf(flog,"Fixed focal mechanism: [str, dip]=[%.3lf, %.3lf].\n", (*crst).str0[0],(*crst).dip0[0]);
+			fflush(flog);
+		}
 	}
 
 	//--------------read xml file:------------------------------//
@@ -204,6 +210,29 @@ int read_crust(char *fname, char *fnametemplate, struct crust *crst, double resx
 		latlon2localcartesian((*crst).lat[k], (*crst).lon[k], (*crst).lat0, (*crst).lon0, (*crst).y+k, (*crst).x+k);
 	}
 
+	//--------------read value of focal mechanism grid from file:-------------//
+
+	if (focmecgridfile && strcmp(focmecgridfile,"")!=0){
+		//fixme check if grid is refined.
+//		if (!(*crst).uniform){
+//			printf("*Warning: space variable fixed mechanisms not possible for refined grid - using spatially uniform value. (read_crust.c)*\n");
+//			if (flog) {
+//				fprintf(flog, "*Warning: space variable fixed mechanisms not possible for refined grid - using spatially uniform value. (read_crust.c)*\n");
+//				//fflush(flog);
+//			}
+//		}
+//		else {
+			err1 = read_focmecgridfile(focmecgridfile, crst);
+			if(err1 && procId == 0) {
+				printf("*Warning: errors occurred while reading refined grid file - using spatially uniform value. (read_crust.c)*\n");
+				if (flog) {
+					fprintf(flog, "*Warning: errors occurred while reading refined grid file - using spatially uniform value. (read_crust.c)*\n");
+					//fflush(flog);
+				}
+			}
+//		}
+	}
+
 	if(procId == 0) {
 		if (verbose_level>0)  printf("done\n");
 	}
@@ -269,13 +298,13 @@ int read_farfalle_crust(char * file, struct crust *crst){
 		sscanf(line,"%lf %lf", &((*crst).fric), &((*crst).skepton));
 		line[0]='!';
 		while (line[0]=='!') fgets(line,Nchar,fin);
-		sscanf(line,"%d %lf", &junk, &((*crst).str0));
+	sscanf(line,"%d %lf", &junk, (*crst).str0);
 		line[0]='!';
 		while (line[0]=='!') fgets(line,Nchar,fin);
-		sscanf(line,"%d %lf", &junk, &((*crst).dip0));
+	sscanf(line,"%d %lf", &junk, (*crst).dip0);
 		line[0]='!';
 		while (line[0]=='!') fgets(line,Nchar,fin);
-		sscanf(line,"%d %lf", &junk, &((*crst).rake0));
+	sscanf(line,"%d %lf", &junk, (*crst).rake0);
 
 		fclose(fin);
 	}
@@ -350,7 +379,10 @@ int read_pscmp_crust(char *fname, struct crust *crst){
 		while(line[0]!=comm[0]) fgets(line,nchar,fin);
 		while(line[0]==comm[0]) fgets(line,nchar,fin);
 		fgets(line,nchar,fin);
-		dumerror = sscanf(line, " %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf", &junk, &((*crst).fric), &((*crst).skepton), &((*crst).str0), &((*crst).dip0), &((*crst).rake0), &s1, &s2, &s3);
+		dumerror = sscanf(line, " %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf",
+						  &junk, &((*crst).fric), &((*crst).skepton),
+						  (*crst).str0, (*crst).dip0, (*crst).rake0,
+						  &s1, &s2, &s3);
 		fclose(fin);
 	}
 
@@ -359,16 +391,84 @@ int read_pscmp_crust(char *fname, struct crust *crst){
 
 		MPI_Bcast(&((*crst).fric), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&((*crst).skepton), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).str0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).dip0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).rake0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast((*crst).str0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast((*crst).dip0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast((*crst).rake0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&s1, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&s2, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&s3, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	#endif
 
-	prestress(s1, s2, s3, (*crst).str0, (*crst).dip0, (*crst).rake0, 0.0,(*crst).fric, &((*crst).S));
+	prestress(s1, s2, s3, (*crst).str0[0], (*crst).dip0[0], (*crst).rake0[0], 0.0,(*crst).fric, &((*crst).S));
 
 	return (dumerror!=9);
+}
+
+int read_focmecgridfile(char *fname, struct crust *crst) {
+	// Variables used for MPI
+	int procId = 0;
+	int fileError = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
+	double strtmp, diptmp, raketmp;
+	double **data;
+	int err=0, NL;
+	FILE *fin;		// FIXME: Redundant?
+
+	data=dmatrix(1,2,1,(*crst).N_allP);
+
+	if(procId == 0) {
+		err = read_matrix(fname, 2, 0, data, &NL);
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&NL, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&err, 1, MPI_LONG, 0, MPI_COMM_WORLD);
+
+		long nrl=1, nrh=2, ncl=1, nch=(*crst).N_allP;
+		long nrow=nrh-nrl+1, ncol=nch-ncl+1;
+		MPI_Bcast(data[nrl], nrow*ncol+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	#endif
+
+	if (err || NL!=(*crst).N_allP){
+		if (NL!=(*crst).N_allP) {
+			if(procId == 0) {
+				if (verbose_level) printf("Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, (*crst).N_allP);
+				if (flog) fprintf(flog, "Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, (*crst).N_allP);
+			}
+		}
+		else {
+			if(procId == 0) {
+				if (verbose_level) printf("Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
+				if (flog) fprintf(flog, "Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
+			}
+		}
+
+		free_dmatrix(data, 1,2,1,(*crst).N_allP);
+
+		return 1;
+	}
+
+	strtmp=(*crst).str0[0];
+	diptmp=(*crst).dip0[0];
+	//raketmp=(*crst).rake0[0];
+	(*crst).variable_fixmec=1;
+	(*crst).str0=dvector(0,(*crst).N_allP);
+	(*crst).dip0=dvector(0,(*crst).N_allP);
+	//(*crst)->rake0=dvector(0,crst.N_allP);
+
+	(*crst).str0[0]=strtmp;
+	(*crst).dip0[0]=diptmp;
+	for (int i=1; i<=crst->N_allP; i++){
+		(*crst).str0[i]=data[1][i];
+		(*crst).dip0[i]=data[2][i];
+	}
+
+	free_dmatrix(data, 1,2,1,(*crst).N_allP);
+
+	return 0;
 }
 

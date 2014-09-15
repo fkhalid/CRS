@@ -44,7 +44,7 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 		}
 
 		//find OOPs and resolve total stress (DCFS+S0):
-		cmbopt(sxx, syy, szz, sxy, syz, sxz, 0, crst.fric, crst.str0, crst.dip0, crst.rake0, DCFS[ind].cmb+i, DCFS[ind].st1+i, DCFS[ind].di1+i, DCFS[ind].ra1+i, DCFS[ind].st2+i, DCFS[ind].di2+i, DCFS[ind].ra2+i);
+		cmbopt(sxx, syy, szz, sxy, syz, sxz, 0, crst.fric, crst.str0[0], crst.dip0[0], crst.rake0[0], DCFS[ind].cmb+i, DCFS[ind].st1+i, DCFS[ind].di1+i, DCFS[ind].ra1+i, DCFS[ind].st2+i, DCFS[ind].di2+i, DCFS[ind].ra2+i);
 		//resolve background stress on both planes and calculate largest DCFS:	//todo think: should do this or use plane with largest *total* stress?
 		cmb1=resolve_S(DCFS[ind].S[i], DCFS[ind].st1[i], DCFS[ind].di1[i], DCFS[ind].ra1[i], crst.fric, NULL, 0.0, NULL, 0);
 		cmb2=resolve_S(DCFS[ind].S[i], DCFS[ind].st2[i], DCFS[ind].di2[i], DCFS[ind].ra2[i], crst.fric, NULL, 0.0, NULL, 0);

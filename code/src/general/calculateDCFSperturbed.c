@@ -95,7 +95,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			mycmb=dvector(1,NgridT);
 		}
 
-		if (vary_recfault==1 && which_recfault==0){
+		if (crst.variable_fixmec || (vary_recfault==1 && which_recfault==0)){
 			strike0=dvector(0,crst.nofmzones-1);
 			dip0=dvector(0,crst.nofmzones-1);
 			rake0=dvector(0,crst.nofmzones-1);
@@ -136,7 +136,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			}
 
 			if (splines && afterslip_errors && vary_slipmodel && vary_recfault==0){
-				okadaCoeff_resolve(AllCoeff[0], &Coeff_ResS, &Coeff_ResD, crst, &crst.str0, &crst.dip0, &crst.rake0);	//to reduce calculations.
+				okadaCoeff_resolve(AllCoeff[0], &Coeff_ResS, &Coeff_ResD, crst, crst.str0, crst.dip0, crst.rake0);	//to reduce calculations.
 			}
 
 			if (vary_slipmodel && afterslip_errors){
@@ -168,7 +168,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				for (int i=0; i<DCFS_Af_size; i++)	{
 					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS_Af[i], eqkfmAf+i*DCFS_Af[0].NF, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
 					if (vary_recfault==0) {
-						resolve_DCFS(DCFS_Af[i], crst, &crst.str0, &crst.dip0, NULL, 1);
+						resolve_DCFS(DCFS_Af[i], crst, crst.str0, crst.dip0, NULL, 1);
 						if (splines && i<DCFS_Af_size-1){
 							for (int n=1; n<=NgridT; n++) cmb_cumu[n]+=DCFS_Af[i].cmb[n];
 						}
@@ -223,9 +223,9 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 						n_withoutslimodel+=1;
 						if (full_field){
 							if (aftershocks_fixedmec){
-								eqkfm1[eq1].str1=crst.str0;
-								eqkfm1[eq1].dip1=crst.dip0;
-								eqkfm1[eq1].rake1=crst.rake0;
+								eqkfm1[eq1].str1=crst.str0[0];	//todo should pick the one from its grid point is spatially variable fix mec is used.
+								eqkfm1[eq1].dip1=crst.dip0[0];
+								eqkfm1[eq1].rake1=crst.rake0[0];
 								eqkfm1[eq1].whichfm=1;
 								WellsCoppersmith(eqkfm1[eq1].mag, eqkfm1[eq1].rake1, &(eqkfm1[eq1].L), &(eqkfm1[eq1].W), &slip);
 								slip=pow(10.0,1.5*(eqkfm1[eq1].mag+6.0))/(pow(10,12)*crst.mu*eqkfm1[eq1].W*eqkfm1[eq1].L);
@@ -268,7 +268,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					if (n_withoutslimodel){
 						if (full_field) {
 							fprintf(flog,"will use ");
-							if (aftershocks_fixedmec) fprintf(flog,"fixed mechanism (strike=%.2lf, dip=%.2lf).\n", crst.str0, crst.dip0);
+						if (aftershocks_fixedmec) fprintf(flog,"fixed mechanism (strike=%.2lf, dip=%.2lf).\n", crst.str0[0], crst.dip0[0]);
 							else fprintf(flog,"Monte Carlo sampling from catalog of focal mechanisms.\n");
 						}
 						else fprintf(flog,"will use isotropic field.\n");
@@ -386,9 +386,16 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			break;
 
 		case 0:
-			*strike0= crst.str0;
-			*dip0=crst.dip0;
-			*rake0=crst.rake0;	//only used for splines==1 (see below).
+			if (crst.variable_fixmec){
+				strike0= crst.str0;
+				dip0=crst.dip0;
+			}
+
+			else{
+				*strike0= crst.str0[0];
+				*dip0=crst.dip0[0];
+			}
+			*rake0=crst.rake0[0];	//only used for splines==1 (see below). todo allow rake to be passed by user as well.
 			if (fm_number!=0) *fm_number=0;
 			break;
 
