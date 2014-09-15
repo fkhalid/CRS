@@ -76,7 +76,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 	}
 
 	//fixme check that foc mec are read when aftershocks==1.
-	//if (flag.aftershocks){
+	if (flag.aftershocks){
 		//if (focmec){
 			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
 					reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
@@ -84,21 +84,19 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
 			//err+=(errP==NULL);	//commented since foc mec catalog may not be available.
 		//}
-		if (flag.aftershocks) eqk_filter(eqkfm1, Ntot, (Mc_source>20) ? (*cat).Mc : Mc_source, crst.depmax+fmax(dR,ztoll));
-		else eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll));	//only keep mainshocks.
-
+		eqk_filter(eqkfm1, Ntot, (Mc_source>20) ? (*cat).Mc : Mc_source, crst.depmax+fmax(dR,ztoll));
 		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
-	//}
+	}
 
-//	else {
-//		if (focmec){
-//			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
-//					reftime, tstart, tendS, tendS, Mag_main, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
-//			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
-//		}
-//		eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll));	//only keep mainshocks.
-//		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 0);
-//	}
+	else {
+		if (focmec){
+			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
+					reftime, tstart, tendS, tendS, Mag_main, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
+			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
+		}
+		eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll));	//only keep mainshocks.
+		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 0);
+	}
 
 	if (Nmain) *Nmain=0;
 	for (int i=0; i<(*Ntot); i++) {

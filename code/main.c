@@ -235,7 +235,7 @@ int main (int argc, char **argv) {
 		sprintf(cmb_format, "farfalle");
 	}
 	else {	//todo only leave CSEP format for final version.
-		if (focmeccats){
+		//if (focmeccats){
 			if(procId == 0) {
 				nc = countcol(focmeccats[0]);
 			}
@@ -246,7 +246,7 @@ int main (int argc, char **argv) {
 
 			if ((nc==7) | (nc==10)) sprintf(focmec_format,"7col");
 			else sprintf(focmec_format,"CSEP");
-		}
+		//}
 	}
 
 //-----------------------read model parameters-------------------//

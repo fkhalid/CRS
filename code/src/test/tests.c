@@ -617,7 +617,7 @@ int test_find_gridpoints_exact(){
 		}
 	}
 
-	find_gridpoints(ys, xs, dAs, zs, N3, N3, ye, xe, sd, ze, sd, 10000, &np, points, weights0, 0, 1);
+	//find_gridpoints(ys, xs, dAs, zs, N3, N3, ye, xe, sd, ze, sd, 10000, &np, points, weights0, 0);
 	find_gridpoints_exact(ys, xs, zs, dx, dy, 0.0, N3, N3, ye, xe, sd, ze, sd, 10000, &np, points, weights, 0, 0);
 
 	sprintf(fname, "%s/find_gridpointsapprox4",testfolder);
@@ -1312,7 +1312,7 @@ int test_allOkada(){
 
 		fprintf(fout, "%.0lf\t%.0lf\t%.0lf\t%.1lf\t%.1lf\n", eqfm.str1, eqfm.dip1, eqfm.rake1, eqfm.mag, res);
 		focmec2slipmodel(crst, &eqfm, res, 1, 1);
-		find_gridpoints_d(crst.y, crst.x, depgrid, (int *) 0, 0, NP, eqfm.y, eqfm.x, eqfm.depth, eqfm.mag, 100000,  &(eqfm.nsel), &(eqfm.selpoints));
+		//find_gridpoints_d(crst.y, crst.x, depgrid, (int *) 0, 0, NP, eqfm.y, eqfm.x, eqfm.depth, eqfm.mag, 100000,  &(eqfm.nsel), &(eqfm.selpoints));
 		dcfs.nsel=eqfm.nsel;
 		dcfs.which_pts=eqfm.selpoints;
 		printf("%d\n",dcfs.nsel);
