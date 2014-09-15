@@ -116,6 +116,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
 				(*eqfm_comb)[c3].nsel=crst.N_allP;
 				(*eqfm_comb)[c3].selpoints=all_pts;
+			//	eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
 				if (which_events!=NULL) (*which_events)[c3]=i;
 				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 				if (!eqfm1[i].is_slipmodel){

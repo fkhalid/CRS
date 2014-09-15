@@ -617,9 +617,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 				NFsofar+=temp->NF;
 				temp=temp->next;
-
-				//remove (only for testing)
-				fprintf(flog,"%.5e MPa\n", DCFS[0].cmb[1]);
 			}
 		}
 	}
