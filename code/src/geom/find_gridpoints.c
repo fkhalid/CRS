@@ -22,6 +22,16 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	if (!dAs) inside=1; 	//can't calculate total area, so assume it's all inside.
 
 
+	//todo delete
+	fprintf(flog, "find_gridpoints:\n \t ys=%.3lf, %.3lf, %.3lf, ...\n", ys[1], ys[2], ys[N]);
+	fprintf(flog, "\t xs=%.3lf, %.3lf, %.3lf, ...\n", xs[1], xs[2], xs[N]);
+	fprintf(flog, "\t dAs=%.3lf, %.3lf, %.3lf, ...\n", dAs[1], dAs[2], dAs[N]);
+	fprintf(flog, "\t zs=%.3lf, %.3lf, %.3lf, ...\n", depths[1], depths[2], depths[N]);
+	fprintf(flog, "\t N=%d, Nselmax=%d\n", N, Nselmax);
+	fprintf(flog, "\t y=%.3lf, x=%.3lf, z=%.3lf\n", x, y, Depth);
+	fprintf(flog, "\t SD=%.3lf, SDd=%.3lf\n", SD, SDd);
+	fprintf(flog, "\t cut_sd=%d, inside=%d, d3=%d\n", cut_sd, inside, d3);
+
 	ngridj=0;
 	probCum=0;
 

@@ -416,7 +416,6 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 	double strtmp, diptmp, raketmp;
 	double **data;
 	int err=0, NL;
-	FILE *fin;		// FIXME: Redundant?
 
 	data=dmatrix(1,2,1,(*crst).N_allP);
 

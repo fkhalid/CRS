@@ -39,6 +39,7 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 	double slip;
 	double f=1;	//SD is multiplied by this factor.
 	int n_tw=0, Zmax;
+	double std_verr=5.0, std_herr=4.0;
 
 	struct eqkfm* eqfm1;
 	double *n1, *n2, *sl1, *sl2, *stress1, *stress2;
@@ -122,10 +123,19 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 		SDlat=180*SD/(Re*PI);
 		SDlon=180*SD/(Re*PI*cos(Lat*pi/180));
 		sel[eq0]=0;
+
+		//todo delete
+		if (datas[6][eq0]==3.07) printf("%.3f\t %.3f\t %.3f\t %.10f \t %.3f\t %.3f\t %.3f\n", Lat, Lon, Depth,  datas[2][eq0], SDlat, SDlon, SDd);
+
+
 		if (datas[6][eq0]>= Mag && datas[2][eq0]<= tend && Lat+fr*SDlat>=Latmin && Lat-fr*SDlat<=Latmax && Lon+fr*SDlon>=Lonmin && Lon-fr*SDlon<=Lonmax && Depth+fr*SDd>=Depthmin && Depth-fr*SDd<=Depthmax){
 			selpts[eq1]=eq0;
 			eq1+=1;
-			if ((datas[2][eq0]<tW1 || datas[2][eq0]> tW2) && Lat+fr*SDlat>=crst.latmin && Lat-fr*SDlat<=crst.latmax && Lon+fr*SDlon>=crst.lonmin && Lon-fr*SDlon<=crst.lonmax && Depth+fr*SDd>=crst.depmin && Depth-fr*SDd<=crst.depmax){
+
+			if (datas[6][eq0]==3.07) printf("in (134)\n tw1, tw2=%.10f,%.10f\n", tW1, tW2);
+
+			if ((datas[2][eq0]-time0<tW1 || datas[2][eq0]-time0> tW2) && Lat+fr*SDlat>=crst.latmin && Lat-fr*SDlat<=crst.latmax && Lon+fr*SDlon>=crst.lonmin && Lon-fr*SDlon<=crst.lonmax && Depth+fr*SDd>=crst.depmin && Depth-fr*SDd<=crst.depmax){
+				if (datas[6][eq0]==3.07) printf("in (137)\n");
 				sel[eq0]=eq2+1;
 				eq2+=1;
 			}
@@ -138,7 +148,7 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 	init_cat1(cat, eq2, gridPMax);
 
 	int counter=0;
-	#pragma omp parallel for private(counter, errP, x, y, eq, Lat, Lon, Depth, SD, SDd, SDlat, SDlon, is_in_catalog, Z0, inside, slip, n1, n2, sl1, sl2, stress1, stress2, sigma1, sigma2, tau1, tau2)
+	//#pragma omp parallel for private(counter, errP, x, y, eq, Lat, Lon, Depth, SD, SDd, SDlat, SDlon, is_in_catalog, Z0, inside, slip, n1, n2, sl1, sl2, stress1, stress2, sigma1, sigma2, tau1, tau2)
 	for (int eq0=0; eq0<Zsel; eq0++){
 		counter+=1;
 //		if (omp_get_thread_num()==1) printf("\r %d%% ...     ", (int)(100*(omp_get_num_threads()*counter/Zsel)));
@@ -150,6 +160,9 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 		Depth=datas[5][eq];
 		SD=f*datas[7][eq];
 		SDd=f*datas[8][eq];
+
+		if (fabs(SD)<tol0) SD=std_herr;
+		if (fabs(SDd)<tol0) SDd=std_verr;
 
 		SDlat=180*SD/(Re*PI);
 		SDlon=180*SD/(Re*PI*cos(Lat*PI/180));
@@ -172,6 +185,9 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 			latlon2localcartesian(Lat, Lon, 0.5*(crst.latmax+crst.latmin), 0.5*(crst.lonmax+crst.lonmin), &y, &x);
 			cat->x0[Z0]=x;
 			cat->y0[Z0]=y;
+
+			//todo delete
+			fprintf(flog,"event time=%.5e\n", (*cat).t[Z0]);
 			errP+=find_gridpoints(crst.y, crst.x, crst.dAgrid, crst.depth, crst.N_allP, gridPMax, y, x, SD, Depth, SDd, 3.0,  cat->ngrid + Z0, cat->ngridpoints[Z0], cat->weights[Z0], inside, 1);
 			if (*(cat->ngrid + Z0)==0){
 				if(procId == 0) {
@@ -326,6 +342,10 @@ int read_RS(char *filename, struct catalog *cat, struct crust crst, double time0
 	if(procId == 0) {
 		printf("done.\n %ld events found, %ld used in catalog,  %ld used as sources.\n\n",Z1, cat->Z, sources*Zsel);
 	}
+
+	//todo delete:
+	print_cat("cat_RS.dat",*cat);
+	print_cat_long("cat_RSlong.dat",*cat);
 
 	return(0);
 
