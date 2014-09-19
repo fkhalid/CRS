@@ -59,6 +59,23 @@ int sum_DCFS(struct pscmp *DCFS, double **cmb, int N, int Ntot){
 
 }
 
+int sum_DCFSrand(double **DCFSrand, double **cmb, int TS, int N){
+
+	if (*cmb==NULL) *cmb=dvector(1,N);
+	for (int k=1; k<=N; k++) (*cmb)[k]=0.0;
+
+	for (int n=0; n<N; n++){
+		for (int k=0; k<TS; k++){
+			(*cmb)[n]+=DCFSrand[k][n];
+		}
+	}
+
+	return 0;
+}
+
+
+
+
 void printmatrix(double **S){
 	//printout 3x3 matrix
 

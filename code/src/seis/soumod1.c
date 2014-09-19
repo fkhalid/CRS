@@ -519,7 +519,7 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
     if (eqkfm1.np_st==1) left=right=0;
     if (eqkfm1.np_di==1) top=bottom=0;
     if (ns==1) {
-    	copy_eqkfm_slipmodel(eqkfm1, eqkfm2);
+    	copy_eqkfm_all(eqkfm1, eqkfm2);	//bug fix: using copy_eqkfm_slipmodel did not copy nsel, so no points were selected.
     	if(procId == 0) {
     		if (verbose_level>0) printf("** Warning: model has a single patch, will not be tapered.**\n");
         	if (flog) {

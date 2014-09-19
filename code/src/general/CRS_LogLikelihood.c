@@ -85,7 +85,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 	double Ldum_out, Nev;
 
 	char fname[120];
-	char print_forex_ref[120], print_cmb_ref[120], print_forex[120], print_cmb[120];
+	char print_forex_ref[120], print_cmb_ref[120], print_forex[120], print_cmb[120], print_cmbpost[120];
 	static double **DCFSrand;
 	static double *dumrate, *gammas, *rate, *ev_x, *ev_x_new=0;
 	double sum, sum1, sum2, integral;
@@ -93,7 +93,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 	double fin_rate;
 	double *gammas0;
 	double *nev, *rev, *nev_avg, *rev_avg, *ev_x_avg, *ev_x_pre, *ev_x_dum;
-	double *cmb, *cmb_avg;
+	double *cmb, *cmb_avg, *cmbpost, *cmbpost_avg;
 	int N, NgridT_out= crst.uniform ? (crst.nLat_out*crst.nLon_out*crst.nD_out) : NgridT;
 	int err, Nsur_over_Nslipmod=Nsur/Nslipmod;
 	int uniform_bg_rate=0;
@@ -114,6 +114,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
     ev_x_pre=dvector(1,NgridT);
 	ev_x_dum=dvector(1,NgridT);
 	cmb=dvector(1,NgridT);
+	cmbpost=dvector(1,NgridT);
+	cmbpost_avg=dvector(1,NgridT);
 	cmb_avg=dvector(1,NgridT);
 	nev=dvector(1,Ntts);
 	rev=dvector(1,Ntts);
@@ -151,6 +153,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		if (print_cmb) {
 			sprintf(print_cmb_ref,"%s_ref.dat", print_cmb0);
 			sprintf(print_cmb,"%s.dat", print_cmb0);
+
+			if (flags.afterslip) sprintf(print_cmbpost,"%s_post.dat", print_cmb0);
 
 		}
 		if (print_forex0) {
@@ -322,9 +326,11 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 
 		if(print_cmb || printall_cmb) {
 			sum_DCFS(DCFS, &cmb, NTSdisc, NgridT);
+			if (flags.afterslip) sum_DCFSrand(DCFSrand, &cmbpost, NTScont, NgridT);
 			if(print_cmb) {
 				for (int i=1; i<=NgridT; i++) {
 					cmb_avg[i]+=cmb[i]*(1.0/Nsur);
+					if (flags.afterslip) cmbpost_avg[i]+=cmbpost[i]*(1.0/Nsur);
 				}
 			}
 			if(printall_cmb) {
@@ -423,6 +429,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 			if(procId == 0) {
 				csep_forecast(print_cmb, crst, ev_x_new, 0);
 				csep_forecast(print_cmb_ref, crst, cmb_avg, 1);
+				if (flags.afterslip) csep_forecast(print_cmbpost, crst, cmbpost_avg, 0);
 			}
 		}
 		if (print_LL || LL){
@@ -492,6 +499,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 	free_dvector(ev_x,1,NgridT);
 	free_dvector(ev_x_avg,1,NgridT);
 	free_dvector(cmb,1,NgridT);
+	free_dvector(cmbpost,1,NgridT);
 	free_dvector(cmb_avg,1,NgridT);
 	free_dvector(nev,1,Ntts);
 	free_dvector(rev,1,Ntts);

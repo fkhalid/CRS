@@ -337,6 +337,10 @@ int main (int argc, char **argv) {
 	}
 	else eqkfm_aft=NULL;
 
+
+	//todo delete
+	//print_slipmodel("afterslip.dat", eqkfm_aft, 3);
+
 	flags.splines= (flags.afterslip)? (Nas>1): 0;
 
 //----------------------------------------------------------//
