@@ -421,7 +421,7 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 	int err=0;
 	int L0=0, NFL, i;
 	int splines;
-	double TAU=200000, dtau=(afterslip==0)? 10000 : 700;	//todo allow to set from outside.
+	double TAU=200000, dtau=(afterslip==0)? 10000 : 7000;	//todo allow to set from outside.
 	double Kotau;
 	double M0,mu;
 	double smallstepstime=10;
@@ -503,6 +503,11 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 	else {
 		for (int t=1; t<=*L; t++) (*tevol_afterslip)[t-1]=0;
 	}
+
+	//todo delete:
+//	FILE *fout=fopen("tevol.dat","w");
+//	for (int t=1; t<=*L; t++) fprintf(fout, "%.5e\t%.5e\n",(*times2)[t]-Teq, (*tevol_afterslip)[t-1]);
+//	fclose (fout);
 
 	return(err!=0);
 }

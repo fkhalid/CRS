@@ -31,7 +31,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-  double  tau, dtau_dt, dtau_dt0;
+  double  tau, dtau_dt, dtau_dt00=Asig/ta, ta1;
   int     TS0, TS1, n;
   double  Tpre=0, dt1;
   double  gamma, gamma0, back_rate_n;
@@ -158,7 +158,8 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 	  for (int eq=0; eq<=cat.Z; eq++) Rprivate[t][eq]=0.0;
   }
 
-#pragma omp parallel for private(err, n, gamma,gamma0,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, dtau_dt0, counter_eqk, back_rate_n) reduction(+:errtot)
+  err=0;
+#pragma omp parallel for firstprivate(err) private(n, gamma,gamma0,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, counter_eqk, back_rate_n, ta1) reduction(+:errtot)
   for(int m=1;m<=N;m++){
 
 	nthreads=omp_get_num_threads();
@@ -166,6 +167,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 //	printf("here's thread no. %d.\n",omp_get_thread_num());
 	//printf("Entered parallel section - %d threads running. \n",omp_get_num_threads());
 
+	if (err!=0) continue;
 	n=(points==0)? m : points[m];
 
 	back_rate_n= (back_rate) ? back_rate[n] : 1.0;
@@ -178,8 +180,8 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
     t_now=tt0;
     reach_end=0;
 
-    err=0;
-    dtau_dt=dtau_dt0=Asig/ta;
+    //err=0;
+    dtau_dt=Asig/ta;
 
     //new method (uses indices of earthquakes for specific gridpoint):
 
@@ -202,45 +204,58 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
     	//find rates up to next barrier (which is the smallest between next earthquake, next time step or tt1).
     	t_pre= fmin(t_endstep, times[j0]) - t_now;
 
+    	dtau_dt=(cmpdata && j0-1>=0 )? (Asig/ta)+cmpdata[j0-1][n]/dt[j0-1] : (Asig/ta);
+
     	if (t_pre>tol0){
-			dtau_dt= (cmpdata && j0-1>=0)? (Asig/ta)+(1/dt[j0-1])*cmpdata[j0-1][n] : (Asig/ta);
 			tau=dtau_dt*t_pre;
+			ta1=Asig/dtau_dt;
 			if (NeX) {
-				a=gamma*(dtau_dt)-1;
-				b=log(a*exp(-t_pre/ta)+1);
-				NeX[m]+= back_rate_n*fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*(dtau_dt)))),0);	//due to numerical error it can give -ve values. todo find taylor exp and use it.
-			}
+				a=gamma*dtau_dt-1;
+				b=a*exp(-t_pre/ta1)+1;
+				//NeX[m]+= back_rate_n*fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*dtau_dt))),0);	//due to numerical error it can give -ve values. todo find taylor exp and use it.
+
+				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
+				if(isnan(-NeX[m])) {
+					printf("isnanNeX! a=%.3e, b=a=%.3e\n");
+				}			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
-			dtau_dt0=dtau_dt;
     	}
 
     	t_now+=t_pre;
 
 		for(int j=j0;j<next_TS;j++){
-			dtau_dt=(cmpdata)? (Asig/ta)+cmpdata[j0-1][n]/dt[j] : (Asig/ta);
+			dtau_dt=(cmpdata)? (Asig/ta)+cmpdata[j][n]/dt[j] : (Asig/ta);
 			tau=dtau_dt*dt[j];
+			ta1=Asig/dtau_dt;
 			if (NeX) {
-				a=gamma*(tau/dt[j])-1;
-				b=log(a*exp(-dt[j]/ta)+1);
-				NeX[m]+=back_rate_n*fmax((dtau_dt/dtau_dt0)*(dt[j]+ta*(b-log(gamma*(dtau_dt)))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
-			}
+				a=gamma*dtau_dt-1;
+				b=a*exp(-dt[j]/ta1)+1;
+				//NeX[m]+=back_rate_n*fmax((dtau_dt/dtau_dt0)*(dt[j]+ta*(b-log(gamma*dtau_dt))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
+
+				if (!isinf(fabs(b))) NeX[m]+=fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(dt[j]+ta1*log(b/(gamma*dtau_dt))));	//condition since for gamma -> inf, Nev-> 0 (can do algebra to confirm).
+				if(isnan(-NeX[m])) {
+					printf("isnanNeX! a=%.3e, b=a=%.3e\n");
+				}			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-dt[j]/(tau))*exp(-tau/Asig)+dt[j]/(tau) : gamma*(1-tau/Asig)+dt[j]/Asig;
-			dtau_dt0=dtau_dt;
 			t_now+=dt[j];
 		}
 
 		t_pre=t_endstep-t_now;
 
 		if (t_pre>tol0) {
-			dtau_dt=(cmpdata)? (Asig/ta)+(1.0/dt[j0-1])*cmpdata[j0-1][n] : (Asig/ta);
+			dtau_dt=(cmpdata)? (Asig/ta)+(1.0/dt[next_TS])*cmpdata[next_TS][n] : (Asig/ta);
 			tau=dtau_dt*t_pre;
+			ta1=Asig/dtau_dt;
 			if (NeX) {
-				a=gamma*(dtau_dt)-1;
-				b=log(a*exp(-t_pre/ta)+1);
-				NeX[m]+=back_rate_n*fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*(dtau_dt)))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
+				a=gamma*dtau_dt-1;
+				b=a*exp(-t_pre/ta1)+1;
+				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
+				//NeX[m]+=back_rate_n*fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*dtau_dt))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
+				if(isnan(-NeX[m])) {
+					printf("isnanNeX! a=%.3e, b=a=%.3e\n");
+				}
 			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
-			dtau_dt0=dtau_dt;
 		}
 
 		t_now+=t_pre;
@@ -275,7 +290,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 
   }
 
-  for (int t=0; t<nthreads; t++){
+  if (R) for (int t=0; t<nthreads; t++){
 	//for (int eq=0; eq<Neq; eq++) R[indices[1][eq]+1]+=Rprivate[t][eq];
 	  for (int eq=0; eq<=cat.Z; eq++) R[eq]+=Rprivate[t][eq];
   }

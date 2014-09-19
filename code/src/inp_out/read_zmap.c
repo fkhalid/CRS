@@ -294,8 +294,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 
 	//todo delete (test only) - or move to log file.
-	printf("[d0,d1]=[%.3f, %.3f]\n extra_d=%.3f\n", dep0, dep1, extra_d, SDd);
-	printf("[t0c,t1c]=[%.3f, %.3f]\n\n", t0c, t1c);
+//	printf("[d0,d1]=[%.3f, %.3f]\n extra_d=%.3f\n", dep0, dep1, extra_d, SDd);
+//	printf("[t0c,t1c]=[%.3f, %.3f]\n\n", t0c, t1c);
 
 
 	//count points in catalog, and sources:
@@ -311,7 +311,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		SDlon=180*SD/(Re*PI*cos(0.5*(lat0+lat1)*PI/180));
 
 		//todo delete
-		if (mag[i]==3.07) printf("%.3f\t %.3f\t %.3f\t %.10f \t %.3f\t %.3f\t %.3f\n", lat[i], lon[i], dep[i], times[i], SDlat, SDlon, SDd);
+//		if (mag[i]==3.07) printf("%.3f\t %.3f\t %.3f\t %.10f \t %.3f\t %.3f\t %.3f\n", lat[i], lon[i], dep[i], times[i], SDlat, SDlon, SDd);
 
 		//if (mag[i]>= Mc-dM && lat[i]+SDlat>=lat0l && lat[i]-SDlat<=lat1l && lon[i]+SDlon>=lon0l && lon[i]-SDlon<=lon1l && dep[i]+SDd>=dep0l && dep[i]-SDd<=dep1l){
 		if (mag[i]>= Mc-dM && lat[i]+fr*SDlat>=lat0l && lat[i]-fr*SDlat<=lat1l && lon[i]+fr*SDlon>=lon0l && lon[i]-fr*SDlon<=lon1l && dep[i]+fr*SDd>=dep0l && dep[i]-fr*SDd<=dep1l){
@@ -396,7 +396,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	//------------------------------fill in catalog:-------------------------//
 
 	//todo delete
-	FILE *fout2=fopen("depths.dat","w");
+//	FILE *fout2=fopen("depths.dat","w");
 
 	if (cat){
 		(*cat).pcrst=&crst;
@@ -421,8 +421,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	    		//todo delete
 	    		//fprintf(flog,"event time=%.5e\n", (*cat).t[i]);
 	    		//fprintf(fout2,"%.3e\t%.3e\n", dep[i], dep[eq]);
-	    		//todo delete error below
-				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, gridPMax, y, x, SD, dep[i], SDd, cut_sd, (*cat).ngrid + i, (*cat).ngridpoints[i], (*cat).weights[i], 1, 1);
+				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, gridPMax, y, x, SD, dep[eq], SDd, cut_sd, (*cat).ngrid + i, (*cat).ngridpoints[i], (*cat).weights[i], 1, 1);
 				if (errP) break;
 			}
 		}
@@ -442,11 +441,11 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			}
 		}
 	}
-	fclose(fout2);
+//	fclose(fout2);
 
 	//todo delete:
-	print_cat("cat_zmap.dat",*cat);
-	print_cat_long("cat_zmaplong.dat",*cat);
+//	print_cat("cat_zmap.dat",*cat);
+//	print_cat_long("cat_zmaplong.dat",*cat);
 
 	//------------------------------fill in eqkfm:-------------------------//
 
