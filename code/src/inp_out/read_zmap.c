@@ -421,7 +421,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	    		//todo delete
 	    		fprintf(flog,"event time=%.5e\n", (*cat).t[i]);
 	    		fprintf(fout2,"%.3e\t%.3e\n", dep[i], dep[eq]);
-				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, gridPMax, y, x, SD, dep[eq], SDd, cut_sd, (*cat).ngrid + i, (*cat).ngridpoints[i], (*cat).weights[i], 1, 1);
+	    		//todo delete error below
+				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, gridPMax, y, x, SD, dep[i], SDd, cut_sd, (*cat).ngrid + i, (*cat).ngridpoints[i], (*cat).weights[i], 1, 1);
 				if (errP) break;
 			}
 		}
