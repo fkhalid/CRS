@@ -514,11 +514,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 	}
 
-	//todo delete:
-	FILE *fout=fopen("tevol2.dat","w");
-	for (int t=0; t<=NTScont; t++) fprintf(fout, "%.5e\n",DCFSrand[t][1]);
-	fclose (fout);
-
 	//------------------------------------------------------------------------------//
 	//					calculated stress field from aftershocks					//
 	//------------------------------------------------------------------------------//

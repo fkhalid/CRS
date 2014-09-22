@@ -504,10 +504,5 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 		for (int t=1; t<=*L; t++) (*tevol_afterslip)[t-1]=0;
 	}
 
-	//todo delete:
-//	FILE *fout=fopen("tevol.dat","w");
-//	for (int t=1; t<=*L; t++) fprintf(fout, "%.5e\t%.5e\n",(*times2)[t]-Teq, (*tevol_afterslip)[t-1]);
-//	fclose (fout);
-
 	return(err!=0);
 }
