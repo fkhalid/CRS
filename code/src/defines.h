@@ -211,6 +211,7 @@ struct slipmodels_list{
 	int NSM;	//no. of events.
 	int *Nfaults;
 	int *no_slipmodels;
+	int *cut_surf;	//flags indicating is free surface should be assumed at the top.
 	double *tmain;	//times.
 	double *mmain;	//magnitudes.
 	double *disc;
@@ -226,10 +227,12 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	int nsel;			//no. of cell points affected by this event.
 	int noise;			// flag (if set, tot_slip refers to model from which noise was generated):
 	int *taper;		// taper [1...4]=top,bottom,right,left.
+	int cuts_surf;	// boolean indicating if slip model should be assumed to cut through the surface.
 	double t;		//time of event.
 	double lat;		//0_lat in Wang input file;
 	double lon; 	//0_lat in Wang input file;
 	double depth; 	//0_lat in Wang input file;
+	double top;		//depth of the shallowest point of the entire slip model (also across multiple elements of eqkfm[]).
 	double x;		//eastwards coordinate in local system;
 	double y;		//northward coordinate in local system.
 	double mag;		//magnitude

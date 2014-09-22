@@ -59,6 +59,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 
   if (firsttimein==1){
 		firsttimein=0;
+		//todo: use previous information to match DCFS and cat.
 		events=union_cats(cat.t+1, timesfrompscmp(DCFS,Neqks), cat.mag+1, magsfrompscmp(DCFS,Neqks), cat.Z, Neqks, 0.001, 0.3, &indices, &Neq);	//todo parameters should not be hardwired.
 		NeXdum=dvector(1,N);
 		ReX=dvector(1,N);

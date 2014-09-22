@@ -154,7 +154,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm,
 										   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
 										   all_slipmodels.tmain[j], d_close, crst.N_allP, crst.list_allP,
-										   all_slipmodels.mmain+j, 1, 1, NULL, crst.lat0, crst.lon0);
+										   all_slipmodels.mmain+j, refine, 1, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
 
 				if (which_events!=NULL) (*which_events)[c3]=i;
 				if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];

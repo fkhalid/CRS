@@ -744,10 +744,6 @@ int main (int argc, char **argv) {
 				}
 				err=background_rate2(catname, &crst, reftime, 20.0, Mag_main, &(cat.Mc), &r0, 1, t_back, t_firstmain, xytoll, ztoll, smoothing, 2);
 				crst.r0=r0*pow(10,cat.b*(cat.Mc-crst.mags[1]+0.5*crst.dmags));
-
-				//todo delete
-				print_rate("backgroundrate3.dat", crst, cat.Mc, rate_dum);
-
 				if (err){
 					if(procId == 0) {
 						if (verbose_level) printf("Could not calculate background rate from smoothed catalog. will use uniform background rate.\n");

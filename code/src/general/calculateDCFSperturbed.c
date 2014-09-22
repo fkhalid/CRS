@@ -586,6 +586,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		else{
 			if (afterslip==2){
 				for (int n=1; n<=NgridT; n++) DCFS[temp->which_main].cmb[n]=0.0;	//don't need to fill in tensor.
+			temp=temp->next;
 			}
 			else{
 				if (eqkfm0[NFsofar].is_slipmodel){

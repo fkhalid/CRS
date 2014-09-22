@@ -37,7 +37,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 		double dt, double dM, double xytoll, double ztoll, double dR, double tw, double tstart, double tend, double Mc_source);
 int setup_afterslip_eqkfm(struct slipmodels_list slipmodels, struct crust crst, int resample, struct eqkfm **eqkfm0res);
 int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodel, int no_slipmodels, double mu, double disc,
-		double tmain, double d_close, int nsel, int *sel_pts, double *mmain, int resample, int tap_bot, int *NF0, double lat0, double lon0);
+		double tmain, double d_close, int nsel, int *sel_pts, double *mmain, int resample, int tap_bot, int cuts_surf, int *NF0, double lat0, double lon0);
 int load_newdata(double *t0, double t1, struct set_of_models *allmodels, int Nmain, int *NFaults, char **slipmodels, char **multimodels, int *no_slipmodels, int *Nmain_now);
 int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *ts, int Nfun, struct eqkfm **eq_aft, double *t_afterslip, int Nas,int Nfaults,
 		int afterslip, int *L, double **times2, double **tevol_afterslip, long *seed);

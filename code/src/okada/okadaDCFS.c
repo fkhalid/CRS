@@ -196,6 +196,7 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 
 	double north, east, eqnorth, eqeast;
 	double len, width, depth; //for individual patches.
+	double depth0; //to differentiate between blind fault (depth0=0) or fault cutting through surface.
 	double strike, dip, rake;
 	double alpha;
 	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
@@ -209,6 +210,10 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 	}
 
 	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
+	depth0=eqkfm1[0].cuts_surf ? eqkfm1[0].top : 0.0;
+
+	if (flog) fprintf(flog,"Depth of surface: %.3lf km.\n", depth0);
+
 
 	//---------initialize DCFS----------//
 
@@ -304,8 +309,8 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 				north=crst.y[i];
 				east=crst.x[i];
 				if(pure_thrustnorm!=1) {
-					pscokada(eqnorth, eqeast, depth,  strike,  dip, len, width, 1, 0,
-							north, east, depths[i], &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
+					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1, 0,
+							north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							alpha, crst.lambda, crst.mu, crst.fric);
 
 					Coeffs_st_partition[p][i0][1] += 1e6*Sxx;
@@ -324,8 +329,8 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 				}
 
 				if(pure_strslip!=1){
-					pscokada(eqnorth, eqeast, depth,  strike, dip, len, width, 0, -1,
-							 north, east, depths[i], &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0, -1,
+							 north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							 alpha, crst.lambda, crst.mu, crst.fric);
 					Coeffs_dip_partition[p][i0][1] += 1e6*Sxx;
 					Coeffs_dip_partition[p][i0][2] += 1e6*Syy;

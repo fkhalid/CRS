@@ -118,7 +118,7 @@ int *decluster_catalog(struct catalog cat, double Mmain, double **weights, int d
 
 void KG74(double M, double *D, double *T){
 /* calculation of Knopoff-Gardner 74 criterium for aftershock declustering
- * function modified from one wrtten by Olga Zakharova.
+ * function modified from one written by Olga Zakharova.
  *
  * M= magnitude.
  * D= spatial window.

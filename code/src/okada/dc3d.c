@@ -26,6 +26,8 @@
 #include <math.h>
 #include <stdio.h>
 
+#include "../defines.h"
+
 //#include "nrutil.h"
 
 void UA(double XI, double ET, double Q, double DISL1, double DISL2, double DISL3, double *U, double Y11, double X11, double ALP2, double ALP1, double TT, double R, double ALE, double XI2, double Y32, double Q2, double SD, double R3,
@@ -494,6 +496,7 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 	int i, j, k;
 	double ALP1, ALP2, ALP3, ALP4, ALP5, SD, CD, SDSD, CDCD, SDCD, S2D, C2D;
 	double XI2, ET2, Q2, R, R2, R3, R5, D, TT, ALX, ALE, X11, Y11, X32, Y32, EY, EZ, FY, FZ, GY, GZ, HY, HZ;
+	int warning_notprintedyet=1;
 
 	//  XI  = dvector(1,2);
 	//  ET  = dvector(1,2);
@@ -509,7 +512,15 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 	EPS = 1e-6;
 
 	if (Z > 0.0) {
-		printf("(** POSITIVE Z WAS GIVEN IN SUB-DC3D)");
+	//fixme only for procid=0
+		if (flog && warning_notprintedyet) {
+			fprintf(flog, "** Warning: POSITIVE Z WAS GIVEN IN SUB-DC3D. **\n");
+			fflush(flog);
+			warning_notprintedyet=0;
+		}
+
+		//*UX=*UY=*UZ=*UXX= *UYX= *UZX= *UXY= *UYY= *UZY= *UXZ= *UYZ= *UZZ=0.0;
+		//return;
 	}
 	for (i = 1; i <= 12; i++) {
 		U[i] = 0.0;

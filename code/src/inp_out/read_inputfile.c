@@ -411,6 +411,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	double t0;
 	struct tm times;
 	int Nm0, nsm, no_slipmod;
+	int cuts_surf=0;	//fixme this should be read from file, for individual events!!
 
 	if(procId == 0) {
 		fin = fopen(input_fname, "r");
@@ -438,9 +439,10 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		(*allslipmodels).disc= NULL;
 		(*allslipmodels).Nfaults=NULL;
 		(*allslipmodels).no_slipmodels=NULL;
-
+		(*allslipmodels).cut_surf=NULL;
 		return 1;
 	}
+
 	else {
 		line[0]=comm;
 		if(procId == 0) {
@@ -476,6 +478,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		(*allslipmodels).is_afterslip=is_afterslip;
 		(*allslipmodels).tmain=dvector(0,Nm0-1);
 		(*allslipmodels).mmain= (is_afterslip)? NULL : dvector(0,Nm0-1);
+		(*allslipmodels).cut_surf=ivector(0,Nm0-1);
 		if (is_afterslip){
 			(*allslipmodels).disc=dvector(0,0);
 			(*allslipmodels).disc[0]=res;
@@ -492,6 +495,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		nsm=0;
 		if(procId == 0) {
 			for (int nn=0; nn<Nm0; nn++) {
+			(*allslipmodels).cut_surf[nn]=cuts_surf;	//fixme read from file.
 				if (is_afterslip){
 					(*allslipmodels).slipmodels[nn] = malloc(120 * sizeof(char));
 					(*allslipmodels).Nfaults[nn]=1;	//actual value found later.

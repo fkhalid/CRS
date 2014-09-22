@@ -138,6 +138,7 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 		v[i].rake1=0;
 		v[i].rake2=0;
 		v[i].index_cat=0;
+		v[i].cuts_surf=0;
 
 	}
 	return v-n1+NR_END;

@@ -167,17 +167,19 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     //TODO: implement multiple slip models with non strike slip event.
     NFtot=0;
     for (int nn=0; nn<Nm; nn++){
-    	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, no_slipmodels[0], crst.mu, disc[0], tmain[nn], d_touching_faults, crst.N_allP, crst.list_allP, NULL, resample, 0, Nfaults, crst.lat0, crst.lon0);
+    	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, no_slipmodels[0], crst.mu, disc[0], tmain[nn], d_touching_faults, crst.N_allP, crst.list_allP, NULL, resample, 0, list_slipmodels.cut_surf[nn], Nfaults, crst.lat0, crst.lon0);
 		NFtot+=Nfaults[0];
 	}
+
+    top_of_slipmodel(*eqkfm0res, NFtot-1);
 
     return(err);
 }
 
 int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipmodels,
 						double mu, double disc, double tmain, double d_close, int nsel,
-						int *sel_pts, double *mmain, int resample, int tap_bot, int *NF0,
-						double lat0, double lon0) {
+						int *sel_pts, double *mmain, int resample, int tap_bot, int cuts_surf,
+						int *NF0, double lat0, double lon0) {
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
 
@@ -218,11 +220,20 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 	for (int m=0; m<no_slipmodels; m++){
 		err=read_eqkfm(slipmodels[m], &eqkfm0, &NF, mmain, mu);
 		if (err) return (err);
+
+		if (cuts_surf) {
+			top_of_slipmodel(eqkfm0, NF);
+			for (int i=0; i<NF; i++) eqkfm0[i].cuts_surf=1;
+		}
+
 		which_taper(eqkfm0, NF, tap_bot, 0, d_close);
 		for (int nf=0; nf<NF; nf++) {
 			eqkfm0[nf].t=tmain;
 			eqkfm0[nf].nsel=nsel;
 			eqkfm0[nf].selpoints=sel_pts;
+			//todo check: these 2 lines ok? (copied from CRSjuly)
+			eqkfm0[nf].is_mainshock=1;
+			eqkfm0[nf].is_slipmodel=1;
 			latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
 			if (resample) {
 			  	discx=eqkfm0[nf].L/eqkfm0[nf].np_st;
@@ -319,8 +330,6 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			if (eqkfm0[NFsofar].is_slipmodel) {
 				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
 						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
-//				okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
-//						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
 			}
 			else {
 				temp->Coeffs_st=temp->Coeffs_dip=NULL;

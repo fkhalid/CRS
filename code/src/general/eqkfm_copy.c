@@ -43,6 +43,21 @@ void copy_eqkfm_nolocation_noindex_notime(struct eqkfm eqkfm1, struct eqkfm *eqk
 
 }
 
+void copy_eqkfm_noindex_notime(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
+//slightly wasteful, but at least don't need to change it if new variables are added to structure (junk change copy_eqkfm_all).
+
+	double lat, lon, depth, t;
+	int i;
+
+	i=(*eqkfm2).index_cat;
+	t=(*eqkfm2).t;
+
+	copy_eqkfm_all(eqkfm1, eqkfm2);
+
+	(*eqkfm2).t=t;
+	(*eqkfm2).index_cat=i;
+}
+
 void copy_eqkfm_attributes(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 
 	//general properties:
@@ -54,6 +69,9 @@ void copy_eqkfm_attributes(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 	(*eqkfm2).selpoints= eqkfm1.selpoints;
 	(*eqkfm2).distance= eqkfm1.distance;
 	(*eqkfm2).noise=eqkfm1.noise;
+	(*eqkfm2).cuts_surf=eqkfm1.cuts_surf;
+	(*eqkfm2).top=eqkfm1.top;
+
 
 	//earthquake properties:
 	(*eqkfm2).t=eqkfm1.t;
