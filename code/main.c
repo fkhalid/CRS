@@ -433,13 +433,7 @@ int main (int argc, char **argv) {
 			MPI_Bcast(&numCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		#endif
 
-		//fixme remove first line (only there for compatibility with parkfield).
-		if (numCols == 8) {
-			err += read_RS(catname, &cat2, crst, -2, t_back, 0.0, tw, tstartLL, Mag_main, NULL, 0, NULL, 0);
-		}
-		else {
-			err += readZMAP(&cat2, NULL, NULL, catname, crst, reftime, t_back, tstartLL, t_back, tstartLL, Mag_main, 0, 0, 0, dDCFS, 1);
-		}
+		err += readZMAP(&cat2, NULL, NULL, catname, crst, reftime, t_back, tstartLL, t_back, tstartLL, Mag_main, 0, 0, 0, dDCFS, 1);
 		if (cat2.Z!=0){
 			if(procId == 0) {
 				if (flog) fprintf(flog, "\nMainshocks found. Reloading catalog for new time period...\n");

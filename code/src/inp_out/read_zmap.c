@@ -377,8 +377,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 		for (int i=1; i<=eq2; i++){		//todo parallel
 		eq=seleq2[i-1];
-			SD=f*herr[i];	//fixme or should be i -> eq?
-			SDd=f*verr[i];
+			SD=f*herr[eq];
+			SDd=f*verr[eq];
 			(*cat).t[i]=times[eq];
 			(*cat).mag[i]=mag[eq];
 			(*cat).lat0[i]=lat[eq];

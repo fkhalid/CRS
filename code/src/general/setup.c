@@ -41,7 +41,6 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 	double tstartS, tendS, tstartCat, tendCat;
 	int err=0, errP, NgridT=crst.N_allP;
 	int Nfm;
-	int numCols;
 
 	if(procId == 0) {
 		if (verbose_level>0) printf("Setting up catalog...\n");
@@ -51,29 +50,8 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 	tendCat=tend;	//this is (presumably) the "ForecastDate", up to which data is available. Events after t=0 used to calculate LL of forecast.
 
 	//select events within some tolerance level, since they will have to be matched with focal mechanisms.
-	//todo remove this line (only for making it work for Parkfield).
-
-	if(procId == 0) {
-		numCols = countcol(catname);
-	}
-
-	#ifdef _CRS_MPI
-		MPI_Bcast(&numCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	#endif
-
-	if(numCols == 8) {
-		err += read_RS(catname, cat, crst, -2.0, tstart, 0.0, tw, tendCat, 0.0, eqkfm1, dDCFS, Ntot, 1);
-		for (int eq=0; eq<*Ntot; eq++) {
-			if ((*eqkfm1)[eq].t>0.0) {
-				*Ntot=eq;
-				break;
-			}
-		}
-	}
-	else {
-		err += readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat,
+	err += readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat,
 						Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
-	}
 
 	//fixme check that foc mec are read when aftershocks==1.
 	if (flag.aftershocks){
