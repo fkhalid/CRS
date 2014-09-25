@@ -90,7 +90,6 @@ int main (int argc, char **argv) {
 
 	int LLinversion, forecast, extra_output;
 	int Nchar=120, Nchar_long=500;
-	char focmec_format[5]="CSEP";
 	char fname[Nchar], msg[Nchar],	infile[Nchar], crust_file[Nchar], fore_template[Nchar], catname[Nchar], outname[Nchar],
 		syscopy[Nchar], background_rate_file[Nchar], slipmodelfile[Nchar], afterslipmodelfile[Nchar], modelparametersfile[Nchar],
 		logfile[Nchar], print_LL[Nchar], outnamemod[Nchar], error_msg[120];
@@ -139,7 +138,7 @@ int main (int argc, char **argv) {
 	int no_fm_cats;
 
 	struct tm reftime, times;
-	double tstartLL, tendLL, Tend, Tstart, tw, t_oldsnap, tstart_calc, tendCat, time_min_focmec;
+	double tstartLL, tendLL=0, Tend, Tstart, tw, t_oldsnap, tstart_calc, tendCat, time_min_focmec; //todo read tendLL from file.
 	double fore_dt;
 	double *tts;
 	int Ntts;
@@ -228,30 +227,9 @@ int main (int argc, char **argv) {
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 	#endif
 
-	// FIXME [Fahad] Block ignored in MPI due to CSEPmode
-	//set things for Csep mode:
-	if (CSEPmode) {
-		sprintf(focmec_format, "CSEP");
-		sprintf(cmb_format, "farfalle");
-	}
-	else {	//todo only leave CSEP format for final version.
-		//if (focmeccats){
-			if(procId == 0) {
-				nc = countcol(focmeccats[0]);
-			}
-
-			#ifdef _CRS_MPI
-				MPI_Bcast(&nc, 1, MPI_INT, 0, MPI_COMM_WORLD);
-			#endif
-
-			if ((nc==7) | (nc==10)) sprintf(focmec_format,"7col");
-			else sprintf(focmec_format,"CSEP");
-		//}
-	}
-
 //-----------------------read model parameters-------------------//
 
-	err=read_modelparmeters(modelparametersfile, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
+	err=read_modelparameters(modelparametersfile, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt, &t_back,
 			&Nsur, &Nslipmod, &flags, &Hurst, &Mc_source, &use_bg_rate, &(cat.Mc), &Mag_main, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
@@ -351,13 +329,13 @@ int main (int argc, char **argv) {
 	load_focmec= (flags.err_recfault || aftershocksMC);
 
 	if (load_focmec) {
-		err = setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime,
+		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
 							   flags, &NFM, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
 							   tstartLL-extra_time, tendCat, 30);
 	}
 	else {
-		err = setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime,
+		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mag_main, crst, &cat, &eqkfm1,   NULL , NULL, flags,
 							   NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
 							   tstartLL-extra_time, tendCat, 30);
@@ -385,12 +363,11 @@ int main (int argc, char **argv) {
 //-----------------Setup LL inversion period ---------------//
 //----------------------------------------------------------//
 
-	if (LLinversion){
-
 	first_main=j0=1;
 	tnow=-1.0;
 	current_ev=N=0;
 
+	//todo check where this is used (and possibly simplify after propagation of results deactivated).
 	while (current_ev<Ntot && tnow<0 && N<N_min_events){
 		if (eqkfm1[current_ev].is_mainshock) {
 			if (first_main)	{
@@ -404,63 +381,6 @@ int main (int argc, char **argv) {
 			tnow=eqkfm1[current_ev].t+tw;
 		}
 		current_ev+=1;
-	}
-	if (tnow<0){
-		for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<0) N+=1;
-	}
-
-	if (N>N_min_events){
-		if(procId == 0) {
-			if (flog) fprintf(flog, "\n%d events from catalog can be used for LL inversion - enough to perform inversion (Nmin=%d).\n", N, N_min_events);
-		}
-		tstartLL=t_firstmain;
-		tendLL=0;
-	}
-	else {
-		if(procId == 0) {
-			if (flog) fprintf(flog, "\n%d events from catalog can be used for LL inversion - not enough to perform inversion (Nmin=%d).\n Searching past mainshocks...\n", N, N_min_events);
-			if (verbose_level>0) printf("** Warning: fewer than %d events in catalog can be used for LL inversion: will try to find large in the past to fit parameters... **\n", N_min_events);
-		}
-		cat2.Mc=Mag_main;
-
-		int numCols;
-
-		if(procId == 0) {
-			numCols = countcol(catname);
-		}
-
-		#ifdef _CRS_MPI
-			MPI_Bcast(&numCols, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		#endif
-
-		err += readZMAP(&cat2, NULL, NULL, catname, crst, reftime, t_back, tstartLL, t_back, tstartLL, Mag_main, 0, 0, 0, dDCFS, 1);
-		if (cat2.Z!=0){
-			if(procId == 0) {
-				if (flog) fprintf(flog, "\nMainshocks found. Reloading catalog for new time period...\n");
-			}
-			tstartLL=cat2.t[cat2.Z];
-			tendLL=fmin(0.0, tstartLL+200);
-			free_cat(cat);
-			free_eqkfmarray(eqkfm1, 0, Ntot-1);
-			err=setup_catalogetc(catname, focmeccats, no_fm_cats, focmec_format, reftime, dDCFS, Mag_main, crst, &cat, &eqkfm1, NULL , NULL, flags, NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw, tstartLL-extra_time, tendCat, 30);
-			if (err!=0) {
-				error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting.**\n");
-				if (flog) {
-					fprintf(flog,"Error in setting up catalog or associating events with mainshocks. Exiting.\n");
-					fflush(flog);
-				}
-			}
-			free_cat(cat2);
-		}
-		else {
-			if (verbose_level>0) printf("** Warning: No mainshocks found in catalog: will not do parameter estimation, but use default parameters.**\n");
-			if (flog) {
-				fprintf(flog, "\nMainshocks not found found. Will not perform LL parameter inversion, but use default values: Asig=%.2lf, ta=%.2lf\n", Asig0, ta0);
-				fflush(flog);
-			}
-			LLinversion=0;
-		}
-	}
 	}
 
 	if (load_focmec){
@@ -497,7 +417,6 @@ int main (int argc, char **argv) {
 	if(procId == 0) {
 		if (flog && LLinversion){
 			fprintf(flog, "Inversion time period: [%2.lf - %2.lf]days, ", tstartLL, tendLL);
-			fprintf(flog, "starting with mainshock: t=%.2lf, Mw=%.2lf, lat=%.2lf, lon=%.2lf\n", eqkfm0res[0].t, eqkfm0res[0].mag, eqkfm0res[0].lat, eqkfm0res[0].lon);
 			fflush(flog);
 		}
 	}

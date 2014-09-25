@@ -12,7 +12,7 @@
 	#include "mpi.h"
 #endif
 
-int readmultiplefocmec(char **focmecfiles, int nofiles, char *which_format,
+int readmultiplefocmec(char **focmecfiles, int nofiles,
 					  struct crust crst, double border, double dz, double dDCFS,
 					  struct tm reftime, double t0, double t1, double tfocmec,
 					  double mag, double ***focmec,	int **firstelements, int *NFM,
@@ -66,7 +66,7 @@ int readmultiplefocmec(char **focmecfiles, int nofiles, char *which_format,
 	if (eqkfm) *eqkfm=eqkfm_array(0,ntotmax-1);
 
 	for (int n=0; n<nofiles; n++) {
-		err += readfocmec(focmecfiles[n], which_format, crst, border, dz, dDCFS, reftime, t0,
+		err += readfocmec(focmecfiles[n], crst, border, dz, dDCFS, reftime, t0,
 						  t1, tfocmec, mag, (focmec)? &focmectemp : NULL, &nfmtemp, &nfmtemp2,
 						  (eqkfm)? &eqkfmtemp : NULL, sel, fm2);
 
@@ -100,7 +100,7 @@ int readmultiplefocmec(char **focmecfiles, int nofiles, char *which_format,
 	return (err>0);
 }
 
-int readfocmec(char *focmecfile, char *which_format, struct crust crst,
+int readfocmec(char *focmecfile, struct crust crst,
 			   double border, double dz, double dDCFS, struct tm reftime,
 			   double t0, double t1, double tfocmec, double mag,
 			   double ***focmec, int *NFM, int *NFM_timesel,
@@ -124,7 +124,7 @@ int readfocmec(char *focmecfile, char *which_format, struct crust crst,
 	//check if file exists and can be opened.
 	if(procId == 0) {
 		if (flog) {
-			fprintf(flog, "\nReading focal mechanisms from file %s (format: %s).\n", focmecfile, which_format);
+			fprintf(flog, "\nReading focal mechanisms from file %s.\n", focmecfile);
 			if (fm2) fprintf(flog, "Using both focal mechanisms.\n");
 			else fprintf(flog, "Using only first focal mechanism.\n");
 			fflush (flog);
@@ -203,47 +203,15 @@ int readfocmec(char *focmecfile, char *which_format, struct crust crst,
 		if (verbose_level>1) printf("Reading catalog of focal mechanisms...");
 	}
 
-	if (strcmp(which_format,"7col")==0){
-		lat_col=1;
-		lon_col=2;
-		dep_col=3;
-		mag_col=4;
-		str_col=5;
-		dip_col=5;
-		rake_col=6;
-		time_col=0;
-		H=0;
-
-		if (eqkfm) {
-			if(procId == 0) {
-				if (verbose_level>0) printf("** Warning: non null value of eqkfm passed to readfocmec, but structure can not be set up since no time information contained in input file.**\n");
-			}
-			*eqkfm=NULL;
-			ignore_time=1;
-		}
-	}
-
-	else{
-		if (strcmp(which_format,"CSEP")==0){
-			lat_col=3;
-			lon_col=4;
-			dep_col=14;
-			mag_col=12;
-			str_col=5;	//str, dip, rake have also columns 8, 9, 10.
-			dip_col=6;
-			rake_col=7;
-			time_col=2;
-			H=1;
-		}
-		else {
-			if(procId == 0) {
-				if (verbose_level>0) printf ("**Error: format identifier not recognized (readfocmec.c). Exiting.** \n");
-				if (flog) fprintf(flog,"Error: format identifier not recognized (readfocmec.c). Exiting.\n");
-			}
-
-			return (1);
-		}
-	}
+	lat_col=3;
+	lon_col=4;
+	dep_col=14;
+	mag_col=12;
+	str_col=5;	//str, dip, rake have also columns 8, 9, 10.
+	dip_col=6;
+	rake_col=7;
+	time_col=2;
+	H=1;
 
 	focmec0=dmatrix(1,NC,1,NFMmax);
 	selected=ivector(1,NFMmax);

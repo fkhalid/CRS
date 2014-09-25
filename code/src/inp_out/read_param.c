@@ -13,7 +13,7 @@
 	#include "mpi.h"
 #endif
 
-int read_modelparmeters(char * modelparametersfile, struct tm reftime, int *N_min_events,
+int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_min_events,
 						int *fixr, int *fixAsig, int *fixta, double *r0, double *Asig0,
 						double *ta0, double *Asig_min, double *Asig_max, double *ta_min,
 						double *ta_max, int *nAsig0, int *nta0, double *tstartLL,

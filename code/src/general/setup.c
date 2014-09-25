@@ -11,7 +11,7 @@
 	#include "mpi.h"
 #endif
 
-int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_format,
+int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 					 struct tm reftime, double dDCFS, double Mag_main, struct crust crst,
 					 struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec,
 					 int **firstelements, struct flags flag, int *NFM, int *Ntot, int *Nmain,
@@ -56,11 +56,9 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 	//fixme check that foc mec are read when aftershocks==1.
 	if (flag.aftershocks){
 		//if (focmec){
-			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
+			err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
 					reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
-			//err+=readfocmec(focmeccat[0], fm_format, crst, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, reftime, tstartS, tendS, tendS, (*cat).Mc, focmec, NFM, &Nfm, &eqkfm1fm, 1, 1);
 			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
-			//err+=(errP==NULL);	//commented since foc mec catalog may not be available.
 		//}
 		eqk_filter(eqkfm1, Ntot, (Mc_source>20) ? (*cat).Mc : Mc_source, crst.depmax+fmax(dR,ztoll));
 		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
@@ -68,7 +66,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, char *fm_form
 
 	else {
 		if (focmec){
-			err+=readmultiplefocmec(focmeccat, nofmcat, fm_format, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
+			err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
 					reftime, tstart, tendS, tendS, Mag_main, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
 			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
 		}

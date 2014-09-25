@@ -213,7 +213,6 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			if (NeX) {
 				a=gamma*dtau_dt-1;
 				b=a*exp(-t_pre/ta1)+1;
-				//NeX[m]+= back_rate_n*fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*dtau_dt))),0);	//due to numerical error it can give -ve values. todo find taylor exp and use it.
 
 				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
 				if(isnan(-NeX[m])) {
@@ -231,7 +230,6 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			if (NeX) {
 				a=gamma*dtau_dt-1;
 				b=a*exp(-dt[j]/ta1)+1;
-				//NeX[m]+=back_rate_n*fmax((dtau_dt/dtau_dt0)*(dt[j]+ta*(b-log(gamma*dtau_dt))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
 
 				if (!isinf(fabs(b))) NeX[m]+=fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(dt[j]+ta1*log(b/(gamma*dtau_dt))));	//condition since for gamma -> inf, Nev-> 0 (can do algebra to confirm).
 				if(isnan(-NeX[m])) {
@@ -251,7 +249,6 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 				a=gamma*dtau_dt-1;
 				b=a*exp(-t_pre/ta1)+1;
 				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
-				//NeX[m]+=back_rate_n*fmax((dtau_dt/dtau_dt0)*(t_pre+ta*(b-log(gamma*dtau_dt))),0);		//due to numerical error it can give -ve values. todo find taylor exp and use it.
 				if(isnan(-NeX[m])) {
 					printf("isnanNeX! a=%.3e, b=a=%.3e\n");
 				}
@@ -292,7 +289,6 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   }
 
   if (R) for (int t=0; t<nthreads; t++){
-	//for (int eq=0; eq<Neq; eq++) R[indices[1][eq]+1]+=Rprivate[t][eq];
 	  for (int eq=0; eq<=cat.Z; eq++) R[eq]+=Rprivate[t][eq];
   }
   if (Rate_end) *Rate_end=0.0;

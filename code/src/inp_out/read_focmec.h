@@ -19,14 +19,14 @@
 #include "../general/eqkfm_copy.h"
 #include "read_matrix.h"
 
-int readmultiplefocmec(char **focmecfiles, int nofiles, char *which_format,
+int readmultiplefocmec(char **focmecfiles, int nofiles,
 					   struct crust crst, double, double, double dDCFS,
 					   struct tm reftime, double t0, double t1, double tfocmec,
 					   double mag, double ***focmec, int **firstelements,
 					   int *NFM, int *NFM_timesel, struct eqkfm **eqkfm,
 					   int sel, int fm2);
 
-int readfocmec(char *focmecfile, char *which_format, struct crust crst, double, double, double dDCFS, struct tm reftime,
+int readfocmec(char *focmecfile, struct crust crst, double, double, double dDCFS, struct tm reftime,
 		double t0, double t1, double tfocmec, double mag, double ***focmec,	int *NFM, int *NFM_timesel, struct eqkfm **eqkfm,int sel, int fm2);
 
 void select_fm_time(double **focmec, int *NFM, double Tstart);

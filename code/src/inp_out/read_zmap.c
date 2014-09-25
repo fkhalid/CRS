@@ -42,7 +42,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	char line[line_length], *st;
 	int no_expected_columns=13;	//ZMAP format as used by CSEP?
 	int Z;
-	double Mc_offset=0.3, dM=0.9;	//todo don't hardwide Mc_offset. todo dM should be passed.
+	double Mc_offset=0.3, dM=0.9;	//todo don't hardwide Mc_offset; dM should be passed.
 	int cut_sd=3.0;	//no. of s.dev. for cutting off gaussian.	//todo read from somewhere?
 	double t_last_large;
 	int k;
