@@ -875,7 +875,7 @@ int main (int argc, char **argv) {
 						load_gammas(old_LLfolder, p, gammas_old, NgridT);
 						gammas=gammas_old;
 					}
-					else gammas=NULL;
+					else gammas=NULL;	//fixme check if this should be allowed to be set equal to gammas_bg_rate?
 
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, Nslipmod, DCFS, eqkfm_aft,
 										  	eqkfm0res, eqkfm1, flags, Hurst, tevol_afterslip, crst, AllCoeff,
