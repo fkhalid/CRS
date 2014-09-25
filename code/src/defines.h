@@ -38,10 +38,6 @@
 
 #include <stdio.h>
 
-#define check_if_snapshot_filename "snapshot.info"	//file which exists only if at least one forecast has been already been produced, and contains time to which other files gammas and LL) refer.
-#define LLsnapshot_filename "LL.dat"	//file which exists only if at least one forecast has been already been produced, and contains time to which other files gammas and LL) refer.
-#define gammas_filename "gammas.dat"	//file which exists only if at least one forecast has been already been produced, and contains time to which other files gammas and LL) refer.
-#define old_LLfolder "output/oldLL"
 #define logfolder "output/log/"
 
 /*	verbose_level: only global variable. settings:

@@ -516,8 +516,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 					 int NTSdisc, int Nm, int NgridT, double **focmec, int *fmzonelim, int NFM,
 					 long *seed, struct catalog cat, double *times, double tstart, double tt0,
 					 double tt1, double tw, double Asig, double ta, double r0, int fixr,
-					 double **all_gammas0, double **all_new_gammas, int multiple_input_gammas,
-					 int multiple_output_gammas, int fromstart, char * printall_cmb,
+					 double *gammas0, double **all_new_gammas, int fromstart, char * printall_cmb,
 					 char *printall_forex, int refresh) {
 
 	//recfault= [0,1,2] means: don't vary rec. fault, vary (choose random one), vary and sample all catalog in order.
@@ -589,13 +588,11 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	#endif
 
 	static double **DCFSrand;
-	static double *dumrate, *gammas, *rates_x, *rate, *ev_x;
+	static double *dumrate, *gammas, *rate, *ev_x;
 	double sum, sum1, sum2, integral, Ldum0, r;
-	double *gammas0;
 	static int first_timein=1, N;
 	double Ntot, Itot, LLdum0tot;
 	int err, Nsur_over_Nslipmod=Nsur/Nslipmod;
-	int uniform_bg_rate=0;
 	int current_main, j0, which_recfault;
 	double tnow;
 	FILE *fforex, *fcmb;
@@ -604,7 +601,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (LL && verbose_level>0) printf("Calculating LL for Asig=%lf, ta=%lf ...", Asig, ta);
 	}
 
-	if (!all_gammas0)	uniform_bg_rate=1;
 
 	if (first_timein==1){
 		if(procId == 0) {
@@ -618,7 +614,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		dumrate=dvector(1,cat.Z);
 		rate=dvector(1,cat.Z);
 		gammas=dvector(1,NgridT);
-		rates_x=dvector(1,NgridT);
 		ev_x=dvector(1,NgridT);
 	}
 
@@ -643,11 +638,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		}
 	#endif
 
-	if (all_new_gammas!=0 && (multiple_output_gammas==0)) {
-		for (int n=1; n<=NgridT; n++) {
-			rates_x[n]=0.0;	//need to save average rate at each location, to find final gamma giving average rate.
-		}
-	}
 	//for (int ndt=1; ndt<=NDT; ndt++) net[ndt]=0.0;
 
 	sum=sum1=sum2=0;
@@ -693,9 +683,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			*seed = newSeed * (long)nsur;
 		#endif
 
-		if (all_gammas0) {
-			gammas0= (multiple_input_gammas)? all_gammas0[nsur] : *all_gammas0;
-		}
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
 		flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
 		
@@ -707,7 +694,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
-				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
+				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
 			}
 
 			err = forecast_stepG2_new(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
@@ -722,7 +709,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
-				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
+				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
 			}
 		}
 
@@ -765,10 +752,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (err==1) break;
 
 		for(int i=1;i<=cat.Z;i++) if(cat.t[i]>=tt0 && cat.t[i]<tt1) rate[i]+=1.0*dumrate[i]/(1.0*Nsur);
-		if (all_new_gammas) {
-			if (multiple_output_gammas) for (int n=1; n<=NgridT; n++) all_new_gammas[nsur][n]=gammas[n];
-			else for (int n=1; n<=NgridT; n++) rates_x[n]+=(1.0/gammas[n])/(1.0*Nsur);
-		}
+		if (all_new_gammas) for (int n=1; n<=NgridT; n++) all_new_gammas[nsur][n]=gammas[n];
 
 		if(procId == 0) {
 			if (printall_cmb) {
@@ -864,7 +848,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (I) *I=Itot;
 		if (Nev) *Nev=Ntot;
 		if (r_out) *r_out=r;
-		if (all_new_gammas!=0 && multiple_output_gammas==0) for (int n=1; n<=NgridT; n++) (*all_new_gammas)[n]=1.0/rates_x[n];
 
 		if(procId == 0) {
 			if (LL && verbose_level>0) printf("LL=%lf", *LL);
