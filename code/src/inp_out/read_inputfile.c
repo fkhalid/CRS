@@ -16,7 +16,9 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 		char *model_parameters_file, char *Logfile, int *extraoutput, struct tm *reftime,
 		double *Tstart, double *Tend, long *seed, char *cmb_format, int *num_fm){
 
-	/* input: file name input_fname
+	/* Read master input file.
+	 *
+	 * input: file name input_fname
 	 *
 	 * output:
 	 * 		outname: output file
@@ -49,7 +51,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	char line[Nchar], listfocmeccat[Nchar];
 	char *key, *value;
 	int NP=18, i, err=0;
-	struct tm times;
+	struct tm times0, times1, times2;
 	int value_found[NP], listfm=0, nofm=0;
 	char comment[]="#", comm=comment[0];
 
@@ -115,34 +117,37 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 			i=0;
 			while (i<NP && strcmp(key,keys[i])) i++;
 			if (i>=NP){
-				if (verbose_level>0) fprintf(stderr, "Error read_input: parameter \" %s\" in file \"%s\" not recognized.\n", key, input_fname);
+				if (verbose_level>0) fprintf(stderr, "Error read_inputfile: parameter \" %s\" in file \"%s\" not recognized.\n", key, input_fname);
 				continue;
 			}
 
 			value_found[i]=1;
 
+			// Fill in output variables with values from file:
 			switch(i){
 				case 0:
 					sscanf(value,"%s",reftime_str);
-					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-					times.tm_year-=1900;
-					times.tm_mon-=1;
-					times.tm_isdst=0;
-					if (reftime) *reftime=times;
+					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times0.tm_year), &(times0.tm_mon), &(times0.tm_mday), &(times0.tm_hour), &(times0.tm_min), &(times0.tm_sec));
+					times0.tm_year-=1900;
+					times0.tm_mon-=1;
+					times0.tm_isdst=0;
+					if (reftime) *reftime=times0;
+					if (Tstart && value_found[1]) *Tstart=difftime(mktime(&times1),mktime(&times0))*SEC2DAY;
+					if (Tend && value_found[2]) *Tend=difftime(mktime(&times2),mktime(&times0))*SEC2DAY;
 					break;
 				case 1:
-					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-					times.tm_year-=1900;
-					times.tm_mon-=1;
-					times.tm_isdst=0;
-					if (Tstart) *Tstart=difftime(mktime(&times),mktime(reftime))*SEC2DAY;
+					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times1.tm_year), &(times1.tm_mon), &(times1.tm_mday), &(times1.tm_hour), &(times1.tm_min), &(times1.tm_sec));
+					times1.tm_year-=1900;
+					times1.tm_mon-=1;
+					times1.tm_isdst=0;
+					if (Tstart && value_found[0]) *Tstart=difftime(mktime(&times1),mktime(&times0))*SEC2DAY;
 					break;
 				case 2:
-					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-					times.tm_year-=1900;
-					times.tm_mon-=1;
-					times.tm_isdst=0;
-					if (Tend) *Tend=difftime(mktime(&times),mktime(reftime))*SEC2DAY;
+					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times2.tm_year), &(times2.tm_mon), &(times2.tm_mday), &(times2.tm_hour), &(times2.tm_min), &(times2.tm_sec));
+					times2.tm_year-=1900;
+					times2.tm_mon-=1;
+					times2.tm_isdst=0;
+					if (Tend && value_found[0]) *Tend=difftime(mktime(&times2),mktime(&times0))*SEC2DAY;
 					break;
 				case 3:
 					if (outname) sscanf(value,"%s",outname);
@@ -249,6 +254,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 		}
 	}
 
+
+	// Print out warnings or errors for missing parameters:
 	if(procId == 0) {
 		nofm=0;
 		for (int n=0; n<NP; n++) {
@@ -307,6 +314,16 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 }
 
 int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
+
+/* Read a file containing a list of focal mechanism catalogs files (corresponding to different areas).
+ *
+ * input: inputfile
+ *
+ * output:
+ * listfiles, a list of filenames;
+ * nflies, the number of files.
+ *
+ */
 
 	int Nchar=1000;
 	char line[Nchar];
@@ -395,6 +412,20 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 // FIXME: [Fahad] MPI code this this function requires optimization ...
 int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels,
 					   double res, int is_afterslip) {
+	/*
+	 * Read a file containing a list of slip models.
+	 *
+	 * input:
+	 * 	input_fname (file name)
+	 * 	reftime: structure containing the value of corresponding to reference time (IssueTime).
+	 * 	is_afterslip: flag indicating whether the file contains coseismic slip models or afterslip (files are organized differently).
+	 * 	res: desired slip model resolution
+	 *
+	 * output:
+	 * 	allslipmodels: list of slip models;
+	 *
+	 */
+
 	// [Fahad] Variables used for MPI
 	int procId = 0;
 	int fileError = 0, size_slipmodels = 0;
@@ -411,7 +442,6 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	double t0;
 	struct tm times;
 	int Nm0, nsm, no_slipmod;
-	int cuts_surf=0;	//fixme this should be read from file, for individual events!!
 
 	if(procId == 0) {
 		fin = fopen(input_fname, "r");
@@ -495,12 +525,11 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		nsm=0;
 		if(procId == 0) {
 			for (int nn=0; nn<Nm0; nn++) {
-			(*allslipmodels).cut_surf[nn]=cuts_surf;	//fixme read from file.
 				if (is_afterslip){
 					(*allslipmodels).slipmodels[nn] = malloc(120 * sizeof(char));
 					(*allslipmodels).Nfaults[nn]=1;	//actual value found later.
 					fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-					sscanf(line,"%lf %s", (*allslipmodels).tmain+nn, (*allslipmodels).slipmodels[nn]);
+					sscanf(line,"%lf %d %s", (*allslipmodels).tmain+nn, (*allslipmodels).cut_surf+nn, (*allslipmodels).slipmodels[nn]);
 					(*allslipmodels).tmain[nn]+=t0;
 				}
 				else{
@@ -522,7 +551,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 					 for (int n=1; n<=no_slipmod; n++){
 						(*allslipmodels).slipmodels[nsm] = malloc(120 * sizeof(char));
 						fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-						sscanf(line,"%s", (*allslipmodels).slipmodels[nsm]);
+						sscanf(line,"%d %s", (*allslipmodels).cut_surf+nsm, (*allslipmodels).slipmodels[nsm]);
 						nsm++;
 
 					}

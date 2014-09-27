@@ -28,7 +28,6 @@
 #  		  	Flags etc.		   		   #
 #======================================#
 # No. iterations	No. of slip models used
-# flags: vary_slip	vary_afterslip	Hurst coefficient.
 # flag: vary_fm
 # flag: grid_error
 # flag: OOPs
@@ -41,7 +40,6 @@
 #                       4       use only events with foc mec. uses foc mec to create synthetic slip model.
 # flag: use_background_rate
 9	3
-1	0	0.8
 1
 1
 0

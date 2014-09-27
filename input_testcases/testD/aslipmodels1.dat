@@ -1,8 +1,8 @@
 # no. of snapshots models (lines to read)
 # format
 # reference time
-# time path_to_file 
+# time cuts_surf path_to_file 
 1
 pscmp
 2004-09-28T17:15:24Z
-274.0		input_testcases/testD/Parkfield_Aft.dat
+274.0	0	input_testcases/testD/Parkfield_Aft.dat

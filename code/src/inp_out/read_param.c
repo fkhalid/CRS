@@ -94,8 +94,6 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
 		sscanf(line,"%d %d", Nsur, Nslipmod);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		//sscanf(line,"%d %d %lf", &((*flags).err_slipmodel), &((*flags).err_afterslipmodel), Hurst);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", &((*flags).err_recfault));
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", &((*flags).err_gridpoints));

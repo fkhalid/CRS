@@ -1,8 +1,8 @@
 # no. of events
 # format (can be pscmp, farfalle or fsp)	flag indicating if all models have the same geometry.
 # time(1st event)    magnitude(1st event) no.of slip models(1st event)
-# path to first slip model
-# path to second slip model
+# cuts_surf	 path to first slip model
+# cuts_surf	 path to second slip model
 # ...
 # time(2nd event)    magnitude(2nd event)    no.of slip models(2nd event)
 # path to first slip model
@@ -12,6 +12,6 @@
 2
 fsp	0	
 2004-09-28T17:15:24Z	6.0	1
-input/slipmodels/fsp/s2004PARKFI01CUST.fsp
+0 input/slipmodels/fsp/s2004PARKFI01CUST.fsp
 2004-09-29T17:15:24Z    6.0     1
-input/slipmodels/fsp/s2004PARKFI01DREG.fsp  
+0 input/slipmodels/fsp/s2004PARKFI01DREG.fsp  

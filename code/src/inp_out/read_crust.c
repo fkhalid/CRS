@@ -28,12 +28,14 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 	#endif
 
 	int err=0, err1=0;
-	int NG, ind, NLat, NLon, Nd, NGout;
+	int NG, ind, NLat, NLon, Nd;
 	int no_subpointsx, no_subpointsy, no_subpointsz;
 	int no_magbins;
+	int is_refined=0;
 	double mag1, mag2;
 	double dx, dy, dAeq;
 	double lat0, lat1,lon0, lon1, d0, d1;
+	double *strtmp=0, *diptmp=0, *raketmp=0;
 
 	if(procId == 0) {
 		if (verbose_level>0) printf("Loading model setup...");
@@ -132,11 +134,12 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 	no_subpointsy= (int) (0.01+ceil(dy/resxy));
 	no_subpointsz= (int) (0.01+ceil((*crst).ddepth_out/resz));
 
+	is_refined= (no_subpointsx*no_subpointsy*no_subpointsz>1) & (*crst).uniform;
+
 	if ((*crst).uniform){
 		NLat=(*crst).nLat_out;
 		NLon=(*crst).nLon_out;
 		Nd=(*crst).nD_out;
-		NGout=(*crst).N_allP;
 
 		NLat*=no_subpointsy;
 		NLon*=no_subpointsx;
@@ -197,9 +200,16 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 	}
 
 	if(procId == 0) {
-		if (flog) fprintf(flog, "Forecast resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km;\n", dy, dx, (*crst).ddepth_out);
-		if (flog) fprintf(flog, "Internal resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km -> %d x %d x %d = %d grid points.\n", resxy, resxy, resz, NLat, NLon, Nd, NG);
-		if (flog) fprintf(flog, "Real int.resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km.\n", dy/no_subpointsy, dx/no_subpointsx, (*crst).ddepth_out/no_subpointsz);
+		if (flog) {
+			fprintf(flog, "Forecast resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km;\n", dy, dx, (*crst).ddepth_out);
+			if (is_refined) {
+				fprintf(flog, "Internal resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km -> %d x %d x %d = %d grid points.\n", resxy, resxy, resz, NLat, NLon, Nd, NG);
+			}
+			else {
+				fprintf(flog, "Internal resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km-> %d x %d x %d = %d grid points.\n", dy, dx, (*crst).ddepth_out, (*crst).nLat_out, (*crst).nLon_out, (*crst).nD_out);
+				fprintf(flog, "Real int.resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km.\n", dy, dx, (*crst).ddepth_out);
+			}
+		}
 	}
 
 	//--------------calculate area of each grid cell, and local coordinates:-------------//
@@ -213,24 +223,25 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 	//--------------read value of focal mechanism grid from file:-------------//
 
 	if (focmecgridfile && strcmp(focmecgridfile,"")!=0){
-		//fixme check if grid is refined.
-//		if (!(*crst).uniform){
-//			printf("*Warning: space variable fixed mechanisms not possible for refined grid - using spatially uniform value. (read_crust.c)*\n");
-//			if (flog) {
-//				fprintf(flog, "*Warning: space variable fixed mechanisms not possible for refined grid - using spatially uniform value. (read_crust.c)*\n");
-//				//fflush(flog);
-//			}
-//		}
-//		else {
-			err1 = read_focmecgridfile(focmecgridfile, crst);
-			if(err1 && procId == 0) {
-				printf("*Warning: errors occurred while reading refined grid file - using spatially uniform value. (read_crust.c)*\n");
-				if (flog) {
-					fprintf(flog, "*Warning: errors occurred while reading refined grid file - using spatially uniform value. (read_crust.c)*\n");
-					//fflush(flog);
-				}
+
+		err1 = read_focmecgridfile(focmecgridfile, crst);
+
+		if (is_refined){
+			err1+=convert_geometry((*crst),(*crst).str0, &strtmp, 0, 1);
+			(*crst).str0=strtmp;
+			err1+=convert_geometry((*crst),(*crst).dip0, &diptmp, 0, 1);
+			(*crst).dip0=strtmp;
+			err1+=convert_geometry((*crst),(*crst).rake0, &raketmp, 0, 1);
+			(*crst).rake0=strtmp;
+		}
+
+		if(err1 && procId == 0) {
+			printf("*Warning: errors occurred while reading focmecgridfile (%s)*\n", focmecgridfile);
+			if (flog) {
+				fprintf(flog, "*Warning: errors occurred while reading focmecgridfile*\n");
+				fflush(flog);
 			}
-//		}
+		}
 	}
 
 	if(procId == 0) {
@@ -415,7 +426,7 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 
 	double strtmp, diptmp, raketmp;
 	double **data;
-	int err=0, NL;
+	int err=0, NL, NP=(*crst).nLat_out*(*crst).nLon_out*(*crst).nD_out;
 
 	data=dmatrix(1,2,1,(*crst).N_allP);
 
@@ -432,11 +443,11 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 		MPI_Bcast(data[nrl], nrow*ncol+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	#endif
 
-	if (err || NL!=(*crst).N_allP){
-		if (NL!=(*crst).N_allP) {
+	if (err || NL!=NP){
+		if (NL!=NP) {
 			if(procId == 0) {
-				if (verbose_level) printf("Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, (*crst).N_allP);
-				if (flog) fprintf(flog, "Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, (*crst).N_allP);
+				if (verbose_level) printf("Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, NP);
+				if (flog) fprintf(flog, "Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, NP);
 			}
 		}
 		else {

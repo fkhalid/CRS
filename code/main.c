@@ -793,7 +793,6 @@ int main (int argc, char **argv) {
 			if (slipmodel_combinations>1) sprintf(outnamemod,"%s%d",outname, mod);
 			else sprintf(outnamemod,"%s",outname);
 
-
 			sprintf(print_cmb,"%s_cmbmap", outnamemod);
 			sprintf(print_forex,"%s_foremap", outnamemod);
 			sprintf(print_foret,"%s_forecast", outnamemod);
