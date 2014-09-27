@@ -99,7 +99,6 @@ int main (int argc, char **argv) {
 	struct eqkfm *eqkfm1=0, *eqkfm0res=0, *eqkfm_aft=0;	//contain respectively: aftershocks with fm, aftershocks, mainshocks, mainshocks resampled, afterslip, afterslip resampled.
 	double Mag_main;
 	double dt, dM, xytoll, ztoll, border;
-	double Hurst;
 
 	int Nm, Nas=0, *Nfaults_all=0;
 	double res, gridresxy, gridresz;
@@ -204,7 +203,7 @@ int main (int argc, char **argv) {
 
 	err=read_modelparameters(modelparametersfile, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt, &t_back,
-			&Nsur, &Nslipmod, &flags, &Hurst, &Mc_source, &use_bg_rate, &(cat.Mc), &Mag_main, &DCFS_cap, &gridPMax,
+			&Nsur, &Nslipmod, &flags, &Mc_source, &use_bg_rate, &(cat.Mc), &Mag_main, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
 	if (err) {
@@ -507,7 +506,7 @@ int main (int argc, char **argv) {
 	dta=(nta==0)? 0.0 : (ta_max-ta_min)/nta;
 
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
-	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, 1, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, Hurst,
+	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, 1, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags,
 			tevol_afterslip, crst, AllCoeff, L, max(Ntot,Nm), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2,
 			fmin(tstartLL,Tstart-extra_time), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
 
@@ -712,7 +711,7 @@ int main (int argc, char **argv) {
 					gammas=NULL;	//fixme check if this should be allowed to be set equal to gammas_bg_rate?
 
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, Nslipmod, DCFS, eqkfm_aft,
-										  	eqkfm0res, eqkfm1, flags, Hurst, tevol_afterslip, crst, AllCoeff,
+										  	eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff,
 										  	L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat,
 										  	times2, tstartLL, tstartLL, tendLL, tw, Asig, ta, r0, fixr, gammas,
 										  	gammas_new, 0, 0, 0, !tai && !as);
@@ -794,6 +793,7 @@ int main (int argc, char **argv) {
 			if (slipmodel_combinations>1) sprintf(outnamemod,"%s%d",outname, mod);
 			else sprintf(outnamemod,"%s",outname);
 
+
 			sprintf(print_cmb,"%s_cmbmap", outnamemod);
 			sprintf(print_forex,"%s_foremap", outnamemod);
 			sprintf(print_foret,"%s_forecast", outnamemod);
@@ -803,7 +803,7 @@ int main (int argc, char **argv) {
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
 			CRSforecast(&LL, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff, L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM,
-					&seed, cat, times2,tstart_calc, tts, Ntts, tw, maxAsig[mod], maxta[mod], maxr[mod], gammasfore, multi_gammas, 1, Hurst,
+					&seed, cat, times2,tstart_calc, tts, Ntts, tw, maxAsig[mod], maxta[mod], maxr[mod], gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 
 			if(procId == 0) {

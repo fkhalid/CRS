@@ -17,7 +17,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 				int NTScont, int NTSdisc, int Nm, int NgridT, double **focmec, int *fmzonelim,
 				int NFM, long *seed, struct catalog cat, double *times, double tstart, double *tts,
 				int Ntts, double tw, double Asig, double ta, double r0, double **all_gammas0,
-				int multiple_input_gammas, int fromstart, double Hurst, char * print_cmb0,
+				int multiple_input_gammas, int fromstart, char * print_cmb0,
 				char *print_forex0, char *print_foret, char * printall_cmb, char *printall_forex,
 				char *printall_foret, char *print_LL) {
 
@@ -225,7 +225,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		if(fromstart) {
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
 								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst, 0,
+								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, 0,
 								   which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
@@ -244,7 +244,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		else {
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
 								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tt0, tt1, Hurst, 0,
+								   fmzonelim, NFM, seed, (int *) 0, tt0, tt1, 0,
 								   which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
@@ -511,7 +511,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 
 int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, double *r_out,
 					 int Nsur, int Nslipmod, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
-					 struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flags, double Hurst,
+					 struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flags,
 					 double *tevol, struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont,
 					 int NTSdisc, int Nm, int NgridT, double **focmec, int *fmzonelim, int NFM,
 					 long *seed, struct catalog cat, double *times, double tstart, double tt0,
@@ -690,7 +690,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (fromstart){
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
 								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst,
+								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1,
 								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
@@ -705,7 +705,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		else{
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
 								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tt0, tt1, Hurst,
+								   fmzonelim, NFM, seed, (int *) 0, tt0, tt1,
 								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {

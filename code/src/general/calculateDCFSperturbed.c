@@ -16,7 +16,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							double *tevol, double *times, int Nmain, struct crust crst,
 							struct Coeff_LinkList *AllCoeff, int NTScont, int NTSdisc,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
-							int *fm_number, double tdata0, double tdata1, double H,
+							int *fm_number, double tdata0, double tdata1,
 							int refresh, int which_recfault) {
 
 /* DCFSrand[i][j] contains the ith stress change at gridpoint j due to continuous processes (modeled linearly between time steps).
@@ -45,7 +45,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		new_slipmodel=flag.new_slipmodel, \
 		gridpoints_err=flag.err_gridpoints, \
 		splines=flag.splines, \
-		afterslip_errors=flag.err_afterslipmodel,	\
 		full_field=(flag.full_field==2), \
 		aftershocks_fixedmec=flag.aftershocks_fixedmec;
 
@@ -138,21 +137,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					resolve_DCFS(DCFS_Af[i], crst, crst.str0, crst.dip0, NULL, 1);
 					if (splines && i<DCFS_Af_size-1){
 						for (int n=1; n<=NgridT; n++) cmb_cumu[n]+=DCFS_Af[i].cmb[n];
-					}
-				}
-			}
-			if (gridpoints_err && afterslip_errors){
-				DCFS_Af[0].cmb0=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
-				DCFS_Af[0].Dcmb=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
-				if (!splines && vary_recfault==0){
-					for (int i=1; i<=NgridT; i++) DCFS_Af[0].cmb0[i]=DCFS_Af[0].cmb[i];
-					smoothen_vector(NgridT, crst.nLat, crst.nLon, crst.nD, DCFS_Af[0].cmb, seed, nn, 1);
-					for (int i=1; i<=NgridT; i++) DCFS_Af[0].Dcmb[i]=DCFS_Af[0].cmb[i];	// contains range.
-				}
-				if (splines) {
-					for (int i=0; i<DCFS_Af_size; i++){
-						DCFS_Af[i].cmb0=DCFS_Af[0].cmb0;
-						DCFS_Af[i].Dcmb=DCFS_Af[0].Dcmb;
 					}
 				}
 			}
@@ -360,12 +344,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			if (splines==0){
 				if (vary_recfault!=0) resolve_DCFS(DCFS_Af[0], crst, strike0, dip0, NULL, 1);
-
-				if (gridpoints_err && afterslip_errors) smoothen_DCFS(DCFS_Af[0], crst.nLat, crst.nLon, crst.nD, seed, !vary_recfault, nn);
-				for (int l=0; l<NTScont; l++) {
-					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
-					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=tevol[l]*DCFS_Af[0].cmb[n];
-				}
 			}
 
 			else{
@@ -379,13 +357,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 				for (int l=0; l<NTScont; l++) {
 					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
-					if (afterslip_errors && gridpoints_err){
-						for (int n=1; n<=NgridT; n++){
-							DCFS_Af[l].cmb0[n]=DCFS_Af[l].cmb[n];
-							DCFS_Af[l].Dcmb[n]=cmb_cumu[n]*(eqkfmAf[DCFS_Af[0].NF*l].tot_slip/eqkfmAf[DCFS_Af[0].NF*NTScont].tot_slip);		//range scaled by total slip.
-						}
-						smoothen_DCFS(DCFS_Af[l], crst.nLat, crst.nLon, crst.nD, seed, 1, nn);
-					}
 					for (int n=1; n<=NgridT; n++) {
 						DCFSrand[l][n]= (fabs(cmb_cumu[n])>DCFS_cap) ? (DCFS_cap/fabs(cmb_cumu[n]))*DCFS_Af[l].cmb[n] : DCFS_Af[l].cmb[n];
 					}

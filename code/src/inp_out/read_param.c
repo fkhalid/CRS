@@ -18,7 +18,7 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 						double *ta0, double *Asig_min, double *Asig_max, double *ta_min,
 						double *ta_max, int *nAsig0, int *nta0, double *tstartLL,
 						double *extra_time, double *tw, double *fore_dt, double *t_back,
-						int *Nsur, int *Nslipmod, struct flags *flags, double *Hurst,
+						int *Nsur, int *Nslipmod, struct flags *flags,
 						double *Mc_source, int *use_bg_rate, double *Mc, double *Mag_main,
 						double *DCFS_cap, int *gridPMax, double *dt, double *dM,
 						double *xytoll, double *ztoll, double *border, double *res,
@@ -94,7 +94,7 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
 		sscanf(line,"%d %d", Nsur, Nslipmod);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d %d %lf", &((*flags).err_slipmodel), &((*flags).err_afterslipmodel), Hurst);
+		//sscanf(line,"%d %d %lf", &((*flags).err_slipmodel), &((*flags).err_afterslipmodel), Hurst);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", &((*flags).err_recfault));
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");

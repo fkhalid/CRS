@@ -61,8 +61,6 @@ extern FILE *flog;
 //		 be updated as well.
 struct flags{
 	int err_recfault;
-	int err_slipmodel;
-	int err_afterslipmodel;
 	int err_gridpoints;
 	int OOPs;
 	//afterslip:

@@ -26,7 +26,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							double *tevol, double *times, int Nmain, struct crust crst,
 							struct Coeff_LinkList *AllCoeff, int NTScont, int NTSdisc,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
-							int *fm_number, double tdata0, double tdata1, double Hurst,
+							int *fm_number, double tdata0, double tdata1,
 							int refresh, int which_recfault);
 
 void smoothen_DCFS(struct pscmp DCFS, int, int, int, long *seed, int, int **);
