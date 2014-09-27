@@ -115,7 +115,6 @@ int main (int argc, char **argv) {
 	int NgridT, NFM=0;	//number of gridpoints, number of aftershocks for which foc.mec is known, number of foc.mec from past seismicity.
 	struct Coeff_LinkList *AllCoeff;
     int *which_main;
-    int aftershocksMC, load_focmec;
     double  Mc_source;
 
 	//RateState variables
@@ -148,10 +147,11 @@ int main (int argc, char **argv) {
 	int multi_gammas, use_bg_rate, use_bg_rate_file;
 	double *LLs, *Ldums0, *Nev, *I, LLmax, LL;
 	double *gamma_bgrate=NULL;
-	double 	**gammas=NULL, \
-			**gammas_new=NULL, \
+	double 	*gammas=NULL;
+	double 	**gammas_new=NULL, \
 			**gammas_old=NULL, \
-			**gammas_maxLL=NULL;
+			**gammas_maxLL=NULL, \
+			**gammasfore=NULL;
 
 	//to switch between slip models.
 	int refresh;
@@ -283,7 +283,7 @@ int main (int argc, char **argv) {
 
 	if (flags.afterslip !=0) {
 		read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1);
-		err=setup_afterslip_eqkfm(all_aslipmodels, crst, flags.err_slipmodel, &eqkfm_aft);
+		err=setup_afterslip_eqkfm(all_aslipmodels, crst, 0, &eqkfm_aft);	//fixme: should allow resamping if model is tapered?
 		if (err!=0) error_quit("Error in setting up afterslip slip model - exiting.");
 	}
 	else eqkfm_aft=NULL;
@@ -298,10 +298,7 @@ int main (int argc, char **argv) {
 	err=read_listslipmodel(slipmodelfile, reftime, &all_slipmodels, res, 0);
 	if (err) error_quit("Error in reading slip model file. Exiting.\n");
 
-	aftershocksMC = (flags.aftershocks && flags.full_field && !flags.aftershocks_fixedmec);
-	load_focmec= (flags.err_recfault || aftershocksMC);
-
-	if (load_focmec) {
+	if (flags.err_recfault) {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
 							   flags, &NFM, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
@@ -356,7 +353,7 @@ int main (int argc, char **argv) {
 		current_ev+=1;
 	}
 
-	if (load_focmec){
+	if (flags.err_recfault){
 		select_fm_time(focmec, &NFM, Tstart);
 		if (!NFM) {
 			if(procId == 0) {
@@ -423,8 +420,8 @@ int main (int argc, char **argv) {
 	//					Setup other things							//
 	//--------------------------------------------------------------//
 
-	if (!aftershocksMC && !flags.err_recfault && !flags.err_slipmodel && !flags.err_gridpoints) Nsur=Nslipmod=1;	//since there are not sources of uncertainties.
-	if (flags.err_recfault && no_fm_cats==1 && !flags.err_slipmodel && Nsur/Nslipmod>NFM) {
+	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=Nslipmod=1;	//since there are not sources of uncertainties.
+	if (flags.err_recfault && no_fm_cats==1 && Nsur/Nslipmod>NFM) {
 	    	Nsur=NFM;
 			flags.sample_all=1;
 	    }
@@ -569,7 +566,7 @@ int main (int argc, char **argv) {
 	//-----------------set up LL variables:----------------------//
 
 	if (use_bg_rate) {
-		gammas=dmatrix(0,0,1,NgridT);
+		gammas=dvector(1,NgridT);
 		gamma_bgrate=dvector(1,NgridT);
 		for (int n=1; n<=NgridT; n++) gamma_bgrate[n]=1.0/crst.rate0[n];
 	}
@@ -594,6 +591,7 @@ int main (int argc, char **argv) {
 		tts[0]=Tstart;
 		for (int t=1; t<=Ntts; t++) tts[t]=Tstart+fore_dt*t;
 	}
+
 
 	//------------------------------------------------------------------------------------------------------//
 	//								  Grid search and forecast												//
@@ -775,7 +773,7 @@ int main (int argc, char **argv) {
 				if(procId == 0) {
 					if (flog && mod==1) fprintf(flog, "Using starting rates results from LL inversion: ");
 				}
-				gammas=gammas_maxLL;
+				gammasfore=gammas_maxLL;
 				tstart_calc=tendLL;
 				multi_gammas=1;
 			}
@@ -783,8 +781,8 @@ int main (int argc, char **argv) {
 				if(procId == 0) {
 					if (flog) fprintf(flog, "Using steady state starting rates: ");
 				}
-				if (use_bg_rate) for (int i=1; i<=NgridT; i++) gammas[0][i]=(ta/Asig)*gamma_bgrate[i];
-				else gammas=NULL;
+				if (use_bg_rate) for (int i=1; i<=NgridT; i++) gammasfore[0][i]=(ta/Asig)*gamma_bgrate[i];
+				else gammasfore=NULL;
 				tstart_calc=fmin(Tstart-extra_time, t_firstmain-extra_time);
 				multi_gammas=0;
 			}
@@ -805,7 +803,7 @@ int main (int argc, char **argv) {
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
 			CRSforecast(&LL, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff, L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM,
-					&seed, cat, times2,tstart_calc, tts, Ntts, tw, maxAsig[mod], maxta[mod], maxr[mod], gammas, multi_gammas, 1, Hurst,
+					&seed, cat, times2,tstart_calc, tts, Ntts, tw, maxAsig[mod], maxta[mod], maxr[mod], gammasfore, multi_gammas, 1, Hurst,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 
 			if(procId == 0) {

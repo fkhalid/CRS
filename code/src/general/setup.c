@@ -53,6 +53,8 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	err += readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat,
 						Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
 
+	if (err) return (err);
+
 	//fixme check that foc mec are read when aftershocks==1.
 	if (flag.aftershocks){
 		//if (focmec){

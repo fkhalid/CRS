@@ -93,8 +93,8 @@ int test_readmultiplefocmec(){
 	reftime.tm_isdst=0;
 
 	read_crust(crust_file, temp_file, &crst, NULL, res, res);
-	readmultiplefocmec(files, nf, "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec, &firstel, &NFM, &NFM2, &eqkfm, 1, 0);
-	readfocmec("input/other/NIED_GMTformat.dat", "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec0, &NFM0, &NFM20, &eqkfm0, 1, 0);
+	readmultiplefocmec(files, nf, crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec, &firstel, &NFM, &NFM2, &eqkfm, 1, 0);
+	readfocmec("input/other/NIED_GMTformat.dat", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec0, &NFM0, &NFM20, &eqkfm0, 1, 0);
 
 	for (int i=0; i<=nf; i++) printf("%d\n", firstel[i]);
 

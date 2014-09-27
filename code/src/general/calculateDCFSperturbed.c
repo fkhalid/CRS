@@ -42,7 +42,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	int	afterslip=flag.afterslip, \
 		aftershocks=flag.aftershocks, \
 		vary_recfault=flag.err_recfault, \
-		vary_slipmodel=flag.err_slipmodel, \
 		new_slipmodel=flag.new_slipmodel, \
 		gridpoints_err=flag.err_gridpoints, \
 		splines=flag.splines, \
@@ -79,10 +78,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	if (time_in==1) {
 		if(procId == 0) {
 			if (flog) fprintf(flog, "\nSetting up variables for calculating perturbed Coulomb fields.\n");
-
-			if (vary_slipmodel && afterslip_errors && splines && gridpoints_err){
-				if (verbose_level>0) printf("** Warning: flags vary_slipmodel, afterslip_errors, splines, gridpoints_err set to 1 -> slow! (calculateDCFSperturbed.c)**\n");
-			}
 		}
 
 		new_slipmodel=1;
@@ -135,58 +130,29 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				DCFS_Af[i].which_pts=eqkfmAf[0].selpoints;
 			}
 
-			if (splines && afterslip_errors && vary_slipmodel && vary_recfault==0){
-				okadaCoeff_resolve(AllCoeff[0], &Coeff_ResS, &Coeff_ResD, crst, crst.str0, crst.dip0, crst.rake0);	//to reduce calculations.
-			}
-
-			if (vary_slipmodel && afterslip_errors){
-				for (int f=0; f<AllCoeff->NF; f++) NP_max=fmax(NP_max,eqkfmAf[f].np_di*eqkfmAf[f].np_st);
-				if (splines){
-					eqkfm_noise=eqkfm_array(0, AllCoeff->NF);
-					for (int f=0; f<AllCoeff->NF; f++) {
-						eqkfm_noise[f].slip_dip=dvector(1,NP_max);
-						eqkfm_noise[f].slip_str=dvector(1,NP_max);
-					}
-					DCFS_Af_noise.NF=AllCoeff->NF;
-					DCFS_Af_noise.cmb=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
-					DCFS_Af_noise.S=d3tensor(1,NgridT,1,3,1,3);
-					DCFS_Af_noise.nsel=eqkfmAf[0].nsel;
-					DCFS_Af_noise.which_pts=eqkfmAf[0].selpoints;
-				}
-				else {
-					eqkfm2A=eqkfm_array(0, AllCoeff->NF);		//todo do not assume first event is the one from which afterslip geometry is taken.
-					for (int f=0; f<AllCoeff->NF; f++) {
-						eqkfm2A[f].slip_dip=dvector(1,NP_max);
-						eqkfm2A[f].slip_str=dvector(1,NP_max);
+			Coeffs_st=AllCoeff->Coeffs_st;
+			Coeffs_dip=AllCoeff->Coeffs_dip;
+			for (int i=0; i<DCFS_Af_size; i++)	{
+				okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS_Af[i], eqkfmAf+i*DCFS_Af[0].NF, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
+				if (vary_recfault==0) {
+					resolve_DCFS(DCFS_Af[i], crst, crst.str0, crst.dip0, NULL, 1);
+					if (splines && i<DCFS_Af_size-1){
+						for (int n=1; n<=NgridT; n++) cmb_cumu[n]+=DCFS_Af[i].cmb[n];
 					}
 				}
 			}
-
-			else{
-				Coeffs_st=AllCoeff->Coeffs_st;
-				Coeffs_dip=AllCoeff->Coeffs_dip;
-				for (int i=0; i<DCFS_Af_size; i++)	{
-					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS_Af[i], eqkfmAf+i*DCFS_Af[0].NF, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
-					if (vary_recfault==0) {
-						resolve_DCFS(DCFS_Af[i], crst, crst.str0, crst.dip0, NULL, 1);
-						if (splines && i<DCFS_Af_size-1){
-							for (int n=1; n<=NgridT; n++) cmb_cumu[n]+=DCFS_Af[i].cmb[n];
-						}
-					}
+			if (gridpoints_err && afterslip_errors){
+				DCFS_Af[0].cmb0=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
+				DCFS_Af[0].Dcmb=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
+				if (!splines && vary_recfault==0){
+					for (int i=1; i<=NgridT; i++) DCFS_Af[0].cmb0[i]=DCFS_Af[0].cmb[i];
+					smoothen_vector(NgridT, crst.nLat, crst.nLon, crst.nD, DCFS_Af[0].cmb, seed, nn, 1);
+					for (int i=1; i<=NgridT; i++) DCFS_Af[0].Dcmb[i]=DCFS_Af[0].cmb[i];	// contains range.
 				}
-				if (gridpoints_err && afterslip_errors){
-					DCFS_Af[0].cmb0=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
-					DCFS_Af[0].Dcmb=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
-					if (!splines && vary_recfault==0){
-						for (int i=1; i<=NgridT; i++) DCFS_Af[0].cmb0[i]=DCFS_Af[0].cmb[i];
-						smoothen_vector(NgridT, crst.nLat, crst.nLon, crst.nD, DCFS_Af[0].cmb, seed, nn, 1);
-						for (int i=1; i<=NgridT; i++) DCFS_Af[0].Dcmb[i]=DCFS_Af[0].cmb[i];	// contains range.
-					}
-					if (splines) {
-						for (int i=0; i<DCFS_Af_size; i++){
-							DCFS_Af[i].cmb0=DCFS_Af[0].cmb0;
-							DCFS_Af[i].Dcmb=DCFS_Af[0].Dcmb;
-						}
+				if (splines) {
+					for (int i=0; i<DCFS_Af_size; i++){
+						DCFS_Af[i].cmb0=DCFS_Af[0].cmb0;
+						DCFS_Af[i].Dcmb=DCFS_Af[0].Dcmb;
 					}
 				}
 			}
@@ -284,40 +250,16 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 	if (time_in==1 || refresh){
 		if (afterslip!=2){
-			if (vary_slipmodel){
-				//find largest no. of faults and largest no of patches needed by eqkfm2.
-				temp=AllCoeff;
-				for (int i=0; i<Nmain; i++) {
-					NF_max=fmax(NF_max,temp->NF);
-					for (int f=0; f<temp->NF; f++) NP_max=fmax(NP_max,eqkfm0[f+NFsofar].np_di*eqkfm0[f+NFsofar].np_st);
-					NFsofar+=temp->NF;
-					temp=temp->next;
+			NFsofar=0;
+			temp=AllCoeff;
+			for (int i=0; i<Nmain; i++){
+				if (eqkfm0[NFsofar].is_slipmodel){
+					Coeffs_st=temp->Coeffs_st;
+					Coeffs_dip=temp->Coeffs_dip;
+					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS[temp->which_main], eqkfm0+NFsofar, crst, NULL, NULL, 1);
 				}
-				if (time_in!=1) {
-					for (int f=0; f<NF_max; f++) {
-						free_dvector(eqkfm2[f].slip_dip,1,0);
-						free_dvector(eqkfm2[f].slip_str,1,0);
-					}
-					free_eqkfmarray(eqkfm2, 0, 0);
-				}
-				eqkfm2=eqkfm_array(0, NF_max);		//todo also initialize vectors inside (with size of the largest), if they are to be recycled...
-				for (int f=0; f<NF_max; f++) {
-					eqkfm2[f].slip_dip=dvector(1,NP_max);
-					eqkfm2[f].slip_str=dvector(1,NP_max);
-				}
-			}
-			else{
-				NFsofar=0;
-				temp=AllCoeff;
-				for (int i=0; i<Nmain; i++){
-					if (eqkfm0[NFsofar].is_slipmodel){
-						Coeffs_st=temp->Coeffs_st;
-						Coeffs_dip=temp->Coeffs_dip;
-						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS[temp->which_main], eqkfm0+NFsofar, crst, NULL, NULL, 1);
-					}
-					NFsofar+=temp->NF;
-					temp=temp->next;
-				}
+				NFsofar+=temp->NF;
+				temp=temp->next;
 			}
 
 			//prepare isotropic fields:
@@ -417,22 +359,9 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		if (times[0]<tdata1 && times[NTScont-1]>=tdata0){
 
 			if (splines==0){
-				if (vary_slipmodel && afterslip_errors){
-					if (new_slipmodel) {
-						for (int f=0; f<DCFS_Af[0].NF; f++) {
-							suomod1_hf(eqkfmAf[f], eqkfm2A+f, H, seed, 0);
-						}
-					}
-					//todo create a AllCoeff structure for afterslip?
-					//todo rake should be optimized considering *all* prev. stress...
-					//todo deal with case vary_recfault==2?
-					okadaCoeff2DCFS(AllCoeff->Coeffs_st, AllCoeff->Coeffs_dip, DCFS_Af[0], eqkfm2A, crst, strike0, dip0, 0);
-				}
-				else {
-					if (vary_recfault!=0) resolve_DCFS(DCFS_Af[0], crst, strike0, dip0, NULL, 1);
-				}
+				if (vary_recfault!=0) resolve_DCFS(DCFS_Af[0], crst, strike0, dip0, NULL, 1);
 
-				if (gridpoints_err && afterslip_errors) smoothen_DCFS(DCFS_Af[0], crst.nLat, crst.nLon, crst.nD, seed, (!vary_recfault && !vary_slipmodel), nn);
+				if (gridpoints_err && afterslip_errors) smoothen_DCFS(DCFS_Af[0], crst.nLat, crst.nLon, crst.nD, seed, !vary_recfault, nn);
 				for (int l=0; l<NTScont; l++) {
 					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
 					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=tevol[l]*DCFS_Af[0].cmb[n];
@@ -440,74 +369,25 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			}
 
 			else{
-				if (afterslip_errors && vary_slipmodel){
-					if (vary_recfault!=0) okadaCoeff_resolve(AllCoeff[0], &Coeff_ResS, &Coeff_ResD, crst, strike0, dip0, rake0);	//to reduce calculations.
-					if (new_slipmodel){
-						for (int f=0; f<DCFS_Af[0].NF; f++) {
-							suomod1_hf(eqkfmAf[DCFS_Af[0].NF*NTScont+f], eqkfm_noise+f, H, seed, 1);	//calculate noise from cumulative slip.
-							//copy_eqkfm_all(eqkfmAf[DCFS_Af[0].NF*NTScont+f], eqkfm_noise+f);
-						}
-						okadaCoeff2DCFS(AllCoeff->Coeffs_st, AllCoeff->Coeffs_dip, DCFS_Af_noise, eqkfm_noise, crst, strike0, dip0, 0);
-						if (gridpoints_err){
-							resolvedCoeff2DCFS(Coeff_ResS, Coeff_ResD, DCFS_Af[0], eqkfmAf+DCFS_Af[0].NF*NTScont, crst);
-							for (int n=1; n<=NgridT; n++) cmb_cumu[n]=DCFS_Af[0].cmb[n]+DCFS_Af_noise.cmb[n];
-							smoothen_vector(NgridT,crst.nLat, crst.nLon, crst.nD,cmb_cumu,seed, nn, 1);	//gives range of possible values.
-						}
-					}
+				if (vary_recfault!=0){
 					for (int n=1; n<=NgridT; n++) cmb_cumu[n]=0.0;
 					for (int l=0; l<NTScont; l++) {
-						if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
-						resolvedCoeff2DCFS(Coeff_ResS, Coeff_ResD, DCFS_Af[l], eqkfmAf+DCFS_Af[l].NF*l, crst);
-						if (l<NTScont-1) {
-							for (int n=1; n<=NgridT; n++) {
-								cmb_cumu[n]+=DCFS_Af[l].cmb[n]+(eqkfmAf[DCFS_Af[l].NF*l].tot_slip/eqkfm_noise[0].tot_slip)*DCFS_Af_noise.cmb[n];
-							}
-						}
-					}
-					for (int l=0; l<NTScont; l++) {
-						if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
-						if (gridpoints_err){
-							for (int n=1; n<=NgridT; n++){
-								DCFS_Af[l].cmb0[n]=DCFS_Af[l].cmb[n]+(eqkfmAf[DCFS_Af[l].NF*l].tot_slip/eqkfm_noise[0].tot_slip)*DCFS_Af_noise.cmb[n];
-								DCFS_Af[l].Dcmb[n]=cmb_cumu[n]*(eqkfmAf[DCFS_Af[l].NF*l].tot_slip/eqkfm_noise[0].tot_slip);		//range scaled by total slip.
-							}
-							smoothen_DCFS(DCFS_Af[l], crst.nLat, crst.nLon, crst.nD, seed, 1, nn);
-							for (int n=1; n<=NgridT; n++) {
-								DCFSrand[l][n]= (fabs(cmb_cumu[n])>DCFS_cap) ? (DCFS_cap/fabs(cmb_cumu[n]))*DCFS_Af[l].cmb[n] : DCFS_Af[l].cmb[n];
-							}
-						}
-						else {
-							for (int n=1; n<=NgridT; n++) {
-								DCFSrand[l][n]=DCFS_Af[l].cmb[n]+(eqkfmAf[DCFS_Af[l].NF*l].tot_slip/eqkfm_noise[0].tot_slip)*DCFS_Af_noise.cmb[n];
-								if (fabs(cmb_cumu[n])>DCFS_cap) {
-									DCFSrand[l][n]=DCFSrand[l][n]*(DCFS_cap/fabs(cmb_cumu[n]));
-								}
-							}
-						}
+						resolve_DCFS(DCFS_Af[l], crst, strike0, dip0, NULL, 1);
+						if (l<NTScont-1) for (int n=1; n<=NgridT; n++) cmb_cumu[n]+=DCFS_Af[l].cmb[n];
 					}
 				}
 
-				else {
-					if (vary_recfault!=0){
-						for (int n=1; n<=NgridT; n++) cmb_cumu[n]=0.0;
-						for (int l=0; l<NTScont; l++) {
-							resolve_DCFS(DCFS_Af[l], crst, strike0, dip0, NULL, 1);
-							if (l<NTScont-1) for (int n=1; n<=NgridT; n++) cmb_cumu[n]+=DCFS_Af[l].cmb[n];
+				for (int l=0; l<NTScont; l++) {
+					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
+					if (afterslip_errors && gridpoints_err){
+						for (int n=1; n<=NgridT; n++){
+							DCFS_Af[l].cmb0[n]=DCFS_Af[l].cmb[n];
+							DCFS_Af[l].Dcmb[n]=cmb_cumu[n]*(eqkfmAf[DCFS_Af[0].NF*l].tot_slip/eqkfmAf[DCFS_Af[0].NF*NTScont].tot_slip);		//range scaled by total slip.
 						}
+						smoothen_DCFS(DCFS_Af[l], crst.nLat, crst.nLon, crst.nD, seed, 1, nn);
 					}
-
-					for (int l=0; l<NTScont; l++) {
-						if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
-						if (afterslip_errors && gridpoints_err){
-							for (int n=1; n<=NgridT; n++){
-								DCFS_Af[l].cmb0[n]=DCFS_Af[l].cmb[n];
-								DCFS_Af[l].Dcmb[n]=cmb_cumu[n]*(eqkfmAf[DCFS_Af[0].NF*l].tot_slip/eqkfmAf[DCFS_Af[0].NF*NTScont].tot_slip);		//range scaled by total slip.
-							}
-							smoothen_DCFS(DCFS_Af[l], crst.nLat, crst.nLon, crst.nD, seed, 1, nn);
-						}
-						for (int n=1; n<=NgridT; n++) {
-							DCFSrand[l][n]= (fabs(cmb_cumu[n])>DCFS_cap) ? (DCFS_cap/fabs(cmb_cumu[n]))*DCFS_Af[l].cmb[n] : DCFS_Af[l].cmb[n];
-						}
+					for (int n=1; n<=NgridT; n++) {
+						DCFSrand[l][n]= (fabs(cmb_cumu[n])>DCFS_cap) ? (DCFS_cap/fabs(cmb_cumu[n]))*DCFS_Af[l].cmb[n] : DCFS_Af[l].cmb[n];
 					}
 				}
 			}
@@ -592,24 +472,9 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				if (eqkfm0[NFsofar].is_slipmodel){
 					Coeffs_st=temp->Coeffs_st;
 					Coeffs_dip=temp->Coeffs_dip;
-					if (vary_slipmodel){
-						if (new_slipmodel){
-							for (int f=0; f<temp->NF; f++) {
-								//add high freq. noise.
-								//if (time_in!=1) suomod1_cleanup(eqkfm2+f);
-								suomod1_hf(eqkfm0[f+NFsofar], eqkfm2+f, H, seed, 0);
-							}
-						}
-						if (vary_recfault==2) {
-							okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS[temp->which_main], eqkfm2, crst, strike0, dip0, 1);
-							DCFScmbopt(DCFS, temp->which_main, crst);
-						}
-						else okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS[temp->which_main], eqkfm2, crst, strike0, dip0, 0);
-					}
-					else {
-						if (vary_recfault!=2) resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1);
-						else DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from aftershocks or afterslip, assuming that from mainshocks is much larger this is ok.
-					}
+					if (vary_recfault!=2) resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1);
+					else DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from aftershocks or afterslip, assuming that from mainshocks is much larger this is ok.
+
 					if (gridpoints_err==1) smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, seed, 0, nn);
 				}
 				else {
