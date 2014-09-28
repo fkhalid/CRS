@@ -297,7 +297,9 @@ int readfocmec(char *focmecfile, struct crust crst,
 	if (NFM_timesel) *NFM_timesel= (eqkfm)? NFM2sources : 0;
 	if (eqkfm){
 		*eqkfm=eqkfm_array(0,NFM2sources-1);
-		for (int p0=0; p0<NFM2sources; p0++){		//todo parallel
+
+		#pragma omp parallel for private(p) reduction(+:err)
+		for (int p0=0; p0<NFM2sources; p0++){
 			p=selectedsources[p0+1];
 			(*eqkfm)[p0].t=times[p];
 			(*eqkfm)[p0].lat=focmec0[lat_col][p];

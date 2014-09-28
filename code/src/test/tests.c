@@ -1269,7 +1269,8 @@ int test_allOkada(){
 		}
 	}
 
-	read_farfalle_crust("input/inCan.dat", &crst);
+	init_crst(&crst);
+	read_farfalle_crust("/home/des/camcat/Code/CRS_2.01/input/inCan.dat", &crst);
 	sprintf(fname0, "%s/okada/fm_slipmodels_summary.txt",testfolder);
 	fout=fopen(fname0,"w");
 
@@ -1293,6 +1294,8 @@ int test_allOkada(){
 	crst.dlat=dlat/Nlat;
 	crst.dlon=dlon/Nlon;
 	crst.ddepth=ddep/Ndep;
+	crst.x=dvector(1,NP);
+	crst.y=dvector(1,NP);
 	for (int i=1; i<=NP; i++) latlon2localcartesian(latgrid[i], longrid[i], lat0, lon0, crst.y+i, crst.x+i);
 	latlon2localcartesian(eqfm.lat, eqfm.lon, crst.lat0, crst.lon0, &(eqfm.y), &(eqfm.x));
 
@@ -1312,7 +1315,7 @@ int test_allOkada(){
 
 		fprintf(fout, "%.0lf\t%.0lf\t%.0lf\t%.1lf\t%.1lf\n", eqfm.str1, eqfm.dip1, eqfm.rake1, eqfm.mag, res);
 		focmec2slipmodel(crst, &eqfm, res, 1, 1);
-		//find_gridpoints_d(crst.y, crst.x, depgrid, (int *) 0, 0, NP, eqfm.y, eqfm.x, eqfm.depth, eqfm.mag, 100000,  &(eqfm.nsel), &(eqfm.selpoints));
+		find_gridpoints_d(crst.y, crst.x, depgrid, (int *) 0, 0, NP, eqfm.y, eqfm.x, eqfm.depth, eqfm.mag, 100000,  &(eqfm.nsel), &(eqfm.selpoints));
 		dcfs.nsel=eqfm.nsel;
 		dcfs.which_pts=eqfm.selpoints;
 		printf("%d\n",dcfs.nsel);
@@ -1327,22 +1330,22 @@ int test_allOkada(){
 		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1), 0);
 		sprintf(fname, "%s/okada/okadaDCFSfixA%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
 	//	okadaDCFS(dcfs, &eqfm, 1, crst, 0.0, 0.0, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, NULL, 1);
 		sprintf(fname, "%s/okada/okadaDCFSfix_optrakeB%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1), 0);
 		sprintf(fname, "%s/okada/okadaDCFSfixB%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 		DCFScmbopt(&dcfs, 0, crst);
 		sprintf(fname, "%s/okada/okadaDCFSopt%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
 		//2) using okadaCoeff:
@@ -1353,25 +1356,25 @@ int test_allOkada(){
 
 		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst,  &eqfm.str1, &eqfm.dip1, 0);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_optrakeA%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-	//	okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, 0.0, 0.0, 1);
+		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, NULL, NULL, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, NULL, 1);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_optrakeB%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-	//	okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, 0.0, 0.0, 1);
+		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, NULL, NULL, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1), 0);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_A%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
 		okadaCoeff_resolve(coeffs, &resCoeff_st, &resCoeff_di, crst, &eqfm.str1, &eqfm.dip1, &eqfm.rake1);
 		resolvedCoeff2DCFS(resCoeff_st, resCoeff_di, dcfs, &eqfm, crst);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_B%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 
 		free_dvector(dcfs.cmb,1,dcfs.nsel);
 		free_ivector(dcfs.which_pts,1,dcfs.nsel);

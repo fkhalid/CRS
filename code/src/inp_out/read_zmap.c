@@ -15,14 +15,25 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			  struct crust crst, struct tm reftime, double t0s, double t1s,
 			  double t0c, double t1c, double Mmain, double tw, double border,
 			  double extra_d, double dDCFS, int findgridpoints) {
-/* t0s,t1s: for considering sources.
- * t0c,t1c: for catalog (LL periods).
- * a time window of length tw will be discarded after each event of magnitude >=Mmain in calculating Mc, b values. (these events should not be used in the LL calculations).
- * all are given in days from reftime.
- * border (in km): extra distance to be considered for sources.
- * cat, eqfm can be given as NULL, and will be skipped.
- * findgridpoints = flag indicating if grid points corresponding to events should be calculated (expensive).
- * Otherwise, everything in these structures is initialized.
+/*
+ * Reads catalog in zmap format into structure cat (used for LL calculation) and structure eqfm (for stress sources).
+ *
+ * input:
+ * 	file: zmap catalog.
+ * 	crst: structure containing model domain information (used to distribute events across grid points);
+ * 	reftime: reference time (IssueTime)
+ * 	t0s,t1s: start/end time for considering sources.
+ * 	t0c,t1c: start/end for catalog (LL period).
+ * 	To avoid using incomplete parts of the catalog, a time window of length tw will be discarded after each event of magnitude >=Mmain in calculating Mc, b values.
+ * 		(these events should not be used in the LL calculations).
+ * 	border (in km): extra horizontal distance outside of model domain to be considered for sources.
+ * 	extra_d (in km): extra vertical distance outside of model domain to be considered for sources.
+ * 	findgridpoints: flag indicating if grid points corresponding to events should be calculated (expensive).
+ * 	dDCFS: minimum stress value for which grid points should be considered.
+ *
+ * output:
+ * 	cat, eqfm can be given as NULL, and will be skipped.
+ * 	Otherwise, everything in these structures is initialized.
  *
  *  * */
 
@@ -296,7 +307,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 		if (mag[i]>= Mc-dM && lat[i]+SDlat>=lat0l && lat[i]-SDlat<=lat1l && lon[i]+SDlon>=lon0l && lon[i]-SDlon<=lon1l && dep[i]+SDd>=dep0l && dep[i]-SDd<=dep1l){
 			if (times[i]>=t0s && times[i]<=t1s) {
-
 				seleq1[eq1]=i;
 				eq1+=1;
 			}

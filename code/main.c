@@ -66,11 +66,11 @@ int main (int argc, char **argv) {
 	#endif
 
 	setenv("TZ", "UTC", 1);
-	int run_tests=0;
+	int run_tests=1;
 
 	if (run_tests){
 		verbose_level=2;
-		test_allOkada_simple_multiplerec();
+		test_allOkada();
 		// TODO: [Fahad] There should be provision for ignoring MPI
 		//				  when running tests ...
 		if(procId == 0) {
@@ -268,7 +268,7 @@ int main (int argc, char **argv) {
 	else crst.nofmzones=1;
 	NgridT=crst.N_allP;
 
-	dDCFS=(fixAsig)? 0.01*Asig0 : 0.01*Asig_min;	//minimum stress for which points are considered. todo test this (may need smaller value if aftershocks have important cumulative effect).
+	dDCFS=(fixAsig)? 0.01*Asig0 : 0.01*Asig_min;	//minimum stress for which points are considered. todo just read a value form outside.
 	if (fixAsig) nAsig0=0;
 	if (fixta) nta0=0;
 
