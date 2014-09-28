@@ -14,9 +14,17 @@
 //TODO: if more slip models are contained, make sure they have consistent geometry (they must cover all sampling points).
 
 int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct crust *crst, double resxy, double resz){
-/* fname=inputfile (fname)
- * crst= structure containing info about the domain;
- * resxy, resz= resired grid resolution (for calculations);
+/*
+ * Read crust master file into crst structure.
+ *
+ * input:
+ * 	fname= file containing info about the crust (pscmp or farfalle format).
+ * 	fnametemplate= grid file (CSEP format).
+ * 	focmecgridfile= grid file containing foc. planes for each grid point.
+ *  resxy, resz= resired grid resolution (for calculations);
+ *
+ * output:
+ * 	crst= structure containing info about the domain;
  *
  */
 
@@ -81,8 +89,8 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 		}
 	}
 
-	//--------------read xml file:------------------------------//
-	//txt format:
+	//--------------read grid file:------------------------------//
+
 	err = read_csep_template(fnametemplate, &no_magbins, &((*crst).nLat_out), &((*crst).nLon_out),
 							 &((*crst).nD_out), &((*crst).N_allP), &((*crst).dlat_out), &((*crst).dlon_out),
 							 &((*crst).ddepth_out), &((*crst).dmags), &olats, &olons, &odeps, 0,
@@ -90,9 +98,9 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 							 &((*crst).depmin), &((*crst).depmax), &mag1, &mag2, &((*crst).uniform));
 
 	if(procId == 0) {
-		if (flog && err) fprintf(flog, "Error while reading xml template (%s). Exiting.\n", fnametemplate);
+		if (flog && err) fprintf(flog, "Error while reading grid template (%s). Exiting.\n", fnametemplate);
 	}
-	if (verbose_level>0 && err!=0) error_quit(" ** Error while reading xml template. Exiting. **\n");
+	if (verbose_level>0 && err!=0) error_quit(" ** Error while reading grid template. Exiting. **\n");
 
 	lat0=(*crst).latmin;
 	lat1=(*crst).latmax;

@@ -121,7 +121,6 @@ int readfocmec(char *focmecfile, struct crust crst,
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	//check if file exists and can be opened.
 	if(procId == 0) {
 		if (flog) {
 			fprintf(flog, "\nReading focal mechanisms from file %s.\n", focmecfile);
@@ -133,6 +132,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 
 	FILE *fin;
 
+	//check if file exists and can be opened.
 	if(procId == 0) {
 		fin = fopen(focmecfile,"r");
 		if(fin == NULL) {

@@ -375,7 +375,9 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		(*cat).pcrst=&crst;
 		init_cat1(cat, eq2, gridPMax);
 
-		for (int i=1; i<=eq2; i++){		//todo parallel
+		#pragma omp parallel for private(eq, SD, SDd, x, y) reduction(+:errP)
+		for (int i=1; i<=eq2; i++){
+		if (errP) continue;
 		eq=seleq2[i-1];
 			SD=f*herr[eq];
 			SDd=f*verr[eq];
@@ -392,7 +394,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			(*cat).y0[i]=y;
 	    	if (findgridpoints){
 				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, gridPMax, y, x, SD, dep[eq], SDd, cut_sd, (*cat).ngrid + i, (*cat).ngridpoints[i], (*cat).weights[i], 1, 1);
-				if (errP) break;
 			}
 		}
 		(*cat).tstart=fmax(t0c, (*cat).t[1]);
@@ -420,7 +421,9 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		if (Ntot) *Ntot=eq1;
 		*eqfm=eqkfm_array(0,eq1-1);
 
-		for (int i=0; i<eq1; i++){	//todo parallel.
+		#pragma omp parallel for private(eq) reduction(+:errP)
+		for (int i=0; i<eq1; i++){
+			if (errP) continue;
 			eq=seleq1[i];
 			(*eqfm)[i].t=times[eq];
 			(*eqfm)[i].lat=lat[eq];
@@ -433,7 +436,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	    	if (findgridpoints){
 				if (catindex[i]!=0) errP+=find_gridpoints_d(ygrid, xgrid, depgrid, (*cat).ngridpoints[catindex[i]], (*cat).ngrid[catindex[i]], N, (*eqfm)[i].y, (*eqfm)[i].x, (*eqfm)[i].depth,  (*eqfm)[i].mag, dDCFS,  &((*eqfm)[i].nsel), &((*eqfm)[i].selpoints));
 				else errP+=find_gridpoints_d(ygrid, xgrid, depgrid, (int *) 0, 0, N, (*eqfm)[i].y, (*eqfm)[i].x, (*eqfm)[i].depth,  (*eqfm)[i].mag, dDCFS,  &((*eqfm)[i].nsel), &((*eqfm)[i].selpoints));
-				if (errP) break;
 	    	}
 
 		}
