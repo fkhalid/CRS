@@ -25,9 +25,7 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 	k=ivector(0,ind);
 	for (int ev=0; ev<=ind; ev++) k[ev]=0;
 
-	#pragma omp parallel for private(j, sxx, sxy, syy, syz, szz, sxz, cmb1, cmb2)
-	for (int i=1; i<=DCFS[ind].nsel; i++){
-		printf("Yey, entered cmbopt!!\n\n\n");
+	for (int i=1; i<=DCFS[ind].nsel; i++){//todo parallel.
 		j=DCFS[ind].which_pts[i];
 
 		sxx=crst.S[1][1]; 		syy=crst.S[2][2];		szz=crst.S[3][3];
@@ -75,8 +73,8 @@ void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double s
 	str0, di0, rake0: a reference focal mechanism: output focal mechanisms str1, di1, rake1 refer to mechanism closer to this.
 
  *  output:
-	cmb: max. Coulomb stress at the two optimally oriented fault planes
-	st1, di1, ra1, [2]: strike, dip, rake of the two OOPs.
+	max. Coulomb stress at the two optimally oriented fault planes
+	strike, dip, rake of the two OOPs.
 */
 
       int j0,j1,j2,jmin,jmax;
