@@ -85,10 +85,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	if(procId == 0) {
 		fin = fopen(input_fname, "r");
 		if(fin == NULL) {
-			if(verbose_level > 1) {
-				fprintf(stderr, "Error read_input: unable to open input file %s.\n", input_fname);
-			}
-
+			print_screen("Error read_input: unable to open input file %s.\n", input_fname);
 			fileError = 1;
 		}
 	}
@@ -106,8 +103,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 			fgets(line,Nchar,fin);
 			if (line[0]==comm) continue;
 			if (ferror(fin)) {
-				if (verbose_level>1) error_quit("Error reading input data using fgets!\n");
-
+				error_quit("Error reading input data using fgets!\n");
 				fileError = 1;
 				break;
 			}
@@ -117,7 +113,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 			i=0;
 			while (i<NP && strcmp(key,keys[i])) i++;
 			if (i>=NP){
-				if (verbose_level>0) fprintf(stderr, "Error read_inputfile: parameter \" %s\" in file \"%s\" not recognized.\n", key, input_fname);
+				print_screen("Error read_inputfile: parameter \" %s\" in file \"%s\" not recognized.\n", key, input_fname);
 				continue;
 			}
 
@@ -246,11 +242,9 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 
 	if (focmeccat && listfm) {
 		err = read_slipformecfiles(listfocmeccat, focmeccat, num_fm);
-		if(procId == 0) {
-			if (err) {
-				if (verbose_level) printf("Error: could not read file %s.\n", listfocmeccat);
-				if (flog) fprintf(flog,"Error: could not read file %s.\n", listfocmeccat);
-			}
+		if (err) {
+			print_screen("Error: could not read file %s.\n", listfocmeccat);
+			print_logfile("Error: could not read file %s.\n", listfocmeccat);
 		}
 	}
 
@@ -262,33 +256,51 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 			if (!value_found[n]) {
 				switch (n){
 				case 3:
-					if (verbose_level>2) printf("Warning: parameter %s not given in %s -> will use output/forecast.\n", keys[n], input_fname);
+					if (extra_verbose) {
+						print_screen("Warning: parameter %s not given in %s -> will use output/forecast.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s -> will use output/forecast.\n", keys[n], input_fname);
+					}
 					if (outname) strcpy(outname,"output/forecast");
 					break;
 				case 5:
 					if (nofm){
-						if (verbose_level>2) printf("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+						if (extra_verbose) {
+							print_screen("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+							print_logfile("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+						}
 						if (focmeccat) *focmeccat=NULL;
 					}
 					else nofm=1;
 					break;
 				case 6:
 					if (nofm){
-						if (verbose_level>2) printf("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+						if (extra_verbose) {
+							print_screen("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+							print_logfile("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+						}
 						if (focmeccat) *focmeccat=NULL;
 					}
 					else nofm=1;
 					break;
 				case 9:
-					if (verbose_level>2) printf("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					if (extra_verbose) {
+						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					}
 					if (slipmodelfile) strcpy(slipmodelfile,"");
 					break;
 				case 10:
-					if (verbose_level>2) printf("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					if (extra_verbose) {
+						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					}
 					if (afterslipmodelfile) strcpy(afterslipmodelfile,"");
 					break;
 				case 11:
-					if (verbose_level>2) printf("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					if (extra_verbose) {
+						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					}
 					if (background_rate_file) strcpy(background_rate_file,"");
 					break;
 				case 14:
@@ -301,8 +313,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					if (extraoutput) extraoutput=0;
 					break;
 				default:
-					if (verbose_level) printf("Error: parameter %s not given in %s.\n", keys[n], input_fname);
-					if (flog) fprintf(flog, "Error: parameter %s not given in %s.\n", keys[n], input_fname);
+					print_screen("Error: parameter %s not given in %s.\n", keys[n], input_fname);
+					print_logfile("Error: parameter %s not given in %s.\n", keys[n], input_fname);
 					return 1;
 					break;
 				}
@@ -339,12 +351,8 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 	if(procId == 0) {
 		if (!(fin=fopen(inputfile,"r"))) {
-			if (verbose_level) printf("Error: can not open file %s (read_slipformecfiles), Exiting.\n", inputfile);
-			if (flog) {
-				fprintf(flog, "Error: can not open file %s (read_slipformecfiles), Exiting.\n", inputfile);
-				fflush(flog);
-			}
-
+			print_screen("Error: can not open file %s (read_slipformecfiles), Exiting.\n", inputfile);
+			print_logfile("Error: can not open file %s (read_slipformecfiles), Exiting.\n", inputfile);
 			fileError = 1;
 		}
 	}
@@ -361,7 +369,7 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 	if(procId == 0) {
 		line[0]=comm;
 		while (line[0]==comm)fgets(line,Nchar,fin);
-		if (ferror(fin)) fprintf(stderr, "ERROR reading input data (file: %s) using fgets!\n", inputfile);
+		if (ferror(fin)) print_screen("Error reading input data (file: %s) using fgets!\n", inputfile);
 		sscanf(line,"%d", nfiles);
 
 		*listfiles = malloc((*nfiles)*sizeof(char*));
@@ -370,7 +378,7 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 			line[0]=comm;
 			while (line[0]==comm)fgets(line,Nchar,fin);
 			if (ferror(fin)) {
-				fprintf(stderr, "ERROR reading input data (file: %s) using fgets!\n", inputfile);
+				print_screen("Error reading input data (file: %s) using fgets!\n", inputfile);
 
 				fileError = 1;
 
@@ -455,13 +463,8 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	#endif
 
 	if(fileError) {
-		if(procId == 0) {
-			if (verbose_level>1) fprintf(stderr, "Warning read_input: no slip model file found (read_listslipmodel).\n");
-			if (flog) {
-				fprintf(flog, "\nWarning read_input: slip model file %s not found (read_listslipmodel).\n", input_fname);
-				fflush(flog);
-			}
-		}
+		print_screen("Warning read_input: no slip model file found (read_listslipmodel).\n");
+		print_logfile("\nWarning read_input: slip model file %s not found (read_listslipmodel).\n", input_fname);
 		(*allslipmodels).NSM=0;
 		(*allslipmodels).is_afterslip=is_afterslip;
 		(*allslipmodels).tmain= NULL;
@@ -609,26 +612,21 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		#endif
 	}
 
-	if(procId == 0) {
-		if (flog) {
-			nsm=0;
-			if (is_afterslip) fprintf(flog, "\nAfterslip input file: %s.\n", input_fname);
-			else fprintf(flog, "\nSlip input file: %s.\n", input_fname);
-			fprintf(flog, "%d %s slip models:\n", (*allslipmodels).NSM, is_afterslip? "after" : "");
-			for (int m=0; m<(*allslipmodels).NSM; m++){
-				if (is_afterslip){
-					if (m==0) fprintf(flog, "\t time \t name\n");
-					fprintf(flog, "\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).slipmodels[m]);
-				}
-				else{
-					if (m==0) fprintf(flog, "\t time \t mag \t name\n");
-					for (int n=1; n<=(*allslipmodels).no_slipmodels[m]; n++){
-						fprintf(flog, "\t%.2lf\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).mmain[m], (*allslipmodels).slipmodels[nsm]);
-						nsm++;
-					}
-				}
+	nsm=0;
+	if (is_afterslip) print_logfile("\nAfterslip input file: %s.\n", input_fname);
+	else print_logfile("\nSlip input file: %s.\n", input_fname);
+	print_logfile("%d %s slip models:\n", (*allslipmodels).NSM, is_afterslip? "after" : "");
+	for (int m=0; m<(*allslipmodels).NSM; m++){
+		if (is_afterslip){
+			if (m==0) print_logfile("\t time \t name\n");
+			print_logfile("\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).slipmodels[m]);
+		}
+		else{
+			if (m==0) print_logfile("\t time \t mag \t name\n");
+			for (int n=1; n<=(*allslipmodels).no_slipmodels[m]; n++){
+				print_logfile("\t%.2lf\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).mmain[m], (*allslipmodels).slipmodels[nsm]);
+				nsm++;
 			}
-			fflush(flog);
 		}
 	}
 

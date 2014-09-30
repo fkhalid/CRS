@@ -5,7 +5,13 @@
  *      Author: camcat
  */
 
-#include "splines_eqkfm.h"
+#include <math.h>
+
+#include "../defines.h"
+#include "../general/eqkfm_copy.h"
+#include "fit_splines.h"
+#include "nrutil.h"
+
 
 void splines_eqkfm(struct eqkfm *eqkfm_aft, int Nas, int NF, double *times1, double *times2, int L, struct eqkfm *all_afterslips, long *seed){
 	double **slipbefore_st, **slipbefore_di, **slip_after_st, **slip_after_di;

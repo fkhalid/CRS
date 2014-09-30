@@ -35,13 +35,11 @@
 //todo make program work for non uniform grid (set griderr=0 in that case).
 //todo check that lat=(-180, 180) are interpreted correctly throughout the program.
 
-int verbose_level=1;	//todo allow passing as argument.
 double DCFS_cap;
 int gridPMax;
 char cmb_format[120];
 FILE *flog=NULL;
-
-void error_quit(char * message);
+int extra_verbose, quiet;
 
 int main (int argc, char **argv) {
 	// [Fahad] Variables used by MPI related code.
@@ -68,15 +66,15 @@ int main (int argc, char **argv) {
 	setenv("TZ", "UTC", 1);
 	int run_tests=0;
 
+	extra_verbose=0;
+	quiet=0;
+
 	if (run_tests){
-		verbose_level=2;
+		extra_verbose=1;
 		//test_allOkada();
 		// TODO: [Fahad] There should be provision for ignoring MPI
 		//				  when running tests ...
-		if(procId == 0) {
-			printf("Done!\n");
-		}
-
+		print_screen("Done!\n");
 		return (0);
 	}
 
@@ -86,9 +84,9 @@ int main (int argc, char **argv) {
 
 	int LLinversion, forecast, extra_output;
 	int Nchar=120, Nchar_long=500;
-	char fname[Nchar], msg[Nchar],	infile[Nchar], crust_file[Nchar], fore_template[Nchar], catname[Nchar], outname[Nchar],
+	char fname[Nchar],	infile[Nchar], crust_file[Nchar], fore_template[Nchar], catname[Nchar], outname[Nchar],
 		syscopy[Nchar], background_rate_file[Nchar], slipmodelfile[Nchar], afterslipmodelfile[Nchar], modelparametersfile[Nchar],
-		logfile[Nchar], print_LL[Nchar], outnamemod[Nchar], error_msg[120];
+		logfile[Nchar], print_LL[Nchar], outnamemod[Nchar];
 	char print_cmb[Nchar],  print_forex[Nchar],  print_foret[Nchar],  printall_cmb[Nchar],  printall_forex[Nchar],  printall_foret[Nchar];
 	char line[Nchar_long];
 	char **focmeccats;
@@ -165,16 +163,54 @@ int main (int argc, char **argv) {
 	int first_main;
 	double tnow;
 	int j0, N, N_min_events, current_ev;
+	int input_file_name_given=0;
 
 	// FIXME: [Fahad] For testing purposes only ...
 	#ifdef _CRS_MPI
 		startTime = MPI_Wtime();
 	#endif
 
+
+	//-----------------------Parse input from command line --------------------//
+
 	if(procId == 0) {
-		printf("Input file: %s\n", argv[1]);
-		fflush(stdout);
-		sscanf(argv[1],"%s", infile);
+		if (argc==1) {
+			print_screen("Usage: %s input_file [options]\nOptions:\n\t --verbose (-v) : outputs extra messages to logfile and screen;\n\t --quiet (-q) : no output.\n\n", argv[0]);
+			return 1;
+		}
+
+		for (int i=1; i<argc; i++){
+			if (!strncmp(argv[i],"-",1)){
+				if (!(strcmp(argv[i],"--verbose")) || !(strcmp(argv[i],"-v"))) {
+					if (quiet) {
+						error_quit("Error: options --verbose (-v) and --quiet (-q) are incompatible!\n\n");
+					}
+					else extra_verbose=1;
+				}
+				else {
+					if (!(strcmp(argv[i],"--quiet")) || !(strcmp(argv[i],"-q"))) {
+						if (extra_verbose) {
+							error_quit("Error: options --verbose (-v) and --quiet (-q) are incompatible!\n\n");
+						}
+						else quiet=1;
+					}
+					else {
+						print_screen("Invalid option %s\n\n", argv[i]);
+						return 1;
+					}
+				}
+			}
+			else{
+				input_file_name_given=1;
+				print_screen("Input file: %s\n", argv[1]);
+				sscanf(argv[i],"%s", infile);
+			}
+		}
+	}
+
+	if (!input_file_name_given){
+		printf("Usage: %s input_file [options]\nOptions:\n\t --verbose (-v) : outputs extra messages to logfile and screen;\n\t --quiet (-q) : no output.\n\n", argv[0]);
+		return 1;
 	}
 
 	//-----------------------read input file -------------------//
@@ -184,8 +220,7 @@ int main (int argc, char **argv) {
 			cmb_format, &no_fm_cats);
 
 	if (err) {
-		sprintf(msg,"Error reading input file %s.\n", infile);
-		error_quit(msg);
+		error_quit("Error reading input file %s.\n", infile);
 	}
 
 	#ifdef _CRS_MPI
@@ -207,8 +242,7 @@ int main (int argc, char **argv) {
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
 	if (err) {
-		sprintf(msg,"Error reading InputModelParametersFile file %s.\n", modelparametersfile);
-		error_quit(msg);
+		error_quit("Error reading InputModelParametersFile file %s.\n", modelparametersfile);
 	}
 	
 	//future events (cat.t[i]>0) are only needed to calculate LL for forecast, if forecast is produced.
@@ -217,15 +251,11 @@ int main (int argc, char **argv) {
 //------- change flags if input files are missing:----//
 
 	if (!focmeccats && flags.err_recfault) {
-		if(procId == 0) {
-			if (verbose_level>0) printf("Warning: InputCatalogFocMecFile not given: will not use variable receiver faults.\n");
-		}
+		print_screen("Warning: InputCatalogFocMecFile not given: will not use variable receiver faults.\n");
 		flags.err_recfault=0;
 	}
 	if ((strcmp(afterslipmodelfile,"")==0) && flags.afterslip) {
-		if(procId == 0) {
-			if (verbose_level>0) printf("Warning: InputListAfterslipModels not given: will not use afterslip.\n");
-		}
+		print_screen("Warning: InputListAfterslipModels not given: will not use afterslip.\n");
 		flags.afterslip=0;
 	}
 	if (strcmp(background_rate_file,"")==0)	use_bg_rate_file=0;
@@ -261,8 +291,7 @@ int main (int argc, char **argv) {
 
 	err=read_crust(crust_file, fore_template, fixedmecfile , &crst, gridresxy, gridresz);
 	if (err) {
-		sprintf(error_msg, "Errors while reading crust file %s or template file %s. Exiting.", crust_file, fore_template);
-		error_quit(error_msg);
+		error_quit("Errors while reading crust file %s or template file %s. Exiting.", crust_file, fore_template);
 	}
 	if (flags.err_recfault) read_fmindex(crst, fore_template, &(crst.fmzone), &(crst.nofmzones));
 	else crst.nofmzones=1;
@@ -590,9 +619,7 @@ int main (int argc, char **argv) {
 			dcfsStartTime = MPI_Wtime();
 		#endif
 
-		if(procId == 0) {
-			if (verbose_level) printf("Slip model(s) no. %d\n", mod);
-		}
+		print_screen("Slip model(s) no. %d\n", mod);
 		Nsm=nth_index(mod, Nm, dim);
 		nf=0;
 		for (int n=0; n<Nm; n++) {

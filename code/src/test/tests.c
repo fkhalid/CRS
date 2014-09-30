@@ -14,10 +14,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 #include "../defines.h"
-#include "../general/forecast_stepG.h"
+//#include "../general/forecast_stepG.h"
 #include "../general/mem_mgmt.h"
 #include "../geom/convert_geometry.h"
 #include "../geom/coord_trafos.h"
@@ -27,7 +27,7 @@
 #include "../inp_out/read_crust.h"
 #include "../inp_out/read_csep_template.h"
 #include "../inp_out/read_eqkfm.h"
-#include "../inp_out/read_eqkfm_fsp.h"
+//#include "../inp_out/read_eqkfm_fsp.h"
 #include "../inp_out/read_focmec.h"
 #include "../inp_out/read_inputfile.h"
 #include "../inp_out/read_matrix.h"
@@ -866,8 +866,6 @@ int test_allOkada_simple_multiplerec(){
  * python /home/des/camcat/Code/Scripts/Foremap2vtk.py okadaDCFS$i.dat Tohoku; done
  */
 
-	verbose_level=2;
-
 	int N=6;
 	long seed=-19329935;
 	double res=6.0;
@@ -1052,8 +1050,6 @@ int test_allOkada_simple(){
  * python /home/des/camcat/Code/Scripts/Foremap2vtk.py okadaDCFS$i.dat Tohoku; done
  */
 
-	verbose_level=2;
-
 	int N=6;
 	//long seed=-19329935;
 	double res=6.0;
@@ -1226,8 +1222,6 @@ int test_allOkada(){
  * python /home/des/camcat/Code/Scripts/Slipmodel2vtk.py slipmodel$(echo $i)_ Darfield;
  * python /home/des/camcat/Code/Scripts/Foremap2vtk.py okadaDCFS$i.dat Darfield; done
  */
-
-	verbose_level=2;
 
 	int N=3;
 	//long seed=-19329935;
@@ -1980,8 +1974,6 @@ void tests_eqkfm_addslipmodels(){
 	int err;
 	int *NFout;
 
-	verbose_level=4;
-
 	crst.lambda=31226, crst.mu=26624;//calculated for Vp=5.7,Vs=3.2, rho=2600 (from Wang psgrn input file for Parkfield). MPa.
 	crst.N_allP=20;
 	crst.list_allP=pts-1;
@@ -2023,8 +2015,6 @@ void tests_eqkfm_addslipmodels(){
 
 	err= eqkfm_addslipmodels(eq_in1, all_slipmodels, &eq_out, &indices, N1, &Nout, &NFout, 0.001, 0.3, 1.0, crst, 1, 1);
 
-	//if (err==1 & (verbose_level>1)) printf("Warning: some events from catalog 2 not selected, or some slip models could not be created.\n");
-
 	return;
 }
 
@@ -2043,8 +2033,6 @@ void test_suomod1_hf(){
 	int N=10;
 	int noise_only=0;
 	time_t t0,t1;
-
-	verbose_level=3;
 
 	crst.lambda=31226, crst.mu=26624;//calculated for Vp=5.7,Vs=3.2, rho=2600 (from Wang psgrn input file for Parkfield). MPa.
 

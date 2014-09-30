@@ -75,9 +75,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	time_in+=1;
 
 	if (time_in==1) {
-		if(procId == 0) {
-			if (flog) fprintf(flog, "\nSetting up variables for calculating perturbed Coulomb fields.\n");
-		}
+		print_logfile("\nSetting up variables for calculating perturbed Coulomb fields.\n");
 
 		new_slipmodel=1;
 		//-----calculate neighbouring points--------//
@@ -211,20 +209,15 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				}
 			}
 
-			if(procId == 0) {
-				if (flog){
-					fprintf(flog,"%d events have known focal mechanism, which will be used.\n", n_withslimodel);
-					fprintf(flog,"%d events do not have a known focal mechanism. ", n_withoutslimodel);
-					if (n_withoutslimodel){
-						if (full_field) {
-							fprintf(flog,"will use ");
-						if (aftershocks_fixedmec) fprintf(flog,"fixed mechanism (strike=%.2lf, dip=%.2lf).\n", crst.str0[0], crst.dip0[0]);
-							else fprintf(flog,"Monte Carlo sampling from catalog of focal mechanisms.\n");
-						}
-						else fprintf(flog,"will use isotropic field.\n");
-					}
-					fflush(flog);
+			print_logfile("%d events have known focal mechanism, which will be used.\n", n_withslimodel);
+			print_logfile("%d events do not have a known focal mechanism. ", n_withoutslimodel);
+			if (n_withoutslimodel){
+				if (full_field) {
+					print_logfile("will use ");
+				if (aftershocks_fixedmec) print_logfile("fixed mechanism (strike=%.2lf, dip=%.2lf).\n", crst.str0[0], crst.dip0[0]);
+					else print_logfile("Monte Carlo sampling from catalog of focal mechanisms.\n");
 				}
+				else print_logfile("will use isotropic field.\n");
 			}
 		}
 	}
@@ -273,10 +266,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 
 	if (afterslip==1 && vary_recfault==2) {
-		if(procId == 0) {
-			printf("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when afterslip is included!!*\n");
-		}
-
+		print_screen("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when afterslip is included!!*\n");
+		print_logfile("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when afterslip is included!!*\n");
 		return;
 	}
 
@@ -296,10 +287,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					if (crst.nofmzones==1) *fm_number=rand;
 					else {
 						*fm_number=0;
-						if(procId == 0) {
-							if (verbose_level>1) printf("**Warning: multiple focal mechanisms catalogs available, can not print out single value! (calculateDCFSperturbed.c).**\n");
-							if (flog) fprintf(flog,"**Warning: multiple focal mechanisms catalogs available, can not print out single value! (calculateDCFSperturbed.c).**\n");
-						}
+						print_screen("**Warning: multiple focal mechanisms catalogs available, can not print out single value! (calculateDCFSperturbed.c).**\n");
+						print_logfile("**Warning: multiple focal mechanisms catalogs available, can not print out single value! (calculateDCFSperturbed.c).**\n");
 					}
 				}
 			}

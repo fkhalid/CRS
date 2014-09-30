@@ -51,12 +51,8 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 			{
 				ngridj+=1;
 				if (ngridj>Nselmax){
-					if (verbose_level) printf("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-					if (flog){
-						fprintf(flog, "*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-						fflush(flog);
-
-					}
+					print_screen("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
+					print_logfile("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
 					return(1);
 				}
 				ngridpointj[ngridj]=p;
@@ -77,21 +73,15 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	  Vfrac=1;
 	  break;
 	default:
-	  if (verbose_level>1) printf("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
-		if (flog) {
-			fprintf(flog, "Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
-			fflush(flog);
-		}
+	  print_screen("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
+	  print_logfile( "Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
 	  return 1;
 	  break;
 	}
 
 	if (Vfrac>1.1) {
-		if (verbose_level>1) printf("Warning: Vfrac>1 (%lf)\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
-		if (flog) {
-			fprintf(flog,"Warning: Vfrac>1 (%lf) \n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
-			fflush(flog);
-		}
+		print_screen("Warning: Vfrac>1 (%lf)\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
+		print_logfile("Warning: Vfrac>1 (%lf) \n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
 	}
 	if (Vfrac>1) Vfrac=1;
 
@@ -213,12 +203,8 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 			if (r<=K*SD && (!d3 || rz<=Kd*SDd)){
 				ngridj_int+=1;
 				if (ngridj_int>Nselmax){
-					if (verbose_level) printf("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-					if (flog){
-						fprintf(flog, "*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-						fflush(flog);
-
-					}
+					print_screen("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
+					print_logfile("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
 					return(1);
 				}
 				ngridpointj[ngridj_int]=p;
@@ -241,21 +227,15 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 		  Vfrac=1;
 		  break;
 		default:
-	  if (verbose_level>1) printf("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
-		if (flog) {
-			fprintf(flog, "Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
-			fflush(flog);
-		}
+		print_screen("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
+		print_logfile("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
 	  return 1;
 		  break;
 	}
 
 	if (Vfrac>1.1) {
-		if (verbose_level>1) printf("Warning: Vfrac>1 (%lf)\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
-		if (flog) {
-			fprintf(flog,"Warning: Vfrac>1 (%lf) \n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
-			fflush(flog);
-		}
+		print_screen("Warning: Vfrac>1 (%lf)\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
+		print_logfile("Warning: Vfrac>1 (%lf) \n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
 	}
 	if (Vfrac>1) Vfrac=1;
 

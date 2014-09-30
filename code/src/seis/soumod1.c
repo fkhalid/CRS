@@ -84,13 +84,18 @@ int adjust_faults(struct eqkfm *eqkfm0,  int NF, int vert){
 		latlon2localcartesian(eqkfm0[n].lat,eqkfm0[n].lon, newlat, newlon, &dy, &dx);
 		diff=sqrt(pow(dx,2)+pow(dy,2)+pow(eqkfm0[n].depth-P[3],2));
 
-		if (verbose_level>2) printf("Fault adjustment (fault no.%d): [%lf,%lf,%lf]  -> [%lf,%lf,%lf]\n", n, eqkfm0[n].lat,eqkfm0[n].lon, eqkfm0[n].depth, newlat, newlon, P[3]);
+		if (extra_verbose) {
+			print_screen("Fault adjustment (fault no.%d): [%lf,%lf,%lf]  -> [%lf,%lf,%lf]\n", n, eqkfm0[n].lat,eqkfm0[n].lon, eqkfm0[n].depth, newlat, newlon, P[3]);
+			print_logfile("Fault adjustment (fault no.%d): [%lf,%lf,%lf]  -> [%lf,%lf,%lf]\n", n, eqkfm0[n].lat,eqkfm0[n].lon, eqkfm0[n].depth, newlat, newlon, P[3]);
+		}
 		if (diff>1.0) {
 			if (diff>10.0){
-			if (verbose_level>0) printf("*** Error - shifting subfault no.%d by more than 5km in adjust_faults. *** \n",n);
+			print_screen("*** Error - shifting subfault no.%d by more than 5km in adjust_faults. *** \n",n);
+			print_logfile("*** Error - shifting subfault no.%d by more than 5km in adjust_faults. *** \n",n);
 			return (1);
 			}
-			if (verbose_level>1) printf("*** Warning - shifting subfault no.%d by more than 1km in adjust_faults. *** \n",n);
+			print_screen("*** Warning - shifting subfault no.%d by more than 1km in adjust_faults. *** \n",n);
+			print_logfile("*** Warning - shifting subfault no.%d by more than 1km in adjust_faults. *** \n",n);
 		}
 
 		eqkfm0[n].lat=newlat;
@@ -144,7 +149,8 @@ int which_taper(struct eqkfm *eqkfm0,  int NF, int tap_bot, int tap_top, double 
 
 		if (Hor_align==NF-1 && Ver_align==0){
 
-			if (verbose_level>1) printf("Mainshock faults oriented horizontally.\n");
+			print_screen("Mainshock faults oriented horizontally.\n");
+			print_logfile("Mainshock faults oriented horizontally.\n");
 
 			for (int n=0; n<NF; n++){
 				eqkfm0[n].taper[4]=1;
@@ -205,7 +211,8 @@ int which_taper(struct eqkfm *eqkfm0,  int NF, int tap_bot, int tap_top, double 
 		else {
 			if (Ver_align==NF-1 && Hor_align==0){
 
-				if (verbose_level>1) printf("Mainshock faults oriented vertically.\n");
+				print_screen("Mainshock faults oriented vertically.\n");
+				print_logfile("Mainshock faults oriented vertically.\n");
 				adjust_faults(eqkfm0,  NF, 1);
 
 				for (int n=1; n<NF-1; n++){
@@ -219,9 +226,8 @@ int which_taper(struct eqkfm *eqkfm0,  int NF, int tap_bot, int tap_top, double 
 			}
 
 			else {
-				if(procId == 0) {
-					if (verbose_level>0)  printf("** Warning: could not determine relative orientation of faults - model is not tapered! **\n");
-				}
+				print_screen("** Warning: could not determine relative orientation of faults - model is not tapered! **\n");
+				print_logfile("** Warning: could not determine relative orientation of faults - model is not tapered! **\n");
 				for (int n=0; n<NF-1; n++){
 					for (int i=1; i<=4; i++) eqkfm0[n].taper[i]=0;
 				}
@@ -249,8 +255,9 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
   int      i, j, k, l;
   int      ns, nns, nsx, nsy;
 
-  printout= (verbose_level>3) ? 1:0;
-  print_Fourier= (verbose_level>3) ? 1:0;
+  //can be set manually to print out extra files.
+  printout= 0;
+  print_Fourier= 0;
 
 	int procId = 0;
 
@@ -278,13 +285,15 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 			dip1=eqkfm1.dip2;
 			break;
 		case 0:
-			if (verbose_level>1)  printf("Warning: ambiguous focal plane for eqkfm1 (suomod1_resample) -> using first plane!\n");
+			print_screen("Warning: ambiguous focal plane for eqkfm1 (suomod1_resample) -> using first plane!\n");
+			print_logfile("Warning: ambiguous focal plane for eqkfm1 (suomod1_resample) -> using first plane!\n");
 			rake=eqkfm1.rake1;
 			strike=eqkfm1.str1;
 			dip1=eqkfm1.dip1;
 			break;
 		default:
-			if (verbose_level>0)  printf("Error: eqkfm1.whichfm has illegal value in suomod1_resample(%d)!\n",eqkfm1.whichfm);
+			print_screen("Error: eqkfm1.whichfm has illegal value in suomod1_resample(%d)!\n",eqkfm1.whichfm);
+			print_logfile("Error: eqkfm1.whichfm has illegal value in suomod1_resample(%d)!\n",eqkfm1.whichfm);
 			return(1);
 	}
 	oxdim=eqkfm1.L;
@@ -341,7 +350,6 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 	                  i++;
 	                }
 	        }
-//	  printf("disc=%lf, maxox=%lf, maxoy=%lf\n",disc,maxox, maxoy);
       if (ndiscx<odiscx && ndiscy<odiscy) {// refine slip distribution
           for (int i=1; i<=nns; i++){
         	  l=1;
@@ -364,73 +372,18 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
       }
 
 	  else if (ndiscx>odiscx && ndiscy>odiscy){
-		  if (verbose_level>1) printf("New resolution is larger than old one: will not resample (suomod1_resample).\n");
+		  if (extra_verbose) {
+			  print_screen("New resolution is larger than old one: will not resample (suomod1_resample).\n");
+			  print_logfile("New resolution is larger than old one: will not resample (suomod1_resample).\n");
+		  }
 		  copy_eqkfm_all(eqkfm1, eqkfm2);
 		  return (0);
-
-// Previous code: smooth slip distribution. May not work (not changed for skewed fault).
-//		  smooth=1;
-//		  i=1;
-//		  l=1;
-//		  for(i=1;i<=nns;i++)
-//				{ REold[i]=0;
-//				  IMold[i]=0;
-//				  k=0;
-//				  while (l<ns)
-//						{ if (ox[l]<nx[i]+ndiscx && oy[l]<ny[i]+ndiscy && ox[l]>=nx[i] && oy[l]>=ny[i])
-//								{ REold[i]=REold[i]+REslipo[l];
-//								  dipold[i]=dipold[i]+dip[l];
-//								  rakeold[i]=rakeold[i]+rake_v[l];
-//								  strikeold[i]=strikeold[i]+strike_v[l];
-//								  k++;
-//								}
-//						  l++;
-//						}
-//				  if (REold[i]>0)
-//						{ REold[i]=REold[i]/k;
-//						  dipold[i]=dipold[i]/k;
-//		  rakeold[i]=rakeold[i]/k;
-//		  strikeold[i]=strikeold[i]/k;
-//						}
-//				  l=1;
-//				}
-//	   //// calculated position for each fault patch  -- do we need this?
-//  		 lat      = dvector(1,nns);
-//		 lon      = dvector(1,nns);
-//		 z        = dvector(1,nns);
-//		 i=1;
-//		 l=1;
-//		 refdepth1=refdepth;
-//		 ydis=0.0;
-//		 for (k=1; k<=nsx; k++){
-//			 for (j=1;j<=nsy;j++){
-//				 if (i>1 && ny[i]>ny[i-1]){
-//					   refdepth1=z[i-1];
-//					   if (verbose_level>2) printf("refdepth=%f,dipold=%f,i=%d,nns=%d\n",refdepth1,dipold[i],i,nns);
-//					   ydis=ydis+ndiscy*cos(dipold[i-1]*pi/180);
-//				 }
-//				  //should use ndicy, ndiscx instead of disc...
-//				 z[i]=refdepth1+ndiscy*sin(dipold[i]*pi/180); // absolute depth
-//				 sma=sqrt(pow(nx[i],2)+pow(ydis+disc*cos(dipold[i]*pi/180),2))/Re;
-//				 smb=0.5*pi-reflat*pi/180;
-//				 bgc=strikeold[i]*pi/180+atan((ydis+disc*cos(dipold[i]*pi/180))/nx[i]);
-//				 smc=acos(cos(sma)*cos(smb)+sin(sma)*sin(smb)*cos(bgc));
-//				 bga=asin(sin(sma)*sin(bgc)/sin(smc));
-//				 lat[i]=90-smc*180/pi;			//absolute latitude
-//				 lon[i]=fmod(reflon+bga*180/pi,360);   //absolute longitude
-//				 if ( nx[i]==0 && ny[i]==0 ) {// set outer border to zero
-//					  lat[i]=reflat;
-//					  lon[i]=reflon;
-//				 }
-//				 i++;
-//			}
-//		 }
-//		 lat[1]=reflat;
-//		 lon[1]=reflon;
 	  }
 
 	  else  {
-		  if (verbose_level>2) printf("Model has right discretization - will not be resampled. \n");
+		  if (extra_verbose) {
+			  print_screen("Model has right discretization - will not be resampled. \n");
+		  }
 		  copy_eqkfm_all(eqkfm1, eqkfm2);
 		  return(0);
 	  }
@@ -502,7 +455,8 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
   int      ns, nns, nsx, nsy;
   int 	   top, bottom, right, left;	//where to taper.
 
-	printout= (verbose_level>3) ? 1:0;
+    // can be set to 1 to print extra files.
+	printout=0;
 
 	int procId = 0;
 
@@ -520,13 +474,8 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
     if (eqkfm1.np_di==1) top=bottom=0;
     if (ns==1) {
     	copy_eqkfm_all(eqkfm1, eqkfm2);	//bug fix: using copy_eqkfm_slipmodel did not copy nsel, so no points were selected.
-    	if(procId == 0) {
-    		if (verbose_level>0) printf("** Warning: model has a single patch, will not be tapered.**\n");
-        	if (flog) {
-        		fprintf(flog,"** Warning: model has a single patch, will not be tapered.**\n");
-        		fflush(flog);
-        	}
-    	}
+    	print_screen("** Warning: model has a single patch, will not be tapered.**\n");
+    	print_logfile("** Warning: model has a single patch, will not be tapered.**\n");
     	return 0;
     }
 
@@ -552,13 +501,15 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 			dip=eqkfm1.dip2;
 			break;
 		case 0:
-			if (verbose_level>1)  printf("Warning: ambiguous focal plane for eqkfm1 (suomod1_taper) -> using first plane!\n");
+			print_screen("Warning: ambiguous focal plane for eqkfm1 (suomod1_taper) -> using first plane!\n");
+			print_logfile("Warning: ambiguous focal plane for eqkfm1 (suomod1_taper) -> using first plane!\n");
 			rake=eqkfm1.rake1;
 			strike=eqkfm1.str1;
 			dip=eqkfm1.dip1;
 			break;
 		default:
-			if (verbose_level>0)  printf("Error: eqkfm1.whichfm has illegal value in suomod1_taper(%d)!\n",eqkfm1.whichfm);
+			print_screen("Error: eqkfm1.whichfm has illegal value in suomod1_taper(%d)!\n",eqkfm1.whichfm);
+			print_logfile("Error: eqkfm1.whichfm has illegal value in suomod1_taper(%d)!\n",eqkfm1.whichfm);
 			return(1);
 			break;
 	}
@@ -687,8 +638,9 @@ int suomod1_hf(struct eqkfm eqkfm0, struct eqkfm *eqkfm2, double H, long *seed, 
 	int	   	 rough=0;
 	long     seed2 = *seed;
 
-	printout= (verbose_level>3) ? 1:0;
-	print_Fourier= (verbose_level>3) ? 1:0;
+	//can be set to 1 to print extra output files.
+	printout= 0;
+	print_Fourier= 0;
 
   	switch (eqkfm0.whichfm){
 		case 1:
@@ -702,13 +654,15 @@ int suomod1_hf(struct eqkfm eqkfm0, struct eqkfm *eqkfm2, double H, long *seed, 
 			dip1=eqkfm0.dip2;
 			break;
 		case 0:
-			if (verbose_level>1)  printf("Warning: ambiguous focal plane for eqkfm1 (suomod1_hf) -> using first plane!\n");
+			print_screen("Warning: ambiguous focal plane for eqkfm1 (suomod1_hf) -> using first plane!\n");
+			print_logfile("Warning: ambiguous focal plane for eqkfm1 (suomod1_hf) -> using first plane!\n");
 			rake=eqkfm0.rake1;
 			strike=eqkfm0.str1;
 			dip1=eqkfm0.dip1;
 			break;
 		default:
-			if (verbose_level>0)  printf("Error: eqkfm1.whichfm has illegal value in suomod1_hf(%d)!\n",eqkfm0.whichfm);
+			print_screen("Error: eqkfm1.whichfm has illegal value in suomod1_hf(%d)!\n",eqkfm0.whichfm);
+			print_logfile("Error: eqkfm1.whichfm has illegal value in suomod1_hf(%d)!\n",eqkfm0.whichfm);
 			return(1);
   	}
 
@@ -775,7 +729,8 @@ int suomod1_hf(struct eqkfm eqkfm0, struct eqkfm *eqkfm2, double H, long *seed, 
 	}
 
 	if ((old) & ((maxslip0-minslip0)/fmax(fabs(maxslip0),fabs(minslip0))<0.01))	{
-		if (verbose_level>1) printf("Input slip model uniform in suomod1_hf --> model will be tapered before Fourier Transform.\n");
+		print_screen("Input slip model uniform in suomod1_hf --> model will be tapered before Fourier Transform.\n");
+		print_logfile("Input slip model uniform in suomod1_hf --> model will be tapered before Fourier Transform.\n");
 		if ((*eqkfm1).taper) suomod1_taper((*eqkfm1), eqkfm1);
 		for (int np=1; np<=ns; np++) REold[np]=pow((*eqkfm1).slip_str[np]*(*eqkfm1).slip_str[np]+(*eqkfm1).slip_dip[np]*(*eqkfm1).slip_dip[np],0.5);
 	}
@@ -846,7 +801,7 @@ int suomod1_hf(struct eqkfm eqkfm0, struct eqkfm *eqkfm2, double H, long *seed, 
 		if (old){
 			sprintf(fname,"%s/Fourier_old.out", logfolder);
 			fout=fopen(fname,"w");
-			if (fout==NULL) printf("Warning: could not write output file for suomod1_hf.\n");
+			if (fout==NULL) print_screen("Warning: could not write output file for suomod1_hf.\n");
 			else{
 				for (k=1;k<=nns;k++) fprintf(fout,"%lf\t %lf\t%lf\t%lf\n", k_x[k], k_y[k], FToldRE[k], FToldIM[k]);
 				fclose(fout);
@@ -855,7 +810,7 @@ int suomod1_hf(struct eqkfm eqkfm0, struct eqkfm *eqkfm2, double H, long *seed, 
 
 		sprintf(fname,"%s/Fourier_rand.out", logfolder);
 		fout=fopen(fname,"w");
-		if (fout==NULL) printf("Warning: could not write output file for suomod1_hf.\n");
+		if (fout==NULL) print_screen("Warning: could not write output file for suomod1_hf.\n");
 		else{
 			for (k=1;k<=nns;k++) fprintf(fout,"%lf\t %lf\t%lf\t%lf\n", k_x[k], k_y[k], FTrandRE[k], FTrandIM[k]);
 			fclose(fout);
@@ -889,7 +844,7 @@ int suomod1_hf(struct eqkfm eqkfm0, struct eqkfm *eqkfm2, double H, long *seed, 
 	if (print_Fourier==1){
 		sprintf(fname,"%s/Fourier_filt.out", logfolder);
 		fout=fopen(fname,"w");
-		if (fout==NULL) printf("Warning: could not write output file for suomod1_hf.\n");
+		if (fout==NULL) print_screen("Warning: could not write output file for suomod1_hf.\n");
 		else{
 			for (k=1;k<=nns;k++) fprintf(fout,"%lf\t %lf\t%lf\t%lf\n", k_x[k], k_y[k],specRE[k], specRE[k]);
 			fclose(fout);
@@ -944,7 +899,6 @@ int suomod1_hf(struct eqkfm eqkfm0, struct eqkfm *eqkfm2, double H, long *seed, 
 			  { REsurf[i]=REsurf[i]/maxsurf*height;
 			  }
 	  // calculate deviations of strike and dip as local angles along the fractal surface
-	  //  printf("disc=%lf \n", disc);
 		for (i=1;i<=nns;i++)
 		  { if (nx[i]==0 )
 				  { dstrike[i]=strikeold[i]+atan((REsurf[i+1]-REsurf[i])/disc)*180.0/pi;
@@ -1043,7 +997,7 @@ int suomod1_hf(struct eqkfm eqkfm0, struct eqkfm *eqkfm2, double H, long *seed, 
 		dft2d(nsy,nsx,0, slip, IMold, FTrandRE, FTrandIM);
 		sprintf(fname,"%s/Fourier.out", logfolder);
 		fout=fopen(fname,"w");
-		if (fout==NULL) printf("Warning: could not write output file for suomod1_hf.\n");
+		if (fout==NULL) print_screen("Warning: could not write output file for suomod1_hf.\n");
 		else{
 			for (k=1;k<=nns;k++) fprintf(fout,"%lf\t %lf\t %lf\t %lf\t\n", k_x[k],k_y[k], FTrandRE[k], FTrandIM[k]);
 			fclose(fout);
@@ -1132,7 +1086,6 @@ int suomod1_addnoise(struct eqkfm eqkfm1, struct eqkfm eqkfm2, struct eqkfm *eqk
 
    	//find ratio of moments:
    	sf= eqkfm1.tot_slip/eqkfm2.tot_slip;
-//   	printf("sf=%lf\n",sf);
 
    	//normalize to keep moment constant:
    	M0old=M0=0;

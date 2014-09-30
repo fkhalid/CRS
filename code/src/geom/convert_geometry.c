@@ -51,7 +51,8 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 	nsub_tot=nsub[0]*nsub[1]*nsub[2];
 
 	if (crst.nLat%crst.nLat_out!=0 || crst.nLon%crst.nLon_out!=0 || crst.nD%crst.nD_out!=0) {
-		if (verbose_level>0) printf(" ** Error: calculation cells are not a multiple of forecast cells - can not recalculate geometry -> Using old geometry. (convert_geometry)\n");
+		print_screen(" ** Error: calculation cells are not a multiple of forecast cells - can not recalculate geometry -> Using old geometry. (convert_geometry)\n");
+		print_logfile(" ** Error: calculation cells are not a multiple of forecast cells - can not recalculate geometry -> Using old geometry. (convert_geometry)\n");
 		*new_v=old_v;
 		return(1);
 	}

@@ -27,8 +27,6 @@ int grid_variability(){
  * Loops over a set of simple slip models with large variabiltiy (H=5?).
  */
 
-	verbose_level=2;
-
 	double H=0.1;	//Hurst coefficient.
 	char *testfolder="test/grid_var";
 	char *crust_file="input/Tohoku_simple_vert.inp";

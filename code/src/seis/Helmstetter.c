@@ -34,7 +34,8 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 			all_2ndnearestneighbours(xs, ys, N, NULL, &dist);
 			break;
 		default:
-			if (verbose_level>0) printf("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_screen("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_logfile("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
 			return NULL;
 	}
 
@@ -75,7 +76,8 @@ double *Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, 
 			all_2ndnearestneighbours(xs, ys, N, NULL, &dist);
 			break;
 		default:
-			if (verbose_level>0) printf("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_screen("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_logfile("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
 			return NULL;
 	}
 

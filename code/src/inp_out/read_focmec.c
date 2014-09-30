@@ -71,13 +71,8 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 						  (eqkfm)? &eqkfmtemp : NULL, sel, fm2);
 
 		if (focmec && !nfmtemp) {
-			if(procId == 0) {
-				if (verbose_level) printf("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
-				if (flog) {
-					fprintf(flog, "**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
-					fflush(flog);
-				}
-			}
+			print_screen("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
+			print_logfile("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
 		}
 
 		if (firstelements) (*firstelements)[n]=nfm_sofar+1;
@@ -121,14 +116,9 @@ int readfocmec(char *focmecfile, struct crust crst,
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	if(procId == 0) {
-		if (flog) {
-			fprintf(flog, "\nReading focal mechanisms from file %s.\n", focmecfile);
-			if (fm2) fprintf(flog, "Using both focal mechanisms.\n");
-			else fprintf(flog, "Using only first focal mechanism.\n");
-			fflush (flog);
-		}
-	}
+	print_logfile("\nReading focal mechanisms from file %s.\n", focmecfile);
+	if (fm2) print_logfile("Using both focal mechanisms.\n");
+	else print_logfile("Using only first focal mechanism.\n");
 
 	FILE *fin;
 
@@ -136,12 +126,8 @@ int readfocmec(char *focmecfile, struct crust crst,
 	if(procId == 0) {
 		fin = fopen(focmecfile,"r");
 		if(fin == NULL) {
-			if (verbose_level>1) printf("** Error: could not open focal mechanisms catalog %s (readfocmec.c). **\n", focmecfile);
-			if (flog) {
-				fprintf(flog, "Error: could not open focal mechanisms catalog (readfocmec.c).\n");
-				fflush (flog);
-			}
-
+			print_screen("** Error: could not open focal mechanisms catalog %s (readfocmec.c). **\n", focmecfile);
+			print_logfile("Error: could not open focal mechanisms catalog (readfocmec.c).\n");
 			fileError = 1;
 		}
 		else {
@@ -199,9 +185,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 		return 1;
 	}
 
-	if(procId == 0) {
-		if (verbose_level>1) printf("Reading catalog of focal mechanisms...");
-	}
+	print_screen("Reading catalog of focal mechanisms...");
 
 	lat_col=3;
 	lon_col=4;
@@ -257,10 +241,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 			}
 		}
 
-		if (flog) {
-			fprintf(flog, "%d events selected as sample of focal planes, %d selected as sources.\n", NFM2, NFM2sources);
-			fflush(flog);
-		}
+		print_logfile("%d events selected as sample of focal planes, %d selected as sources.\n", NFM2, NFM2sources);
 	}
 
 	#ifdef _CRS_MPI
@@ -359,9 +340,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 	free_ivector(selectedsources,1,NFMmax);
 	free_dvector(times,1,NFMmax);
 
-	if(procId == 0) {
-		if (verbose_level>1) printf("done.\n");
-	}
+	print_screen("done.\n");
 
 	return (err!=0);
 

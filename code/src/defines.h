@@ -36,22 +36,17 @@
 #define T2SEC(x) (x/(double)CLOCKS_PER_SEC)
 #define tol0 1e-10	//tolerance for double comparison.
 
+//macros defining functions to be called to output messages:
+#define print_logfile(...) print_logfile_fun(__func__, __VA_ARGS__)
+#define print_screen(...) print_screen_fun(__func__, __VA_ARGS__)
+#define error_quit(...) error_quit_fun(__func__, __VA_ARGS__)
+
 #include <stdio.h>
 
 #define logfolder "output/log/"
 
-/*	verbose_level: only global variable. settings:
- *
- * 	0: output nothing.
- *  1: output to screen: main operations and errors which lead to abort.
- *  2: output to screen: also minor errors and warnings. (also writes log file).
- *  3: output modified slip models, stress fields etc. (produces several files!)
- *  4: output even more files (e.g. Fourier values etc...)
- *
- * */	//todo implement these!!
-
 extern char cmb_format[120];
-extern int verbose_level;
+extern int extra_verbose, quiet;	//control level of verbosity (screen = log file)
 extern int gridPMax;	//todo global variables are bad...
 extern double DCFS_cap;
 extern FILE *flog;

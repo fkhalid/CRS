@@ -46,9 +46,8 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 	if(procId == 0) {
 		fin = fopen(modelparametersfile,"r");
 		if(fin == NULL) {
-			if (verbose_level) printf("Error: parameter file %s could not be opened. Exit. \n", modelparametersfile);
-			if (flog) fprintf(flog, "Error: parameter file %s could not be opened. Exit. \n", modelparametersfile);
-
+			print_screen("Error: parameter file %s could not be opened. Exit. \n", modelparametersfile);
+			print_logfile("Error: parameter file %s could not be opened. Exit. \n", modelparametersfile);
 			fileError = 1;
 		}
 	}

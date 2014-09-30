@@ -31,7 +31,7 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 	int selected, *sel, *sel1;
 	int N20=N2, N10=N1;
 	double dx, dy, dz, r;
-	int verbose=0, not_selected=0;	//verbose can be reactivated for printing out selected events (e.g. for debugging).
+	int outfile=0, not_selected=0;	//outfile can be reactivated for printing out selected events (e.g. for debugging).
 	char fname[120];
 	FILE *fout;
 
@@ -41,14 +41,8 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 	while (N1<N10 && eqkfm1[N1].t<=tend) N1++;
 
 	if (N1==0 | N2==0) {
-		if(procId == 0) {			
-			if (verbose_level>1) printf("Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
-			if (flog) {
-				fprintf(flog, "Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
-				fflush(flog);
-			}
-		}
-
+		print_screen("Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
+		print_logfile("Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
 		return NULL;
 	}
 
@@ -83,7 +77,7 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 
 		if (fabs(eqkfm2[n2].mag-eqkfm1[n12].mag) <=(dM+0.001) && fabs(eqkfm2[n2].t-eqkfm1[n12].t) <=dt && r<=dR){
 			if(procId == 0) {
-				if (verbose==1) fprintf(fout,"%lf\t%lf\t%lf\t%lf\t%lf\t%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 1, eqkfm1[n12].t, eqkfm1[n12].lat, eqkfm1[n12].lon, eqkfm1[n12].depth, eqkfm1[n12].mag,r);
+				if (outfile) fprintf(fout,"%lf\t%lf\t%lf\t%lf\t%lf\t%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 1, eqkfm1[n12].t, eqkfm1[n12].lat, eqkfm1[n12].lon, eqkfm1[n12].depth, eqkfm1[n12].mag,r);
 			}
 			if (overwrite==1){
 				//copy_eqkfm_nolocation_noindex_notime(eqkfm2[n2], eqkfm1+n12);	//todo decide which one is better (temporary change for iquique).
@@ -96,37 +90,29 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 
 		else {
 			if(procId == 0) {
-				if (verbose==1) fprintf(fout,"%.8lf\t%lf\t%lf\t%lf\t%lf\t%d\t%.8lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 0, 0.0 ,0.0 ,0.0 ,0.0, 0.0, 0.0);
+				if (outfile) fprintf(fout,"%.8lf\t%lf\t%lf\t%lf\t%lf\t%d\t%.8lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 0, 0.0 ,0.0 ,0.0 ,0.0, 0.0, 0.0);
 			}
 		}
 
 		if (selected!=1 && eqkfm2[n2].t<tend) {
 			sel[n2]=-1;
-			if (!selected && (verbose_level || flog)) {
+			if (!selected) {
 				not_selected+=1;
-				if (verbose_level>2) {
-					if(procId == 0) {
-						if (verbose_level) printf("Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
-						if (flog) {
-							fprintf(flog, "Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
-							fflush(flog);
-						}
-					}
+				if (extra_verbose) {
+					print_screen("Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
+					print_logfile("Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
 				}
 			}
 		}
 	}
 			
-	if (not_selected && (verbose_level || flog)){
-		if(procId == 0) {
-			if (verbose_level) printf("Warning: %d elements from focal mechanism catalog missing from earthquake catalog.\n", not_selected);
-			if (flog) fprintf(flog, "Warning: %d elements from focal mechanism catalog missing from earthquake catalog.\n", not_selected);
-			fflush(flog);
-		}
+	if (not_selected){
+		print_screen("Warning: %d elements from focal mechanism catalog missing from earthquake catalog.\n", not_selected);
+		print_logfile("Warning: %d elements from focal mechanism catalog missing from earthquake catalog.\n", not_selected);
 	}
 
 	if(procId == 0) {
-		if (verbose==1) fclose(fout);
+		if (outfile) fclose(fout);
 	}
 
 	return sel;
@@ -328,11 +314,8 @@ void eqk_filter(struct eqkfm **eqkfm1, int *Ntot, double Mag, double Depth){
 
 	for (int i=0; i<Ntot_new; i++) copy_eqkfm_all(eqkfm0[i],(*eqkfm1)+i);
 	*Ntot=Ntot_new;
-	if (verbose_level>2) printf("%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
-	if (flog){
-		fprintf(flog,"%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
-		fflush(flog);
-	}	
+	print_screen("%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
+	print_logfile("%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
 	return;
 }
 

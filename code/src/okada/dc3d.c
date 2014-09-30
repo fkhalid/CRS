@@ -519,14 +519,10 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 	EPS = 1e-6;
 
 	if (Z > 0.0) {
-		if (flog && warning_notprintedyet) {
-			if(procId == 0) {
-				fprintf(flog, "** Warning: POSITIVE Z WAS GIVEN IN SUB-DC3D. **\n");
-				fflush(flog);
-				warning_notprintedyet=0;
-			}
+		if (warning_notprintedyet) {
+			print_logfile("** Warning: POSITIVE Z WAS GIVEN IN SUB-DC3D. **\n");
+			warning_notprintedyet=0;
 		}
-
 	}
 	for (i = 1; i <= 12; i++) {
 		U[i] = 0.0;

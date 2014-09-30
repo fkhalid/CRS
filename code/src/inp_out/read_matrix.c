@@ -33,11 +33,8 @@ int read_matrix(char *infile, int columns, int headerlines, double **data, long 
 	long ZZ, N;
 
 	if((fin = fopen(infile, "r"))==NULL){
-		if (verbose_level) printf("**Error: unable to open input file %s (inread_matrix).**\n", infile);
-		if (flog) {
-			fprintf(flog,"**Error: unable to open input file %s (inread_matrix).**\n", infile);
-			fflush(flog);
-		}
+		print_screen("**Error: unable to open input file %s (inread_matrix).**\n", infile);
+		print_logfile("**Error: unable to open input file %s (inread_matrix).**\n", infile);
 		return (1);
 	}
 
@@ -58,8 +55,9 @@ int read_matrix(char *infile, int columns, int headerlines, double **data, long 
 	ZZ = (long) Zd;
 
 	if (Zd - 1.0 * ZZ != 0.0) {
-		if (verbose_level>1) printf("Fehler bei der Spalten/Zeilen-Bestimmung !!!");
-		//return(1);
+		print_screen("Error: Mismatch in the number of columns!");
+		print_logfile("Error: Mismatch in the number of columns!");
+		return(1);
 	}
 
 	fin = fopen(infile, "r");
@@ -83,8 +81,8 @@ int read_matrix_transpose(char *infile, int columns, int headerlines, double **d
 	long ZZ, N;
 
 	if((fin = fopen(infile, "r"))==NULL){
-		if (verbose_level>1) printf(" **Error: unable to open input file %s. (nread_matrix_transpose)**\n", infile);
-		if (flog) fprintf(flog," **Error: unable to open input file %s. (read_matrix_transpose)**\n", infile);	
+		print_screen(" **Error: unable to open input file %s. (nread_matrix_transpose)**\n", infile);
+		print_logfile(" **Error: unable to open input file %s. (read_matrix_transpose)**\n", infile);
 		return (1);
 	}
 
@@ -105,8 +103,9 @@ int read_matrix_transpose(char *infile, int columns, int headerlines, double **d
 	ZZ = (long) Zd;
 
 	if (Zd - 1.0 * ZZ != 0.0) {
-		if (verbose_level>1) printf("Fehler bei der Spalten/Zeilen-Bestimmung !!!");
-		//return(1);
+		print_screen("Error: Mismatch in the number of columns!");
+		print_logfile("Error: Mismatch in the number of columns!");
+		return(1);
 	}
 
 	fin = fopen(infile, "r");
@@ -129,8 +128,8 @@ int read_matrixT(char *infile, int columns, int headerlines, double **data, char
 	long ZZ, N;
 
 	if((fin = fopen(infile, "r"))==NULL){
-		if (verbose_level>1) printf(" **Error: unable to open input file %s. (nread_matrixT)**\n", infile);
-		if (flog) fprintf(flog," **Error: unable to open input file %s. (read_matrixT)**\n", infile);	
+		print_screen(" **Error: unable to open input file %s. (nread_matrixT)**\n", infile);
+		print_logfile(" **Error: unable to open input file %s. (read_matrixT)**\n", infile);
 		return (1);
 	}
 
@@ -155,8 +154,9 @@ int read_matrixT(char *infile, int columns, int headerlines, double **data, char
 
 
 	if (Zd - 1.0 * ZZ != 0.0) {
-		if (verbose_level>1) printf("Fehler bei der Spalten/Zeilen-Bestimmung !!!");
-		return (1);
+		print_screen("Error: Mismatch in the number of columns!");
+		print_logfile("Error: Mismatch in the number of columns!");
+		return(1);
 	}
 
 	char dums[80];
@@ -179,11 +179,8 @@ int countline(char *filename){
 	int counter =0;
 
 	if((fin = fopen(filename, "r"))==NULL) {
-		if (verbose_level>1) printf(" **Error: unable to open input file %s. (countline.c)**\n", filename);
-		if (flog) {
-			fprintf(flog," **Error: unable to open input file %s. (countline.c) **\n", filename);
-			fflush(flog);
-		}
+		print_screen(" **Error: unable to open input file %s. (countline.c)**\n", filename);
+		print_logfile(" **Error: unable to open input file %s. (countline.c) **\n", filename);
 		return -1;
 	}
 
@@ -202,11 +199,8 @@ int countcol(char *filename){
 	int counter =0;
 
 	if((fin = fopen(filename, "r"))==NULL) {
-		if (verbose_level>1) printf(" **Error: unable to open input file %s. (countcol.c)**\n", filename);
-		if (flog) {
-			fprintf(flog," **Error: unable to open input file %s. (countcol.c) **\n", filename);
-			fflush(flog);
-		}
+		print_screen(" **Error: unable to open input file %s. (countcol.c)**\n", filename);
+		print_logfile(" **Error: unable to open input file %s. (countcol.c) **\n", filename);
 		return -1;
 	}
 	dum=(int) '\t';

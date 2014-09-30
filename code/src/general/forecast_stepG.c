@@ -56,6 +56,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   int reach_end;
   int nthreads, nthreadstot=omp_get_max_threads();
   static int **indices;	//contains indices of events referred to DCFS and cat(with offset of 1 - see below).
+  int warning_printed=0;
 
   if (firsttimein==1){
 		firsttimein=0;
@@ -103,7 +104,10 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			if(times[k]>=events[1][i]) k--;
 			TS_eqk[i]=k;
 			if(procId == 0) {
-				if (k<0 && events[1][i]>=tt0 && verbose_level>0) printf("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
+				if (k<0 && events[1][i]>=tt0) {
+					print_screen("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
+					print_logfile("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
+				}
 			}
 		}
   }
@@ -115,15 +119,18 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   NeX= (out_NeX)? out_NeX : NeXdum;
 
   // find time steps before each contributing earthquake;
-  //if ((old_DCFS_addr!=new_DCFS_addr) && verbose_level>1) printf("**Warning: adress of DCFShas changed in forecast_stepG2_new.c\n",i);
   old_DCFS_addr=new_DCFS_addr;
   if (Rate_end) for(int m=1;m<=N;m++) ReX[m]=0.0;
   if (NeX) for(int m=1;m<=N;m++) NeX[m]=0.0;
 
   if(procId == 0) {
-	  if (tt1<tt0 && verbose_level>1) printf("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
-	  if (times[NTS]>tt0 && times[NTS]<tt1 && verbose_level>1) {
-		  printf("\n** Warning: time steps in forecast_stepG don't cover entire forecast range!**\n");
+	  if (tt1<tt0) {
+		  print_screen("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
+		  print_logfile("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
+	  }
+	  if (times[NTS]>tt0 && times[NTS]<tt1) {
+		  print_screen("\n** Warning: time steps in forecast_stepG don't cover entire forecast range!**\n");
+		  print_logfile("\n** Warning: time steps in forecast_stepG don't cover entire forecast range!**\n");
 	  }
   }
 
@@ -138,8 +145,10 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   TS0=0;
   while(TS0<NTS-1 && times[TS0]<=tt0) TS0++;
   if(procId == 0) {
-	  if(times[TS0]<=tt0 && verbose_level>1) {
-		  printf("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
+	  if(times[TS0]<=tt0 & !warning_printed) {
+		  warning_printed=1;
+		  print_screen("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
+		  print_logfile("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
 	  }
   }
 
@@ -152,7 +161,6 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   if (NeT) *NeT=0;
   if (Rate_end) *Rate_end=0;
 
-//  printf ("max no of threads=%d.\n", omp_get_max_threads());
 
   Rprivate=dmatrix(0,nthreadstot-1, 0, cat.Z);
   for (int t=0; t<omp_get_max_threads(); t++){
@@ -164,9 +172,6 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   for(int m=1;m<=N;m++){
 
 	nthreads=omp_get_num_threads();
-//	printf("nthreads=%d\n",nthreads);
-//	printf("here's thread no. %d.\n",omp_get_thread_num());
-	//printf("Entered parallel section - %d threads running. \n",omp_get_num_threads());
 
 	if (err!=0) continue;
 	n=(points==0)? m : points[m];
@@ -215,9 +220,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 				b=a*exp(-t_pre/ta1)+1;
 
 				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
-				if(isnan(-NeX[m])) {
-					printf("isnanNeX! a=%.3e, b=a=%.3e\n");
-				}			}
+			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
     	}
 
@@ -232,9 +235,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 				b=a*exp(-dt[j]/ta1)+1;
 
 				if (!isinf(fabs(b))) NeX[m]+=fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(dt[j]+ta1*log(b/(gamma*dtau_dt))));	//condition since for gamma -> inf, Nev-> 0 (can do algebra to confirm).
-				if(isnan(-NeX[m])) {
-					printf("isnanNeX! a=%.3e, b=a=%.3e\n");
-				}			}
+			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-dt[j]/(tau))*exp(-tau/Asig)+dt[j]/(tau) : gamma*(1-tau/Asig)+dt[j]/Asig;
 			t_now+=dt[j];
 		}
@@ -249,9 +250,6 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 				a=gamma*dtau_dt-1;
 				b=a*exp(-t_pre/ta1)+1;
 				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
-				if(isnan(-NeX[m])) {
-					printf("isnanNeX! a=%.3e, b=a=%.3e\n");
-				}
 			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
 		}
@@ -265,16 +263,8 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			}
 			gamma= (DCFS_i==-1 | DCFS_whichpt[n][counter_eqk]==0)? gamma : gamma*exp(-DCFS[DCFS_i].cmb[DCFS_whichpt[n][counter_eqk]]/Asig);
 			if (isinf(gamma)){
-				if(procId == 0) {
-					if (verbose_level>0) {
-						printf("*Warning: gamma==Inf, must choose larger Asig!*\n");
-						fflush(stdout);
-					}
-					if (flog) {
-						fprintf(flog,"*Warning: gamma==Inf, must choose larger Asig!*\n");
-						fflush(flog);
-					}
-				}
+				print_screen("*Warning: gamma==Inf, must choose larger Asig!*\n");
+				print_logfile("*Warning: gamma==Inf, must choose larger Asig!*\n");
 				err=1;
 				errtot+=1;
 			}

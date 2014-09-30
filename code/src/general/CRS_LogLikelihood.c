@@ -178,8 +178,6 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 			fforet1=fopen(fname,"w");
 			sprintf(fname, "%s_rates.dat",printall_foret);
 			fforet2=fopen(fname,"w");
-			//for (int t=1; t<=Ntts; t++) fprintf(fforet, "%lf\t",tts[t]);
-			//fprintf(fforet, "\n");
 		}
 	}
 
@@ -210,10 +208,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
 
-		if(procId == 0) {
-			printf("%d...",nsur);
-			fflush(stdout);
-		}
+		print_screen("%d...",nsur);
 
 		if (all_gammas0) gammas0= (multiple_input_gammas)? all_gammas0[nsur] : *all_gammas0;
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
@@ -597,15 +592,10 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	double tnow;
 	FILE *fforex, *fcmb;
 
-	if(procId == 0) {
-		if (LL && verbose_level>0) printf("Calculating LL for Asig=%lf, ta=%lf ...", Asig, ta);
-	}
-
+	if (LL) print_screen("Calculating LL for Asig=%lf, ta=%lf ...", Asig, ta);
 
 	if (first_timein==1){
-		if(procId == 0) {
-			if (flog) fprintf(flog,"Setting up variables in CRSLogLikelihood...\n"); fflush(flog);
-		}
+		print_logfile("Setting up variables in CRSLogLikelihood...\n");
 		#ifndef _CRS_MPI
 			// [Fahad] Assignment happens at the end of the function when MPI is being used.
 			first_timein=0;
@@ -766,8 +756,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		}
 	}
 
-//	printf("\n ProcId: %d -- Integral: %f \n", procId, integral);
-
 	#ifdef _CRS_MPI
 		double temp_integral;
 		double *recv_rate, *recv_rates_x;
@@ -839,8 +827,9 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		LLdum0tot= (Ldum0_out) ? Ldum0+*Ldum0_out : Ldum0;
 		r = (fixr)? r0 : Ntot/Itot;
 
-		if(procId == 0) {
-			if(r==0.0 && verbose_level>0) printf("ERROR: ta=%lf  Asig=%lf r=%e\n",ta,Asig,r);
+		if(r==0.0) {
+			print_screen("ERROR: ta=%lf  Asig=%lf r=%e\n",ta,Asig,r);
+			print_logfile("ERROR: ta=%lf  Asig=%lf r=%e\n",ta,Asig,r);
 		}
 
 		if (LL) *LL=LLdum0tot+ Ntot*log(r) - r*Itot;
@@ -849,15 +838,11 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (Nev) *Nev=Ntot;
 		if (r_out) *r_out=r;
 
-		if(procId == 0) {
-			if (LL && verbose_level>0) printf("LL=%lf", *LL);
-		}
+		if (LL) print_screen("LL=%lf", *LL);
 	}
 
-	if(procId == 0) {
-		if (verbose_level) printf("\n");
-		if (flog && first_timein) fprintf(flog,"done.\n");
-	}
+	print_screen("\n");
+	if (first_timein) print_logfile("done.\n");
 
 	#ifdef _CRS_MPI
 		first_timein = 0;

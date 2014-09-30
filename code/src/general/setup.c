@@ -42,9 +42,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	int err=0, errP, NgridT=crst.N_allP;
 	int Nfm;
 
-	if(procId == 0) {
-		if (verbose_level>0) printf("Setting up catalog...\n");
-	}
+	print_screen("Setting up catalog...\n");
 
 	tendS=0;		//this is the "IssueDate", up to which data is available.
 	tendCat=tend;	//this is (presumably) the "ForecastDate", up to which data is available. Events after t=0 used to calculate LL of forecast.
@@ -88,13 +86,8 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 		}
 	}
 
-	if(procId == 0) {
-		if (verbose_level>0) printf("%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
-		if (flog) {
-			fprintf(flog,"%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
-			fflush(flog);
-		}
-	}
+	print_screen("%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
+	print_logfile("%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
 
 	return (err!=0);
 }
@@ -127,13 +120,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 			else {
 				if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(slipmodels[0], NULL, Nfaults);
 				else {
-					if(procId == 0) {
-						if (flog) {
-							fprintf(flog,"Unknown slip model format %s (setup_afterslip_eqkfm).\n", cmb_format);
-							fflush(flog);
-						}
-					}
-
+					print_logfile("Unknown slip model format %s (setup_afterslip_eqkfm).\n", cmb_format);
 					return 1;
 				}
 			}
@@ -179,11 +166,8 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 	for (int m=0; m<no_slipmodels; m++){
 		err=read_eqkfm(slipmodels[m], NULL, &NF, NULL, mu);
 		if (err){
-			if(procId == 0) {
-				if (verbose_level>0) printf(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
-				if (flog) fprintf(flog, " ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
-			}
-
+			print_screen(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
+			print_logfile(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
 			return (1);
 		}
 		setmodels.NF_models[m+1]=NF;
@@ -219,20 +203,12 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 			  	//if current discretization is larger than required, resample:
 			  	if (discx>disc || discy>disc) {
 			  		suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, disc, 0.0);
-					if(procId == 0) {
-				  		if (flog){
-							fprintf(flog, "slip model %s is resampled from res=[str=%.3lf, dip=%.3lf] to res=%.3lf (setup.c).\n", slipmodels[m], discx, discy, disc);
-							fflush(flog);
-						}
-					}
+			  		print_logfile("slip model %s is resampled from res=[str=%.3lf, dip=%.3lf] to res=%.3lf (setup.c).\n", slipmodels[m], discx, discy, disc);
 			  	}
 			  	else {
 					if (fabs(discx-discy)>toll) {
 						err+=suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, fmin(discx, discy), 0.0);	//create a slip model with square patches.
-						if (flog){
-							fprintf(flog, "slip model %s is resampled to obtain square patches (setup.c).\n", slipmodels[m]);
-							fflush(flog);
-						}
+						print_logfile("slip model %s is resampled to obtain square patches (setup.c).\n", slipmodels[m]);
 					}
 					else copy_eqkfm_all(eqkfm0[nf], eqkfmall+nftot+nf);
 			  	}
@@ -272,12 +248,7 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 	for (int nf=0; nf<allmod.NF_models[slipmodel_index]; nf++) copy_eqkfm_all(eqkfmall[nf+nftot], eqkfm0+nf);
 	for (int nf=allmod.NF_models[slipmodel_index]; nf<allmod.NFmax; nf++) empty_eqkfm(eqkfm0+nf);
 
-	if(procId == 0) {
-		if (flog) {
-			fprintf(flog,"Slip model set to no. %d.\n", slipmodel_index);
-			fflush(flog);
-		}
-	}
+	print_logfile("Slip model set to no. %d.\n", slipmodel_index);
 
 	return;
 }
@@ -327,12 +298,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			else temp->next=(struct Coeff_LinkList *) 0;
 		}
 		*Coefficients=AllCoeff;
-		if(procId == 0) {
-			if (flog){
-				fprintf(flog,"Okada Coefficients structure set up.\n");
-				fflush(flog);
-			}
-		}
+		print_logfile("Okada Coefficients structure set up.\n");
     }
 
     //--------------set up DCFS-------------------//
@@ -384,12 +350,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 		}
 
 		*DCFS_out=DCFS;
-		if(procId == 0) {
-			if (flog){
-				fprintf(flog,"DCFS structure set up.\n");
-				fflush(flog);
-			}
-		}
+		print_logfile("DCFS structure set up.\n");
     }
 
     return(0);

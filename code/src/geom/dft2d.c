@@ -12,7 +12,6 @@ void dft2d(int n, int m, int inverse, double *gRe, double *gIm, double *GRe, dou
   double fm,fn;
   
   nns=n*m;
-  //printf("n=%d, m=%d, nns=%d\n", n, m, nns);
   Gr2 = dvector(1,nns);   //temporary buffers
   Gi2 = dvector(1,nns);
 

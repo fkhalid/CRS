@@ -150,7 +150,10 @@ void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double s
       else{
         jmin=j0;
         jmax=j0;
-        printf("* Warning: more than two optimal rupture orientations! *");
+        if (extra_verbose){
+			print_screen("* Warning: more than two optimal rupture orientations! *");
+			print_logfile("* Warning: more than two optimal rupture orientations! *");
+        }
       }
       for (int j=jmin; j<=jmax; j++){
         det1=syz*syz-(syy-s[j])*(szz-s[j]);

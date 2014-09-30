@@ -42,10 +42,8 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 	#endif
 
 	if(fileError) {
-		if(procId == 0) {
-			if (verbose_level>0) printf("Invalid input file (%s).\n", fname);
-			if (flog) fprintf(flog,"Invalid input file passed to read_pscmp_eqkfm (%s).\n", fname);
-		}
+		print_screen("Invalid input file (%s).\n", fname);
+		print_logfile("Invalid input file passed to read_pscmp_eqkfm (%s).\n", fname);
 
 		return (1);
 	}
@@ -131,12 +129,8 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				MPI_Bcast(&ndi_nst, 1, MPI_INT, 0, MPI_COMM_WORLD);
 			#endif
 			if ((*eqfm_out)[0].np_st*(*eqfm_out)[0].np_di!=ndi_nst) {
-				if(procId == 0) {
-					if (verbose_level) printf("Error: geometry of slip model %s not understood. Exit.\n", fname);
-					if (flog) fprintf(flog, "Error: geometry of slip model %s not understood. Exit.\n", fname);
-					fclose(fin);
-				}
-
+				print_screen("Error: geometry of slip model %s not understood. Exit.\n", fname);
+				print_logfile("Error: geometry of slip model %s not understood. Exit.\n", fname);
 				return 1;
 			}
 			(*eqfm_out)[0].whichfm=1;
@@ -211,11 +205,8 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				(*eqfm_out)[f].slip_dip=dvector(1,ndi_nst);
 
 				if ((*eqfm_out)[f].np_st*(*eqfm_out)[f].np_di!=ndi_nst){
-					if(procId == 0) {
-						if (verbose_level) printf("Error: geometry of slip model %s not understood. Exit.\n", fname);
-						if (flog) fprintf(flog, "Error: geometry of slip model %s not understood. Exit.\n", fname);
-					}
-
+					print_screen("Error: geometry of slip model %s not understood. Exit.\n", fname);
+					print_logfile("Error: geometry of slip model %s not understood. Exit.\n", fname);
 					return 1;
 				}
 
@@ -308,6 +299,23 @@ int find_key(FILE *fin, char *string, double *value){
 	return found;
 }
 
+int search_string(char *str1, char *str2){
+/* Check if str2 is contained in str1.
+ * TODO move to more general place (util?)
+ */
+
+	int nchar=strlen(str2), off=0;
+
+	while(off+nchar<=strlen(str1)){
+		if (strncmp(str1+off,str2,nchar)==0) {
+			return 1;
+		}
+		off++;
+	}
+
+	return 0;
+}
+
 int scan_nth(char *string, int n, double *result){
 
 	int numread=1;
@@ -376,8 +384,8 @@ int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 		}
 
 		if (ntimes<3){
-			if (verbose_level) printf("**Warning: could not find columns labels in input file, will assume the following: LAT LON X Y Z SLIP RAKE (read_slipvalues)**\n");
-			if (flog) fprintf(flog, "**Warning: could not find columns labels in input file, will assume the following: LAT LON X Y Z SLIP RAKE (read_slipvalues)**\n");
+			print_screen("**Warning: could not find columns labels in input file, will assume the following: LAT LON X Y Z SLIP RAKE (read_slipvalues)**\n");
+			print_logfile("**Warning: could not find columns labels in input file, will assume the following: LAT LON X Y Z SLIP RAKE (read_slipvalues)**\n");
 		}
 		fseek (fin , pos[3] , SEEK_SET);
 		fgets(line,Nchar_long,fin);
@@ -393,11 +401,8 @@ int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 		}
 
 		if (!rakefound){
-			if (verbose_level>1) printf("** Warning: could not find field named RAKE. Will use global value (%.3lf). **\n", rake0);
-			if (flog) {
-				fprintf(flog, "** Warning: could not find field named RAKE. Will use global value (%.3lf). **\n", rake0);
-				fflush(flog);
-			}
+			print_screen("** Warning: could not find field named RAKE. Will use global value (%.3lf). **\n", rake0);
+			print_logfile("** Warning: could not find field named RAKE. Will use global value (%.3lf). **\n", rake0);
 		}
 	}
 
@@ -406,13 +411,8 @@ int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 	#endif
 
 	if (!slipfound){
-		if(procId == 0) {
-			if (verbose_level) printf("** Error: could not find field named SLIP. Exiting. **\n");
-			if (flog) {
-				fprintf(flog, "** Error: could not find field named SLIP. Exiting. **\n");
-				fflush(flog);
-			}
-		}
+		print_screen("** Error: could not find field named SLIP. Exiting. **\n");
+		print_logfile("** Error: could not find field named SLIP. Exiting. **\n");
 		return (1);
 	}
 
@@ -432,21 +432,14 @@ int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 			dy=Re*(lattop-lat0)*DEG2RAD;
 			dx=(Re*cos(DEG2RAD*lat))*(lontop-lon0)*DEG2RAD;
 			if ((dy>0.1) && (fabs(fmod(atan(dx/dy)+pi,pi)-fmod(strike,pi))>strike_toll)){
-				if (verbose_level>1){
-					printf(" **Warning: Epicenter is not on the fault! Will use a new epicenter ** \n");
-					printf("\tOld epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);
-				}
-				if (flog){
-					fprintf(flog," **Warning: Epicenter is not on the fault! Will use a new epicenter ** \n");
-					fprintf(flog,"\tOld epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);
-				}
+				print_screen(" **Warning: Epicenter is not on the fault! Will use a new epicenter ** \n");
+				print_screen("\tOld epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);
+				print_logfile(" **Warning: Epicenter is not on the fault! Will use a new epicenter ** \n");
+				print_logfile("\tOld epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);
 				lat0=(*eqfm).lat=lattop;
 				lon0=(*eqfm).lon=lontop;
-				if (verbose_level>1) printf("\tNew epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);
-				if (flog){
-					fprintf(flog, "\tNew epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);
-					fflush(flog);
-				}
+				print_screen("\tNew epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);
+				print_logfile("\tNew epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);
 				fseek (fin , pos[3] , SEEK_SET);
 				for (int h=1; h<=3; h++) fgets(line,Nchar_long,fin);
 				i=0;
@@ -463,11 +456,8 @@ int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 		MPI_Bcast(&i, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
 	if (i>(*eqfm).np_di*(*eqfm).np_st) {
-		if(procId == 0) {
-			if (verbose_level) printf("**Error: wrong number of lines in slip model file, or string 'line' is too short (read_slipvalues). Exiting. \n**");
-			if (flog) fprintf(flog, "**Error: wrong number of lines in slip model file, or string 'line' is too short (read_slipvalues). Exiting. \n**");
-		}
-
+		print_screen("**Error: wrong number of lines in slip model file, or string 'line' is too short (read_slipvalues). Exiting. \n**");
+		print_logfile("**Error: wrong number of lines in slip model file, or string 'line' is too short (read_slipvalues). Exiting. \n**");
 		return 1;
 	}
 

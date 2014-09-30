@@ -1,38 +1,5 @@
 #include "print_output.h"
 
-//void printCSEPforecast(char *filename, double *lats, double *lons, double *deps, double *mags, double *rates, double *mag_fact, int NG, int Nmag){
-//
-//	double Lat1,Lat2,Lon1,Lon2, D1, D2;
-//	double dlat, dlon, ddep;
-//	FILE *fout;
-//	fout=fopen(filename,"w");
-//	counter=1;
-//	while (lons[counter]==lons[1]) counter++;
-//	dlon= lons[counter]-lons[1];
-//	counter=1;
-//	while (lats[counter]==lats[1]) counter++;
-//	dlat= lats[counter]-lats[1];
-//	counter=1;
-//	while (deps[counter]==deps[1]) counter++;
-//	ddep= deps[counter]-deps[1];
-//
-//	for (int m=1; m<=Nmag; m++){
-//		for (int k=1; k<=NG; k++){
-//			Lon1=lons[k]-dlon/2.0;
-//			Lon2=lons[k]+dlon/2.0;
-//			Lat1=lats[k]-dlat/2.0;
-//			Lat2=lats[k]+dlat/2.0;
-//			D1=depths[k]-ddep/2.0;
-//			D2=depths[k]+ddep/2.0;
-//			M1=mags[m]-dmag/2.0;
-//			M2=mags[m]+dmag/2.0;
-//			fprintf(foutLoop2,"%.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \n", Lon1, Lon2, Lat1, Lat2, D1,D2, M1, M2, rates[k]*mag_fact[m]);
-//		}
-//	}
-//	fclose(fout);
-//
-//	return;
-//}
 
 int sum_DCFS(struct pscmp *DCFS, double **cmb, int N, int Ntot){
 //adds up all DCFS[0...N-1], and returns vector cmb containing cumulative field.
@@ -158,7 +125,8 @@ int print_rate(char *fname, struct crust crst, double Mmin, double *rate){
 
 		fout=fopen(fname,"w");
 		if (fout==NULL){
-			if (verbose_level>0) printf("Error: file %s could not be opened (print_cmb). \n",fname);
+			print_screen("Error: file %s could not be opened (print_cmb). \n",fname);
+			print_logfile("Error: file %s could not be opened (print_cmb). \n",fname);
 			return(1);
 		}
 		i=1;
@@ -191,7 +159,8 @@ int print_grid(char *fname, struct pscmp DCFS, struct crust crst, double *rate){
 
 	fout=fopen(fname,"w");
 	if (fout==NULL){
-		if (verbose_level>0) printf("Error: file %s could not be opened (print_cmb). \n",fname);
+		print_screen("Error: file %s could not be opened (print_cmb). \n",fname);
+		print_logfile("Error: file %s could not be opened (print_cmb). \n",fname);
 		return(1);
 	}
 	i=1;
@@ -223,7 +192,7 @@ int print_slipmodel(char* filename, struct eqkfm *eqfm1, int NF){
 
 	fout=fopen(filename,"w");
 	if (fout==NULL) {
-		if (verbose_level>1) printf("Warning: file %s could not be written (by function: print_slipmode).\n",filename);
+		print_screen("Warning: file %s could not be written (by function: print_slipmode).\n",filename);
 		return 1;
 	}
 	else{
@@ -236,11 +205,11 @@ int print_slipmodel(char* filename, struct eqkfm *eqfm1, int NF){
 					fprintf(fout, "%d   %.4lf   %.4lf   %.3lf   %.2lf   %.2lf   %.3lf   %.3lf   %d   %d   %.5lf\n", f+1, eqfm1[f].lat, eqfm1[f].lon, eqfm1[f].depth, eqfm1[f].L, eqfm1[f].W, eqfm1[f].str2, eqfm1[f].dip2, eqfm1[f].np_st, eqfm1[f].np_di, eqfm1[f].t);
 					break;
 				case 0:
-					if (verbose_level>1) printf("Warning: whichfm=0, using first plane (print_slipmodel).\n");
+					print_screen("Warning: whichfm=0, using first plane (print_slipmodel).\n");
 					fprintf(fout, "%d   %.4lf   %.4lf   %.3lf   %.2lf   %.2lf   %.3lf   %.3lf   %d   %d   %.5lf\n", f+1, eqfm1[f].lat, eqfm1[f].lon, eqfm1[f].depth, eqfm1[f].L, eqfm1[f].W, eqfm1[f].str1, eqfm1[f].dip1, eqfm1[f].np_st, eqfm1[f].np_di, eqfm1[f].t);
 					break;
 				default:
-					if (verbose_level>1) printf("Warning: ambiguos focal plane  -> output not written (print_slipmodel).\n");
+					print_screen("Warning: ambiguos focal plane  -> output not written (print_slipmodel).\n");
 					err+=1;
 					continue;		//associated with for loop (not switch).
 			}
