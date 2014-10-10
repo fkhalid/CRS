@@ -8,13 +8,18 @@
 #include "cmbopt.h"
 
 void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
-	//ind gives the index of last element of DCFS that should be included in stress field calculation; if 0, only one element.
+	/* Calculates OOPs in a stress field given by the sum of background stress field (crst.S) and stress steps contained in DCFS.
+	 * Also calculates Coulomb stress change due to DCFS[ind] on these planes.
+	 * ind gives the index of last element of DCFS that should be included in stress field calculation; (e.g. if 0, only one element).
+	 *
+	 * Results stored in: DCFS[ind].st1, di1, ra1[2]; largest stress changes from DCFS[ind] stored in DCFS[ind].cmb
+	 */
+
 	int j, k, ev;
 	double cmb1, cmb2;
 	double sxx, syy, szz, sxy, syz, sxz;
 	double MaxDCFS=DCFS_cap;
 
-	//TODO maybe make this internal variable in this function and remove it from DCFS structure.
 	DCFS[ind].st1=dvector(1,DCFS[ind].nsel);
 	DCFS[ind].di1=dvector(1,DCFS[ind].nsel);
 	DCFS[ind].ra1=dvector(1,DCFS[ind].nsel);

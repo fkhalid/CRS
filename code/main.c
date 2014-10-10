@@ -415,6 +415,7 @@ int main (int argc, char **argv) {
 		coeffsStartTime = MPI_Wtime();
 	#endif
 
+	//todo check with Fahad: should this only be done by 1 process and broadcast?
 	setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, eqkfm1, Nm, Ntot, Nfaults_all, which_main);
 
 	#ifdef _CRS_MPI

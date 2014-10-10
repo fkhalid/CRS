@@ -16,17 +16,34 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							double *tevol, double *times, int Nmain, struct crust crst,
 							struct Coeff_LinkList *AllCoeff, int NTScont, int NTSdisc,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
-							int *fm_number, double tdata0, double tdata1,
-							int refresh, int which_recfault) {
+							double tdata0, double tdata1, int refresh, int which_recfault) {
 
-/* DCFSrand[i][j] contains the ith stress change at gridpoint j due to continuous processes (modeled linearly between time steps).
- * DCFS[k].cmp[j] contains the stress change due to kth event at gridpoint j (modeled as a step).
- * NTScont is the total number of time steps for continuos process;
- * NTSdisc is the total number of time steps for step like process (i.e. number of triggering earthquakes).
+/* Input:
+ * 
+ * eqkfmAf contains afterslip snapshots;
+ * eqkfm0 contains large sources, with a slip model (mainshocks);
+ * eqkfm1 contains smaller sources (e.g. foreshocks, aftershocks);
+ * tevol: if continuous process is stationary (splines==0), tevol contains time dependence of the process;
+ * times: times to which elements of tevol correspond: S(t=times[j])=S0*tevol[j], where S=slip, S0 is the slip contained in eqkfmAf.
+ * NTScont is the total number of time steps for continuous process;
+ * NTSdisc is the total number of time steps for step like process (i.e. number of triggering earthquakes);
+ * Nmain: length of eqkfm0;
+ * AllCoeff: okada coefficients for mainshocks (events in eqkfm0);
  * focmec contains sample of focal mechanisms, NFM is its length (1->NFM)
- * afterslip and aftershocks are flags indicating if these processes should be included.
- * vary_recfault, vary_slipmodel are flags indicating which sources of uncertainties should be included. 0: use fix planes; 1: vary foc. mec. (use which_fm, or if which_fm==0, choose random one); 2: use OOPs.
+ * fmzoneslin: indices of focmec corresponding to limits of distinct foc. mec. areas;
+ * tdata0, tdata1: start and end time for which data should be used;
+ * refresh: flag to be set to 1 if the slip models have changed from previous function call;
+ * flag contains various flags, including:
+ * 		afterslip and aftershocks are flags indicating if these processes should be included.
+ * 		vary_recfault is a flag indicating which received faults to use. 0: use fix planes; 1: vary foc. mec. (use which_fm, or if which_fm==0, choose random one); 2: use OOPs.
  * which_recfault gives index of foc.mec to select; if set to 0, choose random one (useful if NFM>>nsur). if vary_recfault=0, this is meaningless.
+ *
+ *
+ * Output:
+ *
+ * DCFSrand[i][j] contains the ith stress change at gridpoint j due to continuous processes (modeled linearly between time steps).
+ * DCFS[k].cmp[j] contains the stress change due to kth event at gridpoint j (modeled as a step).
+ *
  *
  * NB: not general, as it assumes mainshock is the first event. todo check/fix this.
  */
@@ -171,7 +188,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 						n_withoutslimodel+=1;
 						if (full_field){
 							if (aftershocks_fixedmec){
-								eqkfm1[eq1].str1=crst.str0[0];	//todo should pick the one from its grid point is spatially variable fix mec is used.
+								eqkfm1[eq1].str1=crst.str0[0];
 								eqkfm1[eq1].dip1=crst.dip0[0];
 								eqkfm1[eq1].rake1=crst.rake0[0];
 								eqkfm1[eq1].whichfm=1;
@@ -283,20 +300,11 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					dip0[fmzone]=focmec[2][rand];
 					rake0[fmzone]=focmec[3][rand];	//only used for splines==1 (see below).
 				}
-				if (fm_number){
-					if (crst.nofmzones==1) *fm_number=rand;
-					else {
-						*fm_number=0;
-						print_screen("**Warning: multiple focal mechanisms catalogs available, can not print out single value! (calculateDCFSperturbed.c).**\n");
-						print_logfile("**Warning: multiple focal mechanisms catalogs available, can not print out single value! (calculateDCFSperturbed.c).**\n");
-					}
-				}
 			}
 			else {
 				*strike0=focmec[1][which_recfault];
 				*dip0=focmec[2][which_recfault];
 				*rake0=focmec[3][which_recfault];	//only used for splines==1 (see below).
-				if (fm_number) *fm_number=which_recfault;
 			}
 			break;
 
@@ -311,7 +319,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				*dip0=crst.dip0[0];
 			}
 			*rake0=crst.rake0[0];	//only used for splines==1 (see below). todo allow rake to be passed by user as well.
-			if (fm_number!=0) *fm_number=0;
 			break;
 
 		case 2:
@@ -325,7 +332,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	if (afterslip==0){
 		for (int l=0; l<NTScont; l++){
 			if (times[l] <tdata0 || times[l]>tdata1) continue;
-			for (int n=1; n<=NgridT; n++) if (DCFSrand) DCFSrand[l][n]=0.0;
+			for (int n=1; n<=NgridT; n++) if (DCFSrand) DCFSrand[l][n]=0.0;	//todo should DCFSrand just set to NULL if afterslip==0?
 		}
 	}
 	else {
@@ -333,6 +340,10 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			if (splines==0){
 				if (vary_recfault!=0) resolve_DCFS(DCFS_Af[0], crst, strike0, dip0, NULL, 1);
+				for (int l=0; l<NTScont; l++) {
+					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
+					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=tevol[l]*DCFS_Af[0].cmb[n];
+				}
 			}
 
 			else{
@@ -433,7 +444,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					Coeffs_st=temp->Coeffs_st;
 					Coeffs_dip=temp->Coeffs_dip;
 					if (vary_recfault!=2) resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1);
-					else DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from aftershocks or afterslip, assuming that from mainshocks is much larger this is ok.
+					else DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from afterslip, assuming that from mainshocks is much larger this is ok.
 
 					if (gridpoints_err==1) smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, seed, 0, nn);
 				}
