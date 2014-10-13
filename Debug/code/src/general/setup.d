@@ -58,23 +58,6 @@ code/src/general/setup.d code/src/general/setup.o: \
  ../code/src/general/../util/moreutil.h \
  ../code/src/general/../util/nrutil.h \
  ../code/src/general/../util/splines_eqkfm.h \
- ../code/src/general/../util/fit_splines.h \
- ../code/src/general/../util/nr.h ../code/src/general/../util/gasdev.h \
- ../code/src/general/../util/interp_quad.h \
- ../code/src/general/../util/nrutil.h \
- ../code/src/general/../util/spline.h \
- ../code/src/general/../util/../defines.h \
- ../code/src/general/../util/../seis/soumod1.h \
- ../code/src/general/../util/../seis/../defines.h \
- ../code/src/general/../util/../seis/../general/eqkfm_copy.h \
- ../code/src/general/../util/../seis/../general/mem_mgmt.h \
- ../code/src/general/../util/../seis/../geom/coord_trafos.h \
- ../code/src/general/../util/../seis/../geom/dft2d.h \
- ../code/src/general/../util/../seis/../inp_out/print_output.h \
- ../code/src/general/../util/../seis/../inp_out/../defines.h \
- ../code/src/general/../util/../seis/../inp_out/../util/nrutil.h \
- ../code/src/general/../util/../seis/../util/nrutil.h \
- ../code/src/general/../util/../seis/../util/ran1.h \
  ../code/src/general/eqkfm_copy.h ../code/src/general/find_timesteps.h \
  ../code/src/general/mem_mgmt.h ../code/src/general/struct_conversions.h
 
@@ -195,42 +178,6 @@ code/src/general/setup.d code/src/general/setup.o: \
 ../code/src/general/../util/nrutil.h:
 
 ../code/src/general/../util/splines_eqkfm.h:
-
-../code/src/general/../util/fit_splines.h:
-
-../code/src/general/../util/nr.h:
-
-../code/src/general/../util/gasdev.h:
-
-../code/src/general/../util/interp_quad.h:
-
-../code/src/general/../util/nrutil.h:
-
-../code/src/general/../util/spline.h:
-
-../code/src/general/../util/../defines.h:
-
-../code/src/general/../util/../seis/soumod1.h:
-
-../code/src/general/../util/../seis/../defines.h:
-
-../code/src/general/../util/../seis/../general/eqkfm_copy.h:
-
-../code/src/general/../util/../seis/../general/mem_mgmt.h:
-
-../code/src/general/../util/../seis/../geom/coord_trafos.h:
-
-../code/src/general/../util/../seis/../geom/dft2d.h:
-
-../code/src/general/../util/../seis/../inp_out/print_output.h:
-
-../code/src/general/../util/../seis/../inp_out/../defines.h:
-
-../code/src/general/../util/../seis/../inp_out/../util/nrutil.h:
-
-../code/src/general/../util/../seis/../util/nrutil.h:
-
-../code/src/general/../util/../seis/../util/ran1.h:
 
 ../code/src/general/eqkfm_copy.h:
 

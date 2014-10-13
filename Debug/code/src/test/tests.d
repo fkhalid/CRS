@@ -75,24 +75,6 @@ code/src/test/tests.d code/src/test/tests.o: ../code/src/test/tests.c \
  ../code/src/test/../general/../inp_out/../seis/GR.h \
  ../code/src/test/../general/../inp_out/read_RS.h \
  ../code/src/test/../general/../util/splines_eqkfm.h \
- ../code/src/test/../general/../util/fit_splines.h \
- ../code/src/test/../general/../util/nr.h \
- ../code/src/test/../general/../util/gasdev.h \
- ../code/src/test/../general/../util/interp_quad.h \
- ../code/src/test/../general/../util/nrutil.h \
- ../code/src/test/../general/../util/spline.h \
- ../code/src/test/../general/../util/../defines.h \
- ../code/src/test/../general/../util/../seis/soumod1.h \
- ../code/src/test/../general/../util/../seis/../defines.h \
- ../code/src/test/../general/../util/../seis/../general/eqkfm_copy.h \
- ../code/src/test/../general/../util/../seis/../general/mem_mgmt.h \
- ../code/src/test/../general/../util/../seis/../geom/coord_trafos.h \
- ../code/src/test/../general/../util/../seis/../geom/dft2d.h \
- ../code/src/test/../general/../util/../seis/../inp_out/print_output.h \
- ../code/src/test/../general/../util/../seis/../inp_out/../defines.h \
- ../code/src/test/../general/../util/../seis/../inp_out/../util/nrutil.h \
- ../code/src/test/../general/../util/../seis/../util/nrutil.h \
- ../code/src/test/../general/../util/../seis/../util/ran1.h \
  ../code/src/test/../general/find_timesteps.h \
  ../code/src/test/../geom/convert_geometry.h \
  ../code/src/test/../geom/../defines.h \
@@ -109,7 +91,6 @@ code/src/test/tests.d code/src/test/tests.o: ../code/src/test/tests.c \
  ../code/src/test/../inp_out/../geom/coord_trafos.h \
  ../code/src/test/../inp_out/../okada/prestress.h \
  ../code/src/test/../inp_out/../util/error.h \
- ../code/src/test/../inp_out/../util/../defines.h \
  ../code/src/test/../inp_out/read_csep_template.h \
  ../code/src/test/../inp_out/../geom/convert_geometry.h \
  ../code/src/test/../inp_out/../util/moreutil.h \
@@ -146,7 +127,6 @@ code/src/test/tests.d code/src/test/tests.o: ../code/src/test/tests.c \
  ../code/src/test/../seis/../util/ran1.h ../code/src/test/../util/error.h \
  ../code/src/test/../util/hash.h ../code/src/test/../util/moreutil.h \
  ../code/src/test/../util/nr.h ../code/src/test/../util/nrutil.h \
- ../code/src/test/../inp_out/read_eqkfm_fsp.h \
  ../code/src/test/../inp_out/read_focmec.h \
  ../code/src/test/../inp_out/../geom/find_gridpoints.h \
  ../code/src/test/../inp_out/../geom/../defines.h \
@@ -325,42 +305,6 @@ code/src/test/tests.d code/src/test/tests.o: ../code/src/test/tests.c \
 
 ../code/src/test/../general/../util/splines_eqkfm.h:
 
-../code/src/test/../general/../util/fit_splines.h:
-
-../code/src/test/../general/../util/nr.h:
-
-../code/src/test/../general/../util/gasdev.h:
-
-../code/src/test/../general/../util/interp_quad.h:
-
-../code/src/test/../general/../util/nrutil.h:
-
-../code/src/test/../general/../util/spline.h:
-
-../code/src/test/../general/../util/../defines.h:
-
-../code/src/test/../general/../util/../seis/soumod1.h:
-
-../code/src/test/../general/../util/../seis/../defines.h:
-
-../code/src/test/../general/../util/../seis/../general/eqkfm_copy.h:
-
-../code/src/test/../general/../util/../seis/../general/mem_mgmt.h:
-
-../code/src/test/../general/../util/../seis/../geom/coord_trafos.h:
-
-../code/src/test/../general/../util/../seis/../geom/dft2d.h:
-
-../code/src/test/../general/../util/../seis/../inp_out/print_output.h:
-
-../code/src/test/../general/../util/../seis/../inp_out/../defines.h:
-
-../code/src/test/../general/../util/../seis/../inp_out/../util/nrutil.h:
-
-../code/src/test/../general/../util/../seis/../util/nrutil.h:
-
-../code/src/test/../general/../util/../seis/../util/ran1.h:
-
 ../code/src/test/../general/find_timesteps.h:
 
 ../code/src/test/../geom/convert_geometry.h:
@@ -392,8 +336,6 @@ code/src/test/tests.d code/src/test/tests.o: ../code/src/test/tests.c \
 ../code/src/test/../inp_out/../okada/prestress.h:
 
 ../code/src/test/../inp_out/../util/error.h:
-
-../code/src/test/../inp_out/../util/../defines.h:
 
 ../code/src/test/../inp_out/read_csep_template.h:
 
@@ -476,8 +418,6 @@ code/src/test/tests.d code/src/test/tests.o: ../code/src/test/tests.c \
 ../code/src/test/../util/nr.h:
 
 ../code/src/test/../util/nrutil.h:
-
-../code/src/test/../inp_out/read_eqkfm_fsp.h:
 
 ../code/src/test/../inp_out/read_focmec.h:
 

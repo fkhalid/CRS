@@ -6,9 +6,7 @@ code/src/inp_out/read_crust.d code/src/inp_out/read_crust.o: \
  ../code/src/inp_out/../general/../util/nrutil.h \
  ../code/src/inp_out/../geom/coord_trafos.h \
  ../code/src/inp_out/../okada/prestress.h \
- ../code/src/inp_out/../util/error.h \
- ../code/src/inp_out/../util/../defines.h \
- ../code/src/inp_out/../util/nrutil.h \
+ ../code/src/inp_out/../util/error.h ../code/src/inp_out/../util/nrutil.h \
  ../code/src/inp_out/read_csep_template.h \
  ../code/src/inp_out/../geom/convert_geometry.h \
  ../code/src/inp_out/../geom/../defines.h \
@@ -31,8 +29,6 @@ code/src/inp_out/read_crust.d code/src/inp_out/read_crust.o: \
 ../code/src/inp_out/../okada/prestress.h:
 
 ../code/src/inp_out/../util/error.h:
-
-../code/src/inp_out/../util/../defines.h:
 
 ../code/src/inp_out/../util/nrutil.h:
 

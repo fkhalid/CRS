@@ -11,7 +11,6 @@ code/src/test/grid_variability.d code/src/test/grid_variability.o: \
  ../code/src/test/../inp_out/../geom/coord_trafos.h \
  ../code/src/test/../inp_out/../okada/prestress.h \
  ../code/src/test/../inp_out/../util/error.h \
- ../code/src/test/../inp_out/../util/../defines.h \
  ../code/src/test/../inp_out/read_csep_template.h \
  ../code/src/test/../inp_out/../geom/convert_geometry.h \
  ../code/src/test/../inp_out/../geom/../defines.h \
@@ -61,24 +60,6 @@ code/src/test/grid_variability.d code/src/test/grid_variability.o: \
  ../code/src/test/../inp_out/../general/../seis/../util/ran1.h \
  ../code/src/test/../inp_out/../general/../util/moreutil.h \
  ../code/src/test/../inp_out/../general/../util/splines_eqkfm.h \
- ../code/src/test/../inp_out/../general/../util/fit_splines.h \
- ../code/src/test/../inp_out/../general/../util/nr.h \
- ../code/src/test/../inp_out/../general/../util/gasdev.h \
- ../code/src/test/../inp_out/../general/../util/interp_quad.h \
- ../code/src/test/../inp_out/../general/../util/nrutil.h \
- ../code/src/test/../inp_out/../general/../util/spline.h \
- ../code/src/test/../inp_out/../general/../util/../defines.h \
- ../code/src/test/../inp_out/../general/../util/../seis/soumod1.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../defines.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../general/eqkfm_copy.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../general/mem_mgmt.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../geom/coord_trafos.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../geom/dft2d.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../inp_out/print_output.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../inp_out/../defines.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../inp_out/../util/nrutil.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../util/nrutil.h \
- ../code/src/test/../inp_out/../general/../util/../seis/../util/ran1.h \
  ../code/src/test/../inp_out/../general/eqkfm_copy.h \
  ../code/src/test/../inp_out/../general/find_timesteps.h \
  ../code/src/test/../inp_out/../general/mem_mgmt.h \
@@ -134,8 +115,6 @@ code/src/test/grid_variability.d code/src/test/grid_variability.o: \
 ../code/src/test/../inp_out/../okada/prestress.h:
 
 ../code/src/test/../inp_out/../util/error.h:
-
-../code/src/test/../inp_out/../util/../defines.h:
 
 ../code/src/test/../inp_out/read_csep_template.h:
 
@@ -234,42 +213,6 @@ code/src/test/grid_variability.d code/src/test/grid_variability.o: \
 ../code/src/test/../inp_out/../general/../util/moreutil.h:
 
 ../code/src/test/../inp_out/../general/../util/splines_eqkfm.h:
-
-../code/src/test/../inp_out/../general/../util/fit_splines.h:
-
-../code/src/test/../inp_out/../general/../util/nr.h:
-
-../code/src/test/../inp_out/../general/../util/gasdev.h:
-
-../code/src/test/../inp_out/../general/../util/interp_quad.h:
-
-../code/src/test/../inp_out/../general/../util/nrutil.h:
-
-../code/src/test/../inp_out/../general/../util/spline.h:
-
-../code/src/test/../inp_out/../general/../util/../defines.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/soumod1.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../defines.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../general/eqkfm_copy.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../general/mem_mgmt.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../geom/coord_trafos.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../geom/dft2d.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../inp_out/print_output.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../inp_out/../defines.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../inp_out/../util/nrutil.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../util/nrutil.h:
-
-../code/src/test/../inp_out/../general/../util/../seis/../util/ran1.h:
 
 ../code/src/test/../inp_out/../general/eqkfm_copy.h:
 
