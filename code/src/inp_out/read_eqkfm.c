@@ -117,8 +117,8 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				if (which_events!=NULL) (*which_events)[c3]=i;
 				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 				if (!eqfm1[i].is_slipmodel){
-					print_screen(" ** Warning: slip model or focal mechanism not available for large event at t=%.2lf, mag=%.2lf -> will use isotropic field. **\n", eqfm1[i].t, eqfm1[i].mag);
-					print_logfile("Warning: slip model or focal mechanism not available for large event at t=%.2lf, mag=%.2lf -> will use isotropic field.\n", eqfm1[i].t, eqfm1[i].mag);
+					print_screen(" ** Warning: slip model or focal mechanism not available for large event at t=%.5lf, mag=%.2lf -> will use isotropic field. **\n", eqfm1[i].t, eqfm1[i].mag);
+					print_logfile("Warning: slip model or focal mechanism not available for large event at t=%.5lf, mag=%.2lf -> will use isotropic field.\n", eqfm1[i].t, eqfm1[i].mag);
 				}
 				else {
 					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, refine, taper);
