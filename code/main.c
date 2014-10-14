@@ -98,7 +98,7 @@ int main (int argc, char **argv) {
 	double Mag_main;
 	double dt, dM, xytoll, ztoll, border;
 
-	int Nm, Nas=0, *Nfaults_all=0;
+	int Nm, *Nfaults_all=0;
 	double res, gridresxy, gridresz;
 	struct catalog cat, cat2;
 	int Ntot;
@@ -314,7 +314,7 @@ int main (int argc, char **argv) {
 	}
 	else eqkfm_aft=NULL;
 
-	flags.splines= (flags.afterslip)? (Nas>1): 0;
+	flags.splines= (flags.afterslip)? (all_aslipmodels.NSM>1): 0;
 
 //----------------------------------------------------------//
 //--------------Setup aftershocks, mainshocks --------------//
