@@ -82,10 +82,10 @@ int main (int argc, char **argv) {
 
 	FILE *fout, *fin, *foutfore;
 
-	int LLinversion, forecast, extra_output;
+	int LLinversion, forecast;
 	int Nchar=120, Nchar_long=500;
 	char fname[Nchar],	infile[Nchar], crust_file[Nchar], fore_template[Nchar], catname[Nchar], outname[Nchar],
-		syscopy[Nchar], background_rate_file[Nchar], slipmodelfile[Nchar], afterslipmodelfile[Nchar], modelparametersfile[Nchar],
+		syscopy[Nchar], background_rate_grid[Nchar], background_rate_cat[Nchar], slipmodelfile[Nchar], afterslipmodelfile[Nchar], modelparametersfile[Nchar],
 		logfile[Nchar], print_LL[Nchar], outnamemod[Nchar];
 	char print_cmb[Nchar],  print_forex[Nchar],  print_foret[Nchar],  printall_cmb[Nchar],  printall_forex[Nchar],  printall_foret[Nchar];
 	char line[Nchar_long];
@@ -137,11 +137,10 @@ int main (int argc, char **argv) {
 	double extra_time;
 	double t_firstmain;
 	double smoothing;	//for calculating background seismicity.
-	double t_back;		//for calculating background seismicity.
 
 	//grid search variables:
 	int p=0, p_found;
-	int multi_gammas, use_bg_rate, use_bg_rate_file;
+	int multi_gammas, use_bg_rate_cat, use_bg_rate_grid;
 	double *LLs, *Ldums0, *Nev, *I, LLmax, LL;
 	double *gamma_bgrate=NULL;
 	double 	*gammas=NULL;
@@ -215,8 +214,8 @@ int main (int argc, char **argv) {
 
 	//-----------------------read input file -------------------//
 
-	err=read_inputfile(infile, outname, NULL, crust_file, fore_template, catname, &focmeccats, background_rate_file, fixedmecfile,
-			slipmodelfile, afterslipmodelfile,	modelparametersfile, logfile, &extra_output, &reftime, &Tstart, &Tend, &seed,
+	err=read_inputfile(infile, outname, NULL, crust_file, fore_template, catname, &focmeccats, background_rate_grid, background_rate_cat,
+			fixedmecfile, slipmodelfile, afterslipmodelfile,	modelparametersfile, logfile, &reftime, &Tstart, &Tend, &seed,
 			cmb_format, &no_fm_cats);
 
 	if (err) {
@@ -227,7 +226,8 @@ int main (int argc, char **argv) {
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags. 'cmb_format' is used at
 		//		   multiple points where files are read.
-		MPI_Bcast(background_rate_file,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(cmb_format, 			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
@@ -237,8 +237,8 @@ int main (int argc, char **argv) {
 //-----------------------read model parameters-------------------//
 
 	err=read_modelparameters(modelparametersfile, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
-			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt, &t_back,
-			&Nsur, &Nslipmod, &flags, &Mc_source, &use_bg_rate, &(cat.Mc), &Mag_main, &DCFS_cap, &gridPMax,
+			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt,
+			&Nsur, &Nslipmod, &flags, &Mc_source, &(cat.Mc), &Mag_main, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
 	if (err) {
@@ -258,8 +258,13 @@ int main (int argc, char **argv) {
 		print_screen("Warning: InputListAfterslipModels not given: will not use afterslip.\n");
 		flags.afterslip=0;
 	}
-	if (strcmp(background_rate_file,"")==0)	use_bg_rate_file=0;
-	else use_bg_rate_file=1;
+
+	//todo don't actually need the 2 flags (could use char * as boolean), but better for clarity?
+	if (strcmp(background_rate_grid,"")==0)	use_bg_rate_grid=0;
+	else use_bg_rate_grid=1;
+
+	if (strcmp(background_rate_cat,"")==0)	use_bg_rate_cat=0;
+	else use_bg_rate_cat=1;
 
 //----------------------------------------------------------------------------------------------//
 
@@ -518,43 +523,43 @@ int main (int argc, char **argv) {
 
 	//-----------------set up background rate:----------------------//
 
-	print_logfile("\nUsing%s uniform background rate.\n", use_bg_rate? " non" : "");
+	print_logfile("\nUsing%s uniform background rate.\n", (use_bg_rate_cat || use_bg_rate_grid)? " non" : "");
 
-	if (use_bg_rate) {
-		if (use_bg_rate_file) {
-			print_logfile("\nUsing background rate file %s.\n", background_rate_file);
-			read_rate(crst, background_rate_file,&crst.rate0, &minmag);
-			crst.r0=0;
-			for (int i=1; i<=NgridT; i++) crst.r0+= crst.rate0[i];
-			for (int i=1; i<=NgridT; i++) crst.rate0[i]*=crst.N_allP/crst.r0;
-			crst.r0*=pow(10,cat.b*(minmag-(crst.mags[1]-0.5*crst.dmags)));
-			r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
-		}
-		else {
-			print_logfile("\nCalculating background rate using smoothed catalog.\n");
-			err=background_rate2(catname, &crst, reftime, 20.0, Mag_main, &(cat.Mc), &r0, 1, t_back, t_firstmain, xytoll, ztoll, smoothing, 2);
+	if (use_bg_rate_grid) {
+		print_logfile("\nUsing background rate file %s.\n", background_rate_grid);
+		read_rate(crst, background_rate_grid,&crst.rate0, &minmag);
+		crst.r0=0;
+		for (int i=1; i<=NgridT; i++) crst.r0+= crst.rate0[i];
+		for (int i=1; i<=NgridT; i++) crst.rate0[i]*=crst.N_allP/crst.r0;
+		crst.r0*=pow(10,cat.b*(minmag-(crst.mags[1]-0.5*crst.dmags)));
+		r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
+	}
+	else {
+		if (use_bg_rate_cat){
+			print_logfile("\nCalculating background rate using smoothed catalog from file %s.\n", background_rate_cat);
+			err=background_rate2(catname, &crst, reftime, 20.0, Mag_main, &(cat.Mc), &r0, 1, xytoll, ztoll, smoothing, 2);
 			crst.r0=r0*pow(10,cat.b*(cat.Mc-crst.mags[1]+0.5*crst.dmags));
 			if (err){
 				print_screen("Could not calculate background rate from smoothed catalog. will use uniform background rate.\n");
 				print_logfile("Could not calculate background rate from smoothed catalog. will use uniform background rate.\n");
 				crst.r0=r0;
 				r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
-				use_bg_rate=0;
+				use_bg_rate_cat=0;
 				crst.rate0=NULL;	//by convention, this is equivalent to all 1s.
 			}
 		}
-	}
-	else {
-		crst.r0=r0;
-		r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
-		crst.rate0=NULL;	//by convention, this is equivalent to all 1s.
+		else {
+			crst.r0=r0;
+			r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
+			crst.rate0=NULL;	//by convention, this is equivalent to all 1s.
+		}
 	}
 
 	print_logfile("Values of background rate: \nMw>=%.2lf\t r=%.5lf\nMw>=%.2lf\t r=%.5lf\n", cat.Mc, r0, crst.mags[1]-0.5*crst.dmags, crst.r0);
 
 	//-----------------set up LL variables:----------------------//
 
-	if (use_bg_rate) {
+	if (use_bg_rate_cat || use_bg_rate_grid) {
 		gammas=dvector(1,NgridT);
 		gamma_bgrate=dvector(1,NgridT);
 		for (int n=1; n<=NgridT; n++) gamma_bgrate[n]=1.0/crst.rate0[n];
@@ -760,7 +765,7 @@ int main (int argc, char **argv) {
 			}
 			else {
 				print_logfile("Using steady state starting rates: ");
-				if (use_bg_rate) for (int i=1; i<=NgridT; i++) gammasfore[0][i]=(ta/Asig)*gamma_bgrate[i];
+				if (use_bg_rate_cat || use_bg_rate_grid) for (int i=1; i<=NgridT; i++) gammasfore[0][i]=(ta/Asig)*gamma_bgrate[i];
 				else gammasfore=NULL;
 				tstart_calc=fmin(Tstart-extra_time, t_firstmain-extra_time);
 				multi_gammas=0;

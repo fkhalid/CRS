@@ -7,30 +7,45 @@
 
 #include "read_inputfile.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include "../defines.h"
+#include "../util/error.h"
+#include "../util/nrutil.h"
+
 #ifdef _CRS_MPI
 	#include "mpi.h"
 #endif
 
 int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *crust_file, char *fore_template,
-		char *catname, char ***focmeccat, char *background_rate_file, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
-		char *model_parameters_file, char *Logfile, int *extraoutput, struct tm *reftime,
+		char *catname, char ***focmeccat, char *background_rate_grid, char *background_rate_cat, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
+		char *model_parameters_file, char *Logfile, struct tm *reftime,
 		double *Tstart, double *Tend, long *seed, char *cmb_format, int *num_fm){
 
+	//todo check string length is enough?
 	/* Read master input file.
 	 *
 	 * input: file name input_fname
 	 *
 	 * output:
-	 * 		outname: output file
+	 * 		outname: output file name (without extension)
 	 * 		reftime_str: string containing the reference time (issue time)
 	 * 		reftime: structure containing the reference time (issue time)
 	 * 		Tstart, Tend: time in days from reftime
-	 * 		crust_file: input file for farfalle code (general file with info about the crust etc).
+	 * 		crust_file: input file for coulomb code (farfalle/pscmp: general file with info about the crust etc).
+	 * 		cmbformat: format of crust_file
 	 * 		fore_template: forecast template
-	 * 		catname: catalog
+	 * 		catname: catalog (ZMAP)
 	 * 		focmeccat: catalog of focal mechanisms
-	 * 		background_rate_file: file containing background seismicity model
+	 * 		background_rate_grid: file containing background seismicity model
 	 * 		slipmodefile, afterslipmodelfile: files containing a list of slip models/afterslipmodel snapshots
+	 * 		model_parameters_file: file containing model parameters
+	 * 		Logfile: log file to be written
+	 * 		seed: seed for random number generator
+	 * 		num_fm: number of focal mechanisms areas
 	 *
 	 * NB: all pointers will be ignored if NULL is passed; otherwise, char* should already be initialized.
 	 */
@@ -69,14 +84,16 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	/*8*/	"InputCoulombFile", \
 	/*9*/	"InputListSlipModels", \
 	/*10*/	"InputListAfterslipModels", \
-	/*11*/	"InputBackgroundRateFile",\
+	/*11*/	"InputBackgroundRateGrid",\
 	/*12*/	"InputModelParametersFile",\
 	/*13*/	"RandomSeedValue",\
 	/*14*/	"Logfile",\
-	/*15*/	"ExtendedOutput",\
-	/*16*/	"CmbFormat", \
-	/*17*/	"FixedMecFile"
+	/*15*/	"CmbFormat", \
+	/*16*/	"FixedMecFile", \
+	/*17*/	"InputBackgroundRateCatalog"
 	};
+
+	// NB: arguments 5,6,17 are alternative (different ways to treat receiver faults)
 
 	// [Fahad] If there is a file error, only root will know about it.
 	//		   So it is important that the error is broadcast to all
@@ -178,7 +195,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					if (afterslipmodelfile) sscanf(value,"%s",afterslipmodelfile);
 					break;
 				case 11:
-					if (background_rate_file) sscanf(value,"%s",background_rate_file);
+					if (background_rate_grid) sscanf(value,"%s",background_rate_grid);
 					break;
 				case 12:
 					if (model_parameters_file) sscanf(value,"%s",model_parameters_file);
@@ -190,13 +207,13 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					if (Logfile) sscanf(value,"%s",Logfile);
 					break;
 				case 15:
-					if (extraoutput) sscanf(value,"%d",extraoutput);
-					break;
-				case 16:
 					if (cmb_format) sscanf(value,"%s",cmb_format);
 					break;
-				case 17:
+				case 16:
 					if (fixedmecfile) sscanf(value,"%s",fixedmecfile);
+					break;
+				case 17:
+					if (background_rate_cat) sscanf(value,"%s",background_rate_cat);
 					break;
 			}
 		}
@@ -218,7 +235,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 		//		   multiple points where files are read.
 		// 		   catname is used in setup.c.
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(background_rate_file,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(cmb_format, 			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
@@ -248,9 +266,18 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 		}
 	}
 
-
-	// Print out warnings or errors for missing parameters:
+	// Print out warnings or errors for missing or redundant parameters:
 	if(procId == 0) {
+		if ((value_found[6] + value_found[5] + value_found[16])>1){
+			print_screen("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[16]);
+			print_logfile("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[16]);
+			return 1;	//todo [askFahad]: should this instead be saved as error and broadcast?
+		}
+		if ((value_found[11] + value_found[17])>1){
+			print_screen("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[17]);
+			print_logfile("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[17]);
+			return 1;	//todo [askFahad]: should this instead be saved as error and broadcast?
+		}
 		nofm=0;
 		for (int n=0; n<NP; n++) {
 			if (!value_found[n]) {
@@ -301,21 +328,22 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
 						print_logfile("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
 					}
-					if (background_rate_file) strcpy(background_rate_file,"");
+					if (background_rate_grid) strcpy(background_rate_grid,"");
 					break;
 				case 14:
 					if (Logfile) strcpy(Logfile,"");
 					break;
-			case 17:
-				if (fixedmecfile) strcpy(fixedmecfile,"");
-				break;
-				case 13:
-					if (extraoutput) extraoutput=0;
+				case 16:
+					if (fixedmecfile) strcpy(fixedmecfile,"");
 					break;
+				case 17:
+					if (background_rate_cat) strcpy(background_rate_cat,"");
+					break;
+
 				default:
 					print_screen("Error: parameter %s not given in %s.\n", keys[n], input_fname);
 					print_logfile("Error: parameter %s not given in %s.\n", keys[n], input_fname);
-					return 1;
+					return 1;	//todo [askFahad]: should this instead be saved as error and broadcast?
 					break;
 				}
 			}

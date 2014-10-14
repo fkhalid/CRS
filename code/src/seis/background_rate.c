@@ -109,8 +109,7 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime, dou
 
 int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, double Mcut,
 					 double Mmain, double *target_mags, double *target_rates, int Ntarget,
-					 double t0, double t1, double dR, double dZ, double min_smoothing,
-					 int ord) {
+					 double dR, double dZ, double min_smoothing, int ord) {
 	/* by convention, if Mcut>=20 the cutoff magnitude will be calculated based on completeness.
 	 * target_mags= array containing magnitudes above which rates should be estimated (counting events above Mw, or using GR if there are too few). [0....Ntarget-1];
 	 * target_rates will contain the results. If NULL (or if target_mags=NULL), ignored.
@@ -119,6 +118,7 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	 */
 
 	int procId = 0;
+	int fileError=0;
 
 	#ifdef _CRS_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
@@ -127,17 +127,20 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	struct catalog cat;
 	struct crust crst=*crst_in;
 	double *zlist;
+	double t0;
 	int NP= crst.uniform? (crst.nLat*crst.nLon) : crst.N_allP;
 	double T, *rate_h, *rate_v=NULL;
 	double Mc, b, Mc_final=crst.mags[1]-0.5*(crst.dmags), rcat;
 	int ne, h_ind, v_ind, *sel, sel_no=0;
 	double *weights=NULL;
+	FILE *fin;
 	cat.Mc=Mcut;
 
 	zlist=dvector(1,crst.nD);
 	for (int i=1; i<=crst.nD; i++) zlist[i]=crst.depth[1+(i-1)*NP];
 
-	readZMAP(&cat, (struct eqkfm **) 0, NULL, catfile, crst, reftime, t0, t1, t0, t1, 10, 0.0, dR, dZ, 0.0, 0);
+	read_firstlineZMAP(catfile, reftime, &t0);
+	readZMAP(&cat, (struct eqkfm **) 0, NULL, catfile, crst, reftime, t0, 0.0, t0, 0.0, 10, 0.0, dR, dZ, 0.0, 0);
 
 	if(cat.Z==0) {
 		return 1;

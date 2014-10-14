@@ -139,14 +139,14 @@ int test_read_inputfiles(){
 
 	char *file="input/testinput.txt";
 	char outname[120], reftime_str[120], crust_file[120], fore_template[120], catname[120], focmeccat[120], \
-		background_rate_file[120], slipmodelfile[120], afterslipmodelfile[120];
+		background_rate_grid[120], slipmodelfile[120], afterslipmodelfile[120];
 	struct tm reftime;
 	double tstart, tend;
 	struct slipmodels_list slip_list;
 	int nfm;
 
-	read_inputfile(file, outname, reftime_str, crust_file, fore_template, catname, focmeccat, background_rate_file, NULL,
-			slipmodelfile, afterslipmodelfile, NULL, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
+	read_inputfile(file, outname, reftime_str, crust_file, fore_template, catname, focmeccat, background_rate_grid, NULL,
+			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
 
 	printf("outname=%s\n", outname);
 	printf("reftime_str=%s\n", reftime_str);
@@ -154,7 +154,7 @@ int test_read_inputfiles(){
 	printf("fore_template=%s\n", fore_template);
 	printf("catname=%s\n", catname);
 	printf("focmeccat=%s\n", focmeccat);
-	printf("background_rate_file=%s\n", background_rate_file);
+	printf("background_rate_grid=%s\n", background_rate_grid);
 	printf("slipmodelfile=%s\n", slipmodelfile);
 	printf("afterslipmodelfile=%s\n", afterslipmodelfile);
 	printf("reftime=%d-%d-%dT%d:%d:%dZ\n", reftime.tm_year+1900, reftime.tm_mon+1, reftime.tm_mday, reftime.tm_hour, reftime.tm_min, reftime.tm_sec);

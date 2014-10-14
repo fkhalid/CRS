@@ -8,7 +8,5 @@ InputCatalogFile=input_testcases/catalog.dat
 CmbFormat=pscmp
 InputCoulombFile=input_testcases/coulomb.inp
 InputListSlipModels=input_testcases/slipmodelslist.dat
-InputCatalogFocMecFile=input_testcases/focmecfile.dat
 ForecastTemplate=input_testcases/template.dat
 RandomSeedValue=-37284630
-ExtendedOutput=1;

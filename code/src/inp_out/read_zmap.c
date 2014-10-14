@@ -145,6 +145,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			lines+=1;
 			st=fgets(line,line_length,fin);
 
+			//determine if notation is exponential:
 			if (lines==1) {
 				for (int i=0; i<strlen(line) && !exp_not; i++) {
 					if (line[i]==ex[0]) exp_not=1;
@@ -435,4 +436,94 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	return (errP!=0);
 }
 
+
+int read_firstlineZMAP(char *file, struct tm reftime, double *stime){
+	// Read first line of ZMAP file and return time of the event. Used to determine start time of a catalog (assumed to be chronological).
+
+	// [Fahad] Variables used for MPI
+	int fileError = 0;
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
+	int line_length=2000;
+	FILE *fin;
+	char line[line_length], *st;
+	int mon, day, hour, min, sec;
+	double fyear, fmon, fday, fhour, flmin, fsec;
+	double year, this_year;
+	struct tm ev;
+	time_t t;
+
+	t=time(NULL);
+	this_year=(*localtime(&t)).tm_year+1900;
+
+	setenv("TZ", "UTC", 1);
+
+	if(procId == 0) {
+		fin = fopen(file,"r");
+
+		if(fin == NULL) {
+			fileError = 1;
+		}
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if(fileError) {
+		print_screen("**Error: unable to open input file %s (readZMAP).**\n", file);
+		print_logfile("**Error: unable to open input file %s (readZMAP).**\n", file);
+		return (1);
+	}
+
+
+	//------------------------------read first line if catalog:-------------------------//
+
+	int exp_not=0;
+	char ex[]="e";
+
+	if(procId == 0) {
+		st=fgets(line,line_length,fin);
+
+		//determine if notation is exponential:
+		for (int i=0; i<strlen(line) && !exp_not; i++) {
+			if (line[i]==ex[0]) exp_not=1;
+		}
+
+		if (exp_not) {
+			sscanf(line, "%*25le %*25le %25le %25le %25le %*25le %*25le %25le %25le %25le %*25le %*25le %*25le",
+						&fyear, &fmon, &fday, &fhour, &flmin, &fsec);
+
+			year=(int) fyear;
+			mon=(int) fmon;
+			day=(int) fday;
+			hour=(int) fhour;
+			min= (int) flmin;
+			sec= (int) fsec;
+		}
+		else {
+			sscanf(line, "%*lf %*lf %lf %lf %lf %*lf %*lf %lf %lf %lf %*lf %*lf %*lf\n",	&fyear, &fmon, &fday, &fhour, &flmin, &fsec);
+			year=(int) fyear;
+			mon=(int) fmon;
+			day=(int) fday;
+			hour=(int) fhour;
+			min= (int) flmin;
+			sec= (int) fsec;
+		}
+
+		ev.tm_year=floor(year)-1900;
+		ev.tm_mon=mon-1;
+		ev.tm_mday=day;
+		ev.tm_isdst=0;
+		ev.tm_hour=hour;
+		ev.tm_min=min;
+		ev.tm_sec=(int) sec;
+
+		*stime=difftime(mktime(&ev),mktime(&reftime))*SEC2DAY;
+	}
+}
 

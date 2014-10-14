@@ -10,9 +10,9 @@ ln2="Logfile=output_testcases/testF1.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputF
 cp  $parafile $temppara
+echo "InputCatalogFocMecFile=input_testcases/focmecfile.dat" >>  temp_inputF
 
 Release/CRS_3.0 temp_inputF
-
 
 #run with fixedmecfile file with same mec. as above:
 ln1="OutputForecastFile=output_testcases/testF2"

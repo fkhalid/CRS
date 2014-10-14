@@ -11,4 +11,3 @@ InputListSlipModels=input_testcases/slipmodelslist0.dat
 InputCatalogFocMecFile=input_testcases/focmecfile.dat
 ForecastTemplate=input_testcases/template.dat
 RandomSeedValue=-37284630
-ExtendedOutput=1;

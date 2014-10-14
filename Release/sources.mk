@@ -19,6 +19,5 @@ code/src/okada \
 code/src/inp_out \
 code/src/geom \
 code/src/general \
-code/src \
 code \
 

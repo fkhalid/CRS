@@ -17,9 +17,9 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 						int *fixr, int *fixAsig, int *fixta, double *r0, double *Asig0,
 						double *ta0, double *Asig_min, double *Asig_max, double *ta_min,
 						double *ta_max, int *nAsig0, int *nta0, double *tstartLL,
-						double *extra_time, double *tw, double *fore_dt, double *t_back,
+						double *extra_time, double *tw, double *fore_dt,
 						int *Nsur, int *Nslipmod, struct flags *flags,
-						double *Mc_source, int *use_bg_rate, double *Mc, double *Mag_main,
+						double *Mc_source, double *Mc, double *Mag_main,
 						double *DCFS_cap, int *gridPMax, double *dt, double *dM,
 						double *xytoll, double *ztoll, double *border, double *res,
 						double *gridresxy, double *gridresz, double *smoothing,
@@ -131,9 +131,6 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 			default:
 				break;
 		}
-
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d", use_bg_rate);
 		line[0]=comm;
 		while (line[0]==comm) fgets(line,Nchar_long,fin);
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
@@ -163,11 +160,6 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf", smoothing);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-		times.tm_year-=1900;
-		times.tm_mon-=1;
-		times.tm_isdst=0;
-		*t_back=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
 		line[0]=comm;
 		while (line[0]==comm) fgets(line,Nchar_long,fin);
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
@@ -193,7 +185,6 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 			modelParams.nta0 		 = *nta0;
 			modelParams.Nsur 		 = *Nsur;
 			modelParams.Nslipmod 	 = *Nslipmod;
-			modelParams.use_bg_rate  = *use_bg_rate;
 			modelParams.gridPMax 	 = *gridPMax;
 			modelParams.LLinversion  = *LLinversion;
 			modelParams.forecast 	 = *forecast;
@@ -257,7 +248,6 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 		MPI_Address(&(modelParams.nta0), 			&addresses_ModelParameters[5]);
 		MPI_Address(&(modelParams.Nsur), 			&addresses_ModelParameters[6]);
 		MPI_Address(&(modelParams.Nslipmod), 		&addresses_ModelParameters[7]);
-		MPI_Address(&(modelParams.use_bg_rate), 	&addresses_ModelParameters[8]);
 		MPI_Address(&(modelParams.gridPMax), 		&addresses_ModelParameters[9]);
 		MPI_Address(&(modelParams.LLinversion), 	&addresses_ModelParameters[10]);
 		MPI_Address(&(modelParams.forecast), 		&addresses_ModelParameters[11]);
@@ -312,7 +302,6 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 			*nta0 			= modelParams.nta0;
 			*Nsur 			= modelParams.Nsur;
 			*Nslipmod 		= modelParams.Nslipmod;
-			*use_bg_rate 	= modelParams.use_bg_rate;
 			*gridPMax 		= modelParams.gridPMax;
 			*LLinversion 	= modelParams.LLinversion;
 			*forecast 		= modelParams.forecast;
