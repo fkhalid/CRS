@@ -279,8 +279,6 @@ int main (int argc, char **argv) {
 			sprintf(syscopy,"cat %s >> %s", modelparametersfile, logfile);
 			system(syscopy);
 			flog=fopen(logfile,"a");
-			fprintf(flog,"\nRunning in CSEP mode...\n");
-			fflush(flog);
 		}
 		else flog=NULL;
 
@@ -290,12 +288,10 @@ int main (int argc, char **argv) {
 		system(syscopy);
 	}
 
-	err=read_crust(fore_template, fixedmecfile , &crst, gridresxy, gridresz);
+	err=read_crust(fore_template, fixedmecfile , &crst, gridresxy, gridresz, flags.err_recfault);
 	if (err) {
 		error_quit("Errors while reading template file %s. Exiting.", fore_template);
 	}
-	if (flags.err_recfault) read_fmindex(crst, fore_template, &(crst.fmzone), &(crst.nofmzones));
-	else crst.nofmzones=1;
 	NgridT=crst.N_allP;
 
 	dDCFS=(fixAsig)? 0.01*Asig0 : 0.01*Asig_min;	//minimum stress for which points are considered. todo just read a value form outside.

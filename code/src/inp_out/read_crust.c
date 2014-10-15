@@ -13,7 +13,7 @@
 
 //TODO: if more slip models are contained, make sure they have consistent geometry (they must cover all sampling points).
 
-int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, double resxy, double resz){
+int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, double resxy, double resz, int multiple_focmecfiles){
 /*
  * Read crust master file into crst structure.
  *
@@ -44,6 +44,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 	double dx, dy, dAeq;
 	double lat0, lat1,lon0, lon1, d0, d1;
 	double *strtmp=0, *diptmp=0, *raketmp=0;
+	double *dumrate=NULL, *bg_rate=NULL;
 
 	print_screen("Loading model setup...");
 	print_logfile("\nEntering read_crust...\n");
@@ -54,7 +55,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 
 	err = read_csep_template(fnametemplate, &no_magbins, &((*crst).nLat_out), &((*crst).nLon_out),
 							 &((*crst).nD_out), &((*crst).N_allP), &((*crst).dlat_out), &((*crst).dlon_out),
-							 &((*crst).ddepth_out), &((*crst).dmags), &olats, &olons, &odeps, 0,
+							 &((*crst).ddepth_out), &((*crst).dmags), &olats, &olons, &odeps, (multiple_focmecfiles) ? &dumrate : NULL,
 							 &((*crst).latmin), &((*crst).latmax), &((*crst).lonmin), &((*crst).lonmax),
 							 &((*crst).depmin), &((*crst).depmax), &mag1, &mag2, &((*crst).uniform));
 
@@ -178,6 +179,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 	}
 
 	//--------------read value of focal mechanism grid from file:-------------//
+	//----------(this applies is a single foc mec is given per grid point)----//
 
 	if (focmecgridfile && strcmp(focmecgridfile,"")!=0){
 
@@ -197,6 +199,20 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 			print_logfile("*Warning: errors occurred while reading focmecgridfile*\n");
 		}
 	}
+
+	//---------------read indices and no. of foc. mec zones into crst-----------//
+	//---(this applies is a set of foc mec is associated to each grid point)----//
+
+	else{
+		if(multiple_focmecfiles) {
+			err+=convert_geometry(*crst, dumrate, &bg_rate, 1, 1);
+			for (int n=1; n<=(*crst).N_allP; n++) (*crst).fmzone[n]= (int)bg_rate[n] -1;
+			(*crst).nofmzones=(int) max_v(bg_rate+1,(*crst).N_allP);
+			free_dvector(dumrate, 1, 1);
+			free_dvector(bg_rate, 1, 1);
+		}
+	}
+
 
 	print_screen("done\n");
 

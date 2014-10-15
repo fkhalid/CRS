@@ -15,7 +15,6 @@
 #include "../defines.h"
 #include "../general/mem_mgmt.h"
 #include "../inp_out/read_matrix.h"
-#include "../inp_out/read_RS.h"
 #include "../inp_out/read_zmap.h"
 #include "../util/moreutil.h"
 #include "../util/nrutil.h"

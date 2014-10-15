@@ -35,13 +35,13 @@ Release/CRS_3.0 temp_inputF
 
 #run with fixedmecfile file with random foc. planes and refined grid:
 #slow! only run once in a while
-#ln1="OutputForecastFile=output_testcases/testF4"
-#ln2="Logfile=output_testcases/testF4.log"
-#sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputF
-#sed "74s+.*+2.0+" $parafile | sed "75s+.*+2.0+" | sed "76s+.*+3.0+" > $temppara
-#echo "FixedMecFile=input_testcases/testF/fixmec2.dat" >>  temp_inputF
+ln1="OutputForecastFile=output_testcases/testF4"
+ln2="Logfile=output_testcases/testF4.log"
+sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputF
+sed "74s+.*+2.0+" $parafile | sed "75s+.*+2.0+" | sed "76s+.*+3.0+" > $temppara
+echo "FixedMecFile=input_testcases/testF/fixmec2.dat" >>  temp_inputF
 
-#Release/CRS_3.0 temp_inputF
+Release/CRS_3.0 temp_inputF
 
-#rm $temppara
+rm $temppara
 

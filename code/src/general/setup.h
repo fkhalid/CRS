@@ -20,7 +20,6 @@
 #include "../inp_out/read_focmec.h"
 #include "../inp_out/read_matrix.h"
 #include "../inp_out/read_zmap.h"
-#include "../inp_out/read_RS.h"
 #include "../okada/okadaDCFS.h"
 #include "../seis/soumod1.h"
 #include "../util/moreutil.h"
