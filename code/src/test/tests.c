@@ -2102,59 +2102,9 @@ void tests_eqkfm_addslipmodels(){
 		}
 	}
 
-	err= eqkfm_addslipmodels(eq_in1, all_slipmodels, &eq_out, &indices, N1, &Nout, &NFout, 0.001, 0.3, 1.0, crst, 1, 1);
+	err= eqkfm_addslipmodels(eq_in1, all_slipmodels, &eq_out, &indices, N1, &Nout, &NFout, 0.001, 0.3, 1.0, crst);
 
 	return;
-}
-
-void test_suomod1_hf(){
-	/* to visualize (in Matlab):
-	 *
-	 for k=1:9; figure(k); Plot_sliponfault(k,strcat('~/Code/CRS_2.0/tests/suomod1_',num2str(k),'_')); set(gca,'CameraPosition',[137.4177  -43.6711   -9.0672]);  end
-	 *
-	 */
-
-	struct eqkfm eqfm, eqfm2;
-	struct crust crst;
-	long seed=-19329935;
-	char fname0[120];
-	double H=1.0;	//Hurst exponent.
-	int N=10;
-	int noise_only=0;
-	time_t t0,t1;
-
-	crst.lambda=31226, crst.mu=26624;//calculated for Vp=5.7,Vs=3.2, rho=2600 (from Wang psgrn input file for Parkfield). MPa.
-
-	eqfm.lat=-43.56;
-	eqfm.lon=172.12;
-	eqfm.whichfm=1;
-	eqfm.whichfm=1;
-	eqfm.mag=7.0;
-	eqfm.str1=0.0;
-	eqfm.dip1=90.0;
-	eqfm.rake1=180.0;
-
-	focmec2slipmodel(crst, &eqfm, 1.0,1,0);
-
-//	time(&t0);
-//	for (int n=1; n<=N; n++){
-//		sprintf(fname0, "%s/suomod1old_%d.dat",testfolder,n);
-//		suomod1_addhf_old(eqfm, &eqfm2, 0.0, &seed, 1,1);
-//		print_slipmodel(fname0, &eqfm2, 1);
-//	}
-//	time(&t1);
-//	printf("Old function takes %.2f seconds\n", difftime(t1,t0));
-
-	time(&t0);
-	for (int n=1; n<=N; n++){
-		sprintf(fname0, "%s/suomod%.1f_%d.dat",testfolder,H,n);
-		suomod1_hf(eqfm, &eqfm2, H, &seed, noise_only);
-		print_slipmodel(fname0, &eqfm2, 1);
-	}
-	time(&t1);
-
-	//printf("New function takes %.2f seconds\n", difftime(t1,t0));
-
 }
 
 void test_reduction(){

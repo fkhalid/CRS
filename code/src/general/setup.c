@@ -7,6 +7,27 @@
 
 #include "setup.h"
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include "../defines.h"
+#include "../geom/coord_trafos.h"
+#include "../geom/top_of_slipmodel.h"
+#include "../inp_out/read_eqkfm.h"
+#include "../inp_out/read_focmec.h"
+#include "../inp_out/read_zmap.h"
+#include "../okada/okadaDCFS.h"
+#include "../util/error.h"
+#include "../util/moreutil.h"
+#include "../util/nrutil.h"
+#include "../util/splines_eqkfm.h"
+#include "eqkfm_copy.h"
+#include "find_timesteps.h"
+#include "mem_mgmt.h"
+#include "struct_conversions.h"
+
 #ifdef _CRS_MPI
 	#include "mpi.h"
 #endif
@@ -143,7 +164,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 		NFtot+=Nfaults[0];
 	}
 
-    top_of_slipmodel(*eqkfm0res, NFtot-1);
+//    top_of_slipmodel(*eqkfm0res, NFtot);
 
     return(err);
 }

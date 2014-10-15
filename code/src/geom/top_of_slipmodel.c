@@ -7,6 +7,15 @@
 
 
 void top_of_slipmodel(struct eqkfm* eqkfm, int N){
+	/* Finds the top of a slip model (eqkfm) and writes into eqkfm.top
+	 *
+	 * Input:
+	 * 	eqkfm: slip model structure [0...N-1]
+	 * 	N: size of eqkfm;
+	 *
+	 * Output:
+	 *  eqkfm[i].top is filled with depth of the top of the model.
+	 */
 
 	double z0, dz_dip;	//depth of reference point, distance along dip of closest patch;
 	double len_dip;	//length of patch along dip;

@@ -185,7 +185,7 @@ int grid_variability(){
 
 		fprintf(fout0, "%.0lf\t%.0lf\t%.0lf\t%.1lf\t%.1lf\n", eqfm.str1, eqfm.dip1, eqfm.rake1, eqfm.mag, res);
 		focmec2slipmodel(crst, &eqfm, res, 1, 1);
-		suomod1_hf(eqfm, &eqfm, H, &seed, 0);
+		//suomod1_hf(eqfm, &eqfm, H, &seed, 0);	//fixme broke: function does not exist anymore
 
 		sprintf(fname, "%s/slipmodel_%d.dat",testfolder, n);
 		print_slipmodel(fname, &eqfm, 1);
