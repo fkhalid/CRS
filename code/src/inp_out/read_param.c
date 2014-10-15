@@ -13,7 +13,7 @@
 	#include "mpi.h"
 #endif
 
-int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_min_events,
+int read_modelparameters(char *modelparametersfile, struct crust *crst, struct tm reftime, int *N_min_events,
 						int *fixr, int *fixAsig, int *fixta, double *r0, double *Asig0,
 						double *ta0, double *Asig_min, double *Asig_max, double *ta_min,
 						double *ta_max, int *nAsig0, int *nta0, double *tstartLL,
@@ -38,6 +38,10 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 	char line[Nchar_long];
 	struct tm times;
 	int aftershock_mode;
+	char regstress_mode[120];
+	double s[3];	//regional stress field description;
+	double st[3];	//regional stress field description;
+	double di[3];	//regional stress field description;
 
 	// [Fahad] If there is a file error, only root will know about it.
 	//		   So it is important that the error is broadcast to all
@@ -59,6 +63,9 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 	if(fileError) {
 		return 1;
 	}
+
+	//initialize crust structure:
+	init_crst(crst);
 
 	if(procId == 0) {
 		sprintf(comment,"#");
@@ -163,10 +170,41 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 		line[0]=comm;
 		while (line[0]==comm) fgets(line,Nchar_long,fin);
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
+		sscanf(line,"%lf %lf", &((*crst).lambda), &((*crst).mu));
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+		sscanf(line,"%lf %lf", &((*crst).fric), &((*crst).skepton));
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+		sscanf(line,"%lf %lf %lf", (*crst).str0, (*crst).dip0, (*crst).rake0);	//todo explain somewhere the 2 ways this variables can be used.
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+		sscanf(line,"%s", regstress_mode);
+
+		if (!(strcmp(regstress_mode,"oops"))) {
+			fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+			sscanf(line,"%lf %lf %lf", s, s+1, s+2);
+		}
+		else {
+			if (!(strcmp(regstress_mode,"paxis"))) {
+				fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+				sscanf(line,"%lf %lf %lf", s, st, di);
+				fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+				sscanf(line,"%lf %lf %lf", s+1, st+1, di+1);
+				fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+				sscanf(line,"%lf %lf %lf", s+2, st+2, di+2);
+			}
+
+			else {
+				print_logfile("Invalid value for mode of regional stress field: should be 'oops' or 'paxis'. Exit.\n");
+				print_screen("Invalid value for mode of regional stress field: should be 'oops' or 'paxis'. Exit.\n");
+				//todo give some error here.
+			}
+		}
+
+		line[0]=comm;
+		while (line[0]==comm) fgets(line,Nchar_long,fin);
+		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
 		sscanf(line,"%d", LLinversion);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", forecast);
-
 		fclose(fin);
 	}
 
@@ -262,7 +300,7 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 		MPI_Address(&(modelParams.extra_time), 		&addresses_ModelParameters[20]);
 		MPI_Address(&(modelParams.tw), 				&addresses_ModelParameters[21]);
 		MPI_Address(&(modelParams.fore_dt), 		&addresses_ModelParameters[22]);
-		MPI_Address(&(modelParams.t_back), 			&addresses_ModelParameters[23]);
+		MPI_Address(&(modelParams.t_back), 			&addresses_ModelParameters[23]);	//todo remove obsolete variables from structure.
 		MPI_Address(&(modelParams.Hurst), 			&addresses_ModelParameters[24]);
 		MPI_Address(&(modelParams.Mc_source), 		&addresses_ModelParameters[25]);
 		MPI_Address(&(modelParams.Mc), 				&addresses_ModelParameters[26]);
@@ -375,7 +413,32 @@ int read_modelparameters(char * modelparametersfile, struct tm reftime, int *N_m
 		MPI_Type_commit(&CRS_MPI_BCast_Flags);
 
 		MPI_Bcast(flags, 1, CRS_MPI_BCast_Flags, 0, MPI_COMM_WORLD);
+
+		// Broadcast crust structure and related variables:
+		MPI_Bcast(&((*crst).lambda), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).mu), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).fric), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).skepton), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).str0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).dip0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&((*crst).rake0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(s, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(st, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(di, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(regstress_mode, 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+
 	#endif
+
+	//calculate regional stress field:
+	if (!(strcmp(regstress_mode,"oops"))) {
+		prestress(1e6*s[0], 1e6*s[1], 1e6*s[2], (*crst).str0[0], (*crst).dip0[0], (*crst).rake0[0], 0.0,(*crst).fric, &((*crst).S));
+	}
+	else{
+		if (!(strcmp(regstress_mode,"paxis"))) {
+			for (int i=0; i<3; i++) s[i]*=1e6;
+			(*crst).S=prestress_eigen(s, st, di);
+		}
+	}
 
 	return 0;
 }

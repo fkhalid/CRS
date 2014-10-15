@@ -200,7 +200,6 @@ double **mtimesm3(double **m1, double **m2, double ***m30){
 				m3[i][j]+=m1[i][k]*m2[k][j];
 			}
 		}
-
 	}
 
 	return m3;

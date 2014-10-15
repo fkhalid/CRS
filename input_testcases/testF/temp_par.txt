@@ -76,8 +76,28 @@
 1000.0
 10.0
 #===========================================================#
-# Flag controlling if LL parameters should be inverted for.	#
-# Flag controlling if forecasted should be produced.		#
+#       Parameters Describing crustal properties            #
+#===========================================================#
+# Elastic paremeters: lambda, mu (MPa)
+# Friction coefficient, Skeption coefficient
+# Uniform regional field description:   strike, dip, rake
+# Choice between "paxis" and "oop", two ways in which the regional stress field can be described: 
+#       if "paxis", the following 3 lines give amplitude (MPa), strike, dip of the principal axis:
+#               sigma1  strike1 dip1
+#               sigma2  strike2 dip2
+#               sigma3  strike3 dip3
+#       if "oop", the following lines give the amplitudes of the principal axis and the strike, dip and rake
+#       of a master mechanism, assumed to be optimally oriented according to the Coulomb failure criterion.
+#               sigma1 sigma2 sigma
+#
+31226   26624
+0.3     0.0
+330.000  89.000  180.000
+oops
+5.0     -5.0    0.0     
+#===========================================================#
+# Flag controlling if LL parameters should be inverted for.     #
+# Flag controlling if forecasted should be produced.            #
 #===========================================================#
 1
 1

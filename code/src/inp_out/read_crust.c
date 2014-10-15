@@ -52,27 +52,27 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 
 	//--------------read general crust information:-------------//
 
-	init_crst(crst);
-	if (!(strcmp(cmb_format,"farfalle"))) {
-		err=read_farfalle_crust(fname, crst);
-		print_logfile("reading farfalle format (file %s)\n",fname);
-	}
-	else {
-		if (!(strcmp(cmb_format,"pscmp"))) {
-			err=read_pscmp_crust(fname, crst);
-			print_logfile("reading pscmp format (file %s)\n",fname);
-		}
-		else {
-			print_logfile("Unknown format: %s.\n", cmb_format);
-		}
-	}
-
-	if (err) {
-		print_logfile("Error while reading input file. Exiting.\n");
-		error_quit(" ** Error while reading input file. Exiting. **\n");
-		return 1;
-	}
-	print_logfile("Fixed focal mechanism: [str, dip]=[%.3lf, %.3lf].\n", (*crst).str0[0],(*crst).dip0[0]);
+//	init_crst(crst);
+//	if (!(strcmp(cmb_format,"farfalle"))) {
+//		err=read_farfalle_crust(fname, crst);
+//		print_logfile("reading farfalle format (file %s)\n",fname);
+//	}
+//	else {
+//		if (!(strcmp(cmb_format,"pscmp"))) {
+//			err=read_pscmp_crust(fname, crst);
+//			print_logfile("reading pscmp format (file %s)\n",fname);
+//		}
+//		else {
+//			print_logfile("Unknown format: %s.\n", cmb_format);
+//		}
+//	}
+//
+//	if (err) {
+//		print_logfile("Error while reading input file. Exiting.\n");
+//		error_quit(" ** Error while reading input file. Exiting. **\n");
+//		return 1;
+//	}
+//	print_logfile("Fixed focal mechanism: [str, dip]=[%.3lf, %.3lf].\n", (*crst).str0[0],(*crst).dip0[0]);
 
 
 	//--------------read grid file:------------------------------//
@@ -317,7 +317,7 @@ int read_farfalle_crust(char * file, struct crust *crst){
 		MPI_Bcast(di, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	#endif
 
-	(*crst).S=prestress_eigen(s, st, di);
+	(*crst).S=prestress_eigen(s, st, di);	//todo check units! (MPa, Pa?)
 
 	return (err!=0);
 

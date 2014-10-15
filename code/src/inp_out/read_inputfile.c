@@ -131,7 +131,9 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 			while (i<NP && strcmp(key,keys[i])) i++;
 			if (i>=NP){
 				print_screen("Error read_inputfile: parameter \" %s\" in file \"%s\" not recognized.\n", key, input_fname);
-				continue;
+				print_logfile("Error read_inputfile: parameter \" %s\" in file \"%s\" not recognized.\n", key, input_fname);
+				fileError = 1;
+				break;
 			}
 
 			value_found[i]=1;

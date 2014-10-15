@@ -71,6 +71,7 @@ int main (int argc, char **argv) {
 
 	if (run_tests){
 		extra_verbose=1;
+		test_matrix2();
 		//test_allOkada();
 		// TODO: [Fahad] There should be provision for ignoring MPI
 		//				  when running tests ...
@@ -159,9 +160,7 @@ int main (int argc, char **argv) {
 	double minmag;
 	long seed;
 	int nc;
-	int first_main;
-	double tnow;
-	int j0, N, N_min_events, current_ev;
+	int j0, N, N_min_events;
 	int input_file_name_given=0;
 
 	// FIXME: [Fahad] For testing purposes only ...
@@ -222,6 +221,7 @@ int main (int argc, char **argv) {
 		error_quit("Error reading input file %s.\n", infile);
 	}
 
+	//todo [askFahad]: why does this have to be repeated? (also in read_inputfile).
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags. 'cmb_format' is used at
@@ -236,7 +236,7 @@ int main (int argc, char **argv) {
 
 //-----------------------read model parameters-------------------//
 
-	err=read_modelparameters(modelparametersfile, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
+	err=read_modelparameters(modelparametersfile, &crst, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt,
 			&Nsur, &Nslipmod, &flags, &Mc_source, &(cat.Mc), &Mag_main, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
@@ -259,7 +259,6 @@ int main (int argc, char **argv) {
 		flags.afterslip=0;
 	}
 
-	//todo don't actually need the 2 flags (could use char * as boolean), but better for clarity?
 	if (strcmp(background_rate_grid,"")==0)	use_bg_rate_grid=0;
 	else use_bg_rate_grid=1;
 
@@ -359,26 +358,6 @@ int main (int argc, char **argv) {
 //----------------------------------------------------------//
 //-----------------Setup LL inversion period ---------------//
 //----------------------------------------------------------//
-
-	first_main=j0=1;
-	tnow=-1.0;
-	current_ev=N=0;
-
-	//todo check where this is used (and possibly simplify after propagation of results deactivated).
-	while (current_ev<Ntot && tnow<0 && N<N_min_events){
-		if (eqkfm1[current_ev].is_mainshock) {
-			if (first_main)	{
-				tnow=t_firstmain=eqkfm1[current_ev].t;
-				first_main=0;
-			}
-			if (tnow<eqkfm1[current_ev].t){
-				for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<eqkfm1[current_ev].t) N+=1;
-				j0+=N;
-			}
-			tnow=eqkfm1[current_ev].t+tw;
-		}
-		current_ev+=1;
-	}
 
 	if (flags.err_recfault){
 		select_fm_time(focmec, &NFM, Tstart);

@@ -145,7 +145,7 @@ int test_read_inputfiles(){
 	struct slipmodels_list slip_list;
 	int nfm;
 
-	read_inputfile(file, outname, reftime_str, crust_file, fore_template, catname, focmeccat, background_rate_grid, NULL,
+	read_inputfile(file, outname, reftime_str, crust_file, fore_template, catname, focmeccat, background_rate_grid, NULL, NULL,
 			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
 
 	printf("outname=%s\n", outname);
@@ -1474,17 +1474,26 @@ int test_distance(){
 
 int test_matrix(){
 
-	double 	s[]={-10.0,-0.5,-0.1},\
-			st[]={115.0, 0.0, 25.0},\
-			di[]={0.0,90.0,0.0};
+//	double 	s[]={-10.0,-0.5,-0.1},\
+//			st[]={115.0, 0.0, 25.0},\
+//			di[]={0.0,90.0,0.0};
+
+	double 	s[]={-10.0,-0.1,-0.5},\
+			st[]={115.0, 25.0, 205.0},\
+			di[]={0.0,10.0,80.0};
+
+//	double  s[]={-5.0, 5.0, 0.0},\
+//			st[]= {6.646198, -83.345443, 60.000013 },	\
+//			di[]={-0.596911, -0.802279, 89.000000};
 
 	float eig[4];
 	float **v;
-	double **S;
+	double **S, *sigma;
 	float **Sf;
 	int j;
 	double cmb, st1, st2, di1, di2, ra1, ra2;
 
+	sigma=dvector(0,2);
 	v=matrix(1,3,1,3);
 	Sf=matrix(1,3,1,3);
 	S=prestress_eigen(s, st, di);
@@ -1509,7 +1518,105 @@ int test_matrix(){
 	printf("\n eigenvalues:\n");
 	for (int i=1; i<=3; i++) printf("%f\n", eig[i]);
 
+
+	//transform eigenvectors into strike, dip:
+	for (int i=1; i<=3; i++){
+		di[i-1]=RAD2DEG*asin(v[3][i]);
+		st[i-1]=RAD2DEG*atan2(v[2][i],v[1][i]);
+		sigma[i-1]=(double) eig[i];
+	}
+
+	//st[2]=0.0;
+
+	printf("\nstrikes: %lf, %lf, %lf \n", st[0], st[1], st[2]);
+	printf("\ndips:    %lf, %lf, %lf \n", di[0], di[1], di[2]);
+
+	//recalculate S from eigenvectors:
+	S=prestress_eigen(sigma, st, di);
+	printf("\nS: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%lf\t", S[i][j]);
+			Sf[i][j]=(float)S[i][j];
+		}
+		printf("\n");
+	}
+
+
 	cmbopt(S[1][1], S[2][2], S[3][3], S[1][2], S[2][3], S[1][3], 0.0, 0.4, 0.0, 90.0, 180.0, &cmb, &st1, &di1, &ra1, &st2, &di2, &ra2);
+	printf("\n oops:\n");
+	printf("st1=%lf\t di1=%lf\t ra1=%lf\n", st1, di1, ra1);
+	printf("st2=%lf\t di2=%lf\t ra2=%lf\n", st2, di2, ra2);
+
+	return 0;
+}
+
+int test_matrix2(){
+
+	double 	s[]={5.0,-5.0,0.0};
+	double st[3], di[3], sigma[3];
+	double st_oop=330.0;
+	double di_oop=89.0;
+	double ra_oop=180;
+	double p=0.0, fr=0.3;
+
+	float eig[4];
+	float **v;
+	double **S;
+	float **Sf;
+	int j;
+	double cmb, st1, st2, di1, di2, ra1, ra2;
+
+	v=matrix(1,3,1,3);
+	Sf=matrix(1,3,1,3);
+
+	//calculate matrix using orientation of oops:
+	prestress(s[0],s[1],s[2],st_oop, di_oop, ra_oop, p, fr, &S);
+	printf("\nS: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%lf\t", S[i][j]);
+			Sf[i][j]=(float)S[i][j];
+		}
+		printf("\n");
+	}
+
+	//find eigenvalues/eigenvectors of matrix:
+	jacobi(Sf, 3, eig, v, &j);
+	printf("\nv: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%lf\t", v[i][j]);
+		}
+		printf("\n");
+	}
+
+	printf("\n eigenvalues:\n");
+	for (int i=1; i<=3; i++) printf("%f\n", eig[i]);
+
+	//transform eigenvectors into strike, dip:
+	for (int i=1; i<=3; i++){
+		di[i-1]=RAD2DEG*asin(v[3][i]);
+		st[i-1]=RAD2DEG*atan2(v[2][i],v[1][i]);
+		sigma[i-1]=(double) eig[i];
+	}
+
+	printf("\nstrikes: %lf, %lf, %lf \n", st[0], st[1], st[2]);
+	printf("\ndips:    %lf, %lf, %lf \n", di[0], di[1], di[2]);
+
+	//recalculate S from eigenvectors:
+	S=prestress_eigen(sigma, st, di);
+	printf("\nS2: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%lf\t", S[i][j]);
+			Sf[i][j]=(float)S[i][j];
+		}
+		printf("\n");
+	}
+
+	//calculate oops from new S:
+	cmbopt(S[1][1], S[2][2], S[3][3], S[1][2], S[2][3], S[1][3], 0.0, fr, 0.0, 90.0, 180.0, &cmb, &st1, &di1, &ra1, &st2, &di2, &ra2);
 	printf("\n oops:\n");
 	printf("st1=%lf\t di1=%lf\t ra1=%lf\n", st1, di1, ra1);
 	printf("st2=%lf\t di2=%lf\t ra2=%lf\n", st2, di2, ra2);
