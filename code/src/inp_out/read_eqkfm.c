@@ -27,8 +27,7 @@
 
 int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb,
 						int **which_events, int N1, int *Ncomb, int **nfout,
-						double dt, double dmag, double res, struct crust crst,
-						int refine, int taper) {
+						double dt, double dmag, double res, struct crust crst) {
 /* assumes that eqfm1 only has single fault events, but slip models may have more...
  * does not do spatial selection (unlike combine_eqkfm).
  * return combined catalog, rather than list of indices mapping one catalog to the other.
@@ -47,7 +46,6 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int c2=0, c3=0;	//counters.
 	int err=0, j;
 	int *all_pts;
-	double d_close=10.0;	//todo read somewhere.
 	static struct set_of_models dummy_parentsetofmodels;
 	char *cmb_format=all_slipmodels.cmb_format;
 	dummy_parentsetofmodels.Nmod=0;	//this value indicates than no slip model is available (will use synthetic slip model from foc. mec. or isotropic field).
@@ -59,7 +57,6 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	all_pts=ivector(1,crst.N_allP);
 	for (int i=1; i<=crst.N_allP; i++) all_pts[i]=i;
 
-	if (refine==0) taper=0;
 	*Ncomb=0;
 
 	//find no. of faults in each slip model, and save the largest value for each event.
@@ -122,7 +119,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 					print_logfile("Warning: slip model or focal mechanism not available for large event at t=%.5lf, mag=%.2lf -> will use isotropic field.\n", eqfm1[i].t, eqfm1[i].mag);
 				}
 				else {
-					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, refine, taper);
+					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
 					if (err){
 						print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
 						print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
@@ -146,8 +143,8 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 
 				err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm, all_slipmodels.cmb_format,
 										   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
-										   all_slipmodels.tmain[j], d_close, crst.N_allP, crst.list_allP,
-										   all_slipmodels.mmain+j, refine, 1, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
+										   all_slipmodels.tmain[j],crst.N_allP, crst.list_allP,
+										   all_slipmodels.mmain+j, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
 
 				if (which_events!=NULL) (*which_events)[c3]=i;
 				if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
@@ -186,8 +183,6 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 	(*eqkfmP).np_di=1;
 	(*eqkfmP).slip_str=dvector(1,1);
 	(*eqkfmP).slip_dip=dvector(1,1);
-	//(*eqkfmP).taper=dvector(1,4);
-	//	for (int i=1; i<=4; i++) (*eqkfmP).taper=1.0; //probably not used (aftershocks are not resampled or tapered).
 	(*eqkfmP).pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
 	(*eqkfmP).pos_d=dvector(1,1);
 	(*eqkfmP).pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
@@ -242,7 +237,7 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 
 	if (refine) {
 		err+=suomod1_resample(eqkfm0, eqfm1, res, 0.0);	//create a slip model with right resolution.
-		if (taper) err+=suomod1_taper((*eqfm1), eqfm1);
+		if (taper) err+=suomod1_taper((*eqfm1), eqfm1, 1, 1, 1, 1);
 	}
 
 	return err;
@@ -289,7 +284,6 @@ int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out,
 			(*eqfm1)[f].is_slipmodel=1;
 			(*eqfm1)[f].is_mainshock=1;
 			(*eqfm1)[f].noise=0;
-			(*eqfm1)[f].taper=ivector(1,4);
 			(*eqfm1)[f].tot_slip=0.0;
 			NP=(*eqfm1)[f].np_di*(*eqfm1)[f].np_st;
 			for (int p=1; p<=NP; p++) {

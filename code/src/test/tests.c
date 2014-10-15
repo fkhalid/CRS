@@ -919,9 +919,6 @@ int test_allOkada_simple_multiplerec(){
 	eqfm.lat=lat0;
 	eqfm.lon=lon0;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=3; i++) eqfm.taper[i]=1;
-	eqfm.taper[4]=0;
 
 	dcfs.NF=1;
 	crst.fmzone=ivector(1,NP);
@@ -1103,9 +1100,6 @@ int test_allOkada_simple(){
 	eqfm.lat=lat0;
 	eqfm.lon=lon0;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=3; i++) eqfm.taper[i]=1;
-	eqfm.taper[4]=0;
 
 	dcfs.NF=1;
 	crst.nLat=Nlat;
@@ -1278,9 +1272,6 @@ int test_allOkada(){
 	eqfm.lat=lat0;
 	eqfm.lon=lon0;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=3; i++) eqfm.taper[i]=1;
-	eqfm.taper[4]=0;
 
 	dcfs.NF=1;
 	crst.nLat=Nlat;
@@ -1981,8 +1972,6 @@ void test_taper_multislip(){
 		eqfm[0].dip1=90.0-2.0+4.0*ran1(&seed);
 		eqfm[0].rake1=180.0;
 		eqfm[0].mag=mag;
-		if (n==1) eqfm[0].taper=ivector(1,4);
-		for (int i=1; i<=4; i++) eqfm[0].taper[i]=0;
 
 		focmec2slipmodel(crst, eqfm, res, 1, 1);
 		sign2=ran1(&seed)-0.5;
@@ -1994,8 +1983,6 @@ void test_taper_multislip(){
 			eqfm[f].rake1=180.0;
 			eqfm[f].whichfm=1;
 			eqfm[f].mag=mag;
-			if (n==1) eqfm[f].taper=ivector(1,4);
-			for (int i=1; i<=4; i++) eqfm[f].taper[i]=0;
 			sign=sign2;
 			sign2=ran1(&seed)-0.5;
 			sign2*=1.0/fabs(sign2);	//-1 or 1;
@@ -2042,9 +2029,6 @@ void test_focmec2slipmodel(){
 	eqfm.lat=-43.56;
 	eqfm.lon=172.12;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=3; i++) eqfm.taper[i]=1;
-	eqfm.taper[4]=0;
 
 	for (int n=0; n<N; n++){
 		eqfm.str1=360*ran1(&seed);
@@ -2100,8 +2084,6 @@ void tests_eqkfm_addslipmodels(){
 
 	eq_in1=eqkfm_array(0,N1-1);
 	for (int i=0; i<N1; i++){
-		eq_in1[i].taper=ivector(1,4);
-		for (int ii=1; ii<=4; ii++) eq_in1[i].taper[ii]=1;
 		eq_in1[i].str1=360*(double) (i%N1);
 		eq_in1[i].dip1=90*(double) (i+5%N1);
 		eq_in1[i].rake1=180.0;
@@ -2146,8 +2128,6 @@ void test_suomod1_hf(){
 	eqfm.lat=-43.56;
 	eqfm.lon=172.12;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=4; i++) eqfm.taper[i]=1;
 	eqfm.whichfm=1;
 	eqfm.mag=7.0;
 	eqfm.str1=0.0;

@@ -216,7 +216,6 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	int whichfm;		//index of foc. mec. to use (0=both;1;2).
 	int nsel;			//no. of cell points affected by this event.
 	int noise;			// flag (if set, tot_slip refers to model from which noise was generated):
-	int *taper;		// taper [1...4]=top,bottom,right,left.
 	int cuts_surf;	// boolean indicating if slip model should be assumed to cut through the surface.
 	double t;		//time of event.
 	double lat;		//0_lat in Wang input file;

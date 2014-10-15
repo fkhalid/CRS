@@ -11,23 +11,6 @@
 	#include "mpi.h"
 #endif
 
-int read_fmindex(struct crust crst, char *fname, int **fm_index, int *no_zones){
-
-	double *dum=NULL;
-	int err;
-
-	*fm_index=ivector(1,crst.N_allP);
-
-	err=read_rate(crst, fname, &dum, NULL);
-	for (int n=1; n<=crst.N_allP; n++) (*fm_index)[n]= (int)dum[n] -1;
-
-	*no_zones=(int) max_v(dum+1,crst.N_allP);
-	free_dvector(dum,1,1);
-
-	return err;
-}
-
-
 int read_rate(struct crust crst, char *fname, double **bg_rate, double *minmag){
 	/* Read 9th column of a forecast-like file (same structure as output grid file), and converts it to internal geometry.
 	 *

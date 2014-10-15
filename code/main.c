@@ -235,7 +235,7 @@ int main (int argc, char **argv) {
 
 	err=read_modelparameters(modelparametersfile, &crst, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt,
-			&Nsur, &Nslipmod, &flags, &Mc_source, &(cat.Mc), &Mag_main, &DCFS_cap, &gridPMax,
+			&Nsur, &Nslipmod, &flags, &Mc_source, &(cat.Mc), &Mag_main, &dDCFS, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
 	if (err) {
@@ -294,11 +294,8 @@ int main (int argc, char **argv) {
 	}
 	NgridT=crst.N_allP;
 
-	dDCFS=(fixAsig)? 0.01*Asig0 : 0.01*Asig_min;	//minimum stress for which points are considered. todo just read a value form outside.
 	if (fixAsig) nAsig0=0;
 	if (fixta) nta0=0;
-
-	print_logfile("dDCFS (min value for which calculation is done) = %.2e Pa\n", dDCFS);
 
 //---------------------------------------------//
 //--------------Setup afterslip----------------//
@@ -306,7 +303,7 @@ int main (int argc, char **argv) {
 
 	if (flags.afterslip !=0) {
 		read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1);
-		err=setup_afterslip_eqkfm(all_aslipmodels, crst, 0, &eqkfm_aft);	//fixme: should allow resamping if model is tapered?
+		err=setup_afterslip_eqkfm(all_aslipmodels, crst, &eqkfm_aft);
 		if (err!=0) error_quit("Error in setting up afterslip slip model - exiting.");
 	}
 	else eqkfm_aft=NULL;
@@ -371,7 +368,7 @@ int main (int argc, char **argv) {
 //-----------------Add mainshock slip models ---------------//
 //----------------------------------------------------------//
 
-	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, &which_main, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst, 1, 1);
+	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, &which_main, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst);
 	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **");
 
 	if(LLinversion){

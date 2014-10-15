@@ -20,7 +20,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 						double *extra_time, double *tw, double *fore_dt,
 						int *Nsur, int *Nslipmod, struct flags *flags,
 						double *Mc_source, double *Mc, double *Mag_main,
-						double *DCFS_cap, int *gridPMax, double *dt, double *dM,
+						double *dCFS, double *DCFS_cap, int *gridPMax, double *dt, double *dM,
 						double *xytoll, double *ztoll, double *border, double *res,
 						double *gridresxy, double *gridresz, double *smoothing,
 						int *LLinversion, int *forecast) {
@@ -145,7 +145,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf", Mag_main);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf", DCFS_cap);
+		sscanf(line,"%lf %lf", dCFS, DCFS_cap);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", gridPMax);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
@@ -242,6 +242,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 			modelParams.Mc_source 	 = *Mc_source;
 			modelParams.Mc 			 = *Mc;
 			modelParams.Mag_main 	 = *Mag_main;
+			modelParams.dDCFS 	 	 = *dDCFS;
 			modelParams.DCFS_cap 	 = *DCFS_cap;
 			modelParams.dt 			 = *dt;
 			modelParams.dM 			 = *dM;
@@ -305,6 +306,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		MPI_Address(&(modelParams.Mc_source), 		&addresses_ModelParameters[25]);
 		MPI_Address(&(modelParams.Mc), 				&addresses_ModelParameters[26]);
 		MPI_Address(&(modelParams.Mag_main), 		&addresses_ModelParameters[27]);
+		MPI_Address(&(modelParams.dDCFS), 			&addresses_ModelParameters[28]);	//todo add this parameter to structure
 		MPI_Address(&(modelParams.DCFS_cap), 		&addresses_ModelParameters[28]);
 		MPI_Address(&(modelParams.dt), 				&addresses_ModelParameters[29]);
 		MPI_Address(&(modelParams.dM), 				&addresses_ModelParameters[30]);
@@ -359,6 +361,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 			*Mc_source 		= modelParams.Mc_source;
 			*Mc 			= modelParams.Mc;
 			*Mag_main 		= modelParams.Mag_main;
+			*dDCFS			= modelParams.dDCFS;
 			*DCFS_cap 		= modelParams.DCFS_cap;
 			*dt 			= modelParams.dt;
 			*dM 			= modelParams.dM;

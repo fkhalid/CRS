@@ -163,10 +163,6 @@ int readfocmec(char *focmecfile, struct crust crst,
 			depthmin=fmin(0.0, crst.depmin-dz), \
 			depthmax=crst.depmax+dz;
 
-	int *taper_all;
-	taper_all=ivector(1,4);
-	for (int i=1; i<=4; i++) taper_all[i]=1;
-
 	if(procId == 0) {
 		NFMmax = (fm2==1)? 2*countline(focmecfile) : countline(focmecfile);
 		NC = countcol(focmecfile); //fixme risky (if extra stuff is written in header): could check more than 1 line.
@@ -306,7 +302,6 @@ int readfocmec(char *focmecfile, struct crust crst,
 			(*eqkfm)[p0].np_di=1;
 			(*eqkfm)[p0].pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
 			(*eqkfm)[p0].pos_d=dvector(1,1);
-			(*eqkfm)[p0].taper=taper_all;
 			(*eqkfm)[p0].pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
 			(*eqkfm)[p0].pos_d[1]=0;
 			if ((*eqkfm)[p0].whichfm){

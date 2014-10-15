@@ -169,9 +169,6 @@ int grid_variability(){
 	eqfm.lat=lat0;
 	eqfm.lon=lon0;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=3; i++) eqfm.taper[i]=1;
-	eqfm.taper[4]=0;
 
 	dcfs.NF=1;
 	latlon2localcartesian(eqfm.lat, eqfm.lon, crst.lat0, crst.lon0, &(eqfm.y), &(eqfm.x));

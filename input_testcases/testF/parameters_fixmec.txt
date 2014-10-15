@@ -64,7 +64,7 @@
 # 
 2.0
 5.95
-1e6
+60	1e6
 1000
 0.0005 	#about 1min (since seconds not reported in GMT catalog...)
 0.9

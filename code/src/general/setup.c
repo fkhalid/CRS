@@ -92,9 +92,16 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	return (err!=0);
 }
 
-int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, int resample, struct eqkfm **eqkfm0res){
-//input models are the models to be used at a given time (NB: only one model per event).
-//is_afterslip indicates that all models have same geometry: Nfaults and no_slipmodels only have 1 element.
+int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, struct eqkfm **eqkfm0res){
+/*
+ * Reads afterslip files into eqkfm structure.
+ *
+ * Input:
+ * 	list_slipmodel: list of slip model files
+ * 	crst: structure containing crust setup information
+ * 	models are the models to be used at a given time (NB: only one model per event).
+ *is_afterslip indicates that all models have same geometry: Nfaults and no_slipmodels only have 1 element.
+ */
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
@@ -109,7 +116,6 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 	int *no_slipmodels=list_slipmodels.no_slipmodels;
 	double *disc=list_slipmodels.disc;
 	int *Nfaults=list_slipmodels.Nfaults;
-	double d_touching_faults=3.0;	//todo: set somewhere else.
     int NFtot=0;
     int err=0;
     char *cmb_format=list_slipmodels.cmb_format;
@@ -133,7 +139,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     //TODO: implement multiple slip models with non strike slip event.
     NFtot=0;
     for (int nn=0; nn<Nm; nn++){
-    	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, cmb_format, no_slipmodels[0], crst.mu, disc[0], tmain[nn], d_touching_faults, crst.N_allP, crst.list_allP, NULL, resample, 0, list_slipmodels.cut_surf[nn], Nfaults, crst.lat0, crst.lon0);
+    	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, cmb_format, no_slipmodels[0], crst.mu, disc[0], tmain[nn], crst.N_allP, crst.list_allP, NULL, list_slipmodels.cut_surf[nn], Nfaults, crst.lat0, crst.lon0);
 		NFtot+=Nfaults[0];
 	}
 
@@ -143,8 +149,8 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 }
 
 int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_format, int no_slipmodels,
-						double mu, double disc, double tmain, double d_close, int nsel,
-						int *sel_pts, double *mmain, int resample, int tap_bot, int cuts_surf,
+						double mu, double disc, double tmain, int nsel,
+						int *sel_pts, double *mmain, int cuts_surf,
 						int *NF0, double lat0, double lon0) {
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
@@ -189,7 +195,6 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 			for (int i=0; i<NF; i++) eqkfm0[i].cuts_surf=1;
 		}
 
-		which_taper(eqkfm0, NF, tap_bot, 0, d_close);
 		for (int nf=0; nf<NF; nf++) {
 			eqkfm0[nf].t=tmain;
 			eqkfm0[nf].nsel=nsel;
@@ -198,24 +203,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 			eqkfm0[nf].is_mainshock=1;
 			eqkfm0[nf].is_slipmodel=1;
 			latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
-			if (resample) {
-			  	discx=eqkfm0[nf].L/eqkfm0[nf].np_st;
-			  	discy=eqkfm0[nf].W/eqkfm0[nf].np_di;
-			  	//if current discretization is larger than required, resample:
-			  	if (discx>disc || discy>disc) {
-			  		suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, disc, 0.0);
-			  		print_logfile("slip model %s is resampled from res=[str=%.3lf, dip=%.3lf] to res=%.3lf (setup.c).\n", slipmodels[m], discx, discy, disc);
-			  	}
-			  	else {
-					if (fabs(discx-discy)>toll) {
-						err+=suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, fmin(discx, discy), 0.0);	//create a slip model with square patches.
-						print_logfile("slip model %s is resampled to obtain square patches (setup.c).\n", slipmodels[m]);
-					}
-					else copy_eqkfm_all(eqkfm0[nf], eqkfmall+nftot+nf);
-			  	}
-				err+=suomod1_taper(eqkfmall[nftot+nf], eqkfmall+nftot+nf);	//just taper old slip model.
-			}
-			else err+=suomod1_taper(eqkfm0[nf], eqkfmall+nftot+nf);	//just taper old slip model.
+			eqkfmall[nftot+nf]=eqkfm0[nf];
 		}
 		nftot+=NF;
 	}

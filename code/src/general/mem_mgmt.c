@@ -117,7 +117,6 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 		v[i].slip_dip= NULL;
 		v[i].pos_s= NULL;
 		v[i].pos_d= NULL;
-		v[i].taper=NULL;
 		v[i].selpoints= NULL;
 		v[i].distance= NULL;
 		v[i].is_slipmodel=0;
@@ -218,7 +217,6 @@ void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 		if (v[f].pos_d) free(v[f].pos_d);
 		if (v[f].slip_str) free(v[f].slip_str);
 		if (v[f].slip_dip) free(v[f].slip_dip);
-		if (v[f].taper) free(v[f].taper);
 	}
 	//free((FREE_ARG) (v+n1-NR_END));
 }

@@ -22,14 +22,8 @@
 #include "../util/nrutil.h"
 #include "../util/ran1.h"
 
+double tot_slip (struct eqkfm eqfm1);
 int scale_to_mag(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double * slips, double *rakes);
-int adjust_faults(struct eqkfm *eqkfm0,  int NF, int vert);
-int which_taper(struct eqkfm *eqkfm0,  int NF, int tap_bot, int tap_top, double);
-int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2);
+int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom, int right, int left);
 int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, double velmean);
-int suomod1_hf(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double velmean, long *seed, int);
-int suomod1_add(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double velmean, long *seed);
-int suomod1_addnoise(struct eqkfm eqkfm1, struct eqkfm eqkfm2, struct eqkfm *eqkfm);
-int suomod1_cleanup(struct eqkfm *eqkfm2);
-//int suomod1_addhf(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double velmean, long *seed);
 
