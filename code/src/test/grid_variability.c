@@ -78,7 +78,8 @@ int grid_variability(){
 			}
 		}
 	}
-	read_pscmp_crust(crust_file,&crst);
+	//broken: function does not exist anymore
+	//read_pscmp_crust(crust_file,&crst);
 	crst.nLat=Nlat;
 	crst.nLon=Nlon;
 	crst.nD=Ndep;
@@ -114,7 +115,8 @@ int grid_variability(){
 		}
 	}
 
-	read_pscmp_crust(crust_file,&crst2);
+	//broken: function does not exist anymore
+	//read_pscmp_crust(crust_file,&crst2);
 	crst2.nLat=Nlat2;
 	crst2.nLon=Nlon2;
 	crst2.nD=Ndep2;

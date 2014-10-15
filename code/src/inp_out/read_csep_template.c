@@ -11,25 +11,35 @@
 	#include "mpi.h"
 #endif
 
-//int read_fmindex(struct crust crst, char *fname, int **fm_index, int *no_zones){
-///* Reads rate
-// *
-// */
-//	double *dum=NULL;
-//	int err;
-//
-//	*fm_index=ivector(1,crst.N_allP);
-//
-//	err=read_rate(crst, fname, &dum, NULL);
-//	for (int n=1; n<=crst.N_allP; n++) (*fm_index)[n]= (int)dum[n] -1;
-//
-//	*no_zones=(int) max_v(dum+1,crst.N_allP);
-//	free_dvector(dum,1,1);
-//
-//	return err;
-//}
+int read_fmindex(struct crust crst, char *fname, int **fm_index, int *no_zones){
+
+	double *dum=NULL;
+	int err;
+
+	*fm_index=ivector(1,crst.N_allP);
+
+	err=read_rate(crst, fname, &dum, NULL);
+	for (int n=1; n<=crst.N_allP; n++) (*fm_index)[n]= (int)dum[n] -1;
+
+	*no_zones=(int) max_v(dum+1,crst.N_allP);
+	free_dvector(dum,1,1);
+
+	return err;
+}
+
 
 int read_rate(struct crust crst, char *fname, double **bg_rate, double *minmag){
+	/* Read 9th column of a forecast-like file (same structure as output grid file), and converts it to internal geometry.
+	 *
+	 * Input:
+	 * 	fname: file name with structure of output file (or forecast template)
+	 * 	crst: crst structure used to convert geometry
+	 *
+	 * Ouput:
+	 * 	bg_rate: rate (col. 9 of file), reshaped with internal geometry.
+	 * 	minmag: min. mag bin found in file.
+	 */
+
 	double *dum_rate, dmag;
 	int err;
 
@@ -46,18 +56,20 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 					   double *minlon, double *maxlon, double *mindep, double *maxdep,
 					   double *minmag, double *maxmag, int *uni) {
 
-/* input:
- * fname, name of txt file.
+/* Reads a template file in csep format.
  *
- * output:
- * no_magbins: no. of magnitude bins;
- * nlat, nlon ndep: no of gridpoints with different lat, lon, dep (may not work for non homogeneous grid).
- * ng: tot no of grid points.
- * dlat, dlon, ddep, dmag: shortst distance between grid points (for lat, lon, this is the "defaultCellDimension" value; for depth, it is calculated).
- * lats, lons, deps: 1D arrays containing grid points coordinates: [1...ng].
- * minX, maxX: edges of domain (lat, lon, depth);
- * minmag, maxmag: smallest, largest *centers* of magnitude bin.
- * rate: rate in each cell (summed over magnitude bins).
+ * Input:
+ * 	fname, name of txt file.
+ *
+ * Output:
+ * 	no_magbins: no. of magnitude bins;
+ * 	nlat, nlon ndep: no of gridpoints with different lat, lon, dep (may not work for non homogeneous grid).
+ * 	ng: tot no of grid points.
+ * 	dlat, dlon, ddep, dmag: shortst distance between grid points (for lat, lon, this is the "defaultCellDimension" value; for depth, it is calculated).
+ * 	lats, lons, deps: 1D arrays containing grid points coordinates: [1...ng].
+ * 	minX, maxX: edges of domain (lat, lon, depth);
+ * 	minmag, maxmag: smallest, largest *centers* of magnitude bin.
+ * 	rate: rate in each cell (summed over magnitude bins).
  *
  * All output variables can be passed as null pointers, and will be ignored.
  *

@@ -205,10 +205,12 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 
 	else{
 		if(multiple_focmecfiles) {
+			(*crst).fmzone=ivector(1,(*crst).N_allP);
+
 			err+=convert_geometry(*crst, dumrate, &bg_rate, 1, 1);
 			for (int n=1; n<=(*crst).N_allP; n++) (*crst).fmzone[n]= (int)bg_rate[n] -1;
 			(*crst).nofmzones=(int) max_v(bg_rate+1,(*crst).N_allP);
-			free_dvector(dumrate, 1, 1);
+			if (dumrate!=bg_rate) free_dvector(dumrate, 1, 1);
 			free_dvector(bg_rate, 1, 1);
 		}
 	}

@@ -427,7 +427,6 @@ int test_Helmstetter_cat(){
 //	char fore_file[]="input/tohoku_template.dat";
 //	char cat_file[]="/home/des/camcat/Data/Catalogs/Others/jma_cat_2010_2013_update20130329_sel_2.5.dat";
 	//Darfield:
-	sprintf(cmb_format, "farfalle");
 	char crust_file[]="input/inCan.dat";
 	char fore_file[]="input/darf_temp.txt";
 	//char cat_file[]="input/quake_recent.dat";
@@ -711,7 +710,6 @@ int test_readZMAP_tw(){
 	char fname[120];
 	char *file="/home/des/camcat/Data/Catalogs/Others/jma_cat_2010_2013_update20130329_sel_2.5.dat";
 	char *crust_file="/home/des/camcat/Code/CRS_1.0/INPUT/Tohoku_new.inp";
-	sprintf(cmb_format, "pscmp");
 	char *fore_template="input/tohoku_template_sparse.dat";
 	double t0=0.0, t1=300, tw=1.0;
 	double Mmain=6.8;
@@ -912,7 +910,8 @@ int test_allOkada_simple_multiplerec(){
 		}
 	}
 
-	read_pscmp_crust("/home/des/camcat/Code/CRS_2.01/input/Tohoku_simple_new.inp",&crst);
+	//broken: function does not exist anymore
+	//read_pscmp_crust("/home/des/camcat/Code/CRS_2.01/input/Tohoku_simple_new.inp",&crst);
 	sprintf(fname0, "%s/okada3/fm_slipmodels_summary.txt",testfolder);
 	fout=fopen(fname0,"w");
 
@@ -1095,7 +1094,8 @@ int test_allOkada_simple(){
 		}
 	}
 
-	read_pscmp_crust("/home/des/camcat/Code/CRS_2.01/input/Tohoku_simple_new.inp",&crst);
+	//broken: function does not exist anymore
+	//read_pscmp_crust("/home/des/camcat/Code/CRS_2.01/input/Tohoku_simple_new.inp",&crst);
 	sprintf(fname0, "%s/okada2/fm_slipmodels_summary.txt",testfolder);
 	fout=fopen(fname0,"w");
 
@@ -1269,7 +1269,8 @@ int test_allOkada(){
 	}
 
 	init_crst(&crst);
-	read_farfalle_crust("/home/des/camcat/Code/CRS_2.01/input/inCan.dat", &crst);
+	//broken: function does not exist anymore
+	//read_farfalle_crust("/home/des/camcat/Code/CRS_2.01/input/inCan.dat", &crst);
 	sprintf(fname0, "%s/okada/fm_slipmodels_summary.txt",testfolder);
 	fout=fopen(fname0,"w");
 
@@ -1629,14 +1630,6 @@ int test_matrix2(){
 	return 0;
 }
 
-int test_read_crust(){
-
-	struct crust crst;
-	read_crust("input/inCan.dat", "input/nz_temp.forecast.xml", NULL, &crst, 3.0, 3.0);
-	return (0);
-
-}
-
 int test_readZMAP(){
 
 	char xmlfile[]="input/nz-forecast-template-M4.xml";
@@ -1774,7 +1767,6 @@ void test_convertgeometry(){
 	char fname[120];
 	extern int farfalle;
 
-	sprintf(cmb_format, "farfalle");
 //	read_crust("input/crust.dat", NULL, &cr, 3.0,5.0);
 
 	//broken (no crust_file anymore)
