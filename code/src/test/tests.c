@@ -92,7 +92,8 @@ int test_readmultiplefocmec(){
 	reftime.tm_mon-=1;
 	reftime.tm_isdst=0;
 
-	read_crust(crust_file, temp_file, &crst, NULL, res, res);
+	//broken (no crust_file anymore)
+//	read_crust(crust_file, temp_file, &crst, NULL, res, res);
 	readmultiplefocmec(files, nf, crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec, &firstel, &NFM, &NFM2, &eqkfm, 1, 0);
 	readfocmec("input/other/NIED_GMTformat.dat", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec0, &NFM0, &NFM20, &eqkfm0, 1, 0);
 
@@ -138,19 +139,18 @@ int test_nth_index(){
 int test_read_inputfiles(){
 
 	char *file="input/testinput.txt";
-	char outname[120], reftime_str[120], crust_file[120], fore_template[120], catname[120], focmeccat[120], \
+	char outname[120], reftime_str[120], fore_template[120], catname[120], focmeccat[120], \
 		background_rate_grid[120], slipmodelfile[120], afterslipmodelfile[120];
 	struct tm reftime;
 	double tstart, tend;
 	struct slipmodels_list slip_list;
 	int nfm;
 
-	read_inputfile(file, outname, reftime_str, crust_file, fore_template, catname, focmeccat, background_rate_grid, NULL, NULL,
-			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
+	read_inputfile(file, outname, reftime_str, fore_template, catname, focmeccat, background_rate_grid, NULL, NULL,
+			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, &nfm);
 
 	printf("outname=%s\n", outname);
 	printf("reftime_str=%s\n", reftime_str);
-	printf("crust_file=%s\n", crust_file);
 	printf("fore_template=%s\n", fore_template);
 	printf("catname=%s\n", catname);
 	printf("focmeccat=%s\n", focmeccat);
@@ -267,7 +267,8 @@ int test_background_rate(){
 	reftime.tm_mon-=1;
 	reftime.tm_isdst=0;
 
-	read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
 	background_rate(cat_file, &crst, reftime, Mcut, Mmain, -1e30, 1e30,  dR, dZ, ord);
 
 	cat.Mc=Mcut;
@@ -324,7 +325,8 @@ int test_decluster_catalog(){
 	time(&t);
 	tt=*(localtime(&t));
 
-	read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
 	cat.Mc=0.0;
 	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
 	weights=dvector(1,cat.Z);
@@ -386,7 +388,8 @@ int test_fit_depth(){
 	time(&t);
 	tt=*(localtime(&t));
 
-	read_crust(crust_file, fore_file,NULL,  &crst, 100.0, 1.0);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_file,NULL,  &crst, 100.0, 1.0);
 //	gridPMax=crst.N_allP;
 	gridPMax=1000;
 	cat.Mc=0.0;
@@ -440,7 +443,8 @@ int test_Helmstetter_cat(){
 	reftime.tm_mon-=1;
 	reftime.tm_isdst=0;
 
-	read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
 //	gridPMax=crst.N_allP;
 	gridPMax=1000;
 	cat.Mc=0.0;
@@ -725,7 +729,8 @@ int test_readZMAP_tw(){
 	reftime.tm_min=46;
 	reftime.tm_sec=18;
 
-	read_crust(crust_file, fore_template, NULL,  &crst, res, res);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_template, NULL,  &crst, res, res);
 	readZMAP (&cat, NULL, &NT, file, crst, reftime, t0,t1, t0, t1, Mmain, 0.0, 0, 0, 1e5, 1);
 	sprintf(fname, "%s/cat_notw.dat", testfolder);
 	print_cat(fname, cat);
@@ -1661,7 +1666,8 @@ int test_readZMAP(){
 //	read_xmltemplate(xmlfile, &tnow, &t0c, &t1c, &junk, &junk, &crst, &djunk, &djunk);
 	//crst.x=crst.y=crst.dAgrid=crst.depth;
 
-	read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
 	readZMAP (&cat, &eqfm, NULL, file, crst, reftime, t0s, t1s, t0c, t1c, 10.0, 0.0, border, border, dDCFS, 0);
 
 //	readZMAP (&cat, &eqfm, NULL, file, crst, tnow, t0s, t1s, t0c, t1c, 10.0, 0.0, border, border, dDCFS, 1);
@@ -1770,7 +1776,9 @@ void test_convertgeometry(){
 
 	sprintf(cmb_format, "farfalle");
 //	read_crust("input/crust.dat", NULL, &cr, 3.0,5.0);
-	read_crust("input/inCan.dat", "input/darf_temp.txt", NULL, &cr, 3.0,5.0);
+
+	//broken (no crust_file anymore)
+	//read_crust("input/inCan.dat", "input/darf_temp.txt", NULL, &cr, 3.0,5.0);
 	d=pscmp_arrayinit(cr, 0,0);	//used for output.
 	d[0].which_pts=ivector(1,cr.N_allP);
 

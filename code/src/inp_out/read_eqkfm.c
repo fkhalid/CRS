@@ -49,6 +49,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int *all_pts;
 	double d_close=10.0;	//todo read somewhere.
 	static struct set_of_models dummy_parentsetofmodels;
+	char *cmb_format=all_slipmodels.cmb_format;
 	dummy_parentsetofmodels.Nmod=0;	//this value indicates than no slip model is available (will use synthetic slip model from foc. mec. or isotropic field).
 
 	print_logfile("\nBuilding mainshock slip models (eqkfm_addslipmodels).\n");
@@ -143,7 +144,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				print_screen("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
 				print_logfile("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
 
-				err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm,
+				err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm, all_slipmodels.cmb_format,
 										   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
 										   all_slipmodels.tmain[j], d_close, crst.N_allP, crst.list_allP,
 										   all_slipmodels.mmain+j, refine, 1, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
@@ -250,7 +251,7 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 
 //--------------------------read slip model files----------------------//
 
-int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, double mu) {
+int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out, double *Mw, double mu) {
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
 

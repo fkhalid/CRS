@@ -20,10 +20,10 @@
 	#include "mpi.h"
 #endif
 
-int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *crust_file, char *fore_template,
+int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fore_template,
 		char *catname, char ***focmeccat, char *background_rate_grid, char *background_rate_cat, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
 		char *model_parameters_file, char *Logfile, struct tm *reftime,
-		double *Tstart, double *Tend, long *seed, char *cmb_format, int *num_fm){
+		double *Tstart, double *Tend, long *seed, int *num_fm){
 
 	//todo check string length is enough?
 	/* Read master input file.
@@ -35,8 +35,6 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	 * 		reftime_str: string containing the reference time (issue time)
 	 * 		reftime: structure containing the reference time (issue time)
 	 * 		Tstart, Tend: time in days from reftime
-	 * 		crust_file: input file for coulomb code (farfalle/pscmp: general file with info about the crust etc).
-	 * 		cmbformat: format of crust_file
 	 * 		fore_template: forecast template
 	 * 		catname: catalog (ZMAP)
 	 * 		focmeccat: catalog of focal mechanisms
@@ -65,7 +63,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	int Nchar=1000;
 	char line[Nchar], listfocmeccat[Nchar];
 	char *key, *value;
-	int NP=18, i, err=0;
+	int NP=17, i, err=0;
 	struct tm times0, times1, times2;
 	int value_found[NP], listfm=0, nofm=0;
 	char comment[]="#", comm=comment[0];
@@ -81,16 +79,15 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	/*5*/	"InputCatalogFocMecFile",	\
 	/*6*/	"InputListCatalogFocMecFile",	\
 	/*7*/	"ForecastTemplate", \
-	/*8*/	"InputCoulombFile", \
+	/*8*/	"", \
 	/*9*/	"InputListSlipModels", \
 	/*10*/	"InputListAfterslipModels", \
 	/*11*/	"InputBackgroundRateGrid",\
 	/*12*/	"InputModelParametersFile",\
 	/*13*/	"RandomSeedValue",\
 	/*14*/	"Logfile",\
-	/*15*/	"CmbFormat", \
-	/*16*/	"FixedMecFile", \
-	/*17*/	"InputBackgroundRateCatalog"
+	/*15*/	"FixedMecFile", \
+	/*16*/	"InputBackgroundRateCatalog"
 	};
 
 	// NB: arguments 5,6,17 are alternative (different ways to treat receiver faults)
@@ -188,7 +185,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					if (fore_template) sscanf(value,"%s",fore_template);
 					break;
 				case 8:
-					if (crust_file) sscanf(value,"%s",crust_file);
+					// just empty line
 					break;
 				case 9:
 					if (slipmodelfile) sscanf(value,"%s",slipmodelfile);
@@ -209,12 +206,9 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					if (Logfile) sscanf(value,"%s",Logfile);
 					break;
 				case 15:
-					if (cmb_format) sscanf(value,"%s",cmb_format);
-					break;
-				case 16:
 					if (fixedmecfile) sscanf(value,"%s",fixedmecfile);
 					break;
-				case 17:
+				case 16:
 					if (background_rate_cat) sscanf(value,"%s",background_rate_cat);
 					break;
 			}
@@ -233,14 +227,11 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
-		// 		   setting certain flags. 'cmb_format' is used at
-		//		   multiple points where files are read.
-		// 		   catname is used in setup.c.
+		// 		   setting certain flags. catname is used in setup.c.
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(cmb_format, 			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(Tstart, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(Tend, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -270,14 +261,14 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 
 	// Print out warnings or errors for missing or redundant parameters:
 	if(procId == 0) {
-		if ((value_found[6] + value_found[5] + value_found[16])>1){
-			print_screen("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[16]);
-			print_logfile("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[16]);
+		if ((value_found[6] + value_found[5] + value_found[15])>1){
+			print_screen("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
+			print_logfile("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
 			return 1;	//todo [askFahad]: should this instead be saved as error and broadcast?
 		}
-		if ((value_found[11] + value_found[17])>1){
-			print_screen("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[17]);
-			print_logfile("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[17]);
+		if ((value_found[11] + value_found[16])>1){
+			print_screen("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[16]);
+			print_logfile("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[16]);
 			return 1;	//todo [askFahad]: should this instead be saved as error and broadcast?
 		}
 		nofm=0;
@@ -311,6 +302,9 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					}
 					else nofm=1;
 					break;
+				case 8:
+					//just empty line
+					break;
 				case 9:
 					if (extra_verbose) {
 						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
@@ -335,10 +329,10 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 				case 14:
 					if (Logfile) strcpy(Logfile,"");
 					break;
-				case 16:
+				case 15:
 					if (fixedmecfile) strcpy(fixedmecfile,"");
 					break;
-				case 17:
+				case 16:
 					if (background_rate_cat) strcpy(background_rate_cat,"");
 					break;
 
@@ -514,7 +508,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			sscanf(line,"%d", &Nm0);
 			fgets(line,Nchar,fin);
 			if (is_afterslip) {
-				sscanf(line,"%s", cmb_format);
+				sscanf(line,"%s", &((*allslipmodels).cmb_format));
 				fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 				sscanf(line, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
 				times.tm_year-=1900;
@@ -523,14 +517,14 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				t0=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
 			}
 			else {
-				sscanf(line,"%s %d", cmb_format, &((*allslipmodels).constant_geometry));
+				sscanf(line,"%s %d", &((*allslipmodels).cmb_format), &((*allslipmodels).constant_geometry)); //todo check this is the same as coseismic models.
 			}
 		}
 
 		#ifdef _CRS_MPI
 			MPI_Bcast(&Nm0, 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&((*allslipmodels).constant_geometry), 1, MPI_INT, 0, MPI_COMM_WORLD);
-			MPI_Bcast(cmb_format, 120, MPI_CHAR, 0, MPI_COMM_WORLD);
+			MPI_Bcast(&((*allslipmodels).cmb_format), 120, MPI_CHAR, 0, MPI_COMM_WORLD);
 
 			if(is_afterslip) {
 				MPI_Bcast(&t0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);

@@ -112,6 +112,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 	double d_touching_faults=3.0;	//todo: set somewhere else.
     int NFtot=0;
     int err=0;
+    char *cmb_format=list_slipmodels.cmb_format;
 
 
     	if (!(strcmp(cmb_format,"farfalle"))) err+=read_farfalle_eqkfm(slipmodels[0], NULL, Nfaults);
@@ -132,7 +133,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     //TODO: implement multiple slip models with non strike slip event.
     NFtot=0;
     for (int nn=0; nn<Nm; nn++){
-    	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, no_slipmodels[0], crst.mu, disc[0], tmain[nn], d_touching_faults, crst.N_allP, crst.list_allP, NULL, resample, 0, list_slipmodels.cut_surf[nn], Nfaults, crst.lat0, crst.lon0);
+    	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, cmb_format, no_slipmodels[0], crst.mu, disc[0], tmain[nn], d_touching_faults, crst.N_allP, crst.list_allP, NULL, resample, 0, list_slipmodels.cut_surf[nn], Nfaults, crst.lat0, crst.lon0);
 		NFtot+=Nfaults[0];
 	}
 
@@ -141,7 +142,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     return(err);
 }
 
-int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipmodels,
+int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_format, int no_slipmodels,
 						double mu, double disc, double tmain, double d_close, int nsel,
 						int *sel_pts, double *mmain, int resample, int tap_bot, int cuts_surf,
 						int *NF0, double lat0, double lon0) {
@@ -164,7 +165,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 	setmodels.current_model=1;
 
 	for (int m=0; m<no_slipmodels; m++){
-		err=read_eqkfm(slipmodels[m], NULL, &NF, NULL, mu);
+		err=read_eqkfm(slipmodels[m], cmb_format, NULL, &NF, NULL, mu);
 		if (err){
 			print_screen(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
 			print_logfile(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
@@ -180,7 +181,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 
 	nftot=0;
 	for (int m=0; m<no_slipmodels; m++){
-		err=read_eqkfm(slipmodels[m], &eqkfm0, &NF, mmain, mu);
+		err=read_eqkfm(slipmodels[m], cmb_format, &eqkfm0, &NF, mmain, mu);
 		if (err) return (err);
 
 		if (cuts_surf) {

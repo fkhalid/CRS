@@ -37,7 +37,6 @@
 
 double DCFS_cap;
 int gridPMax;
-char cmb_format[120];
 FILE *flog=NULL;
 int extra_verbose, quiet;
 
@@ -85,7 +84,7 @@ int main (int argc, char **argv) {
 
 	int LLinversion, forecast;
 	int Nchar=120, Nchar_long=500;
-	char fname[Nchar],	infile[Nchar], crust_file[Nchar], fore_template[Nchar], catname[Nchar], outname[Nchar],
+	char fname[Nchar],	infile[Nchar], fore_template[Nchar], catname[Nchar], outname[Nchar],
 		syscopy[Nchar], background_rate_grid[Nchar], background_rate_cat[Nchar], slipmodelfile[Nchar], afterslipmodelfile[Nchar], modelparametersfile[Nchar],
 		logfile[Nchar], print_LL[Nchar], outnamemod[Nchar];
 	char print_cmb[Nchar],  print_forex[Nchar],  print_foret[Nchar],  printall_cmb[Nchar],  printall_forex[Nchar],  printall_foret[Nchar];
@@ -213,9 +212,9 @@ int main (int argc, char **argv) {
 
 	//-----------------------read input file -------------------//
 
-	err=read_inputfile(infile, outname, NULL, crust_file, fore_template, catname, &focmeccats, background_rate_grid, background_rate_cat,
+	err=read_inputfile(infile, outname, NULL, fore_template, catname, &focmeccats, background_rate_grid, background_rate_cat,
 			fixedmecfile, slipmodelfile, afterslipmodelfile,	modelparametersfile, logfile, &reftime, &Tstart, &Tend, &seed,
-			cmb_format, &no_fm_cats);
+			&no_fm_cats);
 
 	if (err) {
 		error_quit("Error reading input file %s.\n", infile);
@@ -224,12 +223,10 @@ int main (int argc, char **argv) {
 	//todo [askFahad]: why does this have to be repeated? (also in read_inputfile).
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
-		// 		   setting certain flags. 'cmb_format' is used at
-		//		   multiple points where files are read.
+		// 		   setting certain flags.
 		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(cmb_format, 			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 	#endif
@@ -293,9 +290,9 @@ int main (int argc, char **argv) {
 		system(syscopy);
 	}
 
-	err=read_crust(crust_file, fore_template, fixedmecfile , &crst, gridresxy, gridresz);
+	err=read_crust(fore_template, fixedmecfile , &crst, gridresxy, gridresz);
 	if (err) {
-		error_quit("Errors while reading crust file %s or template file %s. Exiting.", crust_file, fore_template);
+		error_quit("Errors while reading template file %s. Exiting.", fore_template);
 	}
 	if (flags.err_recfault) read_fmindex(crst, fore_template, &(crst.fmzone), &(crst.nofmzones));
 	else crst.nofmzones=1;

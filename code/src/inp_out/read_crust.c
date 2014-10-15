@@ -13,7 +13,7 @@
 
 //TODO: if more slip models are contained, make sure they have consistent geometry (they must cover all sampling points).
 
-int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct crust *crst, double resxy, double resz){
+int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, double resxy, double resz){
 /*
  * Read crust master file into crst structure.
  *
@@ -49,31 +49,6 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 	print_logfile("\nEntering read_crust...\n");
 
 	double *olats, *olons, *odeps;
-
-	//--------------read general crust information:-------------//
-
-//	init_crst(crst);
-//	if (!(strcmp(cmb_format,"farfalle"))) {
-//		err=read_farfalle_crust(fname, crst);
-//		print_logfile("reading farfalle format (file %s)\n",fname);
-//	}
-//	else {
-//		if (!(strcmp(cmb_format,"pscmp"))) {
-//			err=read_pscmp_crust(fname, crst);
-//			print_logfile("reading pscmp format (file %s)\n",fname);
-//		}
-//		else {
-//			print_logfile("Unknown format: %s.\n", cmb_format);
-//		}
-//	}
-//
-//	if (err) {
-//		print_logfile("Error while reading input file. Exiting.\n");
-//		error_quit(" ** Error while reading input file. Exiting. **\n");
-//		return 1;
-//	}
-//	print_logfile("Fixed focal mechanism: [str, dip]=[%.3lf, %.3lf].\n", (*crst).str0[0],(*crst).dip0[0]);
-
 
 	//--------------read grid file:------------------------------//
 
@@ -226,169 +201,6 @@ int read_crust(char *fname, char *fnametemplate, char *focmecgridfile, struct cr
 	print_screen("done\n");
 
 	return(err!=0);
-}
-
-int read_farfalle_crust(char * file, struct crust *crst){
-
-	FILE *fin;
-	int Nchar=200, err=0, junk;
-	char line[Nchar];
-	double s[3];	//regional stress field description;
-	double st[3];	//regional stress field description;
-	double di[3];	//regional stress field description;
-
-	int procId = 0;
-	int fileError = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
-	if(procId == 0) {
-		fin=fopen(file,"r");
-		if (!fin) {
-			print_screen("**Error: can not find input file %s (read_farfalle_crust).**", file);
-			print_logfile("**Error: can not find input file %s (read_farfalle_crust).**", file);
-			fileError = 1;
-		}
-
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin); //useless field (controls Farfalle output).
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin);
-		err+=ferror(fin);
-		sscanf(line,"%lf %lf", &((*crst).lambda), &((*crst).mu));
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin); //useless field ('Adding regional stress field').
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin);
-		err+=ferror(fin);
-		sscanf(line,"%lf %lf %lf", s, s+1, s+2);
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin);
-		err+=ferror(fin);
-		sscanf(line,"%lf %lf", st, di);
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin);
-		err+=ferror(fin);
-		sscanf(line,"%lf %lf", st+1, di+1);
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin);
-		err+=ferror(fin);
-		sscanf(line,"%lf %lf", st+2, di+2);
-		for (int i=1; i<=8; i++){
-			line[0]='!';
-			while (line[0]=='!') fgets(line,Nchar,fin);	//useless fields.
-		}
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin);
-		sscanf(line,"%lf %lf", &((*crst).fric), &((*crst).skepton));
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin);
-	sscanf(line,"%d %lf", &junk, (*crst).str0);
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin);
-	sscanf(line,"%d %lf", &junk, (*crst).dip0);
-		line[0]='!';
-		while (line[0]=='!') fgets(line,Nchar,fin);
-	sscanf(line,"%d %lf", &junk, (*crst).rake0);
-
-		fclose(fin);
-	}
-
-	#ifdef _CRS_MPI
-		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	#endif
-
-	if(fileError) {
-		return 1;
-	}
-
-	#ifdef _CRS_MPI
-		MPI_Bcast(&((*crst).lambda), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).mu), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).fric), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).skepton), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).str0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).dip0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).rake0), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(s, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(st, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(di, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	#endif
-
-	(*crst).S=prestress_eigen(s, st, di);	//todo check units! (MPa, Pa?)
-
-	return (err!=0);
-
-}
-
-int read_pscmp_crust(char *fname, struct crust *crst){
-	FILE *fin;
-	int dumerror=0;
-	double junk;
-	int nchar=200;
-	char line[nchar];
-	char comm[]="#";
-	double s1, s2, s3;	//regional stress field description (see Wang input file).
-
-	int procId = 0;
-	int fileError = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
-	(*crst).lambda=31226, (*crst).mu=26624;//calculated for Vp=5.7,Vs=3.2, rho=2600 (from Wang psgrn input file for Parkfield). MPa.
-
-	if(procId == 0) {
-		print_screen("Loading model setup...");
-
-		if (!(fin=fopen(fname,"r"))) {
-			print_screen("Error: can not open file %s (read_pscmp_crust), Exiting.\n", fname);
-			print_logfile("Error: can not open file %s (read_pscmp_crust), Exiting.\n", fname);
-
-			fileError = 1;
-		}
-	}
-
-	#ifdef _CRS_MPI
-		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	#endif
-
-	if(fileError) {
-		return 1;
-	}
-
-	if(procId == 0) {
-		line[0]=comm[0];
-		while(line[0]==comm[0]) fgets(line,nchar,fin);
-		while(line[0]!=comm[0]) fgets(line,nchar,fin);
-		while(line[0]==comm[0]) fgets(line,nchar,fin);
-		fgets(line,nchar,fin);
-		dumerror = sscanf(line, " %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf  %lf",
-						  &junk, &((*crst).fric), &((*crst).skepton),
-						  (*crst).str0, (*crst).dip0, (*crst).rake0,
-						  &s1, &s2, &s3);
-		fclose(fin);
-	}
-
-	#ifdef _CRS_MPI
-		MPI_Bcast(&dumerror, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-		MPI_Bcast(&((*crst).fric), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&((*crst).skepton), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast((*crst).str0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast((*crst).dip0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast((*crst).rake0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&s1, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&s2, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-		MPI_Bcast(&s3, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	#endif
-
-	prestress(s1, s2, s3, (*crst).str0[0], (*crst).dip0[0], (*crst).rake0[0], 0.0,(*crst).fric, &((*crst).S));
-
-	return (dumerror!=9);
 }
 
 int read_focmecgridfile(char *fname, struct crust *crst) {

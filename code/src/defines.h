@@ -205,6 +205,7 @@ struct slipmodels_list{
 	double *mmain;	//magnitudes.
 	double *disc;
 	char **slipmodels;
+	char cmb_format[120];
 };
 
 //structure describing a single fault earthquake (arrays can be used to describe multiple fault events).
