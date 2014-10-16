@@ -63,14 +63,14 @@ int main (int argc, char **argv) {
 	#endif
 
 	setenv("TZ", "UTC", 1);
-	int run_tests=0;
+	int run_tests=1;
 
 	extra_verbose=0;
 	quiet=0;
 
 	if (run_tests){
 		extra_verbose=1;
-		test_matrix2();
+		test_countcolheader();
 		//test_allOkada();
 		// TODO: [Fahad] There should be provision for ignoring MPI
 		//				  when running tests ...
@@ -112,7 +112,6 @@ int main (int argc, char **argv) {
 	int NgridT, NFM=0;	//number of gridpoints, number of aftershocks for which foc.mec is known, number of foc.mec from past seismicity.
 	struct Coeff_LinkList *AllCoeff;
     int *which_main;
-    double  Mc_source;
 
 	//RateState variables
 	int fixta, fixAsig, fixr;
@@ -235,7 +234,7 @@ int main (int argc, char **argv) {
 
 	err=read_modelparameters(modelparametersfile, &crst, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt,
-			&Nsur, &Nslipmod, &flags, &Mc_source, &(cat.Mc), &Mag_main, &dDCFS, &DCFS_cap, &gridPMax,
+			&Nsur, &Nslipmod, &flags, &(cat.Mc), &Mag_main, &dDCFS, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
 	if (err) {
@@ -248,7 +247,7 @@ int main (int argc, char **argv) {
 //------- change flags if input files are missing:----//
 
 	if (!focmeccats && flags.err_recfault) {
-		print_screen("Warning: InputCatalogFocMecFile not given: will not use variable receiver faults.\n");
+		print_screen("Warning: InputCatalogFocMecFile or InputListCatalogFocMecFile not given: will not use variable receiver faults.\n");
 		flags.err_recfault=0;
 	}
 	if ((strcmp(afterslipmodelfile,"")==0) && flags.afterslip) {
@@ -322,13 +321,13 @@ int main (int argc, char **argv) {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
 							   flags, &NFM, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
-							   tstartLL-extra_time, tendCat, 30);
+							   tstartLL-extra_time, tendCat);
 	}
 	else {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mag_main, crst, &cat, &eqkfm1,   NULL , NULL, flags,
 							   NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
-							   tstartLL-extra_time, tendCat, 30);
+							   tstartLL-extra_time, tendCat);
 	}
 
 	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **");

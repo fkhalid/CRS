@@ -14,20 +14,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-//#include <unistd.h>
 
 #include "../defines.h"
-//#include "../general/forecast_stepG.h"
 #include "../general/mem_mgmt.h"
 #include "../geom/convert_geometry.h"
 #include "../geom/coord_trafos.h"
 #include "../geom/dist2fault.h"
 #include "../geom/find_gridpoints.h"
 #include "../inp_out/print_output.h"
-#include "../inp_out/read_crust.h"
+//#include "../inp_out/read_crust.h"
 #include "../inp_out/read_csep_template.h"
 #include "../inp_out/read_eqkfm.h"
-//#include "../inp_out/read_eqkfm_fsp.h"
 #include "../inp_out/read_focmec.h"
 #include "../inp_out/read_inputfile.h"
 #include "../inp_out/read_matrix.h"
@@ -40,7 +37,7 @@
 #include "../seis/decluster.h"
 #include "../seis/GR.h"
 #include "../seis/Helmstetter.h"
-#include "../seis/soumod1.h"
+//#include "../seis/soumod1.h"
 #include "../util/hash.h"
 #include "../util/moreutil.h"
 #include "../util/nr.h"
@@ -63,6 +60,26 @@ char *testfolder="test";
 //extern int xmlLoadExtDtdDefaultValue;
 extern int gridPMax;
 double DCFS_cap=1e7;
+
+int test_countcolheader(){
+	/* testfile.txt is the following:
+	 *
+	 *  this    line    has     5       columns
+		here is just some blabla this is supposed to be a header
+		only    three   columns
+	 *
+	 */
+
+	int n=countcol_header("testfile.txt", 2);
+	printf("%d\n",n);	//should be 3
+
+	n=countcol("testfile.txt");
+	printf("%d\n",n);	//should be 5
+
+	n=countcol_header("testfile.txt",3);
+	printf("%d\n",n);	//should be -1
+
+}
 
 int test_readmultiplefocmec(){
 

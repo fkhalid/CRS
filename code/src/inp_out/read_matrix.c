@@ -27,7 +27,7 @@
 //-----------------------------------------------------------------------------
 int read_matrix(char *infile, int columns, int headerlines, double **data, long *rows) {
 	FILE *fin;
-	char title[300];
+	char title[3000];
 	double Zd, dum;
 	int s, z, i, ans, dumerror;
 	long ZZ, N;
@@ -193,15 +193,30 @@ int countline(char *filename){
 	return counter;
 }
 
-int countcol(char *filename){
+int countcol_header(char *filename, int headerlines){
+	/*
+	 * Returns the number of columns contained in a file, using the first line after headerlines.
+	 */
+
+	char title[3000];
 	FILE *fin;
 	int dum=0;
 	int counter =0;
 
 	if((fin = fopen(filename, "r"))==NULL) {
-		print_screen(" **Error: unable to open input file %s. (countcol.c)**\n", filename);
-		print_logfile(" **Error: unable to open input file %s. (countcol.c) **\n", filename);
+		print_screen(" **Error: unable to open input file %s.**\n", filename);
+		print_logfile(" **Error: unable to open input file %s.**\n", filename);
 		return -1;
+	}
+
+	if (countline(filename)<=headerlines){
+		print_screen(" **Error: headerlines should be less than total no. of lines in file %s.**\n", filename);
+		print_logfile(" **Error: headerlines should be less than total no. of lines in file %s.**\n", filename);
+		return -1;
+	}
+
+	for (int i = 1; i <= headerlines; i++){
+			fgetline(fin, title, 3000);
 	}
 	dum=(int) '\t';
 	while(dum=='\t' || dum==' ' || dum=='\n') dum=fgetc(fin);

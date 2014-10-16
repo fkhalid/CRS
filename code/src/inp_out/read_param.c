@@ -19,7 +19,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 						double *ta_max, int *nAsig0, int *nta0, double *tstartLL,
 						double *extra_time, double *tw, double *fore_dt,
 						int *Nsur, int *Nslipmod, struct flags *flags,
-						double *Mc_source, double *Mc, double *Mag_main,
+						double *Mc, double *Mag_main,
 						double *dCFS, double *DCFS_cap, int *gridPMax, double *dt, double *dM,
 						double *xytoll, double *ztoll, double *border, double *res,
 						double *gridresxy, double *gridresz, double *smoothing,
@@ -108,7 +108,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", &((*flags).afterslip));
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d %lf %d", &((*flags).aftershocks), Mc_source, &aftershock_mode);
+		sscanf(line,"%d %d", &((*flags).aftershocks), &aftershock_mode);
 		switch (aftershock_mode){
 			case 0:
 				(*flags).only_aftershocks_withfm=0;

@@ -37,19 +37,39 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 					 struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec,
 					 int **firstelements, struct flags flag, int *NFM, int *Ntot, int *Nmain,
 					 double dt, double dM, double xytoll, double ztoll, double dR, double tw,
-					 double tstart, double tend, double Mc_source) {
-//  focmec will contain matrix with focal mechanisms (*NFM of them). can be null, and will be ignored.
-//	double t0, double tw1, double tw2, double t1 =	tstartLL, tmain[0], tmain[0]+tw, fmax(tendLL,Tend)
-//  dt, dM, xytoll, ztoll: expected difference b/t/ events from catalog and focmec catalog; dR= extra distance to be considered for sources.
-//	focal mechanisms are ignored if focmeccat is NULL.
-//  tstartLL: start of LL inversion (only focal mechanisms before this time will be included).
-//  tstartData: time after which which events should be included as sources.
+					 double tstart, double tend) {
 
+/*	Reads catalog and focal mechanisms catalog, and fills cat, eqkfm structures accordingly.
+ *
+ * Input:
+ *
+ * catname:	ZMAP catalog file
+ * focmeccat:	list of focal mechanisms catalog files [0...nofmcat-1]
+ * nofmcat:	number of focal mechanisms catalogs
+ * reftime: IssueTime (times will be calcualted with reference to this time)
+ * dDCFS:	min. value for which grid points should be selected for calculating stress changes from source events
+ * Mag_main:	magnitude of mainshocks (i.e. events which are included as sources also if flags.aftershocks==0)
+ * crst:	structure containing domain information
+ * flag:	flags structure
+ * dt, dM, xytoll, ztoll: max. expected difference (tolerance) between events from catalog and focmec catalog;
+ * dR: extra distance to be considered for sources.
+ * tw:	time window to be ignored for event selection after each mainshock (NB only ignored in cat, still included as sources in eqkfm).
+ * tstart: start time for including sources and catalog events //todo they should be different to include foreshocks?
+ * tend: end time for forecast (sourced only included up to IssueTime, i.e. t=0)
+ *
+ * Output:
+ *
+ * cat:	catalog structure used for LL calculations
+ * eqkfm1:	eqkfm structure containing stress sources. Can be NULL, and will be ignored.	[0...Ntot-1]
+ * focmec:	array containing focal mechanisms [1...NFM]
+ * first_elements:	indices of focmec elements which correspond to the first element of a new focal mechanism area (i.e. a new focal mechanisms catalog)
+ * NFM:	length of focmec
+ * Ntot: length of eqkfm1
+ * Nmain:	number of mainshocks in eqkfm1
+ *
+ */
 
 //todo make sure that first focal mechanism is the best oriented.
-//todo only include as sources events large enough to affect more than 1 grid point...
-//todo so far, many events are selected and  eqkfm[n].nsel=0 is used to deactivate them. This is a waste (done this way to avoid messing up indices, but should be changed).
-//todo check Mc_source works.
 
 	// [Fahad] Variables used for MPI
 	int procId = 0;
@@ -60,6 +80,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 
 	struct eqkfm *eqkfm1fm;
 	double tstartS, tendS, tstartCat, tendCat;
+	double minmag;
 	int err=0, errP, NgridT=crst.N_allP;
 	int Nfm;
 
@@ -74,26 +95,20 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 
 	if (err) return (err);
 
-	//fixme check that foc mec are read when aftershocks==1.
-	if (flag.aftershocks){
-		//if (focmec){
-			err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
-					reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
-			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
-		//}
-		eqk_filter(eqkfm1, Ntot, (Mc_source>20) ? (*cat).Mc : Mc_source, crst.depmax+fmax(dR,ztoll));
-		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
+	// read catalog of focal mechanisms and merge it with eqkfm structure from catalog:
+	if (flag.aftershocks || focmec){
+		err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
+			reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
+		combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, dt, dM, xytoll, 1);
 	}
 
-	else {
-		if (focmec){
-			err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
-					reftime, tstart, tendS, tendS, Mag_main, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
-			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
-		}
-		eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll));	//only keep mainshocks.
-		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 0);
-	}
+	// filter eqkfm according to magnitude, depth.
+	minmag= (flag.aftershocks)? (*cat).Mc : Mag_main;
+	eqk_filter(eqkfm1, Ntot, minmag , crst.depmax+fmax(dR,ztoll));
+
+	// calculate distances between source events and grid points.
+	eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
+
 
 	if (Nmain) *Nmain=0;
 	for (int i=0; i<(*Ntot); i++) {
@@ -158,13 +173,12 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     *eqkfm0res=eqkfm_array(0, NFtot-1);
 
     //TODO: implement multiple slip models with non strike slip event.
+    //todo: make sure than cuts_surf is read independently for coseismic/afterslip when different structure is introduced.
     NFtot=0;
     for (int nn=0; nn<Nm; nn++){
     	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, cmb_format, no_slipmodels[0], crst.mu, disc[0], tmain[nn], crst.N_allP, crst.list_allP, NULL, list_slipmodels.cut_surf[nn], Nfaults, crst.lat0, crst.lon0);
 		NFtot+=Nfaults[0];
 	}
-
-//    top_of_slipmodel(*eqkfm0res, NFtot);
 
     return(err);
 }

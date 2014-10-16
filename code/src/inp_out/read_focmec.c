@@ -17,7 +17,33 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 					  struct tm reftime, double t0, double t1, double tfocmec,
 					  double mag, double ***focmec,	int **firstelements, int *NFM,
 					  int *NFM_timesel, struct eqkfm **eqkfm,int sel, int fm2) {
-// *firstelements should not be initialized (is done inside this function).
+/*
+ * Reads a set of focal mechanisms catalogs and fills in a focmec and a eqkfm structure.
+ *
+ * Input:
+ *  focmecfiles: list of focal mechanisms catalog files [0...nofiles-1]
+ *  nofiles: number of focal mechanisms catalogs
+ *  crst: structure containing domain information
+ *  border, dz: extra (horizontal/vertical) distance to be considered for spatial selection outside of grid in crst.
+ *  dDCFS:	min. value for which grid points should be selected for calculating stress changes from source events
+ *  reftime: IssueTime (times will be calcualted with reference to this time)
+ *  t0,t1: start and end time for selection of focal mechanisms for sources (eqkfm)
+ *  tfocmec: end time for selection of focal mechanisms for receiver faults (focmec). Start time is not bounded.
+ *  mag: minimum magnitude for selection of focal mechanisms for sources (eqkfm). no lower bound for focmec.
+ *  sel: flag indicating is spatial selection should be done.
+ *  fm2: flag indicating is both foc. planes should be selected (if fm2=0, only selects first plane).
+ *
+ * Output:
+ *  focmec:	array containing focal mechanisms [1...NC][1...NFM], where NC=no. of columns in file (set below).
+ *  first_elements:	indices of focmec elements which correspond to the first element of a new focal mechanism area (i.e. a new focal mechanisms catalog)
+ *  	NB firstelements should not be initialized (is done inside this function).
+ *  NFM: length of focmec
+ *  eqkfm: structure containing sources [0...NFM_timesel-1]
+ *  NFM_timesel: length of eqkfm
+ *
+ *  if focmec=NULL or eqkfm=NULL, they will be ignored.
+ *
+ */
 
 	double **focmectemp;
 	int nfmtemp, nfmtemp2, cl;
@@ -100,13 +126,30 @@ int readfocmec(char *focmecfile, struct crust crst,
 			   double t0, double t1, double tfocmec, double mag,
 			   double ***focmec, int *NFM, int *NFM_timesel,
 			   struct eqkfm **eqkfm,int sel, int fm2) {
-// border, dz indicate extra volume to be considered for spatial selection.
-// magnitude selection only applies to sources, not to contents of focmec.
-// sel is flag to specify if spatial selection should be done.
-// fm2 is flag to specify if both mechanisms should be used.
-// focmec will contain all focal mechanisms in the relevant area, and time t<=tfocmec.  size [1...NC,1...NFM]
-// eqkfm will only contain those between time t0, t1 (i.e. to be used as sources). size [0...NFM_timesel]
-// if focmec=NULL or eqkfm=NULL, they will be ignored.
+
+/*
+ * Reads a set of focal mechanisms catalogs and fills in a focmec and a eqkfm structure.
+ *
+ * Input:
+ *  focmecfile: foc. mec. file
+ *  crst: structure containing domain information
+ *  border, dz: extra (horizontal/vertical) distance to be considered for spatial selection outside of grid in crst.
+ *  dDCFS:	min. value for which grid points should be selected for calculating stress changes from source events
+ *  reftime: IssueTime (times will be calcualted with reference to this time)
+ *  t0,t1: start and end time for selection of focal mechanisms for sources (eqkfm)
+ *  tfocmec: end time for selection of focal mechanisms for receiver faults (focmec). Start time is not bounded.
+ *  mag: minimum magnitude for selection of focal mechanisms for sources (eqkfm). no lower bound for focmec.
+ *  sel: flag indicating is spatial selection should be done.
+ *  fm2: flag indicating is both foc. planes should be selected (if fm2=0, only selects first plane).
+ *
+ * Output:
+ *  focmec:	array containing focal mechanisms [1...NC][1...NFM], where NC=no. of columns in file (set below).
+ *  NFM: length of focmec
+ *  eqkfm: structure containing sources [0...NFM_timesel-1]
+ *  NFM_timesel: length of eqkfm
+ *
+ *  if focmec=NULL or eqkfm=NULL, they will be ignored.
+ */
 
 	// [Fahad] Variables used for MPI
 	int fileError = 0;
@@ -165,7 +208,8 @@ int readfocmec(char *focmecfile, struct crust crst,
 
 	if(procId == 0) {
 		NFMmax = (fm2==1)? 2*countline(focmecfile) : countline(focmecfile);
-		NC = countcol(focmecfile); //fixme risky (if extra stuff is written in header): could check more than 1 line.
+		NC = countcol_header(focmecfile,1);	//assume one header line (safer than counting columns in header, which may have unwanted spaces);
+		if (NC==-1) countcol(focmecfile); //previous function will return -1 is the file has a single line (and no header); in this case, count columns of this line.
 	}
 
 	#ifdef _CRS_MPI

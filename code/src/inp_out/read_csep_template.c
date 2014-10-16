@@ -7,6 +7,14 @@
 
 #include "read_csep_template.h"
 
+#include <math.h>
+#include <stddef.h>
+
+#include "../defines.h"
+#include "../geom/convert_geometry.h"
+#include "../util/nrutil.h"
+#include "read_matrix.h"
+
 #ifdef _CRS_MPI
 	#include "mpi.h"
 #endif

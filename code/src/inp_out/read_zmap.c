@@ -18,7 +18,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 /*
  * Reads catalog in zmap format into structure cat (used for LL calculation) and structure eqfm (for stress sources).
  *
- * input:
+ * Input:
  * 	file: zmap catalog.
  * 	crst: structure containing model domain information (used to distribute events across grid points);
  * 	reftime: reference time (IssueTime)
@@ -31,11 +31,12 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
  * 	findgridpoints: flag indicating if grid points corresponding to events should be calculated (expensive).
  * 	dDCFS: minimum stress value for which grid points should be considered.
  *
- * output:
- * 	cat, eqfm can be given as NULL, and will be skipped.
+ * Output:
+ * 	cat: structure containing events to be used for LL calculation (both retrospective and for forecast)
+ * 	eqkfm: contains events to be used as sources. It can be given as NULL, and will be skipped.
  * 	Otherwise, everything in these structures is initialized.
  *
- *  * */
+ */
 
 	// [Fahad] Variables used for MPI
 	int fileError = 0;
@@ -438,7 +439,17 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 
 int read_firstlineZMAP(char *file, struct tm reftime, double *stime){
-	// Read first line of ZMAP file and return time of the event. Used to determine start time of a catalog (assumed to be chronological).
+/*
+ * Reads first line of ZMAP file and return time of the event. Used to determine start time of a catalog (assumed to be chronological).
+ *
+ * Input:
+ * 	file: ZMAP catalog file
+ * 	reftime: reference time
+ *
+ * Output:
+ *  stime: time of first event, in days, relative to reftime.
+ */
+
 
 	// [Fahad] Variables used for MPI
 	int fileError = 0;
@@ -525,5 +536,12 @@ int read_firstlineZMAP(char *file, struct tm reftime, double *stime){
 
 		*stime=difftime(mktime(&ev),mktime(&reftime))*SEC2DAY;
 	}
+
+	//todo [askFahad] is this ok? (stime is passed a function argument)
+	#ifdef _CRS_MPI
+		MPI_Bcast(stime, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	#endif
+
+	return 0;
 }
 
