@@ -13,7 +13,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputC
 sed "47s+0+1+"  $parafile | sed "47s+X+$i+" > $temppara
 
 # use foc mec file which contains one of the source events (to distinguish test0 and test1).
-if [ $i -eq 1 ]
+if [ $i -lt 2 ]
 then
 sed '9s+focmecfile+focmecfile0+' temp_inputC > tmp
 mv tmp temp_inputC
