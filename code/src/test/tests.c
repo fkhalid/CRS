@@ -2119,7 +2119,8 @@ void tests_eqkfm_addslipmodels(){
 		}
 	}
 
-	err= eqkfm_addslipmodels(eq_in1, all_slipmodels, &eq_out, &indices, N1, &Nout, &NFout, 0.001, 0.3, 1.0, crst);
+	//broken since needs additional flags argument (at the end).
+	//err= eqkfm_addslipmodels(eq_in1, all_slipmodels, &eq_out, &indices, N1, &Nout, &NFout, 0.001, 0.3, 1.0, crst);
 
 	return;
 }

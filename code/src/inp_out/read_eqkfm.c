@@ -27,7 +27,7 @@
 
 int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb,
 						int **which_events, int N1, int *Ncomb, int **nfout,
-						double dt, double dmag, double res, struct crust crst) {
+						double dt, double dmag, double res, struct crust crst, struct flags flags) {
 /* assumes that eqfm1 only has single fault events, but slip models may have more...
  * does not do spatial selection (unlike combine_eqkfm).
  * return combined catalog, rather than list of indices mapping one catalog to the other.
@@ -105,35 +105,105 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	for(int i=0; i<N1; i++) {
 		if(eqfm1[i].is_mainshock) {
 		//if(which_slipmod[i]!=-1) {
-			eqfm1[i].nsel=0;	//deactivate it as source aftershock;
+			eqfm1[i].nsel=0;	//deactivate it as source aftershock;	//todo delete (this structure should be completely killed).
 			(*eqfm_comb)[c3].nsel=crst.N_allP;
 
+
+
+/*	int only_aftershocks_withfm;
+	int full_field;			  //if (2): full field for all events.  (1) use available foc mec. (0) use isotropic field for all.
+	int aftershocks_fixedmec; //controls is fixed foc. mec. should be used for events w/o foc mec, when fullfield=2 (otherwise, will draw a random one).
+	*/
+
+
+//			case 0:
+//				(*flags).only_aftershocks_withfm=0;
+//				(*flags).full_field=0;
+//				(*flags).aftershocks_fixedmec=0;
+//				break;
+//			case 1:
+//				(*flags).only_aftershocks_withfm=0;
+//				(*flags).full_field=1;
+//				(*flags).aftershocks_fixedmec=0;
+//				break;
+//			case 2:
+//				(*flags).only_aftershocks_withfm=0;
+//				(*flags).full_field=2;
+//				(*flags).aftershocks_fixedmec=1;
+//				break;
+//			case 3:
+//				(*flags).only_aftershocks_withfm=0;
+//				(*flags).full_field=2;
+//				(*flags).aftershocks_fixedmec=0;
+//				break;
+//			case 4:
+//				(*flags).only_aftershocks_withfm=1;
+//				(*flags).full_field=2;
+//				(*flags).aftershocks_fixedmec=0;
+//				break;
+
+
 			if(which_slipmod[i]==-1) {
-				copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
-				(*eqfm_comb)[c3].nsel=crst.N_allP;
-				(*eqfm_comb)[c3].selpoints=all_pts;
-				eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
-				if (which_events!=NULL) (*which_events)[c3]=i;
-				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
-				if (!eqfm1[i].is_slipmodel){
-					print_screen(" ** Warning: slip model or focal mechanism not available for large event at t=%.5lf, mag=%.2lf -> will use isotropic field. **\n", eqfm1[i].t, eqfm1[i].mag);
-					print_logfile("Warning: slip model or focal mechanism not available for large event at t=%.5lf, mag=%.2lf -> will use isotropic field.\n", eqfm1[i].t, eqfm1[i].mag);
+
+				if (flags.only_aftershocks_withfm && !eqfm1[i].is_slipmodel){
+					// flags.only_aftershocks_withfm indicates that only events with focal mechanisms should be used.
+					continue;
 				}
 				else {
-					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
-					if (err){
-						print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
-						print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+					copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
+					(*eqfm_comb)[c3].nsel=crst.N_allP;
+					(*eqfm_comb)[c3].selpoints=all_pts;
+					eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
+					if (which_events!=NULL) (*which_events)[c3]=i;
+					(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
+
+
+					//flags.full_field=0 indicates that an isotropic slip model should be used for all events (also those with foc mec):
+					if (eqfm1[i].is_slipmodel && flags.full_field!=0) {
+						err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
+						if (err){
+							print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+							print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+						}
+						else {
+							print_screen("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+							print_logfile("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+						}
 					}
-					else {
-						print_screen("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
-						print_logfile("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
-					}
+
+
+					else{
+						if (!eqfm1[i].is_slipmodel && flags.full_field==2){	//todo NB do not use aftershocks_fixedmec since MC option will be killed.
+							(*eqfm_comb)[c3].str1=crst.str0[0];	//fixme should use different regions.
+							(*eqfm_comb)[c3].dip1=crst.dip0[0];	//fixme should use different regions.
+							(*eqfm_comb)[c3].rake1=crst.rake0[0];
+							(*eqfm_comb)[c3].whichfm=1;
+							err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
+							if (err){
+								print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+								print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+							}
+						}
+
+						else{
+							// If none of the conditions above holds, assume isotropic field.
+							(*eqfm_comb)[c3].is_slipmodel=0;
+
+							/* todo: add counter here and produce some output (similar to what done previously for aftershocks). */
+						}
+ 					}
+
+					(*nfout)[*Ncomb]=1;
+					c3+=1;
+					*Ncomb+=1;
 				}
-				(*nfout)[*Ncomb]=1;
-				c3+=1;
-				*Ncomb+=1;
 			}
+
+
+
+
+
+
 			else {
 				j=which_slipmod[i];
 				nsm=0;

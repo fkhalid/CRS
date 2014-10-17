@@ -96,7 +96,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	if (err) return (err);
 
 	// read catalog of focal mechanisms and merge it with eqkfm structure from catalog:
-	if (flag.aftershocks || focmec){
+	if (flag.full_field || focmec){
 		err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
 			reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
 		combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, dt, dM, xytoll, 1);

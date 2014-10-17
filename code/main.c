@@ -368,7 +368,7 @@ int main (int argc, char **argv) {
 //-----------------Add mainshock slip models ---------------//
 //----------------------------------------------------------//
 
-	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, &which_main, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst);
+	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, &which_main, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst, flags);
 	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **\n");
 
 	if(LLinversion){

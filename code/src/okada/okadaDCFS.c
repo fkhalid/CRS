@@ -142,7 +142,7 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 			patch_pos(eqkfm1[j], p, &eqeast, &eqnorth, &depth);
 
 			// calculate DCFS from patches:
-			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i2)
+			//#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i2)
 			for (int i=1; i<=Nsel; i++){
 				i2=DCFS.which_pts[i];
 				north=crst.y[i2];
