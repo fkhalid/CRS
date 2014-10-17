@@ -63,14 +63,14 @@ int main (int argc, char **argv) {
 	#endif
 
 	setenv("TZ", "UTC", 1);
-	int run_tests=1;
+	int run_tests=0;
 
 	extra_verbose=0;
 	quiet=0;
 
 	if (run_tests){
 		extra_verbose=1;
-		test_countcolheader();
+		//test_countcolheader();
 		//test_allOkada();
 		// TODO: [Fahad] There should be provision for ignoring MPI
 		//				  when running tests ...
@@ -95,7 +95,8 @@ int main (int argc, char **argv) {
 	//Slip model + catalog variables:
     struct slipmodels_list all_slipmodels, all_aslipmodels;
 	struct eqkfm *eqkfm1=0, *eqkfm0res=0, *eqkfm_aft=0;	//contain respectively: aftershocks with fm, aftershocks, mainshocks, mainshocks resampled, afterslip, afterslip resampled.
-	double Mag_main;
+	double Mag_main, Mc_source;	//Mag_main used to skip tw for LL calculations (todo: should not do this for forecasts).
+								//Mag_main also used for declustering in case background rate; should put it somewhere else in input file.
 	double dt, dM, xytoll, ztoll, border;
 
 	int Nm, *Nfaults_all=0;
@@ -234,7 +235,7 @@ int main (int argc, char **argv) {
 
 	err=read_modelparameters(modelparametersfile, &crst, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt,
-			&Nsur, &Nslipmod, &flags, &(cat.Mc), &Mag_main, &dDCFS, &DCFS_cap, &gridPMax,
+			&Nsur, &Nslipmod, &flags, &(cat.Mc), &Mag_main, &Mc_source, &dDCFS, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
 	if (err) {
@@ -319,18 +320,18 @@ int main (int argc, char **argv) {
 
 	if (flags.err_recfault) {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
-							   dDCFS, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
+							   dDCFS, Mc_source, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
 							   flags, &NFM, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
 							   tstartLL-extra_time, tendCat);
 	}
 	else {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
-							   dDCFS, Mag_main, crst, &cat, &eqkfm1,   NULL , NULL, flags,
+							   dDCFS, Mc_source, crst, &cat, &eqkfm1,   NULL , NULL, flags,
 							   NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
 							   tstartLL-extra_time, tendCat);
 	}
 
-	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **");
+	if (err!=0) error_quit("**Error in setting up catalog. Exiting. **");
 
 	if (flags.err_recfault && (no_fm_cats!=crst.nofmzones)){
 		if (crst.nofmzones>no_fm_cats){
@@ -368,7 +369,7 @@ int main (int argc, char **argv) {
 //----------------------------------------------------------//
 
 	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, &which_main, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst);
-	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **");
+	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **\n");
 
 	if(LLinversion){
 		print_logfile("Inversion time period: [%2.lf - %2.lf]days, ", tstartLL, tendLL);
@@ -376,7 +377,7 @@ int main (int argc, char **argv) {
 
 	if (flags.aftershocks==0) {
 		Ntot=0;
-		for (int i=0; i<Nm; i++) which_main[i]=i;	//since DCFS contains only mainshocks.
+		for (int i=0; i<Nm; i++) which_main[i]=i;	//since DCFS contains only mainshocks. //todo is this needed?
 	}
 
 	//--------------Setup Coefficients and DCFS struct--------------//
@@ -484,7 +485,7 @@ int main (int argc, char **argv) {
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
 	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, 1, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags,
 			tevol_afterslip, crst, AllCoeff, L, max(Ntot,Nm), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2,
-			fmin(tstartLL,Tstart-extra_time), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
+			fmin(tstartLL,Tstart-extra_time), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
 
 	for (int p=1; p<=(1+nAsig0)*(1+nta0); p++) LLs[p]=0.0;
 
@@ -670,7 +671,7 @@ int main (int argc, char **argv) {
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, Nslipmod, DCFS, eqkfm_aft,
 										  	eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff,
 										  	L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat,
-										  	times2, tstartLL, tstartLL, tendLL, tw, Asig, ta, r0, fixr, gammas,
+										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, gammas,
 										  	gammas_new, 0, 0, 0, !tai && !as);
 
 					if (!err){

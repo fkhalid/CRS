@@ -104,6 +104,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 
 	for(int i=0; i<N1; i++) {
 		if(eqfm1[i].is_mainshock) {
+		//if(which_slipmod[i]!=-1) {
 			eqfm1[i].nsel=0;	//deactivate it as source aftershock;
 			(*eqfm_comb)[c3].nsel=crst.N_allP;
 

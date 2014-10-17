@@ -19,7 +19,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 						double *ta_max, int *nAsig0, int *nta0, double *tstartLL,
 						double *extra_time, double *tw, double *fore_dt,
 						int *Nsur, int *Nslipmod, struct flags *flags,
-						double *Mc, double *Mag_main,
+						double *Mc, double *Mag_main, double *Mc_source,
 						double *dCFS, double *DCFS_cap, int *gridPMax, double *dt, double *dM,
 						double *xytoll, double *ztoll, double *border, double *res,
 						double *gridresxy, double *gridresz, double *smoothing,
@@ -88,7 +88,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		times.tm_isdst=0;
 		*tstartLL=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf", tw);
+		sscanf(line,"%lf %lf", tw, Mag_main);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf", extra_time);
 		line[0]=comm;
@@ -143,7 +143,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
 		sscanf(line,"%lf", Mc);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf", Mag_main);
+		sscanf(line,"%lf", Mc_source);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf %lf", dCFS, DCFS_cap);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");

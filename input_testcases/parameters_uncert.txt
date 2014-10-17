@@ -17,7 +17,7 @@
 #tw			time window after mainshock.
 #extra_time	time period before tstartLL for which sources should be included (only relevant if aftershocks==1,or large events are present). 
 2004-09-28T17:15:24Z
-0.0012
+0.0012	5.95
 0.0
 #======================================#
 #		  Time of forecast	 	   	   #

@@ -91,7 +91,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 
 	//select events within some tolerance level, since they will have to be matched with focal mechanisms.
 	err += readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat,
-						Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
+						5.5, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);	//fixme 5.5 should be Mag_main
 
 	if (err) return (err);
 

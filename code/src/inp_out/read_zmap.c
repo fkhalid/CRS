@@ -318,6 +318,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	if (!eq1 && !eq2) {
 		if (cat) (*cat).Z=0;
 		if (Ntot) *Ntot=0;
+		print_logfile("No events found as sources or for LL inversion. Exiting.\n");
+		print_screen("No events found as sources or for LL inversion. Exiting.\n");
 		return 1;
 	}
 

@@ -277,7 +277,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 											   NgridT, NTScont, NTSdisc, gammas, crst.rate0,
 											   dumrate, 1);
 
-					tnow=eqkfm0[current_main].t+tw;
+					tnow=eqkfm0[current_main].t+tw;	//fixme: either remove this entirely, or change is as in CRSLogLikelihood.
 				}
 				else if(tnow<eqkfm0[current_main].t+tw) {
 					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
@@ -510,7 +510,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 					 double *tevol, struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont,
 					 int NTSdisc, int Nm, int NgridT, double **focmec, int *fmzonelim, int NFM,
 					 long *seed, struct catalog cat, double *times, double tstart, double tt0,
-					 double tt1, double tw, double Asig, double ta, double r0, int fixr,
+					 double tt1, double tw, double Mag_main, double Asig, double ta, double r0, int fixr,
 					 double *gammas0, double **all_new_gammas, int fromstart, char * printall_cmb,
 					 char *printall_forex, int refresh) {
 
@@ -589,7 +589,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	double Ntot, Itot, LLdum0tot;
 	int err, Nsur_over_Nslipmod=Nsur/Nslipmod;
 	int current_main, j0, which_recfault;
-	double tnow;
+	double tnow, tskip;
 	FILE *fforex, *fcmb;
 
 	if (LL) print_screen("Calculating LL for Asig=%lf, ta=%lf ...", Asig, ta);
@@ -709,24 +709,28 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		while (current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
 		while (current_main<Nm && eqkfm0[current_main].t<tt1){
 			if (tnow<eqkfm0[current_main].t){
+				tskip=(eqkfm0[current_main].mag>=Mag_main)? tw : 0.0;
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
 										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, NTSdisc, gammas,
 										   crst.rate0, dumrate, 1);
 				integral += (sum)/(1.0*Nsur);
 
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
-										   eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
+											eqkfm0[current_main].t+tskip, Asig, ta, 0, 0, &sum, 0,
 										   NgridT, NTScont, NTSdisc, gammas, crst.rate0,
 										   dumrate, 1);
 
-				tnow=eqkfm0[current_main].t+tw;
+				tnow=eqkfm0[current_main].t+tskip;
 			}
-			else if (tnow<eqkfm0[current_main].t+tw){
-				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
-						Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, NTSdisc, gammas, crst.rate0,
-						dumrate, 1);
+			else {
+				tskip=(eqkfm0[current_main].mag>=Mag_main)? tw : 0.0;
+				if (tnow<eqkfm0[current_main].t+tskip){
 
-				tnow=eqkfm0[current_main].t+tw;
+					err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tskip,
+							Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, NTSdisc, gammas, crst.rate0,
+							dumrate, 1);
+					tnow=eqkfm0[current_main].t+tskip;
+				}
 			}
 			current_main+=1;
 			if (err) break;
@@ -812,7 +816,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				}
 				j0+=N;
 			}
-			tnow=eqkfm0[current_main].t+tw;
+			tskip=(eqkfm0[current_main].mag>=Mag_main)? tw : 0.0;
+			tnow=eqkfm0[current_main].t+tskip;
 			current_main+=1;
 		}
 		if (tnow<tt1){
