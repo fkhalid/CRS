@@ -198,9 +198,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 								eqkfm1[eq1].slip_dip=dvector(1,1);
 								eqkfm1[eq1].slip_str[1]=slip*cos(DEG2RAD*eqkfm1[eq1].rake1);
 								eqkfm1[eq1].slip_dip[1]=slip*sin(DEG2RAD*eqkfm1[eq1].rake1);
-								//6 lines added
+								//5 lines added
 								eqkfm1[eq1].np_di=eqkfm1[eq1].np_st=1;
-								eqkfm1[eq1].slip_dip=dvector(1,1);
 								eqkfm1[eq1].pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
 								eqkfm1[eq1].pos_d=dvector(1,1);
 								eqkfm1[eq1].pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
