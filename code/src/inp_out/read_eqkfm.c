@@ -26,7 +26,7 @@
 #include "read_eqkfm_fsp.h"
 
 int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb,
-						int **which_events, int N1, int *Ncomb, int **nfout,
+						int N1, int *Ncomb, int **nfout,
 						double dt, double dmag, double res, struct crust crst, struct flags flags) {
 /* assumes that eqfm1 only has single fault events, but slip models may have more...
  * does not do spatial selection (unlike combine_eqkfm).
@@ -97,9 +97,6 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	}
 
 	*eqfm_comb=eqkfm_array(0,N3-1);
-	if (which_events!=NULL) {
-		*which_events=ivector(0,N3-1);
-	}
 	if (nfout) *nfout=ivector(0,N1-1);
 
 	for(int i=0; i<N1; i++) {
@@ -114,7 +111,6 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int full_field;			  //if (2): full field for all events.  (1) use available foc mec. (0) use isotropic field for all.
 	int aftershocks_fixedmec; //controls is fixed foc. mec. should be used for events w/o foc mec, when fullfield=2 (otherwise, will draw a random one).
 	*/
-
 
 //			case 0:
 //				(*flags).only_aftershocks_withfm=0;
@@ -154,7 +150,6 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 					(*eqfm_comb)[c3].nsel=crst.N_allP;
 					(*eqfm_comb)[c3].selpoints=all_pts;
 					eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
-					if (which_events!=NULL) (*which_events)[c3]=i;
 					(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 
 
@@ -217,7 +212,6 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 										   all_slipmodels.tmain[j],crst.N_allP, crst.list_allP,
 										   all_slipmodels.mmain+j, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
 
-				if (which_events!=NULL) (*which_events)[c3]=i;
 				if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
 				for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) (*eqfm_comb)[c3].distance=eqfm1[i].distance;
 				c3+=nf2[which_slipmod[i]];

@@ -281,8 +281,8 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 }
 
 int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out,
-		struct crust crst, struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, int Nm,
-		int Ntot, int *Nfaults, int *which_main) {
+		struct crust crst, struct eqkfm *eqkfm0, int Nm,
+		int *Nfaults) {
 	//set Ntot=0 if aftershocks should not be considered.
 
 	// [Fahad] Variables used for MPI
@@ -300,6 +300,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
     //----------set up Coefficients----------------//
 
     if (Coefficients!=NULL) {
+    	//todo make sure that coefficients are only recalculated when needed (i.e. only for events for which several slip model are available).
 		AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
 		temp= AllCoeff;
 		for(int i=0; i<Nm; i++) {
@@ -316,7 +317,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			for(int f=0; f<Nfaults[i]; f++) {
 				temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
 			}
-			temp->which_main=which_main[i];
+			temp->which_main=i;
 			NFsofar+=Nfaults[i];
 			if (i<Nm-1) {
 				temp->next= malloc(sizeof(struct Coeff_LinkList));
@@ -331,38 +332,37 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
     //--------------set up DCFS-------------------//
 
     if (DCFS_out!=NULL){
-		Nsteps= fmax(Ntot,Nm);
-		DCFS=pscmp_arrayinit(crst,0,Nsteps-1);
 
-		for (int eq1=0; eq1<Ntot; eq1++){
-			Nsel = eqkfm1[eq1].nsel;
-			DCFS[eq1].NF=1;
-			DCFS[eq1].index_cat=eqkfm1[eq1].index_cat;
-			DCFS[eq1].which_pts=eqkfm1[eq1].selpoints;
-			DCFS[eq1].fdist=eqkfm1[eq1].distance;
-			DCFS[eq1].nsel=Nsel;
-			DCFS[eq1].t=eqkfm1[eq1].t;
-			DCFS[eq1].m=eqkfm1[eq1].mag;
-			if (Nsel>0){
-				DCFS[eq1].S = d3tensor(1,Nsel,1,3,1,3);
-				DCFS[eq1].cmb=dvector(1,Nsel);
-				for (int i=1; i<=Nsel; i++) DCFS[eq1].cmb[i]=0.0;
-			}
-		}
+		DCFS=pscmp_arrayinit(crst,0,Nm-1);
+
+//		for (int eq1=0; eq1<Ntot; eq1++){
+//			Nsel = eqkfm1[eq1].nsel;
+//			DCFS[eq1].NF=1;
+//			DCFS[eq1].index_cat=eqkfm1[eq1].index_cat;
+//			DCFS[eq1].which_pts=eqkfm1[eq1].selpoints;
+//			DCFS[eq1].fdist=eqkfm1[eq1].distance;
+//			DCFS[eq1].nsel=Nsel;
+//			DCFS[eq1].t=eqkfm1[eq1].t;
+//			DCFS[eq1].m=eqkfm1[eq1].mag;
+//			if (Nsel>0){
+//				DCFS[eq1].S = d3tensor(1,Nsel,1,3,1,3);
+//				DCFS[eq1].cmb=dvector(1,Nsel);
+//				for (int i=1; i<=Nsel; i++) DCFS[eq1].cmb[i]=0.0;
+//			}
+//		}
 
 		NFtot=0;
 		//substitute mainshocks:
-		for (int eq1=0; eq1<Nm; eq1++){
-			eq= which_main[eq1];
+		for (int eq=0; eq<Nm; eq++){
 			Nsel = eqkfm0[NFtot].nsel;
 			DCFS[eq].fdist=eqkfm0[NFtot].distance;
 			DCFS[eq].index_cat=eqkfm0[NFtot].index_cat;
 			DCFS[eq].which_pts=eqkfm0[NFtot].selpoints;
 			DCFS[eq].t=eqkfm0[NFtot].t;
 			M0=0.0;
-			for (int f=0; f<Nfaults[eq1]; f++) M0+=pow(10,1.5*(eqkfm0[NFtot+f].mag+6));
+			for (int f=0; f<Nfaults[eq]; f++) M0+=pow(10,1.5*(eqkfm0[NFtot+f].mag+6));
 			DCFS[eq].m=(2.0/3.0)*log10(M0)-6;
-			DCFS[eq].NF=Nfaults[eq1];
+			DCFS[eq].NF=Nfaults[eq];
 			if (DCFS[eq].nsel!=Nsel){
 				if (DCFS[eq].nsel>0){
 					free_d3tensor(DCFS[eq].S,1,DCFS[eq].nsel,1,3,1,3);
@@ -373,7 +373,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 				DCFS[eq].cmb=dvector(1,Nsel);
 				for (int i=1; i<=Nsel; i++) DCFS[eq].cmb[i]=0.0;
 			}
-			NFtot+=Nfaults[eq1];
+			NFtot+=Nfaults[eq];
 		}
 
 		*DCFS_out=DCFS;

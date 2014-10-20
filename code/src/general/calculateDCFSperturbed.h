@@ -22,9 +22,9 @@
 #include "mem_mgmt.h"
 
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,
-							struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flag,
+							struct eqkfm *eqkfm0, struct flags flag,
 							double *tevol, double *times, int Nmain, struct crust crst,
-							struct Coeff_LinkList *AllCoeff, int NTScont, int NTSdisc,
+							struct Coeff_LinkList *AllCoeff, int NTScont,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
 							double tdata0, double tdata1,
 							int refresh, int which_recfault);

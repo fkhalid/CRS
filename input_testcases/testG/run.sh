@@ -1,8 +1,8 @@
 #!/bin/bash
 
-basefile="input_testcases/testC/input.txt"
+basefile="input_testcases/testG/input.txt"
 parafile="input_testcases/parameters.txt"
-temppara="input_testcases/testC/temp_par.txt"
+temppara="input_testcases/testG/temp_par.txt"
 
 for i in $(seq 0 4)	#should be 0 4
 do
@@ -13,20 +13,20 @@ fi
 ln1="OutputForecastFile=output_testcases/testG$i"
 ln2="Logfile=output_testcases/testG$i.log"
 
-sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputC
+sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputG
 sed "47s+0+1+"  $parafile | sed "47s+X+$i+" | sed "67s+5.95+2.0+" > $temppara
 
 if [ $i -lt 2 ]
 then
-sed '9s+focmecfile+focmecfile0+' temp_inputC > tmp
-mv tmp temp_inputC
+sed '9s+focmecfile+focmecfile0+' temp_inputG > tmp
+mv tmp temp_inputG
 fi
 
-Release/CRS_3.0 temp_inputC
+Release/CRS_3.0 temp_inputG
 done
 
 
-#Here all events are treated as mainshocks, should be equivalent to testC1
+#Here all events are treated as mainshocks, should be equivalent to testG1
 for i in $(seq 0 4)     #should be 0 4
 do
 if [ $i -eq 3 ]
@@ -36,20 +36,20 @@ fi
 ln1="OutputForecastFile=output_testcases/testGB$i"
 ln2="Logfile=output_testcases/testGB$i.log"
 
-sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputC
+sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputG
 sed "67s+.*+2.00+" $parafile | sed "47s+X+$i+" | sed "67s+5.95+2.0+" > $temppara
 
 if [ $i -lt 2 ]
 then
-sed '9s+focmecfile+focmecfile0+' temp_inputC > tmp
-mv tmp temp_inputC
+sed '9s+focmecfile+focmecfile0+' temp_inputG > tmp
+mv tmp temp_inputG
 fi
 
 
-Release/CRS_3.0 temp_inputC
+Release/CRS_3.0 temp_inputG
 done
 
-rm temp_inputC
+rm temp_inputG
 rm $temppara
 
 

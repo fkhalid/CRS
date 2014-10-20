@@ -12,22 +12,20 @@
 #endif
 
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,
-							struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flag,
+							struct eqkfm *eqkfm0, struct flags flag,
 							double *tevol, double *times, int Nmain, struct crust crst,
-							struct Coeff_LinkList *AllCoeff, int NTScont, int NTSdisc,
+							struct Coeff_LinkList *AllCoeff, int NTScont,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
 							double tdata0, double tdata1, int refresh, int which_recfault) {
 
 /* Input:
  * 
  * eqkfmAf contains afterslip snapshots;
- * eqkfm0 contains large sources, with a slip model (mainshocks);
- * eqkfm1 contains smaller sources (e.g. foreshocks, aftershocks);
+ * eqkfm0 contains seismic sources;
  * tevol: if continuous process is stationary (splines==0), tevol contains time dependence of the process;
  * times: times to which elements of tevol correspond: S(t=times[j])=S0*tevol[j], where S=slip, S0 is the slip contained in eqkfmAf.
  * NTScont is the total number of time steps for continuous process;
- * NTSdisc is the total number of time steps for step like process (i.e. number of triggering earthquakes);
- * Nmain: length of eqkfm0;
+ * Nmain: length of eqkfm0;	//todo change variable name
  * AllCoeff: okada coefficients for mainshocks (events in eqkfm0);
  * focmec contains sample of focal mechanisms, NFM is its length (1->NFM)
  * fmzoneslin: indices of focmec corresponding to limits of distinct foc. mec. areas;
@@ -57,7 +55,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 	//flags:
 	int	afterslip=flag.afterslip, \
-		aftershocks=flag.aftershocks, \
 		vary_recfault=flag.err_recfault, \
 		new_slipmodel=flag.new_slipmodel, \
 		gridpoints_err=flag.err_gridpoints, \
@@ -156,94 +153,9 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				}
 			}
 		}
-
-		//-----------------------------------------------------------------//
-		//							Aftershocks							   //
-		//-----------------------------------------------------------------//
-
-//		if (aftershocks){
-//			lat0=crst.lat0;
-//			lon0=crst.lon0;
-//			n_withslimodel=n_withoutslimodel=0;
-//			for (int eq1=0; eq1<NTSdisc; eq1++){
-//				if (!eqkfm1[eq1].is_mainshock && eqkfm1[eq1].nsel!=0){
-//					if (eqkfm1[eq1].is_slipmodel){
-//						n_withslimodel+=1;
-//						okadaDCFS(DCFS[eq1], eqkfm1+eq1, 1, crst, NULL, NULL, 1);
-//						if (eqkfm1[eq1].whichfm==0){	//also calculate S tensor for second slip model.
-//							DCFS[eq1].S1=DCFS[eq1].S;
-//							DCFS[eq1].S=d3tensor(1, DCFS[eq1].nsel, 1,3,1,3);
-//							eqkfm1[eq1].whichfm=2;
-//							double temp_strslip=eqkfm1[eq1].slip_str[1];
-//							double temp_dipslip=eqkfm1[eq1].slip_dip[1];
-//							eqkfm1[eq1].slip_str[1]=eqkfm1[eq1].slip_str[2];
-//							eqkfm1[eq1].slip_dip[1]=eqkfm1[eq1].slip_dip[2];
-//							okadaDCFS(DCFS[eq1], eqkfm1+eq1, 1, crst, NULL, NULL, 1);
-//							eqkfm1[eq1].slip_str[1]=temp_strslip;
-//							eqkfm1[eq1].slip_dip[1]=temp_dipslip;
-//						}
-//					}
-//
-//					else {
-//						n_withoutslimodel+=1;
-//						if (full_field){
-//							if (aftershocks_fixedmec){
-//								eqkfm1[eq1].str1=crst.str0[0];
-//								eqkfm1[eq1].dip1=crst.dip0[0];
-//								eqkfm1[eq1].rake1=crst.rake0[0];
-//								eqkfm1[eq1].whichfm=1;
-//								WellsCoppersmith(eqkfm1[eq1].mag, eqkfm1[eq1].rake1, &(eqkfm1[eq1].L), &(eqkfm1[eq1].W), &slip);
-//								slip=pow(10.0,1.5*(eqkfm1[eq1].mag+6.0))/(pow(10,12)*crst.mu*eqkfm1[eq1].W*eqkfm1[eq1].L);
-//								eqkfm1[eq1].slip_str=dvector(1,1);
-//								eqkfm1[eq1].slip_dip=dvector(1,1);
-//								eqkfm1[eq1].slip_str[1]=slip*cos(DEG2RAD*eqkfm1[eq1].rake1);
-//								eqkfm1[eq1].slip_dip[1]=slip*sin(DEG2RAD*eqkfm1[eq1].rake1);
-//								//5 lines added
-//								eqkfm1[eq1].np_di=eqkfm1[eq1].np_st=1;
-//								eqkfm1[eq1].pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
-//								eqkfm1[eq1].pos_d=dvector(1,1);
-//								eqkfm1[eq1].pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
-//								eqkfm1[eq1].pos_d[1]=0;
-//								okadaDCFS(DCFS[eq1], eqkfm1+eq1, 1, crst, NULL, NULL, 1);
-//							}
-//							else {
-//								eqkfm1[eq1].slip_str=dvector(1,1);
-//								eqkfm1[eq1].slip_dip=dvector(1,1);
-//								eqkfm1[eq1].pos_s=dvector(1,1);
-//								eqkfm1[eq1].pos_d=dvector(1,1);
-//							}
-//						}
-//
-//					else {
-//							isoDCFS(DCFS[eq1], eqkfm1[eq1]);
-//							if (gridpoints_err){
-//								for (int i=1; i<=NgridT; i++) mycmb[i]=0.0;
-//								for (int i=1; i<=DCFS[eq1].nsel; i++) mycmb[DCFS[eq1].which_pts[i]]=DCFS[eq1].cmb[i];
-//								interp_nn(NgridT,crst.nLat, crst.nLon, crst.nD, mycmb,interp_DCFS,0,nn);
-//								DCFS[eq1].cmb0=dvector(1,DCFS[eq1].nsel);
-//								DCFS[eq1].Dcmb=dvector(1,DCFS[eq1].nsel);
-//								for (int i=1; i<=DCFS[eq1].nsel; i++){
-//									DCFS[eq1].cmb0[i]=0.5*(interp_DCFS[DCFS[eq1].which_pts[i]][1]+interp_DCFS[DCFS[eq1].which_pts[i]][2]);
-//									DCFS[eq1].Dcmb[i]=fabs(interp_DCFS[DCFS[eq1].which_pts[i]][1]-interp_DCFS[DCFS[eq1].which_pts[i]][2]);
-//								}
-//							}
-//						}
-//					}
-//				}
-//			}
-//
-//			print_logfile("%d events have known focal mechanism, which will be used.\n", n_withslimodel);
-//			print_logfile("%d events do not have a known focal mechanism. ", n_withoutslimodel);
-//			if (n_withoutslimodel){
-//				if (full_field) {
-//					print_logfile("will use ");
-//				if (aftershocks_fixedmec) print_logfile("fixed mechanism (strike=%.2lf, dip=%.2lf).\n", crst.str0[0], crst.dip0[0]);
-//					else print_logfile("Monte Carlo sampling from catalog of focal mechanisms.\n");
-//				}
-//				else print_logfile("will use isotropic field.\n");
-//			}
-//		}
 	}
+
+
 		//-----------------------------------------------------------------//
 		//							Mainshock							   //
 		//-----------------------------------------------------------------//
@@ -370,61 +282,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			}
 		}
 	}
-
-	//------------------------------------------------------------------------------//
-	//					calculated stress field from aftershocks					//
-	//------------------------------------------------------------------------------//
-
-//	if (aftershocks==1){
-//
-//		for (int eq1=0; eq1<NTSdisc; eq1++){
-//
-//			if (eqkfm1[eq1].t <tdata0 || eqkfm1[eq1].t>tdata1) continue;
-//
-//			if (!eqkfm1[eq1].is_mainshock && eqkfm1[eq1].nsel!=0){
-//				if (eqkfm1[eq1].is_slipmodel) {
-//					if (eqkfm1[eq1].whichfm==0){
-//						//half of the time, swap them.
-//						if ((int) round(ran1(seed))){
-//							Stemp=DCFS[eq1].S;
-//							DCFS[eq1].S=DCFS[eq1].S1;
-//							DCFS[eq1].S1=Stemp;
-//						}
-//						*seed=-*seed;
-//					}
-//					resolve_DCFS(DCFS[eq1], crst, strike0, dip0, NULL, 1);
-//					if (gridpoints_err) smoothen_DCFS(DCFS[eq1], crst.nLat, crst.nLon, crst.nD, seed,0, nn);
-//				}
-//				else {
-//					if (full_field){
-//						if (!aftershocks_fixedmec){
-//							rand=(int) ((NFM-1)*ran1(seed)+1);	//fixme: should choose from correct area if multiple foc mec are available (or pick the closest?)
-//							*seed=-*seed;
-//							eqkfm1[eq1].str1=focmec[1][rand];
-//							eqkfm1[eq1].dip1=focmec[2][rand];
-//							eqkfm1[eq1].rake1=fmod(focmec[3][rand]+360.0,360.0);
-//
-//							WellsCoppersmith(eqkfm1[eq1].mag, eqkfm1[eq1].rake1, &(eqkfm1[eq1].L), &(eqkfm1[eq1].W), &slip);
-//							slip=pow(10.0,1.5*(eqkfm1[eq1].mag+6.0))/(pow(10,12)*crst.mu*eqkfm1[eq1].W*eqkfm1[eq1].L);
-//							eqkfm1[eq1].np_di=eqkfm1[eq1].np_st=1;
-//							eqkfm1[eq1].pos_d[1]=eqkfm1[eq1].pos_s[1]=0.0;
-//							eqkfm1[eq1].slip_str[1]=slip*cos(DEG2RAD*eqkfm1[eq1].rake1);
-//							eqkfm1[eq1].slip_dip[1]=slip*sin(DEG2RAD*eqkfm1[eq1].rake1);
-//							okadaDCFS(DCFS[eq1], eqkfm1+eq1, 1, crst, strike0, dip0, 1);
-//						}
-//
-//						if (vary_recfault!=2) resolve_DCFS(DCFS[eq1], crst, strike0, dip0, NULL, 1);
-//						else DCFScmbopt(DCFS, eq1, crst);
-//
-//						if (gridpoints_err==1) smoothen_DCFS(DCFS[eq1], crst.nLat, crst.nLon, crst.nD, seed,0, nn);
-//					}
-//					else {
-//						if (gridpoints_err) smoothen_DCFS(DCFS[eq1], crst.nLat, crst.nLon, crst.nD, seed,1, nn);
-//					}
-//				}
-//			}
-//		}
-//	}
 
 	//------------------------------------------------------------------------------------------------------//
 	//	calculated stress field from mainshocks (i.e. events for which a non trivial slip model is used):   //

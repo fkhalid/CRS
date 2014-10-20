@@ -1,11 +1,11 @@
 OutputForecastFile=output_testcases/testC
 Logfile=output_testcases/testC.log
-InputModelParametersFile=input_testcases/testG/temp_par.txt
+InputModelParametersFile=input_testcases/testI/temp_par.txt
 IssueDate=2004-09-30T17:15:24Z
 ForecastStartDate=2004-09-30T17:15:24Z
 ForecastEndDate=2004-10-15T17:15:24Z
 InputCatalogFile=input_testcases/catalog.dat
-InputListSlipModels=input_testcases/slipmodelslist.dat
+InputListSlipModels=input_testcases/testI/slipmodelslist.dat
 InputCatalogFocMecFile=input_testcases/focmecfile.dat
 ForecastTemplate=input_testcases/template.dat
 RandomSeedValue=-37284630

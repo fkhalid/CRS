@@ -22,7 +22,7 @@
 #include "../util/nrutil.h"
 
 int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels,
-						struct eqkfm **eqfm_comb, int **which_events, int N1,
+						struct eqkfm **eqfm_comb, int N1,
 						int *Ncomb, int **nfout, double dt, double dmag, double res,
 						struct crust crst, struct flags flags);
 

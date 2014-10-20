@@ -12,9 +12,9 @@
 #endif
 
 int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
-				struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flags,
+				struct eqkfm *eqkfm0, struct flags flags,
 				double *tevol, struct crust crst, struct Coeff_LinkList *AllCoeff,
-				int NTScont, int NTSdisc, int Nm, int NgridT, double **focmec, int *fmzonelim,
+				int NTScont, int Nm, int NgridT, double **focmec, int *fmzonelim,
 				int NFM, long *seed, struct catalog cat, double *times, double tstart, double *tts,
 				int Ntts, double tw, double Asig, double ta, double r0, double **all_gammas0,
 				int multiple_input_gammas, int fromstart, char * print_cmb0,
@@ -35,12 +35,10 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 	 * 		if splines==1
 	 * 		if splines==0
 	 * eqkfm0= array of mainshocks;
-	 * eqkfm1= array of aftershocks (sources);
 	 * tevol= if splines==0, contains factor by which afterslip snapshot is rescaled at each time.
 	 * crst= general model info.
 	 * AllCoeff= Okada Coefficients for all mainshock slip models;
 	 * NTScont=no. of continuous time steps (size of tevol, times2)
-	 * NTSdisc=no of snapshots (size of DCFS);  size of eqkfm1
 	 * Nm=no. of mainshocks;	size of eqkfm0
 	 * focmec= array of focal mechanisms parameters.
 	 * NFM= no. of focal mechanisms
@@ -218,8 +216,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		tt1=tts[Ntts];
 		//Set starting rates:
 		if(fromstart) {
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
 								   fmzonelim, NFM, seed, tstart, tt1, 0,
 								   which_recfault);
 
@@ -229,7 +227,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 
 			err = forecast_stepG2_new(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
 									  (int *) 0, ev_x_dum, (double *) 0, (double *) 0,
-									  NgridT, NTScont, NTSdisc, gammas, crst.rate0,
+									  NgridT, NTScont, Nm, gammas, crst.rate0,
 									  dumrate, 1);
 
 			for(int i=1; i<=NgridT; i++) {
@@ -237,8 +235,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 			}
 		}
 		else {
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
 								   fmzonelim, NFM, seed, tt0, tt1, 0,
 								   which_recfault);
 
@@ -261,7 +259,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 				if (tnow<eqkfm0[current_main].t){
 					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
 											 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
-											 NTSdisc, gammas, crst.rate0, dumrate, 1);
+											 Nm, gammas, crst.rate0, dumrate, 1);
 
 					for(int i=1; i<=NgridT; i++) {
 						ev_x[i]+=ev_x_dum[i];
@@ -274,14 +272,14 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 
 					err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
 											   eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
-											   NgridT, NTScont, NTSdisc, gammas, crst.rate0,
+											   NgridT, NTScont, Nm, gammas, crst.rate0,
 											   dumrate, 1);
 
 					tnow=eqkfm0[current_main].t+tw;	//fixme: either remove this entirely, or change is as in CRSLogLikelihood.
 				}
 				else if(tnow<eqkfm0[current_main].t+tw) {
 					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
-											 Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, NTSdisc, gammas,
+											 Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, Nm, gammas,
 											 crst.rate0, dumrate, 1);
 
 					tnow=eqkfm0[current_main].t+tw;
@@ -293,7 +291,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 			if(tnow<tt1) {
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, tt1, Asig, ta,
 										   0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
-										   NTSdisc, gammas, crst.rate0, dumrate, 1);
+										   Nm, gammas, crst.rate0, dumrate, 1);
 
 				for(int i=1; i<=NgridT; i++) {
 					ev_x[i]+=ev_x_dum[i];
@@ -320,7 +318,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		}
 
 		if(print_cmb || printall_cmb) {
-			sum_DCFS(DCFS, &cmb, NTSdisc, NgridT);
+			sum_DCFS(DCFS, &cmb, Nm, NgridT);
 			if (flags.afterslip) sum_DCFSrand(DCFSrand, &cmbpost, NTScont, NgridT);
 			if(print_cmb) {
 				for (int i=1; i<=NgridT; i++) {
@@ -516,9 +514,9 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 
 int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, double *r_out,
 					 int Nsur, int Nslipmod, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
-					 struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flags,
+					 struct eqkfm *eqkfm0, struct flags flags,
 					 double *tevol, struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont,
-					 int NTSdisc, int Nm, int NgridT, double **focmec, int *fmzonelim, int NFM,
+					 int Nm, int NgridT, double **focmec, int *fmzonelim, int NFM,
 					 long *seed, struct catalog cat, double *times, double tstart, double tt0,
 					 double tt1, double tw, double Mag_main, double Asig, double ta, double r0, int fixr,
 					 double *gammas0, double **all_new_gammas, int fromstart, char * printall_cmb,
@@ -537,12 +535,10 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	 * 		if splines==1
 	 * 		if splines==0
 	 * eqkfm0= array of mainshocks;
-	 * eqkfm1= array of aftershocks (sources);
 	 * tevol= if splines==0, contains factor by which afterslip snapshot is rescaled at each time.
 	 * crst= general model info.
 	 * AllCoeff= Okada Coefficients for all mainshock slip models;
 	 * NTScont=no. of continuous time steps (size of tevol, times2)
-	 * NTSdisc=no of snapshots (size of DCFS);  size of eqkfm1
 	 * Nm=no. of mainshocks;	size of eqkfm0
 	 * focmec= array of focal mechanisms parameters.
 	 * NFM= no. of focal mechanisms
@@ -688,8 +684,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		
 		//Set starting rates:
 		if (fromstart){
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
 								   fmzonelim, NFM, seed, tstart, tt1,
 								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
@@ -699,12 +695,12 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 			err = forecast_stepG2_new(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
 									  (int *) 0, (double *) 0, (double *) 0, (double *) 0,
-									  NgridT, NTScont, NTSdisc, gammas, (double *) 0,
+									  NgridT, NTScont, Nm, gammas, (double *) 0,
 									  dumrate, 1);
 		}
 		else{
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
 								   fmzonelim, NFM, seed, tt0, tt1,
 								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
@@ -721,13 +717,13 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			if (tnow<eqkfm0[current_main].t){
 				tskip=(eqkfm0[current_main].mag>=Mag_main)? tw : 0.0;
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
-										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, NTSdisc, gammas,
+										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, Nm, gammas,
 										   crst.rate0, dumrate, 1);
 				integral += (sum)/(1.0*Nsur);
 
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
 											eqkfm0[current_main].t+tskip, Asig, ta, 0, 0, &sum, 0,
-										   NgridT, NTScont, NTSdisc, gammas, crst.rate0,
+										   NgridT, NTScont, Nm, gammas, crst.rate0,
 										   dumrate, 1);
 
 				tnow=eqkfm0[current_main].t+tskip;
@@ -737,7 +733,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				if (tnow<eqkfm0[current_main].t+tskip){
 
 					err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tskip,
-							Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, NTSdisc, gammas, crst.rate0,
+							Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, Nm, gammas, crst.rate0,
 							dumrate, 1);
 					tnow=eqkfm0[current_main].t+tskip;
 				}
@@ -747,7 +743,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		}
 		if (tnow<tt1){
 			err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, tt1, Asig, ta, 0,
-									   ev_x, &sum, 0, NgridT, NTScont, NTSdisc, gammas,
+									   ev_x, &sum, 0, NgridT, NTScont, Nm, gammas,
 									   crst.rate0, dumrate, 1);
 
 			integral+=(sum)/(1.0*Nsur);

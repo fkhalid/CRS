@@ -41,7 +41,7 @@ int load_newdata(double *t0, double t1, struct set_of_models *allmodels, int Nma
 int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *ts, int Nfun, struct eqkfm **eq_aft, double *t_afterslip, int Nas,int Nfaults,
 		int afterslip, int *L, double **times2, double **tevol_afterslip, long *seed);
 int mask_afterslip(double time, double *times, int L, double *evol_afterslip0, double **evol_afterslip, int *Lnow);
-int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out, struct crust crst, struct eqkfm *eqkfm0, struct eqkfm *eqkfm1,
-		int Nm, int Ntot, int *Nfaults, int *which_main);
+int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out, struct crust crst, struct eqkfm *eqkfm0,
+		int Nm, int *Nfaults);
 
 #endif /* SETUP_EQKFM_H_ */

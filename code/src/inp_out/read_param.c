@@ -108,7 +108,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", &((*flags).afterslip));
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d %d", &((*flags).aftershocks), &aftershock_mode);
+		sscanf(line,"%*d %d", &aftershock_mode);	//todo change input files
 		switch (aftershock_mode){
 			case 0:
 				(*flags).only_aftershocks_withfm=0;

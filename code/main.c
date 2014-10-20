@@ -368,16 +368,12 @@ int main (int argc, char **argv) {
 //-----------------Add mainshock slip models ---------------//
 //----------------------------------------------------------//
 
-	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, &which_main, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst, flags);
+	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst, flags);
 	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **\n");
 
 	if(LLinversion){
 		print_logfile("Inversion time period: [%2.lf - %2.lf]days, ", tstartLL, tendLL);
 	}
-
-	Ntot=0;
-	for (int i=0; i<Nm; i++) which_main[i]=i;	//since DCFS contains only mainshocks. //todo is this needed?
-
 
 	//--------------Setup Coefficients and DCFS struct--------------//
 
@@ -389,7 +385,7 @@ int main (int argc, char **argv) {
 	#endif
 
 	//todo check with Fahad: should this only be done by 1 process and broadcast?
-	setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, eqkfm1, Nm, Ntot, Nfaults_all, which_main);
+	setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, Nm, Nfaults_all);
 
 	#ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -482,8 +478,8 @@ int main (int argc, char **argv) {
 	dta=(nta==0)? 0.0 : (ta_max-ta_min)/nta;
 
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
-	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, 1, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags,
-			tevol_afterslip, crst, AllCoeff, L, max(Ntot,Nm), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2,
+	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, 1, DCFS, eqkfm_aft, eqkfm0res, flags,
+			tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2,
 			fmin(tstartLL,Tstart-extra_time), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
 
 	for (int p=1; p<=(1+nAsig0)*(1+nta0); p++) LLs[p]=0.0;
@@ -621,7 +617,7 @@ int main (int argc, char **argv) {
 			if (AllCoeff->Coeffs_dip) free_f3tensor(AllCoeff->Coeffs_dip, 1,0,1,0,1,0);
 			if (AllCoeff->Coeffs_st) free_f3tensor(AllCoeff->Coeffs_st, 1,0,1,0,1,0);
 			if (AllCoeff) free(AllCoeff);
-			setup_CoeffsDCFS(&AllCoeff, NULL, crst, eqkfm0res, eqkfm1, Nm, Ntot, Nfaults_all, which_main);
+			setup_CoeffsDCFS(&AllCoeff, NULL, crst, eqkfm0res, Nm, Nfaults_all);
 		}
 
 		// FIXME: [Fahad] For testing purposes only ...
@@ -668,8 +664,8 @@ int main (int argc, char **argv) {
 					gammas=NULL;	//fixme check if this should be allowed to be set equal to gammas_bg_rate?
 
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, Nslipmod, DCFS, eqkfm_aft,
-										  	eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff,
-										  	L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat,
+										  	eqkfm0res, flags, tevol_afterslip, crst, AllCoeff,
+										  	L, Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat,
 										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, gammas,
 										  	gammas_new, 0, 0, 0, !tai && !as);
 
@@ -754,7 +750,7 @@ int main (int argc, char **argv) {
 			sprintf(printall_foret,"%s_forecast_all", outnamemod);
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
-			CRSforecast(&LL, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, eqkfm1, flags, tevol_afterslip, crst, AllCoeff, L, max(Nm,Ntot), Nm, NgridT, focmec, fmzonelimits, NFM,
+			CRSforecast(&LL, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, flags, tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM,
 					&seed, cat, times2,tstart_calc, tts, Ntts, tw, maxAsig[mod], maxta[mod], maxr[mod], gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 
