@@ -14,7 +14,7 @@
 #  		  Time of inversion	 	   	   #
 #======================================#
 #tstartLL	start time LogLikelihood inv.
-#tw (time window after mainshock)	Mmain (min. magnitude of events after which tw should be skipped)
+#tw (time window after mainshock)       Mmain (min. magnitude of events after which tw should be skipped)
 #extra_time	time period before tstartLL for which sources should be included (only relevant if aftershocks==1,or large events are present). 
 2004-09-28T17:15:24Z
 0.0012	5.95
@@ -44,7 +44,7 @@
 0
 0
 0
-1	4	
+0	X	
 #
 #======================================#
 #  	Other model parameters etc.		   #
@@ -64,7 +64,7 @@
 # smoothing distance (for calculating background rate)
 #
 2.0
-5.95
+2.00
 80	1e6
 1000
 0.0005 	#about 1min (since seconds not reported in GMT catalog...)
