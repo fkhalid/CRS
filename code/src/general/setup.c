@@ -33,7 +33,7 @@
 #endif
 
 int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
-					 struct tm reftime, double dDCFS, double Mag_main, struct crust crst,
+					 struct tm reftime, double dDCFS, double Mag_source, struct crust crst,
 					 struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec,
 					 int **firstelements, struct flags flag, int *NFM, int *Ntot, int *Nmain,
 					 double dt, double dM, double xytoll, double ztoll, double dR, double tw,
@@ -103,7 +103,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	}
 
 	// filter eqkfm according to magnitude, depth.
-	minmag= (flag.aftershocks)? (*cat).Mc : Mag_main;
+	minmag= Mag_source;
 	eqk_filter(eqkfm1, Ntot, minmag , crst.depmax+fmax(dR,ztoll));
 
 	// calculate distances between source events and grid points.
@@ -112,18 +112,21 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 
 	if (Nmain) *Nmain=0;
 	for (int i=0; i<(*Ntot); i++) {
-		if ((*eqkfm1)[i].mag>=Mag_main) {
-			(*eqkfm1)[i].is_mainshock=1;
-			if (Nmain) *Nmain+=1;
-		}
-		else{
+//		if ((*eqkfm1)[i].mag>=Mag_main) {
+//			(*eqkfm1)[i].is_mainshock=1;
+//			if (Nmain) *Nmain+=1;
+//		}
+//		else{
 			if (flag.only_aftershocks_withfm && !(*eqkfm1)[i].is_slipmodel) (*eqkfm1)[i].nsel=0;
 			if (flag.full_field==0) (*eqkfm1)[i].is_slipmodel=0;
-		}
+			//todo check: is this done in add_eqkfm...
+//		}
 	}
 
 	print_screen("%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
 	print_logfile("%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
+
+	//todo warning if no events are selected as sources.
 
 	return (err!=0);
 }

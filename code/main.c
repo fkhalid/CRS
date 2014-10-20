@@ -353,9 +353,9 @@ int main (int argc, char **argv) {
 		select_fm_time(focmec, &NFM, Tstart);
 		if (!NFM) {
 			print_logfile("\nNo focal mechanisms available before t=%.2lf (ForecastStartDate). Will not use multiple receiver faults.\n", Tstart);
-			if (flags.aftershocks && flags.full_field && !flags.aftershocks_fixedmec)
+			if (flags.full_field && !flags.aftershocks_fixedmec)
 				print_logfile("No focal mechanisms available before t=%.2lf (ForecastStartDate). Will not use MC sampling of focal planes for aftershochs.\n", Tstart);
-
+			//todo comment above should be changed.
 			flags.err_recfault=0;
 			flags.aftershocks_fixedmec=1;
 		}
@@ -375,10 +375,9 @@ int main (int argc, char **argv) {
 		print_logfile("Inversion time period: [%2.lf - %2.lf]days, ", tstartLL, tendLL);
 	}
 
-	if (flags.aftershocks==0) {
-		Ntot=0;
-		for (int i=0; i<Nm; i++) which_main[i]=i;	//since DCFS contains only mainshocks. //todo is this needed?
-	}
+	Ntot=0;
+	for (int i=0; i<Nm; i++) which_main[i]=i;	//since DCFS contains only mainshocks. //todo is this needed?
+
 
 	//--------------Setup Coefficients and DCFS struct--------------//
 

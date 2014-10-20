@@ -10,7 +10,7 @@ ln1="OutputForecastFile=output_testcases/testC$i"
 ln2="Logfile=output_testcases/testC$i.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputC
-sed "47s+0+1+"  $parafile | sed "47s+X+$i+" > $temppara
+sed "47s+0+1+"  $parafile | sed "47s+X+$i+"  | sed "67s+5.95+2.0+" > $temppara
 
 # use foc mec file which contains one of the source events (to distinguish test0 and test1).
 #if [ $i -lt 2 ]

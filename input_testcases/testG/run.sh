@@ -14,7 +14,7 @@ ln1="OutputForecastFile=output_testcases/testG$i"
 ln2="Logfile=output_testcases/testG$i.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputC
-sed "47s+0+1+"  $parafile | sed "47s+X+$i+" > $temppara
+sed "47s+0+1+"  $parafile | sed "47s+X+$i+" | sed "67s+5.95+2.0+" > $temppara
 
 if [ $i -lt 2 ]
 then
@@ -37,7 +37,7 @@ ln1="OutputForecastFile=output_testcases/testGB$i"
 ln2="Logfile=output_testcases/testGB$i.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputC
-sed "67s+.*+2.00+" $parafile | sed "47s+X+$i+" > $temppara
+sed "67s+.*+2.00+" $parafile | sed "47s+X+$i+" | sed "67s+5.95+2.0+" > $temppara
 
 if [ $i -lt 2 ]
 then
