@@ -103,7 +103,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	if (nfout) *nfout=ivector(0,N1-1);
 
 	for(int i=0; i<N1; i++) {
-		if(eqfm1[i].is_mainshock) {
+		//if(eqfm1[i].is_mainshock) {
 		//if(which_slipmod[i]!=-1) {
 			eqfm1[i].nsel=0;	//deactivate it as source aftershock;	//todo delete (this structure should be completely killed).
 			(*eqfm_comb)[c3].nsel=crst.N_allP;
@@ -224,7 +224,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				c_evfound+=1;
 				*Ncomb+=1;
 			}
-		}
+		//}
 	}
 
 	if (c_evfound<N2){

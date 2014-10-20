@@ -437,13 +437,23 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 			while (current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
 			while (current_main<Nm && eqkfm0[current_main].t<tt1){
 				if (tnow<eqkfm0[current_main].t){
-					for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<eqkfm0[current_main].t) {
-						Ldum+=log(r0*rate[j]);
-						if(procId == 0) {
-							if (print_LL) fprintf(fLLev,"%.10e \t %.5e\n",cat.t[j], log(r0*rate[j]));
+					while(j0<=cat.Z && cat.t[j0]<eqkfm0[current_main].t){
+						if(cat.t[j0]>=tnow) {
+							N+=1;
+							Ldum+=log(r0*rate[j0]);
+							if(procId == 0) {
+								if (print_LL) fprintf(fLLev,"%.10e \t %.5e\n",cat.t[j0], log(r0*rate[j0]));
+							}
 						}
+						j0+=1;
 					}
-					j0+=N;
+//					for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<eqkfm0[current_main].t) {
+//						Ldum+=log(r0*rate[j]);
+//						if(procId == 0) {
+//							if (print_LL) fprintf(fLLev,"%.10e \t %.5e\n",cat.t[j], log(r0*rate[j]));
+//						}
+//					}
+//					j0+=N;
 				}
 				tnow=eqkfm0[current_main].t+tw;
 				current_main+=1;
@@ -810,11 +820,19 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		while (current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
 		while (current_main<Nm && eqkfm0[current_main].t<tt1){
 			if (tnow<eqkfm0[current_main].t){
-				for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<eqkfm0[current_main].t) {
-					N+=1;
-					Ldum0+=log(rate[j]);
+
+				while(j0<=cat.Z && cat.t[j0]<eqkfm0[current_main].t){
+					if(cat.t[j0]>=tnow) {
+						N+=1;
+						Ldum0+=log(rate[j0]);
+					}
+					j0+=1;
 				}
-				j0+=N;
+//				for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<eqkfm0[current_main].t) {
+//					N+=1;
+//					Ldum0+=log(rate[j]);
+//				}
+//				j0+=N;
 			}
 			tskip=(eqkfm0[current_main].mag>=Mag_main)? tw : 0.0;
 			tnow=eqkfm0[current_main].t+tskip;
