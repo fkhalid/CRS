@@ -34,7 +34,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	double std_merr=0.1, std_verr=5.0, std_herr=4.0;	//todo read from somewhere!
+	double std_merr=0.1, std_verr=20.0, std_herr=4.0;	//todo read from somewhere!
 	int line_length=2000;
 	int hh, lines=0, valid=0, empty=0, missing_values=0;
 	int * old2new;

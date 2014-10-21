@@ -64,42 +64,42 @@ char *testfolder="test";
 extern int gridPMax;
 double DCFS_cap=1e7;
 
-int test_readmultiplefocmec(){
-
-	int nf=3;
-	char **files;
-	int NFM, NFM2;
-	double **focmec;
-	struct eqkfm *eqkfm;
-	int NFM0, NFM20;
-	double **focmec0;
-	struct eqkfm *eqkfm0;
-	struct crust crst;
-	struct tm reftime;
-	char *crust_file="/home/des/camcat/Code/CRS_2.01/input/Tohoku_new.inp";
-	char *temp_file="/home/des/camcat/Code/CRS_2.01/input/tohoku_template_nonuniform2.dat";
-	double res=1000.0;
-	int *firstel;
-
-	files=malloc(nf*sizeof(char *));
-	for (int i=1; i<=nf; i++){
-		files[i-1]=malloc(120*sizeof(char));
-		sprintf(files[i-1],"input/other/NIED_GMTformat%d.dat",i);
-	}
-
-	sscanf("2011-03-11T14:46:18Z", "%d-%d-%dT%d:%d:%dZ", &(reftime.tm_year), &(reftime.tm_mon), &(reftime.tm_mday), &(reftime.tm_hour), &(reftime.tm_min), &(reftime.tm_sec));
-	reftime.tm_year-=1900;
-	reftime.tm_mon-=1;
-	reftime.tm_isdst=0;
-
-	read_crust(crust_file, temp_file, &crst, NULL, res, res);
-	readmultiplefocmec(files, nf, "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec, &firstel, &NFM, &NFM2, &eqkfm, 1, 0);
-	readfocmec("input/other/NIED_GMTformat.dat", "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec0, &NFM0, &NFM20, &eqkfm0, 1, 0);
-
-	for (int i=0; i<=nf; i++) printf("%d\n", firstel[i]);
-
-	return 0;
-}
+//int test_readmultiplefocmec(){
+//
+//	int nf=3;
+//	char **files;
+//	int NFM, NFM2;
+//	double **focmec;
+//	struct eqkfm *eqkfm;
+//	int NFM0, NFM20;
+//	double **focmec0;
+//	struct eqkfm *eqkfm0;
+//	struct crust crst;
+//	struct tm reftime;
+//	char *crust_file="/home/des/camcat/Code/CRS_2.01/input/Tohoku_new.inp";
+//	char *temp_file="/home/des/camcat/Code/CRS_2.01/input/tohoku_template_nonuniform2.dat";
+//	double res=1000.0;
+//	int *firstel;
+//
+//	files=malloc(nf*sizeof(char *));
+//	for (int i=1; i<=nf; i++){
+//		files[i-1]=malloc(120*sizeof(char));
+//		sprintf(files[i-1],"input/other/NIED_GMTformat%d.dat",i);
+//	}
+//
+//	sscanf("2011-03-11T14:46:18Z", "%d-%d-%dT%d:%d:%dZ", &(reftime.tm_year), &(reftime.tm_mon), &(reftime.tm_mday), &(reftime.tm_hour), &(reftime.tm_min), &(reftime.tm_sec));
+//	reftime.tm_year-=1900;
+//	reftime.tm_mon-=1;
+//	reftime.tm_isdst=0;
+//
+//	read_crust(crust_file, temp_file, &crst, NULL, res, res);
+//	readmultiplefocmec(files, nf, "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec, &firstel, &NFM, &NFM2, &eqkfm, 1, 0);
+//	readfocmec("input/other/NIED_GMTformat.dat", "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec0, &NFM0, &NFM20, &eqkfm0, 1, 0);
+//
+//	for (int i=0; i<=nf; i++) printf("%d\n", firstel[i]);
+//
+//	return 0;
+//}
 
 int test_next_separator(){
 
