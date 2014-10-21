@@ -14,7 +14,6 @@ RM := rm -rf
 -include code/src/inp_out/subdir.mk
 -include code/src/geom/subdir.mk
 -include code/src/general/subdir.mk
--include code/src/subdir.mk
 -include code/subdir.mk
 -include subdir.mk
 -include objects.mk
