@@ -197,13 +197,11 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	static struct set_of_models setmodels;
-	static struct eqkfm *eqkfmall;
+	struct set_of_models setmodels;
 	struct eqkfm *eqkfm0;
 	int err=0, NF, nftot=0, nfmax=0;
 	double 	toll=1e-10, discx, discy;
 
-	(*eqkfm0res).parent_set_of_models=&setmodels;
 	setmodels.NF_models=ivector(1,no_slipmodels);
 	setmodels.Nmod=no_slipmodels;
 	setmodels.current_model=1;
@@ -220,8 +218,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 		nftot+=NF;
 	}
 	setmodels.NFmax=nfmax;
-	eqkfmall=eqkfm_array(0,nftot-1);
-	setmodels.set_of_eqkfm=eqkfmall;
+	setmodels.set_of_eqkfm=eqkfm_array(0,nftot-1);
 
 	nftot=0;
 	for (int m=0; m<no_slipmodels; m++){
@@ -241,10 +238,16 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 			eqkfm0[nf].is_mainshock=1;
 			eqkfm0[nf].is_slipmodel=1;
 			latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
-			eqkfmall[nftot+nf]=eqkfm0[nf];
+			setmodels.set_of_eqkfm[nftot+nf]=eqkfm0[nf];
 		}
 		nftot+=NF;
 	}
+
+	//allocate memory and copy values from setmodels;
+	(*eqkfm0res).parent_set_of_models=(struct set_of_models *) malloc((size_t) (sizeof(struct set_of_models)));
+	memcpy((*eqkfm0res).parent_set_of_models, &setmodels, (size_t) sizeof(struct set_of_models));
+
+	//(*eqkfm0res).parent_set_of_models=&setmodels;
 
 	set_current_slip_model(eqkfm0res,1);
 	if (NF0) *NF0=nfmax;

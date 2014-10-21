@@ -61,6 +61,20 @@ char *testfolder="test";
 extern int gridPMax;
 double DCFS_cap=1e7;
 
+int quick_pointertest(){
+
+	double a=5;
+	double *b=&a;
+	double c=*b;
+	double *d=malloc(sizeof(double));
+
+	memcpy (d, &a, sizeof(double));
+
+	printf("%lf \n%lf \n%lf\n", a, c, *d);
+
+}
+
+
 int test_countcolheader(){
 	/* testfile.txt is the following:
 	 *

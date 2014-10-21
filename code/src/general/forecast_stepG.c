@@ -115,7 +115,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   if (Asig==0 && ta==0.0) return(0);	//in this case, function has only been called to setup variables above.
 
 
-  for (int z=1; z<=cat.Z; z++) if (cat.t[z]>=tt0 && cat.t[z]<tt1) R[z]=0.0;
+  //for (int z=1; z<=cat.Z; z++) if (cat.t[z]>=tt0 && cat.t[z]<tt1) R[z]=0.0;	//fixme check that vector is always initialized beforehand.
   NeX= (out_NeX)? out_NeX : NeXdum;
 
   // find time steps before each contributing earthquake;

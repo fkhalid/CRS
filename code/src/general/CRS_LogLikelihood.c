@@ -595,7 +595,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	double Ntot, Itot, LLdum0tot;
 	int err, Nsur_over_Nslipmod=Nsur/Nslipmod;
 	int current_main, j0, which_recfault;
-	double tnow, tskip;
+	double tnow;
 	FILE *fforex, *fcmb;
 
 	if (LL) print_screen("Calculating LL for Asig=%lf, ta=%lf ...", Asig, ta);
@@ -615,7 +615,9 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 	sum=sum1=sum2=0.0;
 	integral=0.0;
-	for(int i=1;i<=cat.Z;i++) rate[i]=0.0;
+	for(int i=1;i<=cat.Z;i++) {
+		rate[i]=0.0;
+	}
 
 	#ifdef _CRS_MPI
 		// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
@@ -682,6 +684,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
 		flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
 		
+		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
+
 		//Set starting rates:
 		if (fromstart){
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
@@ -712,33 +716,37 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		//Calculate seismicity evolution (skipping a time window after each mainshock):
 		current_main=0;
 		tnow=tt0;
-		while (current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
+		//find first event which causes a time window of incomplete seismicity:
+		while (current_main<Nm && eqkfm0[current_main].t<tt0 && eqkfm0[current_main].mag<Mag_main) current_main++;
 		while (current_main<Nm && eqkfm0[current_main].t<tt1){
 			if (tnow<eqkfm0[current_main].t){
-				tskip=(eqkfm0[current_main].mag>=Mag_main)? tw : 0.0;
+				//evolve seismicity up to next large event:
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
 										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, Nm, gammas,
 										   crst.rate0, dumrate, 1);
 				integral += (sum)/(1.0*Nsur);
 
+				//evolve seismicity during a time window tw:
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
-											eqkfm0[current_main].t+tskip, Asig, ta, 0, 0, &sum, 0,
-										   NgridT, NTScont, Nm, gammas, crst.rate0,
-										   dumrate, 1);
-
-				tnow=eqkfm0[current_main].t+tskip;
+										eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
+									   NgridT, NTScont, Nm, gammas, crst.rate0,
+									   dumrate, 1);
+				tnow=eqkfm0[current_main].t+tw;
 			}
 			else {
-				tskip=(eqkfm0[current_main].mag>=Mag_main)? tw : 0.0;
-				if (tnow<eqkfm0[current_main].t+tskip){
-
-					err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tskip,
+				//the condition below will be true if the current large event is still within the tw of the previous one.
+				//(Actually, if tw has a fixed value this is always the case).
+				if (tnow<eqkfm0[current_main].t+tw){
+					err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
 							Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, Nm, gammas, crst.rate0,
 							dumrate, 1);
-					tnow=eqkfm0[current_main].t+tskip;
+					tnow=eqkfm0[current_main].t+tw;
 				}
 			}
+
+			//find next event large enough to causes a time window of incomplete seismicity:
 			current_main+=1;
+			while (current_main<Nm && eqkfm0[current_main].mag<Mag_main) current_main++;
 			if (err) break;
 		}
 		if (tnow<tt1){
@@ -813,33 +821,35 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		current_main=0;
 		tnow=tt0;
 		j0=1;
-		while (current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
-		while (current_main<Nm && eqkfm0[current_main].t<tt1){
-			if (tnow<eqkfm0[current_main].t){
 
-				while(j0<=cat.Z && cat.t[j0]<eqkfm0[current_main].t){
+		FILE *fout=fopen("LLs.dat","w");
+
+		while (current_main<Nm && eqkfm0[current_main].t<tt0 && eqkfm0[current_main].mag<Mag_main) current_main++;
+		while (current_main<Nm && eqkfm0[current_main].t<tt1){
+			if (tnow<=eqkfm0[current_main].t){
+
+				while(j0<=cat.Z && cat.t[j0]<=eqkfm0[current_main].t){
 					if(cat.t[j0]>=tnow) {
 						N+=1;
 						Ldum0+=log(rate[j0]);
+						fprintf(fout,"%lf\t%lf\t%10e\n", cat.t[j0], cat.mag[j0], rate[j0]);
 					}
 					j0+=1;
 				}
-//				for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<eqkfm0[current_main].t) {
-//					N+=1;
-//					Ldum0+=log(rate[j]);
-//				}
-//				j0+=N;
 			}
-			tskip=(eqkfm0[current_main].mag>=Mag_main)? tw : 0.0;
-			tnow=eqkfm0[current_main].t+tskip;
+			tnow=eqkfm0[current_main].t+tw;
 			current_main+=1;
+			while (current_main<Nm && eqkfm0[current_main].mag<Mag_main) current_main++;
 		}
+
 		if (tnow<tt1){
 			for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<tt1) {
 				N+=1;
 				Ldum0+=log(rate[j]);
+				fprintf(fout,"%lf\t%lf\t%10e\n", cat.t[j],cat.mag[j], rate[j]);
 			}
 		}
+		fclose(fout);
 
 		Ntot= (Nev) ? N+*Nev : N;
 		Itot= (I)? integral/NgridT + *I : integral/NgridT;
