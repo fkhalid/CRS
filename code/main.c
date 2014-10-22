@@ -29,9 +29,8 @@
 	#include "mpi.h"
 #endif
 
-//todo make sure first event is selected (criterion: t>=tstart, not t>tstart!!).
 //todo make sure output comments make sense at various verbosity levels.
-//todo introduce tapering also when there are no uncertainties? also make sure mainshocks are tapered.
+//todo tapering for synthetic events (foc mec).
 //todo make program work for non uniform grid (set griderr=0 in that case).
 //todo check that lat=(-180, 180) are interpreted correctly throughout the program.
 
@@ -243,6 +242,7 @@ int main (int argc, char **argv) {
 	}
 	
 	//future events (cat.t[i]>0) are only needed to calculate LL for forecast, if forecast is produced.
+	//todo remove if decides not to print out LLevents.
 	tendCat= (forecast)? Tend : 0;
 
 //------- change flags if input files are missing:----//
@@ -350,6 +350,7 @@ int main (int argc, char **argv) {
 //----------------------------------------------------------//
 
 	if (flags.err_recfault){
+		//only use focal mechanisms before start of LL period (Tstart).
 		select_fm_time(focmec, &NFM, Tstart);
 		if (!NFM) {
 			print_logfile("\nNo focal mechanisms available before t=%.2lf (ForecastStartDate). Will not use multiple receiver faults.\n", Tstart);

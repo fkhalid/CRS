@@ -31,6 +31,7 @@ void top_of_slipmodel(struct eqkfm* eqkfm, int N){
 		dz_dip=1e30;
 		for (int j=1; j<=np; j++) dz_dip=fmin(dz_dip, eqkfm[i].pos_d[j]);
 		if (eqkfm[i].whichfm!=2) dz=(dz_dip-0.5*len_dip)*sin(DEG2RAD*eqkfm[i].dip1);
+		// todo [coverage] this block is never tested
 		else dz=(dz_dip-0.5*len_dip)*sin(DEG2RAD*eqkfm[i].dip2);
 
 		z0=fmin(z0, eqkfm[i].depth+dz);

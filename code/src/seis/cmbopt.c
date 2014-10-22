@@ -7,6 +7,8 @@
 
 #include "cmbopt.h"
 
+
+// todo [coverage] this block is never tested
 void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 	/* Calculates OOPs in a stress field given by the sum of background stress field (crst.S) and stress steps contained in DCFS.
 	 * Also calculates Coulomb stress change due to DCFS[ind] on these planes.

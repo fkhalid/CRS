@@ -100,125 +100,82 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	if (nfout) *nfout=ivector(0,N1-1);
 
 	for(int i=0; i<N1; i++) {
-		//if(eqfm1[i].is_mainshock) {
-		//if(which_slipmod[i]!=-1) {
-			eqfm1[i].nsel=0;	//deactivate it as source aftershock;	//todo delete (this structure should be completely killed).
-			(*eqfm_comb)[c3].nsel=crst.N_allP;
+		(*eqfm_comb)[c3].nsel=crst.N_allP;
+
+		if(which_slipmod[i]==-1) {
+			if (flags.only_aftershocks_withfm && !eqfm1[i].is_slipmodel){
+				// flags.only_aftershocks_withfm indicates that only events with focal mechanisms should be used.
+				continue;
+			}
+			else {
+				copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
+				(*eqfm_comb)[c3].nsel=crst.N_allP;	//todo wasteful
+				(*eqfm_comb)[c3].selpoints=all_pts;
+				eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
+				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 
 
-
-/*	int only_aftershocks_withfm;
-	int full_field;			  //if (2): full field for all events.  (1) use available foc mec. (0) use isotropic field for all.
-	int aftershocks_fixedmec; //controls is fixed foc. mec. should be used for events w/o foc mec, when fullfield=2 (otherwise, will draw a random one).
-	*/
-
-//			case 0:
-//				(*flags).only_aftershocks_withfm=0;
-//				(*flags).full_field=0;
-//				(*flags).aftershocks_fixedmec=0;
-//				break;
-//			case 1:
-//				(*flags).only_aftershocks_withfm=0;
-//				(*flags).full_field=1;
-//				(*flags).aftershocks_fixedmec=0;
-//				break;
-//			case 2:
-//				(*flags).only_aftershocks_withfm=0;
-//				(*flags).full_field=2;
-//				(*flags).aftershocks_fixedmec=1;
-//				break;
-//			case 3:
-//				(*flags).only_aftershocks_withfm=0;
-//				(*flags).full_field=2;
-//				(*flags).aftershocks_fixedmec=0;
-//				break;
-//			case 4:
-//				(*flags).only_aftershocks_withfm=1;
-//				(*flags).full_field=2;
-//				(*flags).aftershocks_fixedmec=0;
-//				break;
-
-
-			if(which_slipmod[i]==-1) {
-
-				if (flags.only_aftershocks_withfm && !eqfm1[i].is_slipmodel){
-					// flags.only_aftershocks_withfm indicates that only events with focal mechanisms should be used.
-					continue;
+				//flags.full_field=0 indicates that an isotropic slip model should be used for all events (also those with foc mec):
+				if (eqfm1[i].is_slipmodel && flags.full_field!=0) {
+					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
+					if (err){
+						print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+						print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+					}
+					else {
+						//todo add counter and output something at the end.
+//						print_screen("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+//						print_logfile("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+					}
 				}
-				else {
-					copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
-					(*eqfm_comb)[c3].nsel=crst.N_allP;
-					(*eqfm_comb)[c3].selpoints=all_pts;
-					eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
-					(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 
 
-					//flags.full_field=0 indicates that an isotropic slip model should be used for all events (also those with foc mec):
-					if (eqfm1[i].is_slipmodel && flags.full_field!=0) {
+				else{
+					if (!eqfm1[i].is_slipmodel && flags.full_field==2){	//todo NB do not use aftershocks_fixedmec since MC option will be killed.
+						(*eqfm_comb)[c3].str1=crst.str0[0];	//fixme should use different regions.
+						(*eqfm_comb)[c3].dip1=crst.dip0[0];	//fixme should use different regions.
+						(*eqfm_comb)[c3].rake1=crst.rake0[0];
+						(*eqfm_comb)[c3].whichfm=1;
 						err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
 						if (err){
 							print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
 							print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
 						}
-						else {
-							print_screen("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
-							print_logfile("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
-						}
 					}
 
-
 					else{
-						if (!eqfm1[i].is_slipmodel && flags.full_field==2){	//todo NB do not use aftershocks_fixedmec since MC option will be killed.
-							(*eqfm_comb)[c3].str1=crst.str0[0];	//fixme should use different regions.
-							(*eqfm_comb)[c3].dip1=crst.dip0[0];	//fixme should use different regions.
-							(*eqfm_comb)[c3].rake1=crst.rake0[0];
-							(*eqfm_comb)[c3].whichfm=1;
-							err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
-							if (err){
-								print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
-								print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
-							}
-						}
+						// If none of the conditions above holds, assume isotropic field.
+						(*eqfm_comb)[c3].is_slipmodel=0;
 
-						else{
-							// If none of the conditions above holds, assume isotropic field.
-							(*eqfm_comb)[c3].is_slipmodel=0;
-
-							/* todo: add counter here and produce some output (similar to what done previously for aftershocks). */
-						}
- 					}
-
-					(*nfout)[*Ncomb]=1;
-					c3+=1;
-					*Ncomb+=1;
+						/* todo: add counter here and produce some output (similar to what done previously for aftershocks). */
+					}
 				}
-			}
 
-
-
-
-
-
-			else {
-				j=which_slipmod[i];
-				nsm=0;
-				for (int n=0; n<j; n++) nsm+=all_slipmodels.no_slipmodels[n];
-				c2=0;
-				print_screen("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
-				print_logfile("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
-
-				err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm, all_slipmodels.cmb_format,
-										   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
-										   all_slipmodels.tmain[j],crst.N_allP, crst.list_allP,
-										   all_slipmodels.mmain+j, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
-
-				if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
-				for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) (*eqfm_comb)[c3].distance=eqfm1[i].distance;
-				c3+=nf2[which_slipmod[i]];
-				c_evfound+=1;
+				(*nfout)[*Ncomb]=1;
+				c3+=1;
 				*Ncomb+=1;
 			}
-		//}
+		}
+
+		else {
+			j=which_slipmod[i];
+			nsm=0;
+			for (int n=0; n<j; n++) nsm+=all_slipmodels.no_slipmodels[n];
+			c2=0;
+			print_screen("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
+			print_logfile("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
+
+			err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm, all_slipmodels.cmb_format,
+									   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
+									   all_slipmodels.tmain[j],crst.N_allP, crst.list_allP,
+									   all_slipmodels.mmain+j, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
+
+			if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
+			for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) (*eqfm_comb)[c3].distance=eqfm1[i].distance;
+			c3+=nf2[which_slipmod[i]];
+			c_evfound+=1;
+			*Ncomb+=1;
+		}
 	}
 
 	if (c_evfound<N2){
@@ -256,6 +213,8 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 	//TODO in theory, should find L and W for both mech. (rake differs).
 	WellsCoppersmith((*eqkfmP).mag, (*eqkfmP).rake1, &((*eqkfmP).L), &((*eqkfmP).W), &slip);
 	slip=(*eqkfmP).tot_slip=pow(10,(1.5*((*eqkfmP).mag+6)))*(1.0/(crst.mu*pow(10,12)*(*eqkfmP).W*(*eqkfmP).L));
+
+	// todo [coverage] shifting of fault depth is never tested
 	switch ((*eqkfmP).whichfm){
 		case 1:
 			if ((*eqkfmP).depth<0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1)) {
@@ -373,6 +332,7 @@ int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out,
 	return (0);
 }
 
+// todo [coverage] this block is never tested
 int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 	// [Fahad] Variables used for MPI.
 	int fileError = 0;

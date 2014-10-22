@@ -162,6 +162,8 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				MPI_Bcast((*eqfm_out)[0].slip_str, ndi_nst+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 			#endif
 		}
+
+		// todo [coverage] this block is never tested
 		else {
 			if(procId == 0) {
 				next_separator(fin,"MULTISEGMENT MODEL");
@@ -337,6 +339,7 @@ int scan_nth(char *string, int n, double *result){
 
 // [Fahad] MPI calls in this function are used merely to ensure that if there is
 //		   an error code to be returned, it is so returned to all processes.
+
 int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 	//stops reading at next comment ("%").
 
@@ -431,6 +434,7 @@ int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 			lattop=lat-RAD2DEG*(pos_dip[i]-0.5*(dw))*dipVy/Re;
 			dy=Re*(lattop-lat0)*DEG2RAD;
 			dx=(Re*cos(DEG2RAD*lat))*(lontop-lon0)*DEG2RAD;
+			// todo [coverage] this block is never tested
 			if ((dy>0.1) && (fabs(fmod(atan(dx/dy)+pi,pi)-fmod(strike,pi))>strike_toll)){
 				print_screen(" **Warning: Epicenter is not on the fault! Will use a new epicenter ** \n");
 				print_screen("\tOld epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);

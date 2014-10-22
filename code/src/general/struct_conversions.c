@@ -143,6 +143,7 @@ int *combine_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2
 	double dist2, dist20;
 
 	if (!N2) return NULL;
+	// todo [coverage] this block is never tested
 	if (!N1) {
 		sel= ivector(0,N2-1);
 		for (int n=0; n<N2; n++) sel[n]=-1;
@@ -211,6 +212,7 @@ double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int 
 	if (ind) *ind=imatrix(1,2,0,N1+N2);
 	res=dmatrix(1,2,0,N1+N2);
 
+	// todo [coverage] this block is never tested
 	if (!N1){
 		if (tot) *tot=N2;
 		for (int i=0; i<N2; i++){

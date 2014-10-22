@@ -23,6 +23,7 @@
 	#include "mpi.h"
 #endif
 
+// todo [coverage] this block is never tested
 double tot_slip (struct eqkfm eqfm1){
 
 	double slip=0.0;
@@ -35,6 +36,7 @@ double tot_slip (struct eqkfm eqfm1){
 	return slip/NP;
 }
 
+// todo [coverage] this block is never tested
 int scale_to_mag(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double * slips, double *rakes){
 
 	double slip, M0old, M0;	//slip, seismic moments.
@@ -169,6 +171,7 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 	                  i++;
 	                }
 	        }
+	  // todo [coverage] this block is never tested
       if (ndiscx<odiscx && ndiscy<odiscy) {// refine slip distribution
           for (int i=1; i<=nns; i++){
         	  l=1;
@@ -292,6 +295,7 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
     	return 0;
     }
 
+	// todo [coverage] this block is never tested
 	REslipo=dvector(1,ns);
 	rakes=dvector(1,ns);
 	taper=dvector(1,ns);

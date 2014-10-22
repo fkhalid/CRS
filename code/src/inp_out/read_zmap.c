@@ -216,6 +216,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 				if (mag[valid+1]<-10 || mag[valid+1]>12) mag_out_of_range=1;
 				if (dep[valid+1]<0 || dep[valid+1]>2000) dep_out_of_range=1;
 
+				// todo [coverage] this block is never tested
 				if (lon_out_of_range || lat_out_of_range || date_out_of_range || time_out_of_range || mag_out_of_range || dep_out_of_range) {
 					missing_values+=1;
 					if (hh!=no_expected_columns || missing_values){
@@ -315,6 +316,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		if (mag[i]>=Mmain) t_last_large=times[i];
 	}
 
+	// todo [coverage] this block is never tested
 	if (!eq1 && !eq2) {
 		if (cat) (*cat).Z=0;
 		if (Ntot) *Ntot=0;
@@ -518,6 +520,7 @@ int read_firstlineZMAP(char *file, struct tm reftime, double *stime){
 			min= (int) flmin;
 			sec= (int) fsec;
 		}
+		// todo [coverage] this block is never tested
 		else {
 			sscanf(line, "%*lf %*lf %lf %lf %lf %*lf %*lf %lf %lf %lf %*lf %*lf %*lf\n",	&fyear, &fmon, &fday, &fhour, &flmin, &fsec);
 			year=(int) fyear;

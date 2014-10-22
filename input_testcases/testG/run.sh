@@ -1,5 +1,13 @@
 #!/bin/bash
 
+if [ $# -eq 0 ]
+then
+ Build="Release"
+else
+ Build=$1
+fi
+
+echo "***************************Build="$Build"********************************"
 basefile="input_testcases/testG/input.txt"
 parafile="input_testcases/parameters.txt"
 temppara="input_testcases/testG/temp_par.txt"
@@ -22,7 +30,13 @@ sed '9s+focmecfile+focmecfile0+' temp_inputG > tmp
 mv tmp temp_inputG
 fi
 
-Release/CRS_3.0 temp_inputG
+$Build/CRS_3.0 temp_inputG
+if [ $Build == "Coverage" ]
+then
+mkdir coverage/testG$i
+cp Coverage/code/src/*/*.gc* coverage/testG$i
+fi
+
 done
 
 
@@ -46,7 +60,13 @@ mv tmp temp_inputG
 fi
 
 
-Release/CRS_3.0 temp_inputG
+$Build/CRS_3.0 temp_inputG
+if [ $Build == "Coverage" ]
+then
+mkdir coverage/testGB$i
+cp Coverage/code/src/*/*.gc* coverage/testGB$i
+fi
+
 done
 
 rm temp_inputG

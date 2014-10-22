@@ -137,6 +137,8 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 			}
 		}
 	}
+
+	// todo [coverage] this block is never tested
 	else {
 		if (no_subpointsx!=1 || no_subpointsy!=1 || no_subpointsz!=1) {
 			print_screen("** Warning: non uniform grid in file %s, can not refine geometry (read_crust.c).**\n",fnametemplate);
@@ -185,6 +187,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 
 		err1 = read_focmecgridfile(focmecgridfile, crst);
 
+		// todo [coverage] this block is never tested
 		if (is_refined){
 			err1+=convert_geometry((*crst),(*crst).str0, &strtmp, 0, 1);
 			(*crst).str0=strtmp;

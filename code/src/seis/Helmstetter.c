@@ -51,6 +51,7 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 	return rate_tot;
 }
 
+// todo [coverage] this block is never tested
 double *Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord){
 /* weights: flags used for declustering (0/1 for excluded/selected events). if NULL, all events are selected with weight=1.
  * ord= 1,2: indicates if first o fsecond nnearest neighbour should be used.

@@ -1,5 +1,13 @@
 #!/bin/bash
 
+if [ $# -eq 0 ]
+then
+ Build="Release"
+else
+ Build=$1
+fi
+
+echo "***************************Build="$Build"********************************"
 basefile="input_testcases/testH/input.txt"
 parafile="input_testcases/testH/parameters_as.txt"	#can use parameters_(m)as well to treat events as (main)aftershocks.
 temppara="input_testcases/testH/temp_par.txt"
@@ -20,7 +28,13 @@ sed '9s+focmecfile+focmecfile0+' temp_inputH > tmp
 mv tmp temp_inputH
 fi
 
-Release/CRS_3.0 temp_inputH
+$Build/CRS_3.0 temp_inputH
+if [ $Build == "Coverage" ]
+then
+mkdir coverage/testH$i
+cp Coverage/code/src/*/*.gc* coverage/testH$i
+fi
+
 done
 rm temp_inputH
 rm $temppara

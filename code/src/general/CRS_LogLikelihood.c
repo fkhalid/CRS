@@ -250,6 +250,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 
 		for(int t=1; t<=Ntts; t++) {
 			//Calculate seismicity evolution (skipping a time window after each mainshock):
+			//fixme: either remove this entirely, or change is as in CRSLogLikelihood.
 			tt0=tts[t-1];
 			tt1=tts[t];
 
@@ -275,7 +276,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 											   NgridT, NTScont, Nm, gammas, crst.rate0,
 											   dumrate, 1);
 
-					tnow=eqkfm0[current_main].t+tw;	//fixme: either remove this entirely, or change is as in CRSLogLikelihood.
+					tnow=eqkfm0[current_main].t+tw;
 				}
 				else if(tnow<eqkfm0[current_main].t+tw) {
 					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
@@ -688,6 +689,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 		//Set starting rates:
 		if (fromstart){
+		// todo [coverage] this block is never tested
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
 								   times, Nm, crst, AllCoeff, NTScont, focmec,
 								   fmzonelim, NFM, seed, tstart, tt1,
@@ -763,6 +765,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (all_new_gammas) for (int n=1; n<=NgridT; n++) all_new_gammas[nsur][n]=gammas[n];
 
 		if(procId == 0) {
+		// todo [coverage] this block (2x) is never tested
 			if (printall_cmb) {
 				for (int n=1; n<=NgridT; n++) fprintf(fcmb, "%lf\t", DCFS[0].cmb[n]);
 				if (nsur <Nsur) fprintf(fcmb, "\n");

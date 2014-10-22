@@ -221,6 +221,7 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 
 	switch (inside) {
 		case 0:
+		// todo [coverage] this block is never tested
 		  Vfrac=fabs(A/(pi*(K*SD)*(K*SD)));
 		  break;
 		case 1:
@@ -243,6 +244,7 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 	weightsj[0]=1-Vfrac;
 
 	if (ngridj_int==0){
+		// todo [coverage] this block is never tested
 		ngridj_int=1;
 		ngridpointj[1]=closestp;
 		weightsj[1]=1;
@@ -294,6 +296,7 @@ double exact_prob(double rx, double ry, double rz, double dx, double dy, double 
 
 }
 
+// todo [coverage] this function is never tested
 int all_nearestneighbours(double *x, double *y, int N, int **pts, double **dist){
 	/* x, y: coordinates (indices: [1...N]);
 	 * pts: index of nearest neighbour;

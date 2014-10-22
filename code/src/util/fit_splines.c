@@ -57,6 +57,7 @@ for (int tt=1; tt<=TS2; tt++) t2f[tt]=(float) t2[tt];
 
 //calculate largest value at each point in time (error is set to be a fraction of this: e(t)=f*max_slip(t)).
 
+// todo [coverage] this block is never tested
 if (mc==1){
 	for (int tt=1; tt<=TS; tt++){
 		et[tt]=0.0;
@@ -114,6 +115,7 @@ for (int h=1; h<=N; h++){
 					if (no_oscillations){
 						//if (t0>2 && sp[TS+1-t0]<sp[TS+2-t0] && mc==1) sp[TS+1-t0]=sp[TS+2-t0];
 						//if (t0==2 && sp[TS+1-t0]<2*sp[TS+2-t0] && mc==1){
+						// todo [coverage] this block is never tested
 						if (t0>2 && sign*sp[TS+1-t0]>sign*sp[TS+2-t0] && mc==1){	//todo check this works with both signs of sp.
 							if (iter % 2 == 0) sp[TS+1-t0]=sp[TS+2-t0];
 							else sp[TS+2-t0]=sp[TS+1-t0];
@@ -121,6 +123,7 @@ for (int h=1; h<=N; h++){
 						if (sign*sp[TS+1-t0]<0  && mc==1) sp[TS+1-t0]=0;
 					}
 				}
+				// todo [coverage] this block is never tested
 				else {
 					sp[t0]=(float)(sp[t0-1]+slip_before[h][t0]+dum*e[h]*et[t0]);
 					if (sp[t0]>sp[t0-1]  && mc==1) ok=0;
@@ -144,6 +147,7 @@ for (int h=1; h<=N; h++){
 
 		switch (early_inter_mode){
 			case 1:
+				// todo [coverage] this block is never tested
 				for (int ts=1;ts<=early_fit; ts++) (*slip_after)[h][ts]+=(sp[1]*(t2[ts]/t[1])*(1.0/NIT));
 				break;
 			case 2:
@@ -163,7 +167,7 @@ for (int h=1; h<=N; h++){
 	}
 }
 
-
+// todo [coverage] this block is never tested
 if (normalize){
 	int t0=TS, t1=0;
 	double final_cumslip0=0.0, final_cumslip1=0.0, dslip;

@@ -134,6 +134,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 	  }
   }
 
+// todo [coverage] this block is never tested
   if (times[0]>=tt1){
 	  if (NeT!=(double *) 0) *NeT=N*(tt1-tt0);
 	  if (NeX) for(int m=1;m<=N;m++) NeX[m]=(tt1-tt0);

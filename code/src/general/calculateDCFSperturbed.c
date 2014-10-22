@@ -220,6 +220,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				}
 			}
 			else {
+		// todo [coverage] this block is never tested
 				*strike0=focmec[1][which_recfault];
 				*dip0=focmec[2][which_recfault];
 				*rake0=focmec[3][which_recfault];	//only used for splines==1 (see below).
@@ -250,6 +251,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	if (afterslip==0){
 		for (int l=0; l<NTScont; l++){
 			if (times[l] <tdata0 || times[l]>tdata1) continue;
+		// todo [coverage] this line is never tested
 			for (int n=1; n<=NgridT; n++) if (DCFSrand) DCFSrand[l][n]=0.0;	//todo should DCFSrand just set to NULL if afterslip==0?
 		}
 	}
@@ -266,6 +268,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			else{
 				if (vary_recfault!=0){
+					// todo [coverage] this block is never tested
 					for (int n=1; n<=NgridT; n++) cmb_cumu[n]=0.0;
 					for (int l=0; l<NTScont; l++) {
 						resolve_DCFS(DCFS_Af[l], crst, strike0, dip0, NULL, 1);
@@ -307,6 +310,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					Coeffs_st=temp->Coeffs_st;
 					Coeffs_dip=temp->Coeffs_dip;
 					if (vary_recfault!=2) resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1);
+					// todo [coverage] this block is never tested	
 					else DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from afterslip, assuming that from mainshocks is much larger this is ok.
 
 					if (gridpoints_err==1) smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, seed, 0, nn);
@@ -357,18 +361,18 @@ void smoothen_DCFS(struct pscmp DCFS, int nlat, int nlon, int nd, long *seed, in
 	}
 }
 
-void smoothen_vector(int NgridT, int nLat, int nLon, int nD, double *values, long *seed, int **nn, int return_range){
-	double randcmb;
-	double **interp_DCFS=dmatrix(1,NgridT, 1, 2);
-
-	interp_nn(NgridT,nLat,nLon,nD,values,interp_DCFS,0,nn);
-	for (int i=1; i<=NgridT; i++) {
-		if (return_range) values[i]=interp_DCFS[i][2]-interp_DCFS[i][1];
-		else {
-			randcmb=interp_DCFS[i][1]+ran1(seed)*(interp_DCFS[i][2]-interp_DCFS[i][1]);
-			*seed=-*seed;
-			values[i]=randcmb;
-		}
-	}
-	free_dmatrix(interp_DCFS,1,NgridT, 1, 2);
-}
+//void smoothen_vector(int NgridT, int nLat, int nLon, int nD, double *values, long *seed, int **nn, int return_range){
+//	double randcmb;
+//	double **interp_DCFS=dmatrix(1,NgridT, 1, 2);
+//
+//	interp_nn(NgridT,nLat,nLon,nD,values,interp_DCFS,0,nn);
+//	for (int i=1; i<=NgridT; i++) {
+//		if (return_range) values[i]=interp_DCFS[i][2]-interp_DCFS[i][1];
+//		else {
+//			randcmb=interp_DCFS[i][1]+ran1(seed)*(interp_DCFS[i][2]-interp_DCFS[i][1]);
+//			*seed=-*seed;
+//			values[i]=randcmb;
+//		}
+//	}
+//	free_dmatrix(interp_DCFS,1,NgridT, 1, 2);
+//}

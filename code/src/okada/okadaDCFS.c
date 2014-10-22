@@ -84,6 +84,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	return(0);
 }
 
+// todo [coverage] this block is never tested
 int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst, double *strikeR, double *dipR, int full_tensor){
 
 	// [Fahad] Variables used for MPI
@@ -175,6 +176,7 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 	return(0);
 }
 
+// todo [coverage] this block is never tested
 int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1,
 			   int NF, struct crust crst, double *lats, double *lons, double *depths) {
 	//lats, lons, depths contain complete list of grid points.
@@ -510,6 +512,7 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, struct pscmp DCFS, st
 	int NF=DCFS.NF;
 	int err=0, errp=0;
 
+	// todo [coverage] this block is never tested
 	if ((DCFS.nsel!=(*eqkfm1).nsel)){
 		print_screen("**Warning: DCFS.nsel!=eqkfm.nsel in okadaCoeff2DCFS. Will use those from eqkfm1. **\n");
 		print_logfile("**Error: DCFS.nsel!=eqkfm1.nsel (%d, %d) in okadaCoeff2DCFS.**\n", DCFS.nsel, (*eqkfm1).nsel);
@@ -569,6 +572,7 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, struct pscmp DCFS, st
 	return(errp!=0);
 }
 
+// todo [coverage] this block is never tested
 int okadaCoeff_resolve(struct Coeff_LinkList Coeffs, float ***Coeffs_st2, float ***Coeffs_di2, struct crust crst, double *strikeRs, double *dipRs, double *rakeRs){
 	//NB: does not have option optrake.
 
@@ -653,6 +657,7 @@ int okadaCoeff_resolve(struct Coeff_LinkList Coeffs, float ***Coeffs_st2, float 
 	return(0);
 }
 
+// todo [coverage] this block is never tested
 int resolvedCoeff2DCFS(float **Coeffs_st, float **Coeffs_d, struct pscmp DCFS, struct eqkfm *eqkfm1, struct crust crst){
 
 	double MaxDCFS=DCFS_cap;
@@ -696,6 +701,7 @@ int isoDCFS(struct pscmp DCFS, struct eqkfm eqkfm1){
 	int Nsel;
 	double DCFSmax=DCFS_cap;
 
+	// todo [coverage] this block is never tested
 	if (DCFS.nsel!=eqkfm1.nsel){
 		print_logfile("**Error: DCFS.nsel!=eqkfm.nsel in isoDCFS.**\n");
 		print_screen("**Warning: DCFS.nsel!=eqkfm.nsel in isoDCFS. Will choose the one from DCFS.**\n");
@@ -760,6 +766,7 @@ void patch_pos(struct eqkfm eqfm, int p, double *east, double *north, double *de
 	return;
 }
 
+// todo [coverage] this block is never tested
 double ** comp2tensor(float *v, double ***S0){
 	//fills in S0 if given, if NULL allocate new memory.
 	double **S;
@@ -790,6 +797,7 @@ double *normal_vector(double strikeR, double dipR){
 	return n;
 }
 
+// todo [coverage] this block is never tested
 double *slip_vector(double strikeR, double dipR, double rakeR){
 
 	double *s;
@@ -842,6 +850,7 @@ double *sum_v(double *v1, double *v2, double *sum, int N){
 	return v3;
 }
 
+// todo [coverage] this block is never tested
 double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f, double *stress0, double sigma0, double *newrake, int opt_rake){
 //To be called after filling in DCFS.S. (with functions below).
 //total stress should be passed if optimal rake is to be used (opt_rake==1).

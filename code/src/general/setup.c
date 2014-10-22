@@ -247,8 +247,6 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 	(*eqkfm0res).parent_set_of_models=(struct set_of_models *) malloc((size_t) (sizeof(struct set_of_models)));
 	memcpy((*eqkfm0res).parent_set_of_models, &setmodels, (size_t) sizeof(struct set_of_models));
 
-	//(*eqkfm0res).parent_set_of_models=&setmodels;
-
 	set_current_slip_model(eqkfm0res,1);
 	if (NF0) *NF0=nfmax;
 	return err;
@@ -284,9 +282,7 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 }
 
 int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out,
-		struct crust crst, struct eqkfm *eqkfm0, int Nm,
-		int *Nfaults) {
-	//set Ntot=0 if aftershocks should not be considered.
+		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults) {
 
 	// [Fahad] Variables used for MPI
 	int procId = 0;
@@ -304,7 +300,19 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 
     if (Coefficients!=NULL) {
     	//todo make sure that coefficients are only recalculated when needed (i.e. only for events for which several slip model are available).
-		AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
+
+    	//Create elements of structure (allocate memory):
+    	AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
+		temp= AllCoeff;
+		for(int i=0; i<Nm; i++) {
+			if (i<Nm-1) {
+				temp->next= malloc(sizeof(struct Coeff_LinkList));
+				temp= temp->next;
+			}
+			else temp->next=(struct Coeff_LinkList *) 0;
+		}
+
+		//Fill in elements of structure:
 		temp= AllCoeff;
 		for(int i=0; i<Nm; i++) {
 			if (eqkfm0[NFsofar].is_slipmodel) {
@@ -323,10 +331,8 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			temp->which_main=i;
 			NFsofar+=Nfaults[i];
 			if (i<Nm-1) {
-				temp->next= malloc(sizeof(struct Coeff_LinkList));
 				temp= temp->next;
 			}
-			else temp->next=(struct Coeff_LinkList *) 0;
 		}
 		*Coefficients=AllCoeff;
 		print_logfile("Okada Coefficients structure set up.\n");
@@ -338,24 +344,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 
 		DCFS=pscmp_arrayinit(crst,0,Nm-1);
 
-//		for (int eq1=0; eq1<Ntot; eq1++){
-//			Nsel = eqkfm1[eq1].nsel;
-//			DCFS[eq1].NF=1;
-//			DCFS[eq1].index_cat=eqkfm1[eq1].index_cat;
-//			DCFS[eq1].which_pts=eqkfm1[eq1].selpoints;
-//			DCFS[eq1].fdist=eqkfm1[eq1].distance;
-//			DCFS[eq1].nsel=Nsel;
-//			DCFS[eq1].t=eqkfm1[eq1].t;
-//			DCFS[eq1].m=eqkfm1[eq1].mag;
-//			if (Nsel>0){
-//				DCFS[eq1].S = d3tensor(1,Nsel,1,3,1,3);
-//				DCFS[eq1].cmb=dvector(1,Nsel);
-//				for (int i=1; i<=Nsel; i++) DCFS[eq1].cmb[i]=0.0;
-//			}
-//		}
-
 		NFtot=0;
-		//substitute mainshocks:
 		for (int eq=0; eq<Nm; eq++){
 			Nsel = eqkfm0[NFtot].nsel;
 			DCFS[eq].fdist=eqkfm0[NFtot].distance;
@@ -367,6 +356,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			DCFS[eq].m=(2.0/3.0)*log10(M0)-6;
 			DCFS[eq].NF=Nfaults[eq];
 			if (DCFS[eq].nsel!=Nsel){
+				// todo [coverage] this block is never tested
 				if (DCFS[eq].nsel>0){
 					free_d3tensor(DCFS[eq].S,1,DCFS[eq].nsel,1,3,1,3);
 					free_dvector(DCFS[eq].cmb,1,DCFS[eq].nsel);
@@ -478,6 +468,7 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 		}
 	}
 
+// todo [coverage] this block is never tested
 	else {
 		for (int t=1; t<=*L; t++) (*tevol_afterslip)[t-1]=0;
 	}

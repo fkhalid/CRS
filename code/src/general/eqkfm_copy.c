@@ -7,6 +7,7 @@
 
 #include "eqkfm_copy.h"
 
+// todo [coverage] this block is never tested
 void empty_eqkfm(struct eqkfm *eqkfm0){
 	(*eqkfm0).np_st=(*eqkfm0).np_di=0;
 	(*eqkfm0).nsel=0;
@@ -21,6 +22,7 @@ void empty_eqkfm(struct eqkfm *eqkfm0){
 	(*eqkfm0).selpoints=NULL;		//indices of cell points affected by this event.
 }
 
+// todo [coverage] this block is never tested
 void copy_eqkfm_nolocation_noindex_notime(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 //slightly wasteful, but at least don't need to change it if new variables are added to structure (junk change copy_eqkfm_all).
 
@@ -126,6 +128,8 @@ void copy_eqkfm_all(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 	return;
 }
 
+
+// todo [coverage] this block is never tested
 void copy_eqkfm_noslipmodel(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 
 	copy_eqkfm_attributes(eqkfm1, eqkfm2);

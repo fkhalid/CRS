@@ -10,28 +10,28 @@
 
 #include "mem_mgmt.h"
 
-void shift_cat(struct catalog *cat, int N){
-	/*shifts all vectors in struct cat so than element N becomes the first one.
-	 * NB: shift back (with N->-N+2) before deallocating memory to avoid seg fault.
-	 */
-
-	(*cat).t+=N-1;
-	(*cat).mag+=N-1;
-	(*cat).lat0+=N-1;
-	(*cat).lon0+=N-1;
-	(*cat).x0+=N-1;
-	(*cat).y0+=N-1;
-	(*cat).depths0+=N-1;
-	(*cat).err+=N-1;
-	(*cat).verr+=N-1;
-	(*cat).ngrid+=N-1;
-	(*cat).ngridpoints+=N-1;
-	(*cat).weights+=N-1;
-
-	(*cat).Z-=N-1;
-
-	return;
-}
+//void shift_cat(struct catalog *cat, int N){
+//	/*shifts all vectors in struct cat so than element N becomes the first one.
+//	 * NB: shift back (with N->-N+2) before deallocating memory to avoid seg fault.
+//	 */
+//
+//	(*cat).t+=N-1;
+//	(*cat).mag+=N-1;
+//	(*cat).lat0+=N-1;
+//	(*cat).lon0+=N-1;
+//	(*cat).x0+=N-1;
+//	(*cat).y0+=N-1;
+//	(*cat).depths0+=N-1;
+//	(*cat).err+=N-1;
+//	(*cat).verr+=N-1;
+//	(*cat).ngrid+=N-1;
+//	(*cat).ngridpoints+=N-1;
+//	(*cat).weights+=N-1;
+//
+//	(*cat).Z-=N-1;
+//
+//	return;
+//}
 
 
 void init_crst(struct crust *crst){
@@ -94,6 +94,7 @@ void init_cat1(struct catalog *cat, int Zsel, int gridMax){
 //	(*cat).layers=crst.depth;
 //}
 
+// todo [coverage] this block is never tested
 struct set_of_models *set_of_models_array(long n1, long n2){
 /* allocate memory to array of eqkfm. */
 	struct set_of_models *v;
@@ -204,11 +205,13 @@ struct pscmp *pscmp_arrayinit(struct crust v0, long n1, long n2){
 		return v-n1+NR_END;;
 }
 
+// todo [coverage] this block is never tested
 void free_eqkfmarray(struct eqkfm *v, long n1, long n2){
 /* free a eqkfm vector allocated with eqkfm_array() */
 	free((FREE_ARG) (v+n1-NR_END));
 }
 
+// todo [coverage] this block is never tested
 void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 
 	for (int f=n1; f<=n2; f++){
@@ -221,6 +224,7 @@ void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 	//free((FREE_ARG) (v+n1-NR_END));
 }
 
+// todo [coverage] this block is never tested
 void freepart_pscmparray(struct pscmp *v, long n1, long n2){
 //only frees stuff which wasn't linked to other structure (see pscmp_arrayinit).
 	for (int i=n1; i<=n2; i++){
@@ -240,6 +244,7 @@ void freepart_pscmparray(struct pscmp *v, long n1, long n2){
 	free((FREE_ARG) (v+n1-NR_END));
 }
 
+// todo [coverage] this block is never tested
 void freefull_pscmparray(struct pscmp *v, long n1, long n2){
 
 	for (int i=n1; i<=n2; i++){
