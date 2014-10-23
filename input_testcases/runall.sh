@@ -2,8 +2,11 @@
 
 Build="Coverage"
 
-if [ -e coverage ]
+#if [ $Build == "Coverage" ]
+if [ 0 -eq 1 ]
 then
+   if [ -e coverage ]
+   then
 	echo -n "Overwrite folder coverage [y/n]?"
 	read answer
 
@@ -20,12 +23,14 @@ then
 	else
 	echo "Invalid answer."
 	fi
+   fi
+
+   mkdir coverage
 fi
 
-mkdir coverage
-
 #Run code:
-for i in $(ls input_testcases --color=never | grep test); do input_testcases/$i/run.sh $Build; done
+#for i in $(ls input_testcases --color=never | grep test); do input_testcases/$i/run.sh $Build; done
+#for i in $(ls input_testcases --color=never | grep 'testF'); do input_testcases/$i/run.sh $Build; done
 
 #---------------------------------#
 #Put together coverage information
@@ -58,6 +63,7 @@ mkdir cumulative
 for i in $(ls --color=never $(ls --color=never | grep test | head -1) | grep gcov)
    do
    gcov_merge.sh $(ls */$i | grep -v cumulative) > cumulative/$i
+   gcov_simplify.sh cumulative/$i
    done
 
 cd cumulative

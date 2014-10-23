@@ -277,129 +277,129 @@ int test_read_inputfiles(){
 //	return 0;
 //}
 
-int test_background_rate(){
+//int test_background_rate(){
+//
+//	char fname[120];
+//	FILE *fout;
+//	char crust_file[]="input/inCan.dat";
+//	char fore_file[]="input/darf_temp.txt";
+//	char cat_file[]="/home/des/camcat/Data/Catalogs/ZMAP/new_zeland/nz_2009_2011_fixed.dat";
+//	struct crust crst;
+//	struct tm reftime;
+//	struct catalog cat;
+//	double Mcut=20, Mmain=7.0;
+//	double dR=50, dZ=50;
+//	int ord=1;
+//	double res=3.0, res_z=1.0;
+//	double *rates=NULL;
+//
+//	sscanf("2010-09-03T16:35:42Z", "%d-%d-%dT%d:%d:%dZ", &(reftime.tm_year), &(reftime.tm_mon), &(reftime.tm_mday), &(reftime.tm_hour), &(reftime.tm_min), &(reftime.tm_sec));
+//	reftime.tm_year-=1900;
+//	reftime.tm_mon-=1;
+//	reftime.tm_isdst=0;
+//
+//	//broken (no crust_file anymore)
+//	//read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
+//	background_rate(cat_file, &crst, reftime, Mcut, Mmain, -1e30, 1e30,  dR, dZ, ord);
+//
+//	cat.Mc=Mcut;
+//	crst.GRmags=dvector(1,1);
+//	crst.GRmags[1]=1.0;
+//	readZMAP(&cat, NULL, NULL, cat_file, crst, reftime, 0.0, 0.0, -1e30, 0.0, 10, 0.0, 0.0, 0.0, 0.0, 0);
+//
+////	sprintf(fname, "%s/Helm_cat_Darf_past_3d_MC3.0.dat",testfolder);
+////	fout=fopen(fname,"w");
+////	for (int i=1; i<=cat.Z; i++) fprintf(fout,"%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n", cat.lat0[i], cat.lon0[i], cat.depths0[i], cat.t[i], cat.mag[i]);
+////	fclose(fout);
+//
+//	sprintf(fname, "%s/Background_Darf_hr.dat", testfolder);
+//	for (int i=1; i<=crst.N_allP; i++) crst.rate0[i]*=crst.r0;
+//	print_rate(fname, crst, 3.0, crst.rate0);
+//
+//	convert_geometry(crst, crst.rate0, &rates, 1, 0);
+//	sprintf(fname, "%s/Background_Darf.dat", testfolder);
+//	csep_forecast(fname, crst, rates, 0);
+//
+////	sprintf(fname, "%s/Helm_rate_Darf_3d_MC3.0.dat", testfolder);
+////	fout=fopen(fname,"w");
+////	for (int i=1; i<=crst.N_allP; i++) {
+////		fprintf(fout,"%.5lf\t%.5lf\t%.5lf\t%.5e\n",crst.lat[i], crst.lon[i], crst.depth[i], crst.rate0[i]);
+////	}
+////	fclose(fout);
+////
+////	sprintf(fname, "%s/Helm_bgrate_Darf_3d_MC3.0.dat", testfolder);
+////	fout=fopen(fname,"w");
+////	fprintf(fout,"Background rate= %.6lf earthquakes/day (M>=%.1lf)\n", crst.r0, crst.mags[1]);
+////	fclose(fout);
+//
+//	return 0;
+//}
 
-	char fname[120];
-	FILE *fout;
-	char crust_file[]="input/inCan.dat";
-	char fore_file[]="input/darf_temp.txt";
-	char cat_file[]="/home/des/camcat/Data/Catalogs/ZMAP/new_zeland/nz_2009_2011_fixed.dat";
-	struct crust crst;
-	struct tm reftime;
-	struct catalog cat;
-	double Mcut=20, Mmain=7.0;
-	double dR=50, dZ=50;
-	int ord=1;
-	double res=3.0, res_z=1.0;
-	double *rates=NULL;
-
-	sscanf("2010-09-03T16:35:42Z", "%d-%d-%dT%d:%d:%dZ", &(reftime.tm_year), &(reftime.tm_mon), &(reftime.tm_mday), &(reftime.tm_hour), &(reftime.tm_min), &(reftime.tm_sec));
-	reftime.tm_year-=1900;
-	reftime.tm_mon-=1;
-	reftime.tm_isdst=0;
-
-	//broken (no crust_file anymore)
-	//read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
-	background_rate(cat_file, &crst, reftime, Mcut, Mmain, -1e30, 1e30,  dR, dZ, ord);
-
-	cat.Mc=Mcut;
-	crst.GRmags=dvector(1,1);
-	crst.GRmags[1]=1.0;
-	readZMAP(&cat, NULL, NULL, cat_file, crst, reftime, 0.0, 0.0, -1e30, 0.0, 10, 0.0, 0.0, 0.0, 0.0, 0);
-
-//	sprintf(fname, "%s/Helm_cat_Darf_past_3d_MC3.0.dat",testfolder);
+//int test_decluster_catalog(){
+//
+//	char fname[120];
+//	double Mmain=6.0;
+//	double *time_missing=NULL;
+//	FILE *fout;
+//	char crust_file[]="input/Tohoku_simple_vert.inp";
+//	char fore_file[]="input/tohoku_template.dat";
+//	char cat_file[]="/home/des/camcat/Data/Catalogs/Others/jma_cat_2010_2013_update20130329_sel_2.5.dat";
+//	struct catalog cat;
+//	struct crust crst;
+//	struct tm tt;
+//	time_t t;
+//	int *dec;
+//	double *weights;
+//	double *rate, r;
+//	double res=6.0;
+//
+//	time(&t);
+//	tt=*(localtime(&t));
+//
+//	//broken (no crust_file anymore)
+//	//read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
+//	cat.Mc=0.0;
+//	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
+//	weights=dvector(1,cat.Z);
+//
+//
+//	//old declustering method (rescales rates after calculating them):
+//	dec=decluster_catalog_rescalegrid(cat, crst, Mmain, &time_missing, 0);
+//
+//	for (int i=1; i<=cat.Z; i++) weights[i]=(double) dec[i];
+//
+//	rate=Helmstetter_cat(cat, crst, weights, 2);
+//
+//	sprintf(fname, "%s/Helm_rate_dec6.0_2nd.dat", testfolder);
 //	fout=fopen(fname,"w");
-//	for (int i=1; i<=cat.Z; i++) fprintf(fout,"%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n", cat.lat0[i], cat.lon0[i], cat.depths0[i], cat.t[i], cat.mag[i]);
+//	for (int i=1; i<=crst.nLat*crst.nLon; i++) fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],rate[i]);
 //	fclose(fout);
-
-	sprintf(fname, "%s/Background_Darf_hr.dat", testfolder);
-	for (int i=1; i<=crst.N_allP; i++) crst.rate0[i]*=crst.r0;
-	print_rate(fname, crst, 3.0, crst.rate0);
-
-	convert_geometry(crst, crst.rate0, &rates, 1, 0);
-	sprintf(fname, "%s/Background_Darf.dat", testfolder);
-	csep_forecast(fname, crst, rates, 0);
-
-//	sprintf(fname, "%s/Helm_rate_Darf_3d_MC3.0.dat", testfolder);
+//
+//	sprintf(fname, "%s/Helm_rate_dec_rescaled6.0_2nd.dat", testfolder);
 //	fout=fopen(fname,"w");
-//	for (int i=1; i<=crst.N_allP; i++) {
-//		fprintf(fout,"%.5lf\t%.5lf\t%.5lf\t%.5e\n",crst.lat[i], crst.lon[i], crst.depth[i], crst.rate0[i]);
+//	for (int i=1; i<=crst.nLat*crst.nLon; i++) {
+//		r=(cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]);
+//		fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],r*rate[i]);
 //	}
 //	fclose(fout);
 //
-//	sprintf(fname, "%s/Helm_bgrate_Darf_3d_MC3.0.dat", testfolder);
+//	//new declustering method (weights earthquakes):
+//	decluster_catalog(cat, Mmain, &weights, 0);
+//
+//	sprintf(fname, "%s/Dec_cat6.0.dat",testfolder);
 //	fout=fopen(fname,"w");
-//	fprintf(fout,"Background rate= %.6lf earthquakes/day (M>=%.1lf)\n", crst.r0, crst.mags[1]);
+//	for (int i=1; i<=cat.Z; i++) fprintf(fout,"%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n", cat.lat0[i], cat.lon0[i], cat.depths0[i], cat.mag[i], cat.t[i], weights[i]);
 //	fclose(fout);
-
-	return 0;
-}
-
-int test_decluster_catalog(){
-
-	char fname[120];
-	double Mmain=6.0;
-	double *time_missing=NULL;
-	FILE *fout;
-	char crust_file[]="input/Tohoku_simple_vert.inp";
-	char fore_file[]="input/tohoku_template.dat";
-	char cat_file[]="/home/des/camcat/Data/Catalogs/Others/jma_cat_2010_2013_update20130329_sel_2.5.dat";
-	struct catalog cat;
-	struct crust crst;
-	struct tm tt;
-	time_t t;
-	int *dec;
-	double *weights;
-	double *rate, r;
-	double res=6.0;
-
-	time(&t);
-	tt=*(localtime(&t));
-
-	//broken (no crust_file anymore)
-	//read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
-	cat.Mc=0.0;
-	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
-	weights=dvector(1,cat.Z);
-
-
-	//old declustering method (rescales rates after calculating them):
-	dec=decluster_catalog_rescalegrid(cat, crst, Mmain, &time_missing, 0);
-
-	for (int i=1; i<=cat.Z; i++) weights[i]=(double) dec[i];
-
-	rate=Helmstetter_cat(cat, crst, weights, 2);
-
-	sprintf(fname, "%s/Helm_rate_dec6.0_2nd.dat", testfolder);
-	fout=fopen(fname,"w");
-	for (int i=1; i<=crst.nLat*crst.nLon; i++) fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],rate[i]);
-	fclose(fout);
-
-	sprintf(fname, "%s/Helm_rate_dec_rescaled6.0_2nd.dat", testfolder);
-	fout=fopen(fname,"w");
-	for (int i=1; i<=crst.nLat*crst.nLon; i++) {
-		r=(cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]);
-		fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],r*rate[i]);
-	}
-	fclose(fout);
-
-	//new declustering method (weights earthquakes):
-	decluster_catalog(cat, Mmain, &weights, 0);
-
-	sprintf(fname, "%s/Dec_cat6.0.dat",testfolder);
-	fout=fopen(fname,"w");
-	for (int i=1; i<=cat.Z; i++) fprintf(fout,"%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n", cat.lat0[i], cat.lon0[i], cat.depths0[i], cat.mag[i], cat.t[i], weights[i]);
-	fclose(fout);
-
-	rate=Helmstetter_cat(cat, crst, weights, 2);
-	sprintf(fname, "%s/Helm_rate_dec_rescaled_new6.0_2nd.dat", testfolder);
-	fout=fopen(fname,"w");
-	for (int i=1; i<=crst.nLat*crst.nLon; i++) fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],rate[i]);
-	fclose(fout);
-
-	return 0;
-
-}
+//
+//	rate=Helmstetter_cat(cat, crst, weights, 2);
+//	sprintf(fname, "%s/Helm_rate_dec_rescaled_new6.0_2nd.dat", testfolder);
+//	fout=fopen(fname,"w");
+//	for (int i=1; i<=crst.nLat*crst.nLon; i++) fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],rate[i]);
+//	fclose(fout);
+//
+//	return 0;
+//
+//}
 
 int test_fit_depth(){
 
@@ -762,10 +762,10 @@ int test_readZMAP_tw(){
 	//read_crust(crust_file, fore_template, NULL,  &crst, res, res);
 	readZMAP (&cat, NULL, &NT, file, crst, reftime, t0,t1, t0, t1, Mmain, 0.0, 0, 0, 1e5, 1);
 	sprintf(fname, "%s/cat_notw.dat", testfolder);
-	print_cat(fname, cat);
+	//print_cat(fname, cat);	//broken since print_cat does not exist anymore.
 	readZMAP (&cat, NULL, &NT, file, crst, reftime, t0,t1, t0, t1, Mmain, tw, 0, 0, 1e5, 1);
 	sprintf(fname, "%s/cat_tw.dat", testfolder);
-	print_cat(fname, cat);
+	//print_cat(fname, cat);
 
 	return 0;
 }
@@ -1441,64 +1441,64 @@ int test_latlon2localcartesian(){
 
 }
 
-int test_distance(){
-
-	 /* Results can be visualized in matlab:
-	 *  for n=1:4
-		figure(n)
-		Plot_sliponfault(n,strcat('~/Code/dist2fault/tests/',num2str(n),'_fault_'))
-		l=load(strcat('~/Code/CRS_2.01/test/',num2str(n),'_dist.dat'));
-		scatter3(l(:,2),l(:,1),-l(:,3),30,abs(l(:,4)),'filled')
-		caxis([-100 100])
-		end
-	 */
-
-	FILE *fout1;
-	char fname1[120];
-	long seed=-36294638;
-	double strikes[]={0.0, 45.0, 0.0, 0.0};
-	double dips[]={90.0, 70.0, 15.0, 0.1};
-	double Lat0=45, Lon0=0.0, D0=0;
-	double pos_d[]={0,50};
-	double pos_s[]={-60,60};
-	double *d;
-	double dlat=2.0, dlon=2.0, ddep=100;
-	int NP=1000;
-	double lats[NP+1], lons[NP+1], deps[NP+1];
-
-	for (int i=1; i<=NP; i++){
-		lats[i]= Lat0-0.5*dlat+ dlat*ran1(&seed);
-		seed=-seed;
-		lons[i]= Lon0-0.5*dlon+ dlon*ran1(&seed);
-		seed=-seed;
-		deps[i]= ddep*ran1(&seed);
-		seed=-seed;
-	}
-
-
-	for (int i=0; i<4; i++){
-		d=dist2fault0(lats, lons, deps, NP, strikes[i], dips[i],	Lat0, Lon0, D0, pos_s, pos_d);
-
-		sprintf(fname1, "%s/%d_fault_allpatches.dat", testfolder, i+1);
-		fout1=fopen(fname1, "w");
-		fprintf(fout1,  "%d   %.4lf   %.4lf   %.3lf   %.2lf   %.2lf   %.3lf   %.3lf   %d   %d   %.5lf\n", 1, Lat0, Lon0, D0, pos_s[1]-pos_s[0], pos_d[1]-pos_d[0], strikes[i], dips[i], 1, 1, 0.0);
-		fclose(fout1);
-		sprintf(fname1, "%s/%d_fault_patch1.dat", testfolder, i+1);
-		fout1=fopen(fname1, "w");
-		fprintf(fout1, "%12.5lf\t%12.5lf\t%12.5lf\t%12.5lf\t%12.5lf\n", 0.5*(pos_s[0]+pos_s[1]), 0.5*(pos_d[0]+pos_d[1]), 1.0, 1.0, 0.0);
-		fclose(fout1);
-
-		sprintf(fname1, "%s/%d_dist.dat", testfolder, i+1);
-		fout1=fopen(fname1, "w");
-		for (int p=1; p<=NP; p++) fprintf(fout1, "%lf\t%lf\t%lf\t%lf\n", lats[p], lons[p], deps[p], d[p]);
-		fclose(fout1);
-
-		free_dvector(d,1,NP);
-	}
-
-	printf("done.\n");
-	return 0;
-}
+//int test_distance(){
+//
+//	 /* Results can be visualized in matlab:
+//	 *  for n=1:4
+//		figure(n)
+//		Plot_sliponfault(n,strcat('~/Code/dist2fault/tests/',num2str(n),'_fault_'))
+//		l=load(strcat('~/Code/CRS_2.01/test/',num2str(n),'_dist.dat'));
+//		scatter3(l(:,2),l(:,1),-l(:,3),30,abs(l(:,4)),'filled')
+//		caxis([-100 100])
+//		end
+//	 */
+//
+//	FILE *fout1;
+//	char fname1[120];
+//	long seed=-36294638;
+//	double strikes[]={0.0, 45.0, 0.0, 0.0};
+//	double dips[]={90.0, 70.0, 15.0, 0.1};
+//	double Lat0=45, Lon0=0.0, D0=0;
+//	double pos_d[]={0,50};
+//	double pos_s[]={-60,60};
+//	double *d;
+//	double dlat=2.0, dlon=2.0, ddep=100;
+//	int NP=1000;
+//	double lats[NP+1], lons[NP+1], deps[NP+1];
+//
+//	for (int i=1; i<=NP; i++){
+//		lats[i]= Lat0-0.5*dlat+ dlat*ran1(&seed);
+//		seed=-seed;
+//		lons[i]= Lon0-0.5*dlon+ dlon*ran1(&seed);
+//		seed=-seed;
+//		deps[i]= ddep*ran1(&seed);
+//		seed=-seed;
+//	}
+//
+//
+//	for (int i=0; i<4; i++){
+//		d=dist2fault0(lats, lons, deps, NP, strikes[i], dips[i],	Lat0, Lon0, D0, pos_s, pos_d);
+//
+//		sprintf(fname1, "%s/%d_fault_allpatches.dat", testfolder, i+1);
+//		fout1=fopen(fname1, "w");
+//		fprintf(fout1,  "%d   %.4lf   %.4lf   %.3lf   %.2lf   %.2lf   %.3lf   %.3lf   %d   %d   %.5lf\n", 1, Lat0, Lon0, D0, pos_s[1]-pos_s[0], pos_d[1]-pos_d[0], strikes[i], dips[i], 1, 1, 0.0);
+//		fclose(fout1);
+//		sprintf(fname1, "%s/%d_fault_patch1.dat", testfolder, i+1);
+//		fout1=fopen(fname1, "w");
+//		fprintf(fout1, "%12.5lf\t%12.5lf\t%12.5lf\t%12.5lf\t%12.5lf\n", 0.5*(pos_s[0]+pos_s[1]), 0.5*(pos_d[0]+pos_d[1]), 1.0, 1.0, 0.0);
+//		fclose(fout1);
+//
+//		sprintf(fname1, "%s/%d_dist.dat", testfolder, i+1);
+//		fout1=fopen(fname1, "w");
+//		for (int p=1; p<=NP; p++) fprintf(fout1, "%lf\t%lf\t%lf\t%lf\n", lats[p], lons[p], deps[p], d[p]);
+//		fclose(fout1);
+//
+//		free_dvector(d,1,NP);
+//	}
+//
+//	printf("done.\n");
+//	return 0;
+//}
 
 int test_matrix(){
 
@@ -1534,7 +1534,8 @@ int test_matrix(){
 		printf("\n");
 	}
 
-	jacobi(Sf, 3, eig, v, &j);
+	//broken since jacobi is commented out.
+	//jacobi(Sf, 3, eig, v, &j);
 	printf("\nv: \n");
 	for (int i=1; i<=3; i++){
 		for (int j=1; j<=3; j++) {
@@ -1610,7 +1611,8 @@ int test_matrix2(){
 	}
 
 	//find eigenvalues/eigenvectors of matrix:
-	jacobi(Sf, 3, eig, v, &j);
+	//broken since jacobi is commented out.
+	//jacobi(Sf, 3, eig, v, &j);
 	printf("\nv: \n");
 	for (int i=1; i<=3; i++){
 		for (int j=1; j<=3; j++) {
@@ -1959,24 +1961,24 @@ int testspeed_coeff(){
    	return(0);
    	}
 
-int test_hash(){
-
-	long int res2, res=1;
-	char string[120]="blablablablablabla";
-	char string2[120]="blablablablablablablu";
-
-	sprintf(string2,"%s%s",string,string);
-	res=hashlittle( string, strlen(string), 1);
-	res2=hashlittle( string2, strlen(string), 1);
-
-	printf("%ld\n",res);
-	printf("%ld\n",res2);
-
-	printf("\n string length= %d\n", (int) strlen(string));
-	printf("\n string2 length= %d\n", (int) strlen(string2));
-
-	return (res==res2);
-}
+//int test_hash(){
+//
+//	long int res2, res=1;
+//	char string[120]="blablablablablabla";
+//	char string2[120]="blablablablablablablu";
+//
+//	sprintf(string2,"%s%s",string,string);
+//	res=hashlittle( string, strlen(string), 1);
+//	res2=hashlittle( string2, strlen(string), 1);
+//
+//	printf("%ld\n",res);
+//	printf("%ld\n",res2);
+//
+//	printf("\n string length= %d\n", (int) strlen(string));
+//	printf("\n string2 length= %d\n", (int) strlen(string2));
+//
+//	return (res==res2);
+//}
 
 void test_taper_multislip(){
 /*
@@ -2024,7 +2026,8 @@ void test_taper_multislip(){
 			focmec2slipmodel(crst, eqfm+f, res, 1, 1);
 			north= 0.5*(sign*eqfm[f-1].L*cos(DEG2RAD*eqfm[f-1].str1)+sign2*eqfm[f].L*cos(DEG2RAD*eqfm[f].str1))+noise1;
 			east= 0.5*(sign*eqfm[f-1].L*sin(DEG2RAD*eqfm[f-1].str1)+sign2*eqfm[f].L*sin(DEG2RAD*eqfm[f].str1))+noise2;
-			localcartesian2latlon(north, east, eqfm[f-1].lat, eqfm[f-1].lon,  &(eqfm[f].lat), &(eqfm[f].lon));
+			//broken since localcartesian2latlon is commented out.
+			//localcartesian2latlon(north, east, eqfm[f-1].lat, eqfm[f-1].lon,  &(eqfm[f].lat), &(eqfm[f].lon));
 			//focmec2slipmodel(crst, eqfm+f, res, 1, 1);
 
 		}

@@ -385,8 +385,8 @@ int main (int argc, char **argv) {
 		coeffsStartTime = MPI_Wtime();
 	#endif
 
-	//todo check with Fahad: should this only be done by 1 process and broadcast?
 	setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, Nm, Nfaults_all);
+	update_CoeffsDCFS(&AllCoeff, crst, eqkfm0res, Nm, Nfaults_all);
 
 	#ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -614,11 +614,13 @@ int main (int argc, char **argv) {
 		}
 
 
-		if (mod!=1 && !all_slipmodels.constant_geometry){
-			if (AllCoeff->Coeffs_dip) free_f3tensor(AllCoeff->Coeffs_dip, 1,0,1,0,1,0);
-			if (AllCoeff->Coeffs_st) free_f3tensor(AllCoeff->Coeffs_st, 1,0,1,0,1,0);
-			if (AllCoeff) free(AllCoeff);
-			setup_CoeffsDCFS(&AllCoeff, NULL, crst, eqkfm0res, Nm, Nfaults_all);
+		if (!all_slipmodels.constant_geometry){
+			if (mod!=1){
+//				if (AllCoeff->Coeffs_dip) free_f3tensor(AllCoeff->Coeffs_dip, 1,0,1,0,1,0);
+//				if (AllCoeff->Coeffs_st) free_f3tensor(AllCoeff->Coeffs_st, 1,0,1,0,1,0);
+//				if (AllCoeff) free(AllCoeff);
+				update_CoeffsDCFS(&AllCoeff, crst, eqkfm0res, Nm, Nfaults_all);
+			}
 		}
 
 		// FIXME: [Fahad] For testing purposes only ...

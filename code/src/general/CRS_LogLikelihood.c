@@ -71,6 +71,8 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 	 *
 	 */
 
+	//fixme multiple magnitude bins should not be used when printing out stress field!!
+
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
 	int start, end, partitionSize;
@@ -421,9 +423,9 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		if (print_cmb) {
 			convert_geometry(crst, cmb_avg, &ev_x_new, 0, 0);
 			if(procId == 0) {
-				csep_forecast(print_cmb, crst, ev_x_new, 0);
-				csep_forecast(print_cmb_ref, crst, cmb_avg, 1);
-				if (flags.afterslip) csep_forecast(print_cmbpost, crst, cmbpost_avg, 0);
+				csep_cmbmap(print_cmb, crst, ev_x_new, 0);
+				csep_cmbmap(print_cmb_ref, crst, cmb_avg, 1);
+				if (flags.afterslip) csep_cmbmap(print_cmbpost, crst, cmbpost_avg, 0);
 			}
 		}
 		if (print_LL || LL){

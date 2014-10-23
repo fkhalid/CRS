@@ -56,7 +56,6 @@ mkdir coverage/testF3
 cp Coverage/code/src/*/*.gc* coverage/testF3
 fi
 
-
 #run with fixedmecfile file with random foc. planes and refined grid:
 #slow! only run once in a while
 exit
@@ -70,7 +69,7 @@ $Build/CRS_3.0 temp_inputF
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testF4
-cp Coverage/code/src/*/*.gc* coverage/testBF4
+cp Coverage/code/src/*/*.gc* coverage/testF4
 fi
 
 rm $temppara

@@ -4,7 +4,8 @@ testC:	Mc_source=2.0, different aftershock modes.
 testD:	afterslip
 testE:	background rate
 testF:	fixedmec file
-testG:	similar to testC, but without uncertainties
+testG:	similar to testC, but without uncertainties. GT1 uses tapering.
 testH:	similar to testG, but very simplified (few sources)
-
-
+testI:	use of multiple slip models per event.
+testL:	tests pscmp, fsp, farfalle formats; also multiple slip models with different no. of subfaults
+testM:	multiple magnitude bins

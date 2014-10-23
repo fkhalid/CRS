@@ -50,7 +50,7 @@
 #  	Other model parameters etc.		   #
 #======================================#
 # Mc (if set to value >20, the program will estimate the catalog completeness magnitude)
-# Mmain
+# Mmain [NB setting to low value significantly slows down execution]
 # DCFS_min	DCFS_cap
 # gridPmax (max no of gridpoints associated with event from catalog).
 # dt (time tolerance when comparing catalogs)

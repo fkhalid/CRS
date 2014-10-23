@@ -1,0 +1,9 @@
+OutputForecastFile=output_testcases/testC
+Logfile=output_testcases/testC.log
+InputModelParametersFile=input_testcases/testL/temp_par.txt
+IssueDate=2011-03-30T17:15:24Z
+ForecastStartDate=2011-03-10T17:15:24Z
+ForecastEndDate=2011-03-20T17:15:24Z
+InputCatalogFile=input_testcases/catalog_toho.dat
+ForecastTemplate=input/other/tohoku_template_sparse.dat
+RandomSeedValue=-37284630

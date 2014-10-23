@@ -43,5 +43,5 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 int mask_afterslip(double time, double *times, int L, double *evol_afterslip0, double **evol_afterslip, int *Lnow);
 int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out, struct crust crst, struct eqkfm *eqkfm0,
 		int Nm, int *Nfaults);
-
+int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults);
 #endif /* SETUP_EQKFM_H_ */

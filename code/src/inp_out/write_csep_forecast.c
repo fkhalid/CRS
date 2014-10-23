@@ -1,6 +1,9 @@
 #include "write_csep_forecast.h"
 
-void csep_forecast(char *filename, struct crust crst, double *rates, int calculation_grid){
+void csep_forecast_general(char *filename, struct crust crst, double *rates, int calculation_grid, int use_mags){
+	/* use_mags is a flag: is set to 0, will not use magnitude bins (e.g. for printing out cmb field).
+	 *
+	 */
 
 	double *lats, *lons, *deps, *mags, *magGR;
 	double dlat, dlon, ddep, dmag;
@@ -26,11 +29,19 @@ void csep_forecast(char *filename, struct crust crst, double *rates, int calcula
 	NG=crst.uniform? (crst.nD_out*crst.nLat_out*crst.nLon_out) : crst.N_allP;
 	}
 
-
-	mags=crst.mags;
-	magGR=crst.GRmags;
-	dmag=crst.dmags;
-	Nmag=crst.nmags;
+	if (use_mags){
+		mags=crst.mags;
+		magGR=crst.GRmags;
+		dmag=crst.dmags;
+		Nmag=crst.nmags;
+	}
+	else{
+		double m=0.0, gr=1.0;
+		mags=&m-1;
+		magGR=&gr-1;
+		dmag=0.0;
+		Nmag=1;
+	}
 
 	write_csep_forecast(filename, lats, lons, deps, dlat, dlon, ddep, mags, dmag, rates, magGR, NG, Nmag);
 	return;
@@ -62,7 +73,7 @@ void write_csep_forecast(char *filename, double *lats, double *lons, double *dep
 			D2=deps[k]+ddep/2.0;
 			M1=mags[m]-dmag/2.0;
 			M2=mags[m]+dmag/2.0;
-			fprintf(fout,"%.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \n", Lon1, Lon2, Lat1, Lat2, D1,D2, M1, M2, rates[k]*mag_fact[m]);
+			fprintf(fout,"%.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.3f \t %.3f \t %.5e \n", Lon1, Lon2, Lat1, Lat2, D1,D2, M1, M2, rates[k]*mag_fact[m]);
 		}
 	}
 	fclose(fout);

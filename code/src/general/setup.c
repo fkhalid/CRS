@@ -312,28 +312,6 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			else temp->next=(struct Coeff_LinkList *) 0;
 		}
 
-		//Fill in elements of structure:
-		temp= AllCoeff;
-		for(int i=0; i<Nm; i++) {
-			if (eqkfm0[NFsofar].is_slipmodel) {
-				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
-						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
-			}
-			else {
-				temp->Coeffs_st=temp->Coeffs_dip=NULL;
-			}
-			temp->NgridT=eqkfm0[0].nsel;
-			temp->NF=Nfaults[i];
-			temp->NP=0;
-			for(int f=0; f<Nfaults[i]; f++) {
-				temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
-			}
-			temp->which_main=i;
-			NFsofar+=Nfaults[i];
-			if (i<Nm-1) {
-				temp= temp->next;
-			}
-		}
 		*Coefficients=AllCoeff;
 		print_logfile("Okada Coefficients structure set up.\n");
     }
@@ -375,6 +353,69 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 
     return(0);
 }
+
+int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
+		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults) {
+
+	// [Fahad] Variables used for MPI
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
+    struct Coeff_LinkList *temp;
+    struct set_of_models tmp_setofmodels;
+    int NFsofar=0;
+    static int first_timein=1, switch_slipmodel;
+
+	//Fill in elements of structure:
+	temp= *Coefficients;
+	for(int i=0; i<Nm; i++) {
+		if (eqkfm0[NFsofar].is_slipmodel) {
+			// coefficients should only calculated if more than one slip model is provided (switch_slipmodel):
+			tmp_setofmodels=*(eqkfm0[NFsofar].parent_set_of_models);
+			switch_slipmodel= (tmp_setofmodels.Nmod > 1);
+			if (first_timein || switch_slipmodel){
+				if (!first_timein){
+					if (temp->Coeffs_st) free_f3tensor(temp->Coeffs_st, 1,0,1,0,1,0);
+					if (temp->Coeffs_dip) free_f3tensor(temp->Coeffs_dip, 1,0,1,0,1,0);
+				}
+				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+					   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+				temp->NgridT=eqkfm0[0].nsel;
+				temp->NF=Nfaults[i];
+				temp->NP=0;
+				for(int f=0; f<Nfaults[i]; f++) {
+					temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+				}
+				temp->which_main=i;
+			}
+		}
+		else {
+			temp->Coeffs_st=temp->Coeffs_dip=NULL;
+			if (first_timein){
+				temp->NgridT=eqkfm0[0].nsel;
+				temp->NF=Nfaults[i];
+				temp->NP=0;
+				for(int f=0; f<Nfaults[i]; f++) {
+					temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+				}
+				temp->which_main=i;
+			}
+		}
+		NFsofar+=Nfaults[i];
+		if (i<Nm-1) {
+			temp= temp->next;
+		}
+	}
+	print_logfile("Okada Coefficients structure updated.\n");
+
+	first_timein=0;
+
+    return(0);
+}
+
 
 int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *ts,
 						 int Nfun, struct eqkfm **eqk_aft, double *t_afterslip,

@@ -40,34 +40,22 @@ fi
 done
 
 
-#Here all events are treated as mainshocks, should be equivalent to testG1
-for i in $(seq 0 4)     #should be 0 4
-do
-if [ $i -eq 3 ]
-then
-continue
-fi
-ln1="OutputForecastFile=output_testcases/testGB$i"
-ln2="Logfile=output_testcases/testGB$i.log"
+#Here events are tapered, should be similar to G1
+
+ln1="OutputForecastFile=output_testcases/testGT1"
+ln2="Logfile=output_testcases/testGT1.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputG
-sed "67s+.*+2.00+" $parafile | sed "47s+X+$i+" | sed "67s+5.95+2.0+" > $temppara
-
-if [ $i -lt 2 ]
-then
+sed "67s+.*+2.00+" $parafile | sed "47s+X+1+" | sed "67s+5.95+2.0+" | sed "75s+.*+3.0+" > $temppara
 sed '9s+focmecfile+focmecfile0+' temp_inputG > tmp
 mv tmp temp_inputG
-fi
-
 
 $Build/CRS_3.0 temp_inputG
 if [ $Build == "Coverage" ]
 then
-mkdir coverage/testGB$i
-cp Coverage/code/src/*/*.gc* coverage/testGB$i
+mkdir coverage/testGT1
+cp Coverage/code/src/*/*.gc* coverage/testGT1
 fi
-
-done
 
 rm temp_inputG
 rm $temppara

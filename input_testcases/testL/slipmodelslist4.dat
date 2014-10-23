@@ -1,0 +1,15 @@
+# no. of events
+# format (can be pscmp, farfalle or fsp)	flag indicating if all models have the same geometry.
+# time(1st event)    magnitude(1st event) no.of slip models(1st event)
+# path to first slip model
+# path to second slip model
+# ...
+# time(2nd event)    magnitude(2nd event)    no.of slip models(2nd event)
+# path to first slip model
+# path to second slip model
+# ...
+# ...
+1
+pscmp	0
+2010-03-09T16:35:42Z	7.1	1
+0 input_testcases/slipmodels/slip_dar_beav.pscmp
