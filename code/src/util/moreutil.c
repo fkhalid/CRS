@@ -13,6 +13,26 @@
 #define SWAP(a,b) temp=(a);(a)=(b);(b)=temp;
 #define NSTACK 50
 
+int closest_element(double *v, int N, double value, double toll){
+	/*
+	 * Returns index of the element in v closes to value; returns -1 if the difference is larger than toll.
+	 * v range [0...N-1]
+	 */
+
+	int i;
+	double mindist=1e30;
+
+	for (int n=0; n<N; n++){
+		if(fabs(v[n]-value)<mindist){
+			mindist=fabs(v[n]-value);
+			i=n;
+		}
+	}
+
+	if (mindist>toll) return -1;
+	else return i;
+}
+
 int *nth_index(int i, int Ndim, int *dim){
 //given linear index and N dimensions with indices [1...dim[0]], [1...dim[1]], ..., [1...dim[Ndim-1]], returns array with indices of each dimension.
 

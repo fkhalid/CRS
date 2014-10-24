@@ -7,3 +7,4 @@ ForecastEndDate=2010-10-02T17:15:24Z
 InputCatalogFile=input_testcases/catalog_darf.dat
 InputListSlipModels=input_testcases/testL/slipmodelslist1.dat
 RandomSeedValue=-37284630
+InversionStartDate=2004-09-28T17:15:24Z

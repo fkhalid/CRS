@@ -282,7 +282,11 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 }
 
 int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out,
-		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults) {
+		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults, double aftersliptime, int afterslip) {
+	/*
+	 *  aftersliptime: event time of the mainshock containing afterslip.
+	 *  int afterslip: flag indicating if afterslip should be used.
+	 */
 
 	// [Fahad] Variables used for MPI
 	int procId = 0;
@@ -294,6 +298,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 	struct pscmp *DCFS;
     struct Coeff_LinkList *AllCoeff, *temp;
     int NFsofar=0, Nsel, Nsteps, NFtot, eq;
+    int mainshock_withafterslip;
     double M0;
 
     //----------set up Coefficients----------------//
@@ -306,10 +311,14 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 		temp= AllCoeff;
 		for(int i=0; i<Nm; i++) {
 			if (i<Nm-1) {
+				temp->hasafterslip=0;
 				temp->next= malloc(sizeof(struct Coeff_LinkList));
 				temp= temp->next;
 			}
-			else temp->next=(struct Coeff_LinkList *) 0;
+			else {
+				temp->hasafterslip=0;
+				temp->next=(struct Coeff_LinkList *) 0;
+			}
 		}
 
 		*Coefficients=AllCoeff;
@@ -349,6 +358,26 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 
 		*DCFS_out=DCFS;
 		print_logfile("DCFS structure set up.\n");
+    }
+
+    //--------------associates afterslip with one mainshock-------------------//
+	// uses a ~1 sec tolerance
+
+    if (afterslip){
+    	int i=0;
+		mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, aftersliptime, 0.000011575);
+		if (mainshock_withafterslip==-1){
+			print_logfile("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
+			print_screen("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
+			return(1);
+		}
+		struct Coeff_LinkList *temp;
+		temp=AllCoeff;
+		while (i<Nm && i!=mainshock_withafterslip) {
+			i++;
+			temp=temp->next;
+		}
+		temp->hasafterslip=1;
     }
 
     return(0);
@@ -415,7 +444,6 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 
     return(0);
 }
-
 
 int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *ts,
 						 int Nfun, struct eqkfm **eqk_aft, double *t_afterslip,

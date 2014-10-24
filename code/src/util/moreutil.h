@@ -7,6 +7,7 @@
 
 # include <math.h>
 
+int closest_element(double *v, int N, double value, double toll);
 int *nth_index(int i, int Ndim, int *dim);
 void nrerrorsoft(char error_text[]);
 void copy_matrix( double **m1, double ***m2, int a, int b);

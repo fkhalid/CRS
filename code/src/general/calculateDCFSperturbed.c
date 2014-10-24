@@ -73,7 +73,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	static struct eqkfm *eqkfm2;
 	static struct eqkfm *eqkfm_noise;
 	static struct eqkfm *eqkfm2A;
-	struct Coeff_LinkList *temp;
+	struct Coeff_LinkList *temp, *AllCoeffaft;
 	float ***Coeffs_st, ***Coeffs_dip;	//coefficients for tensor;
 	static float **Coeff_ResS, **Coeff_ResD;	//coefficients for cmb (resolved).
 	static struct pscmp *DCFS_Af, DCFS_Af_noise;
@@ -117,8 +117,14 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		//-----------------------------------------------------------------//
 
 		if (afterslip!=0){
-		//fixme afterslip should have its own structure.
 
+			//Find element of AllCoeff which should also be used for afterslip:
+			int i=0;
+			AllCoeffaft=AllCoeff;
+			while (i<Nmain && !(AllCoeffaft->hasafterslip)) {
+				i++;
+				AllCoeffaft=AllCoeffaft->next;
+			}
 			if (splines) {
 				cmb_cumu=dvector(1,NgridT);
 				for (int n=1; n<=NgridT; n++) cmb_cumu[n]=0.0;
@@ -127,7 +133,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			DCFS_Af_size= (splines)? NTScont+1: 1;
 			DCFS_Af= pscmp_array(0,DCFS_Af_size-1);
 
-			DCFS_Af[0].NF=AllCoeff->NF;
+			DCFS_Af[0].NF=AllCoeffaft->NF;
 			DCFS_Af[0].cmb=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
 			DCFS_Af[0].S=d3tensor(1,NgridT,1,3,1,3);
 			DCFS_Af[0].nsel=eqkfmAf[0].nsel;
@@ -141,8 +147,10 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				DCFS_Af[i].which_pts=eqkfmAf[0].selpoints;
 			}
 
-			Coeffs_st=AllCoeff->Coeffs_st;
-			Coeffs_dip=AllCoeff->Coeffs_dip;
+			Coeffs_st=AllCoeffaft->Coeffs_st;
+			Coeffs_dip=AllCoeffaft->Coeffs_dip;
+
+
 			for (int i=0; i<DCFS_Af_size; i++)	{
 				okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS_Af[i], eqkfmAf+i*DCFS_Af[0].NF, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
 				if (vary_recfault==0) {

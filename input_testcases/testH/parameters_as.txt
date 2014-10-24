@@ -8,17 +8,17 @@
 # fixCV		CV0		CV1		CV2		nCV			//obsolete! fixCV must be set to 1.
  100
  1	0.022
- 0      6000   8000   10000   1       5000.0
- 0      10000   7000  10000   1       1000.0
+ 0      8000   10000   1
+ 0      7000   10000   1
 #======================================#
 #  		  Time of inversion	 	   	   #
 #======================================#
-#tstartLL	start time LogLikelihood inv.
 #tw (time window after mainshock)	Mmain (min. magnitude of events after which tw should be skipped)
-#extra_time	time period before tstartLL for which sources should be included (only relevant if aftershocks==1,or large events are present). 
-2004-09-28T17:15:24Z
 0.0012	5.95
-0.0
+#
+#
+#
+#
 #======================================#
 #		  Time of forecast	 	   	   #
 #======================================#

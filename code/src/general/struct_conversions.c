@@ -421,7 +421,7 @@ double *timesfrompscmp(struct pscmp *DCFS, int N){
 	/* Copies times from DCFS to double vector.
 	 *
 	 * Input:
-	 *  DCFS: range [0...N].
+	 *  DCFS: range [0...N-1].
 	 *  N: size of DCFS
 	 *
 	 * Output

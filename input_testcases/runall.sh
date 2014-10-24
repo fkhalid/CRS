@@ -1,9 +1,14 @@
 #! /bin/bash
 
-Build="Coverage"
+if [ $# -eq 0 ]
+then
+ Build="Release"
+else
+ Build=$1
+fi
 
-#if [ $Build == "Coverage" ]
-if [ 0 -eq 1 ]
+if [ $Build == "Coverage" ]
+#if [ 0 -eq 1 ]
 then
    if [ -e coverage ]
    then
@@ -29,7 +34,7 @@ then
 fi
 
 #Run code:
-#for i in $(ls input_testcases --color=never | grep test); do input_testcases/$i/run.sh $Build; done
+for i in $(ls input_testcases --color=never | grep test); do input_testcases/$i/run.sh $Build; done
 #for i in $(ls input_testcases --color=never | grep 'testF'); do input_testcases/$i/run.sh $Build; done
 
 #---------------------------------#

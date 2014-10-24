@@ -204,15 +204,19 @@ int main (int argc, char **argv) {
 		}
 	}
 
+	#ifdef _CRS_MPI
+		MPI_Bcast(&input_file_name_given, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
 	if (!input_file_name_given){
-		printf("Usage: %s input_file [options]\nOptions:\n\t --verbose (-v) : outputs extra messages to logfile and screen;\n\t --quiet (-q) : no output.\n\n", argv[0]);
+		print_screen("Usage: %s input_file [options]\nOptions:\n\t --verbose (-v) : outputs extra messages to logfile and screen;\n\t --quiet (-q) : no output.\n\n", argv[0]);
 		return 1;
 	}
 
 	//-----------------------read input file -------------------//
 
-	err=read_inputfile(infile, outname, NULL, fore_template, catname, &focmeccats, background_rate_grid, background_rate_cat,
-			fixedmecfile, slipmodelfile, afterslipmodelfile,	modelparametersfile, logfile, &reftime, &Tstart, &Tend, &seed,
+	err=read_inputfile(infile, outname, fore_template, catname, &focmeccats, background_rate_grid, background_rate_cat,
+			fixedmecfile, slipmodelfile, afterslipmodelfile, modelparametersfile, logfile, &reftime, &Tstart, &Tend, &tstartLL, &seed,
 			&no_fm_cats);
 
 	if (err) {
@@ -220,6 +224,7 @@ int main (int argc, char **argv) {
 	}
 
 	//todo [askFahad]: why does this have to be repeated? (also in read_inputfile).
+						//(and why is focmecfile not repeated?)
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags.
@@ -227,13 +232,15 @@ int main (int argc, char **argv) {
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	//todo [askFahad]: do we need to broadcast this?
 	#endif
 
 //-----------------------read model parameters-------------------//
 
+	//todo abolish extra_time.
+	//todo simplify parameter file...
 	err=read_modelparameters(modelparametersfile, &crst, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
-			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0, &tstartLL, &extra_time, &tw, &fore_dt,
+			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0,	&tw, &fore_dt,
 			&Nsur, &Nslipmod, &flags, &(cat.Mc), &Mag_main, &Mc_source, &dDCFS, &DCFS_cap, &gridPMax,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
@@ -262,7 +269,7 @@ int main (int argc, char **argv) {
 	if (strcmp(background_rate_cat,"")==0)	use_bg_rate_cat=0;
 	else use_bg_rate_cat=1;
 
-//----------------------------------------------------------------------------------------------//
+//----------- Copy input and parameters file to log file -------//
 
 	if(procId == 0) {
 		if (strcmp(logfile,"")!=0){
@@ -288,14 +295,13 @@ int main (int argc, char **argv) {
 		system(syscopy);
 	}
 
+//----------- Read grid (crst) information from templates -------//
+
 	err=read_crust(fore_template, fixedmecfile , &crst, gridresxy, gridresz, flags.err_recfault);
 	if (err) {
 		error_quit("Errors while reading template file %s. Exiting.", fore_template);
 	}
 	NgridT=crst.N_allP;
-
-	if (fixAsig) nAsig0=0;
-	if (fixta) nta0=0;
 
 //---------------------------------------------//
 //--------------Setup afterslip----------------//
@@ -366,7 +372,7 @@ int main (int argc, char **argv) {
 	}
 
 //----------------------------------------------------------//
-//-----------------Add mainshock slip models ---------------//
+//----------------------Add slip models --------------------//
 //----------------------------------------------------------//
 
 	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst, flags);
@@ -385,7 +391,16 @@ int main (int argc, char **argv) {
 		coeffsStartTime = MPI_Wtime();
 	#endif
 
-	setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, Nm, Nfaults_all);
+	if (flags.afterslip){
+		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, Nm, Nfaults_all, all_aslipmodels.tmain[-1], 1);
+	}
+	else{
+		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, Nm, Nfaults_all, 0.0, 0);
+	}
+	if (err){
+		error_quit("Error in setting up okada coefficients structure or associating afterslip with a mainshock.\n");
+	}
+
 	update_CoeffsDCFS(&AllCoeff, crst, eqkfm0res, Nm, Nfaults_all);
 
 	#ifdef _CRS_MPI
@@ -502,7 +517,7 @@ int main (int argc, char **argv) {
 	else {
 		if (use_bg_rate_cat){
 			print_logfile("\nCalculating background rate using smoothed catalog from file %s.\n", background_rate_cat);
-			err=background_rate2(catname, &crst, reftime, 20.0, Mag_main, &(cat.Mc), &r0, 1, xytoll, ztoll, smoothing, 2);
+			err=background_rate2(background_rate_cat, &crst, reftime, 20.0, Mag_main, &(cat.Mc), &r0, 1, xytoll, ztoll, smoothing, 2);
 			crst.r0=r0*pow(10,cat.b*(cat.Mc-crst.mags[1]+0.5*crst.dmags));
 			if (err){
 				print_screen("Could not calculate background rate from smoothed catalog. will use uniform background rate.\n");
@@ -598,12 +613,12 @@ int main (int argc, char **argv) {
 			nf+=Nfaults_all[n];
 		}
 
-
 		//print information about slip models to log file:
 		nf=0;
 		int i=0, nn0=0; //counter: slip model names, events which have a slip model.
 		print_logfile("Using slip models:\n");
 		for (int n=0; n<Nm; n++) {
+			//fixme this is wrong is a slip model in the list is not used.
 			if (eqkfm0res[nf].parent_set_of_models->Nmod) {
 				print_logfile("\t%s\n",all_slipmodels.slipmodels[i+Nsm[n]-1]);
 				i+=all_slipmodels.no_slipmodels[nn0];

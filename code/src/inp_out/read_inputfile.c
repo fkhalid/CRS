@@ -20,10 +20,10 @@
 	#include "mpi.h"
 #endif
 
-int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fore_template,
+int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		char *catname, char ***focmeccat, char *background_rate_grid, char *background_rate_cat, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
 		char *model_parameters_file, char *Logfile, struct tm *reftime,
-		double *Tstart, double *Tend, long *seed, int *num_fm){
+		double *Tstart, double *Tend, double *tstartLL, long *seed, int *num_fm){
 
 	//todo check string length is enough?
 	/* Read master input file.
@@ -32,7 +32,6 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fo
 	 *
 	 * output:
 	 * 		outname: output file name (without extension)
-	 * 		reftime_str: string containing the reference time (issue time)
 	 * 		reftime: structure containing the reference time (issue time)
 	 * 		Tstart, Tend: time in days from reftime
 	 * 		fore_template: forecast template
@@ -63,9 +62,10 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fo
 	int Nchar=1000;
 	char line[Nchar], listfocmeccat[Nchar];
 	char *key, *value;
-	int NP=17, i, err=0;
-	struct tm times0, times1, times2;
-	int value_found[NP], listfm=0, nofm=0;
+	int NP=18, i, err=0;
+	struct tm times0, times1, times2, times3;
+	int value_found[NP];
+	int listfm=0, nofm=0;	//listfm is a flag indicating whether multiple focal mechanism catalogs are given. nofm is the number of such catalogs.
 	char comment[]="#", comm=comment[0];
 
 	for (int n=0; n<NP; n++) value_found[n]=0;
@@ -87,7 +87,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fo
 	/*13*/	"RandomSeedValue",\
 	/*14*/	"Logfile",\
 	/*15*/	"FixedMecFile", \
-	/*16*/	"InputBackgroundRateCatalog"
+	/*16*/	"InputBackgroundRateCatalog", \
+	/*18*/	"InversionStartDate"
 	};
 
 	// NB: arguments 5,6,17 are alternative (different ways to treat receiver faults)
@@ -138,7 +139,6 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fo
 			// Fill in output variables with values from file:
 			switch(i){
 				case 0:
-					sscanf(value,"%s",reftime_str);
 					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times0.tm_year), &(times0.tm_mon), &(times0.tm_mday), &(times0.tm_hour), &(times0.tm_min), &(times0.tm_sec));
 					times0.tm_year-=1900;
 					times0.tm_mon-=1;
@@ -146,6 +146,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fo
 					if (reftime) *reftime=times0;
 					if (Tstart && value_found[1]) *Tstart=difftime(mktime(&times1),mktime(&times0))*SEC2DAY;
 					if (Tend && value_found[2]) *Tend=difftime(mktime(&times2),mktime(&times0))*SEC2DAY;
+					if (tstartLL && value_found[18]) *tstartLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
 					break;
 				case 1:
 					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times1.tm_year), &(times1.tm_mon), &(times1.tm_mday), &(times1.tm_hour), &(times1.tm_min), &(times1.tm_sec));
@@ -169,6 +170,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fo
 					break;
 				case 5:
 					if (focmeccat) {
+						// In this case a single focal mechanism catalog is given:
+						// the file name can be read directly into the 0th element of focmeccat.
 						*focmeccat= malloc(sizeof(char*));
 						(*focmeccat)[0]=malloc(120*sizeof(char));
 						sscanf(value,"%s",(*focmeccat)[0]);
@@ -178,6 +181,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fo
 					if (num_fm) *num_fm=1;
 					break;
 				case 6:
+					// In this case several catalog of focal mechanisms are given:
+					// the names of the catalogs, listed in the file "listfocmeccat" will be read later on.
 					if (focmeccat) sscanf(value,"%s",listfocmeccat);
 					listfm=1;
 					break;
@@ -211,6 +216,13 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fo
 				case 16:
 					if (background_rate_cat) sscanf(value,"%s",background_rate_cat);
 					break;
+				case 17:
+					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times3.tm_year), &(times3.tm_mon), &(times3.tm_mday), &(times3.tm_hour), &(times3.tm_min), &(times3.tm_sec));
+					times3.tm_year-=1900;
+					times3.tm_mon-=1;
+					times3.tm_isdst=0;
+					if (tstartLL && value_found[0]) *tstartLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
+					break;
 			}
 		}
 
@@ -228,13 +240,14 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *fo
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags. catname is used in setup.c.
-		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD); //todo [askFahad]: do we need to broadcast this?
 		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(Tstart, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(Tend, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(tstartLL, 			 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(seed, 				 1,   MPI_LONG,   0, MPI_COMM_WORLD);
 		MPI_Bcast(num_fm, 				 1,   MPI_INT, 	  0, MPI_COMM_WORLD);
 
@@ -418,6 +431,7 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 		// FIXME: [Fahad] The following will generate an error if ferror(fin)
 		//		  was true in any of the iterations of the while loop above.
 		//		  Check with the author and implement the correct code.
+		// todo [askFahad]: can we just move broadcasting fileError and returning 1 above this block?
 		if(procId != 0) {
 			*listfiles = malloc((*nfiles)*sizeof(char*));
 			for(int i = 0; i < (*nfiles); ++i) {
@@ -533,9 +547,10 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 		(*allslipmodels).NSM=Nm0;
 		(*allslipmodels).is_afterslip=is_afterslip;
-		(*allslipmodels).tmain=dvector(0,Nm0-1);
+		(*allslipmodels).tmain= (is_afterslip)? dvector(-1,Nm0-1) : dvector(0,Nm0-1);	//-1 element to store mainshock time (when afterslip starts).
 		(*allslipmodels).mmain= (is_afterslip)? NULL : dvector(0,Nm0-1);
 		(*allslipmodels).cut_surf=ivector(0,Nm0-1);
+		if (is_afterslip) (*allslipmodels).tmain[-1]=t0;
 		if (is_afterslip){
 			(*allslipmodels).disc=dvector(0,0);
 			(*allslipmodels).disc[0]=res;

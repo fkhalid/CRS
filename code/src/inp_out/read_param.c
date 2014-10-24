@@ -16,8 +16,7 @@
 int read_modelparameters(char *modelparametersfile, struct crust *crst, struct tm reftime, int *N_min_events,
 						int *fixr, int *fixAsig, int *fixta, double *r0, double *Asig0,
 						double *ta0, double *Asig_min, double *Asig_max, double *ta_min,
-						double *ta_max, int *nAsig0, int *nta0, double *tstartLL,
-						double *extra_time, double *tw, double *fore_dt,
+						double *ta_max, int *nAsig0, int *nta0, double *tw, double *fore_dt,
 						int *Nsur, int *Nslipmod, struct flags *flags,
 						double *Mc, double *Mag_main, double *Mc_source,
 						double *dCFS, double *DCFS_cap, int *gridPMax, double *dt, double *dM,
@@ -76,25 +75,40 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d %lf", fixr, r0);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d %lf %lf %lf %d", fixAsig, Asig0, Asig_min, Asig_max, nAsig0);
+		//the following 2 lines (Asig, ta values) can have 2 alternative forms:
+		//1 Asig0
+		//or:
+		//0 Asig1 Asig2
+		sscanf(line,"%d %lf %lf  %d", fixAsig, Asig_min, Asig_max, nAsig0);
+		if (*fixAsig){
+			*Asig0=*Asig_min;
+			*Asig_min=*Asig_max=0.0;
+			*nAsig0=0;
+		}
+		else{
+			*Asig0=0.0;
+		}
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d %lf %lf %lf %d", fixta, ta0, ta_min, ta_max, nta0);
+		sscanf(line,"%d %lf %lf %d", fixta, ta_min, ta_max, nta0);
+		if (*fixta){
+			*ta0=*ta_min;
+			*ta_min=*ta_max=0.0;
+			*nta0=0;
+		}
+		else{
+			*ta0=0.0;
+		}
+
 		line[0]=comm;
 		while (line[0]==comm) fgets(line,Nchar_long,fin);
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
-		sscanf(line, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-		times.tm_year-=1900;
-		times.tm_mon-=1;
-		times.tm_isdst=0;
-		*tstartLL=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf %lf", tw, Mag_main);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf", extra_time);
+
 		line[0]=comm;
 		while (line[0]==comm) fgets(line,Nchar_long,fin);
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
 		sscanf(line,"%lf", fore_dt);
+
 		line[0]=comm;
 		while (line[0]==comm) fgets(line,Nchar_long,fin);
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
@@ -210,6 +224,64 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 
 	// TODO: [Fahad] Look into how much of the following code can be moved to
 	//		 a separate function ...
+
+
+	/*err=read_modelparameters(
+	 * modelparametersfile,
+	 * &crst,
+	 * reftime,
+	 *
+	 * &N_min_events,
+	 * &fixr,
+	 * &fixAsig,
+	 * &fixta,
+	 * &r0,
+	 * &Asig0,
+	 * &ta0,
+	 * &Asig_min,
+	 * &Asig_max,
+	 * &ta_min,
+	 * &ta_max,
+	 * &nAsig0,
+	 * &nta0,
+	 * &tw,
+	 * &fore_dt,
+	 * &Nsur,
+	 * &Nslipmod,
+	 * &(cat.Mc),
+	 * &Mag_main,
+	 * &Mc_source,
+	 * &dDCFS,
+	 * &DCFS_cap,
+	 * &gridPMax,
+	 * &dt,
+	 * &dM,
+	 * &xytoll,
+	 * &ztoll,
+	 * &border,
+	 * &res,
+	 * &gridresxy,
+	 * &gridresz,
+	 * &smoothing,
+	 * &LLinversion,
+	 * &forecast;
+
+	 *
+	 * &flags,
+	 */
+
+
+
+
+
+
+
+
+
+
+
+
+
 	#ifdef _CRS_MPI
 		// Copy scalars to the BCast_Model_Parameters struct
 		struct BCast_Model_Parameters modelParams;

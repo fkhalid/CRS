@@ -7,3 +7,4 @@ ForecastEndDate=2011-03-20T17:15:24Z
 InputCatalogFile=input_testcases/catalog_toho.dat
 ForecastTemplate=input/other/tohoku_template_sparse.dat
 RandomSeedValue=-37284630
+InversionStartDate=2004-09-28T17:15:24Z
