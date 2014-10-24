@@ -18,8 +18,7 @@
 
 void shift_cat(struct catalog *cat, int N);
 void init_crst(struct crust *crst);
-void init_cat1(struct catalog *cat, int Zsel, int);
-void init_cat2(struct catalog *cat, int N, struct crust);
+void init_cat1(struct catalog *cat, int Zsel);
 struct set_of_models *set_of_models_array(long n1, long n2);
 struct eqkfm *eqkfm_array(long n1, long n2);
 struct pscmp *pscmp_array(long n1, long n2);

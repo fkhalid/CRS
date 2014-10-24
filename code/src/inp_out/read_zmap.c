@@ -371,9 +371,9 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 	if (cat){
 		(*cat).pcrst=&crst;
-		init_cat1(cat, eq2, gridPMax);
+		init_cat1(cat, eq2);
 
-		#pragma omp parallel for private(eq, SD, SDd, x, y) reduction(+:errP)
+		//#pragma omp parallel for private(eq, SD, SDd, x, y) reduction(+:errP)
 		for (int i=1; i<=eq2; i++){
 		if (errP) continue;
 		eq=seleq2[i-1];
@@ -391,7 +391,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			(*cat).x0[i]=x;
 			(*cat).y0[i]=y;
 	    	if (findgridpoints){
-				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, gridPMax, y, x, SD, dep[eq], SDd, cut_sd, (*cat).ngrid + i, (*cat).ngridpoints[i], (*cat).weights[i], 1, 1);
+				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, y, x, SD, dep[eq], SDd, cut_sd, (*cat).ngrid + i, &((*cat).ngridpoints[i]), &((*cat).weights[i]), 1, 1);
 			}
 		}
 		(*cat).tstart=fmax(t0c, (*cat).t[1]);
@@ -424,7 +424,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			(*eqfm)[i].depth=dep[eq];
 			(*eqfm)[i].mag=mag[eq];
 			(*eqfm)[i].index_cat= catindex[i];
-
 	    	latlon2localcartesian((*eqfm)[i].lat, (*eqfm)[i].lon, crst.lat0, crst.lon0, &((*eqfm)[i].y), &((*eqfm)[i].x));
 	    	if (findgridpoints){
 				if (catindex[i]!=0) errP+=find_gridpoints_d(ygrid, xgrid, depgrid, (*cat).ngridpoints[catindex[i]], (*cat).ngrid[catindex[i]], N, (*eqfm)[i].y, (*eqfm)[i].x, (*eqfm)[i].depth,  (*eqfm)[i].mag, dDCFS,  &((*eqfm)[i].nsel), &((*eqfm)[i].selpoints));

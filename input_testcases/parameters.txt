@@ -52,7 +52,6 @@
 # Mc (if set to value >20, the program will estimate the catalog completeness magnitude)
 # Mmain [NB setting to low value significantly slows down execution]
 # DCFS_min	DCFS_cap
-# gridPmax (max no of gridpoints associated with event from catalog).
 # dt (time tolerance when comparing catalogs)
 # dM (mag tolerance when comparing catalogs)
 # rtoll (horiz. distance tolerance when comparing catalogs)
@@ -63,10 +62,11 @@
 # min. vertical grid resolution
 # smoothing distance (for calculating background rate)
 #
+#
+#
 2.0
 5.95
 80	1e6
-1000
 0.0005 	#about 1min (since seconds not reported in GMT catalog...)
 0.9
 50

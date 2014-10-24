@@ -63,7 +63,7 @@ void log_afterslip(char * Dtau_char){
 	for (int i=1; i<=L; i++) fprintf(fout,"%.5e\t", times[i]);
 	fprintf(fout,"\n");
 
-	init_cat1(&cat, L, 1);
+	init_cat1(&cat, L);
 	cat.mag[1]=9.0;
 	for (int i=1; i<=L; i++) {
 		cat.ngrid[i]=1;

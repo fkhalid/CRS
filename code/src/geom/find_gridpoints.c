@@ -8,10 +8,11 @@
 #include "find_gridpoints.h"
 
 
-int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, int Nselmax, double y, double x, double SD, double Depth, double SDd,
-		int cut_sd, int *ngridj0, int *ngridpointj, double *weightsj, int inside, int d3){
+int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, double y, double x, double SD, double Depth, double SDd,
+		int cut_sd, int *ngridj0, int **ngridpointj, double **weightsj, int inside, int d3){
 
 	double r, rmin=1e30, dz, probCum, *prob;
+	int *ngridpointj_temp;
 	int p,p2;
 	int K, Kd;
 	int closestp;
@@ -19,6 +20,7 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	double y1, y2, x1, x2, D1, D2, A, Vfrac=1;
 
 	prob=dvector(0,N+1);
+	ngridpointj_temp=ivector(0,N+1);	//temporary array to store indices of selected points.
 	if (!dAs) inside=1; 	//can't calculate total area, so assume it's all inside.
 
 
@@ -50,17 +52,24 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 			if (r<=K*SD && dz<=Kd*SDd)
 			{
 				ngridj+=1;
-				if (ngridj>Nselmax){
-					print_screen("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-					print_logfile("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-					return(1);
-				}
-				ngridpointj[ngridj]=p;
+				ngridpointj_temp[ngridj]=p;
 				prob[ngridj]= (d3)? exp(-pow(r,2)/(2*pow(SD,2)))*exp(-pow(dz,2)/(2*pow(SDd,2))) : exp(-pow(r,2)/(2*pow(SD,2)));
 				probCum+=prob[ngridj];
 				if (dAs) A+= dAs[p];
 			}
 		}
+	}
+
+	// allocate memory to *ngridpointj, unless it was allocated before:
+	if (!(*ngridpointj)) {
+		*ngridpointj=ivector(1,ngridj);
+	}
+	else {
+		printf("we have a problem!");
+	}
+	if (!(*weightsj)) *weightsj=dvector(0,ngridj);
+	for (p=1; p<=ngridj; p++){
+		(*ngridpointj)[p]=ngridpointj_temp[p];
 	}
 
 // K*SD is cutoff radius (gaussian would imply inf points), so that total area considered is pi*(K*SD). Vfrac is the fraction of area inside grid (if event is located outside grid).
@@ -85,18 +94,19 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	}
 	if (Vfrac>1) Vfrac=1;
 
-	for (p2=1; p2<=ngridj; p2++) weightsj[p2]=Vfrac*prob[p2]/probCum;
-	weightsj[0]=1-Vfrac;
+	for (p2=1; p2<=ngridj; p2++) (*weightsj)[p2]=Vfrac*prob[p2]/probCum;
+	(*weightsj)[0]=1-Vfrac;
 
 	//if no point is selected, select nearest point:
 	if (ngridj==0){
 		ngridj=1;
-		ngridpointj[1]=closestp;
-		weightsj[1]=1;
+		(*ngridpointj)[1]=closestp;
+		(*weightsj)[1]=1;
 	}
 
 	if (ngridj0) *ngridj0=ngridj;
 	free_dvector(prob, 0, N+1);
+	free_ivector(ngridpointj_temp, 0, N+1);
 	return(0);
 }
 

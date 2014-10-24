@@ -39,7 +39,7 @@ fi
 #run with vary_fm:
 ln1="OutputForecastFile=output_testcases/testA3"
 ln2="Logfile=output_testcases/testA3.log"
-sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "11s+.*+$ln11+" > temp_inputA
+sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputA
 sed "43s+0+1+"  $parafile > $temppara
 echo "InputListCatalogFocMecFile=input_testcases/listfocmecfiles.txt" >> temp_inputA
 

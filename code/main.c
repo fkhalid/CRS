@@ -35,7 +35,6 @@
 //todo check that lat=(-180, 180) are interpreted correctly throughout the program.
 
 double DCFS_cap;
-int gridPMax;
 FILE *flog=NULL;
 int extra_verbose, quiet;
 
@@ -241,7 +240,7 @@ int main (int argc, char **argv) {
 	//todo simplify parameter file...
 	err=read_modelparameters(modelparametersfile, &crst, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0,	&tw, &fore_dt,
-			&Nsur, &Nslipmod, &flags, &(cat.Mc), &Mag_main, &Mc_source, &dDCFS, &DCFS_cap, &gridPMax,
+			&Nsur, &Nslipmod, &flags, &(cat.Mc), &Mag_main, &Mc_source, &dDCFS, &DCFS_cap,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
 	if (err) {

@@ -422,7 +422,6 @@ int test_fit_depth(){
 	//broken (no crust_file anymore)
 	//read_crust(crust_file, fore_file,NULL,  &crst, 100.0, 1.0);
 //	gridPMax=crst.N_allP;
-	gridPMax=1000;
 	cat.Mc=0.0;
 	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
 
@@ -476,7 +475,6 @@ int test_Helmstetter_cat(){
 	//broken (no crust_file anymore)
 	//read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
 //	gridPMax=crst.N_allP;
-	gridPMax=1000;
 	cat.Mc=0.0;
 	readZMAP(&cat, NULL, NULL, cat_file, crst, reftime, 0.0, 0.0, -1e30, 0.0, 10, 0.0, 0.0, 0.0, 0.0, 0);
 
@@ -746,7 +744,6 @@ int test_readZMAP_tw(){
 	double Mmain=6.8;
 	double res=100;
 
-	gridPMax=1000;
 //	2011-03-11T14:46:18Z
 
 	setenv("TZ", "UTC", 1);

@@ -160,41 +160,57 @@ void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 	return;
 }
 
-//char ***tmatrix(long nrl, long nrh, long ncl, long nch, long length)
-///* allocate a char* matrix with subscript range m[nrl..nrh][ncl..nch] (similar to numerical recipes dmatrix)*/
-//{
-//	long nrow=nrh-nrl+1,ncol=nch-ncl+1;
-//	char ***m;
-//
-//	/* allocate pointers to rows */
-//	m=(char ***) malloc((size_t)((nrow+NR_END)*sizeof(char**)));
-//	if (!m) nrerror("allocation failure 1 in tmatrix()");
-//	m += NR_END;
-//	m -= nrl;
-//
-//	/* allocate rows and set pointers to them */
-//	m[nrl]=(char **) malloc((size_t)((nrow*ncol+NR_END)*sizeof(char *)));
-//	if (!m[nrl]) nrerror("allocation failure 2 in tmatrix()");
-//	m[nrl] += NR_END;
-//	m[nrl] -= ncl;
-//
-//
-//	/* allocate rows and set pointers to them */
-//	m[nrl][ncl]=(char *) malloc((size_t)((nrow*ncol*length+NR_END)*sizeof(char)));
-//	if (!m[nrl][ncl]) nrerror("allocation failure 3 in tmatrix()");
-//	m[nrl][ncl] += NR_END;
-//
-//	for(int j=ncl+1;j<=nch;j++) m[nrl][j]=m[nrl][j-1]+length;
-//	for(int i=nrl+1;i<=nrh;i++) {
-//		m[i]=m[i-1]+ncol;
-//		m[i][ncl]=m[i-1][ncl]+ncol*length;
-//		for(int j=ncl+1;j<=nch;j++) m[i][j]=m[i][j-1]+length;
-//	}
-//
-//	/* return pointer to array of pointers to rows */
-//	return m;
-//
-//}
+int **imatrix_firstlevel(long nrl, long nrh)
+/* allocate a int matrix with subscript range m[nrl..nrh]; columns will be allocated later. */
+{
+	long i, nrow=nrh-nrl+1;
+	int **m;
+
+	/* allocate pointers to rows */
+	m=(int **) malloc((size_t)((nrow+NR_END)*sizeof(int*)));
+	if (!m) nrerror("allocation failure 1 in matrix()");
+	m += NR_END;
+	m -= nrl;
+
+	/* set rows to NULL (so that later it will be recognized that memory should be allocated).*/
+	for (int i=nrl; i<=nrh; i++) m[i]=NULL;
+
+	/* return pointer to array of pointers to rows */
+	return m;
+}
+
+double **dmatrix_firstlevel(long nrl, long nrh)
+/* allocate a double matrix with subscript range m[nrl..nrh];  columns will be allocated later. */
+{
+	long i, nrow=nrh-nrl+1;
+	double **m;
+
+	/* allocate pointers to rows */
+	m=(double **) malloc((size_t)((nrow+NR_END)*sizeof(double*)));
+	if (!m) nrerror("allocation failure 1 in matrix()");
+	m += NR_END;
+	m -= nrl;
+
+	/* set rows to NULL (so that later it will be recognized that memory should be allocated).*/
+	for (int i=nrl; i<=nrh; i++) m[i]=NULL;
+
+	/* return pointer to array of pointers to rows */
+	return m;
+}
+
+void free_imatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
+/* free an int matrix allocated by imatrix_firstlevel() */
+{
+	for (int i=nrl; i<=nrh; i++) free_ivector(m[i], ncl, nch);
+	free((FREE_ARG) (m+nrl-NR_END));
+}
+
+void free_dmatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
+/* free an int matrix allocated by dmatrix_firstlevel() */
+{
+	for (int i=nrl; i<=nrh; i++) free_dvector(m[i], ncl, nch);
+	free((FREE_ARG) (m+nrl-NR_END));
+}
 
 void free_tmatrix(char ***m, long nrl, long nrh, long ncl, long nch, long length)
 /* free a char* matrix allocated by matrix() */

@@ -60,7 +60,7 @@ void init_crst(struct crust *crst){
 	return;
 }
 
-void init_cat1(struct catalog *cat, int Zsel, int gridMax){
+void init_cat1(struct catalog *cat, int Zsel){
 
 	(*cat).Z=Zsel;
 	(*cat).t = dvector(1, Zsel);
@@ -73,12 +73,11 @@ void init_cat1(struct catalog *cat, int Zsel, int gridMax){
 	(*cat).err = dvector(1, Zsel);
 	(*cat).verr = dvector(1, Zsel);
 	(*cat).ngrid = ivector(1, Zsel);
-	(*cat).ngridpoints=imatrix(1,Zsel,1,gridMax);
-	(*cat).weights=dmatrix(1,Zsel,0,gridMax);		// weights[0] indicates the fraction of the Gaussian ellipsoid outside the grid.
+	//just allocate first level since subarrays may have different length (and will be initialized later).
+	(*cat).ngridpoints=imatrix_firstlevel(1,Zsel);
+	(*cat).weights=dmatrix_firstlevel(1,Zsel);		// weights[0] indicates the fraction of the Gaussian ellipsoid outside the grid.
 	(*cat).b=1.0;
-//	(*cat).xgrid=dvector(1,N);
-//	(*cat).ygrid=dvector(1,N);
-//	(*cat).dAgrid=dvector(1,N);
+
 }
 
 //void init_cat2(struct catalog *cat, int N, struct crust crst){
@@ -281,8 +280,8 @@ void free_cat(struct catalog cat){
 	free_dvector(cat.y0,1, 0);
 	free_dvector(cat.depths0,1, 0);
 	free_ivector(cat.ngrid,1, 0);
-	free_imatrix(cat.ngridpoints,1,0,1,0);
-	free_dmatrix(cat.weights,1,0,0,0);
+	free_imatrix_firstlevel(cat.ngridpoints,1,cat.Z,1,0);
+	free_dmatrix_firstlevel(cat.weights,1,cat.Z, 1,0);
 //	free_dvector(cat.xgrid,1,0);
 //	free_dvector(cat.ygrid,1,0);
 //	free_dvector(cat.dAgrid,1,0);

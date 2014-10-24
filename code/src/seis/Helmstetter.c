@@ -85,7 +85,7 @@ double *Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, 
 	for (int eq=1; eq<=N; eq++){	//todo parallel.
 		if (!weights || (weights[eq]>0.0)){
 			d=fmax(dist[eq],err[eq]);
-			find_gridpoints(ygrid, xgrid, NULL, NULL, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0001, 1, &no_ind, ind, rate, 1, 0);
+			find_gridpoints(ygrid, xgrid, NULL, NULL, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0001, 1, &no_ind, &ind, &rate, 1, 0);
 			w= (weights)? weights[eq] : 1.0;
 			for (int i=1; i<=no_ind; i++) rate_tot[ind[i]]+=w*rate[i];
 		}
