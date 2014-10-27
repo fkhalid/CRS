@@ -11,7 +11,7 @@
 	#include "mpi.h"
 #endif
 
-int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
+int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
 				struct eqkfm *eqkfm0, struct flags flags,
 				double *tevol, struct crust crst, struct Coeff_LinkList *AllCoeff,
 				int NTScont, int Nm, int NgridT, double **focmec, int *fmzonelim,
@@ -95,7 +95,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 	double *nev, *rev, *nev_avg, *rev_avg, *ev_x_avg, *ev_x_pre, *ev_x_dum;
 	double *cmb, *cmb_avg, *cmbpost, *cmbpost_avg;
 	int N, NgridT_out= crst.uniform ? (crst.nLat_out*crst.nLon_out*crst.nD_out) : NgridT;
-	int err, Nsur_over_Nslipmod=Nsur/Nslipmod;
+	int err;
 	int uniform_bg_rate=0;
 	int current_main, which_recfault;
 	double tnow, tt0, tt1;
@@ -212,7 +212,6 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 
 		if (all_gammas0) gammas0= (multiple_input_gammas)? all_gammas0[nsur] : *all_gammas0;
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
-		flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
 
 		tt0=tts[0];
 		tt1=tts[Ntts];
@@ -516,7 +515,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 }
 
 int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, double *r_out,
-					 int Nsur, int Nslipmod, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
+					 int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
 					 struct eqkfm *eqkfm0, struct flags flags,
 					 double *tevol, struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont,
 					 int Nm, int NgridT, double **focmec, int *fmzonelim, int NFM,
@@ -596,7 +595,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	double sum, sum1, sum2, integral, Ldum0, r;
 	static int first_timein=1, N;
 	double Ntot, Itot, LLdum0tot;
-	int err, Nsur_over_Nslipmod=Nsur/Nslipmod;
+	int err;
 	int current_main, j0, which_recfault;
 	double tnow;
 	FILE *fforex, *fcmb;
@@ -628,7 +627,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if(first_timein != 1) {
 			int nsur = 1;
 			which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
-			flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
 
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
 								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
@@ -685,8 +683,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		#endif
 
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
-		flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
-		
+
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
 
 		//Set starting rates:

@@ -13,17 +13,18 @@
 	#include "mpi.h"
 #endif
 
-int read_modelparameters(char *modelparametersfile, struct crust *crst, struct tm reftime, int *N_min_events,
+int read_modelparameters(char *modelparametersfile, struct crust *crst, struct tm reftime,
 						int *fixr, int *fixAsig, int *fixta, double *r0, double *Asig0,
 						double *ta0, double *Asig_min, double *Asig_max, double *ta_min,
 						double *ta_max, int *nAsig0, int *nta0, double *tw, double *fore_dt,
-						int *Nsur, int *Nslipmod, struct flags *flags,
+						int *Nsur, struct flags *flags,
 						double *Mc, double *Mag_main, double *Mc_source,
 						double *dCFS, double *DCFS_cap, double *dt, double *dM,
 						double *xytoll, double *ztoll, double *border, double *res,
 						double *gridresxy, double *gridresz, double *smoothing,
 						int *LLinversion, int *forecast) {
 	// [Fahad] Variables used for MPI.
+
 	int procId = 0;
 	int fileError = 0;
 
@@ -35,6 +36,8 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 	char comment[]="#", comm=comment[0];
 	int Nchar_long=500;
 	char line[Nchar_long];
+	char sourcemode_fm[10], sourcemode_nofm[10];
+	char recfault[10];
 	struct tm times;
 	int aftershock_mode;
 	char regstress_mode[120];
@@ -68,19 +71,70 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 
 	if(procId == 0) {
 		sprintf(comment,"#");
+
+		//-------------Coulomb stress parameters------------------//
 		comm=comment[0];
 		line[0]=comm;
 		while (line[0]==comm)fgets(line,Nchar_long,fin);
-		sscanf(line,"%d", N_min_events);
+		sscanf(line,"%lf %lf", Mc_source, border);
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+		sscanf(line,"%s %s", sourcemode_fm, sourcemode_nofm);
+
+		if (!strcmp(sourcemode_fm, "iso")){
+			(*flags).sources_all_iso=1;
+			(*flags).sources_without_focmec=1;
+		}
+		else {
+			if (!strcmp(sourcemode_fm, "fm")){
+				(*flags).sources_all_iso=0;
+				if (!strcmp(sourcemode_nofm, "no")){
+					(*flags).sources_without_focmec=0;
+				}
+				else{
+					if (!strcmp(sourcemode_nofm, "iso")){
+						(*flags).sources_without_focmec=1;
+					}
+					else{
+						if (!strcmp(sourcemode_nofm, "fix")){
+							(*flags).sources_without_focmec=2;
+						}
+						else{
+							print_screen("Illegal value for source_mode_nofocmec (should be one of: no/iso/fix).\n", modelparametersfile);
+							print_logfile("Illegal value for source_mode_nofocmec (should be one of: no/iso/fix).\n", modelparametersfile);
+							fileError=1;
+						}
+					}
+				}
+			}
+			else {
+				print_screen("Illegal value for source_mode_focmec (should be one of: iso/fm).\n", modelparametersfile);
+				print_logfile("Illegal value for source_mode_focmec (should be one of: iso/fm).\n", modelparametersfile);
+				fileError=1;
+			}
+		}
+
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+		sscanf(line,"%lf", res);
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+		sscanf(line,"%lf %lf", dCFS, DCFS_cap);
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+		sscanf(line,"%lf %lf", gridresxy, gridresz);
+
+		//-------------Parameter inversion------------------//
+
+		line[0]=comm;
+		while (line[0]==comm) fgets(line,Nchar_long,fin);
+		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
+		sscanf(line,"%d", LLinversion);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d %lf", fixr, r0);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		//the following 2 lines (Asig, ta values) can have 2 alternative forms:
 		//1 Asig0
 		//or:
 		//0 Asig1 Asig2
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d %lf %lf  %d", fixAsig, Asig_min, Asig_max, nAsig0);
-		if (*fixAsig){
+		if (*fixAsig && *LLinversion){
 			*Asig0=*Asig_min;
 			*Asig_min=*Asig_max=0.0;
 			*nAsig0=0;
@@ -90,7 +144,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		}
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d %lf %lf %d", fixta, ta_min, ta_max, nta0);
-		if (*fixta){
+		if (*fixta && *LLinversion){
 			*ta0=*ta_min;
 			*ta_min=*ta_max=0.0;
 			*nta0=0;
@@ -98,68 +152,51 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		else{
 			*ta0=0.0;
 		}
-
-		line[0]=comm;
-		while (line[0]==comm) fgets(line,Nchar_long,fin);
-		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+		sscanf(line,"%lf", Mc);
+		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf %lf", tw, Mag_main);
 
+		//-------------Treatment of uncertainties------------------//
 		line[0]=comm;
 		while (line[0]==comm) fgets(line,Nchar_long,fin);
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
-		sscanf(line,"%lf", fore_dt);
+		sscanf(line,"%s", recfault);
+		if (!strcmp(recfault, "fixed")){
+			(*flags).err_recfault=0;
+			(*flags).OOPs=0;
+		}
+		else{
+			if (!strcmp(recfault,"oops")){
+				(*flags).err_recfault=0;
+				(*flags).OOPs=1;
+			}
+			else {
+				if (!strcmp(recfault,"focmec")){
+					(*flags).err_recfault=1;
+					(*flags).OOPs=0;
+				}
+				else{
+					print_screen("Illegal value for choice of receiver fault in file %s (should be one of: oops/fixed/focmec).\n", modelparametersfile);
+					print_logfile("Illegal value for choice of receiver fault in file %s (should be one of: oops/fixed/focmec).\n", modelparametersfile);
+					fileError=1;
+				}
+			}
 
-		line[0]=comm;
-		while (line[0]==comm) fgets(line,Nchar_long,fin);
-		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
-		sscanf(line,"%d %d", Nsur, Nslipmod);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d", &((*flags).err_recfault));
+		}
+		// todo set err_recfault, OOPs here.
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", &((*flags).err_gridpoints));
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d", &((*flags).OOPs));
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d", &((*flags).afterslip));
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%*d %d", &aftershock_mode);	//todo change input files
-		switch (aftershock_mode){
-			case 0:
-				(*flags).only_aftershocks_withfm=0;
-				(*flags).full_field=0;
-				(*flags).aftershocks_fixedmec=0;
-				break;
-			case 1:
-				(*flags).only_aftershocks_withfm=0;
-				(*flags).full_field=1;
-				(*flags).aftershocks_fixedmec=0;
-				break;
-			case 2:
-				(*flags).only_aftershocks_withfm=0;
-				(*flags).full_field=2;
-				(*flags).aftershocks_fixedmec=1;
-				break;
-			case 3:
-				(*flags).only_aftershocks_withfm=0;
-				(*flags).full_field=2;
-				(*flags).aftershocks_fixedmec=0;
-				break;
-			case 4:
-				(*flags).only_aftershocks_withfm=1;
-				(*flags).full_field=2;
-				(*flags).aftershocks_fixedmec=0;
-				break;
-			default:
-				break;
-		}
+		sscanf(line,"%d", Nsur);
+
+
+		//-------------Other parameters------------------//
+
 		line[0]=comm;
 		while (line[0]==comm) fgets(line,Nchar_long,fin);
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
-		sscanf(line,"%lf", Mc);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf", Mc_source);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf %lf", dCFS, DCFS_cap);
+		sscanf(line,"%d %lf", forecast, fore_dt);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf", dt);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
@@ -169,16 +206,11 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf", ztoll);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf", border);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf", res);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf", gridresxy);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf", gridresz);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf", smoothing);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
+
+
+		//-------------Parameters Describing crustal properties------------------//
+
 		line[0]=comm;
 		while (line[0]==comm) fgets(line,Nchar_long,fin);
 		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
@@ -207,17 +239,19 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 			else {
 				print_logfile("Invalid value for mode of regional stress field: should be 'oops' or 'paxis'. Exit.\n");
 				print_screen("Invalid value for mode of regional stress field: should be 'oops' or 'paxis'. Exit.\n");
-				//todo give some error here.
+				fileError=1;
 			}
 		}
 
-		line[0]=comm;
-		while (line[0]==comm) fgets(line,Nchar_long,fin);
-		if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fscanf!\n");
-		sscanf(line,"%d", LLinversion);
-		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d", forecast);
 		fclose(fin);
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if(fileError) {
+		return 1;
 	}
 
 	// TODO: [Fahad] Look into how much of the following code can be moved to
@@ -267,18 +301,6 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 	 *
 	 * &flags,
 	 */
-
-
-
-
-
-
-
-
-
-
-
-
 
 	#ifdef _CRS_MPI
 		// Copy scalars to the BCast_Model_Parameters struct

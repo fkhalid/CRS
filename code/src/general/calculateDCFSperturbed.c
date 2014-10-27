@@ -56,11 +56,9 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	//flags:
 	int	afterslip=flag.afterslip, \
 		vary_recfault=flag.err_recfault, \
-		new_slipmodel=flag.new_slipmodel, \
 		gridpoints_err=flag.err_gridpoints, \
 		splines=flag.splines, \
-		full_field=(flag.full_field==2), \
-		aftershocks_fixedmec=flag.aftershocks_fixedmec;
+		full_field=(flag.sources_without_focmec==2);
 
 	static double *strike0, *dip0, *rake0;
 	double slip;
@@ -91,7 +89,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	if (time_in==1) {
 		print_logfile("\nSetting up variables for calculating perturbed Coulomb fields.\n");
 
-		new_slipmodel=1;
 		//-----calculate neighbouring points--------//
 
 		if (gridpoints_err==1) {

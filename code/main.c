@@ -29,8 +29,6 @@
 	#include "mpi.h"
 #endif
 
-//todo make sure output comments make sense at various verbosity levels.
-//todo tapering for synthetic events (foc mec).
 //todo make program work for non uniform grid (set griderr=0 in that case).
 //todo check that lat=(-180, 180) are interpreted correctly throughout the program.
 
@@ -157,7 +155,7 @@ int main (int argc, char **argv) {
 	double minmag;
 	long seed;
 	int nc;
-	int j0, N, N_min_events;
+	int j0, N;
 	int input_file_name_given=0;
 
 	// FIXME: [Fahad] For testing purposes only ...
@@ -238,9 +236,9 @@ int main (int argc, char **argv) {
 
 	//todo abolish extra_time.
 	//todo simplify parameter file...
-	err=read_modelparameters(modelparametersfile, &crst, reftime, &N_min_events, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
+	err=read_modelparameters(modelparametersfile, &crst, reftime, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0,	&tw, &fore_dt,
-			&Nsur, &Nslipmod, &flags, &(cat.Mc), &Mag_main, &Mc_source, &dDCFS, &DCFS_cap,
+			&Nsur, &flags, &(cat.Mc), &Mag_main, &Mc_source, &dDCFS, &DCFS_cap,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
 	if (err) {
@@ -257,9 +255,12 @@ int main (int argc, char **argv) {
 		print_screen("Warning: InputCatalogFocMecFile or InputListCatalogFocMecFile not given: will not use variable receiver faults.\n");
 		flags.err_recfault=0;
 	}
-	if ((strcmp(afterslipmodelfile,"")==0) && flags.afterslip) {
-		print_screen("Warning: InputListAfterslipModels not given: will not use afterslip.\n");
+	if ((strcmp(afterslipmodelfile,"")==0)) {
+		print_screen("InputListAfterslipModels not given: will not use afterslip.\n");
 		flags.afterslip=0;
+	}
+	else{
+		flags.afterslip=1;
 	}
 
 	if (strcmp(background_rate_grid,"")==0)	use_bg_rate_grid=0;
@@ -359,11 +360,7 @@ int main (int argc, char **argv) {
 		select_fm_time(focmec, &NFM, Tstart);
 		if (!NFM) {
 			print_logfile("\nNo focal mechanisms available before t=%.2lf (ForecastStartDate). Will not use multiple receiver faults.\n", Tstart);
-			if (flags.full_field && !flags.aftershocks_fixedmec)
-				print_logfile("No focal mechanisms available before t=%.2lf (ForecastStartDate). Will not use MC sampling of focal planes for aftershochs.\n", Tstart);
-			//todo comment above should be changed.
 			flags.err_recfault=0;
-			flags.aftershocks_fixedmec=1;
 		}
 		else {
 			print_logfile("\nWill use %d receiver focal mechanisms up to t=%.2lf (ForecastStartDate)\n", NFM,  Tstart);
@@ -415,8 +412,8 @@ int main (int argc, char **argv) {
 	//					Setup other things							//
 	//--------------------------------------------------------------//
 
-	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=Nslipmod=1;	//since there are not sources of uncertainties.
-	if (flags.err_recfault && no_fm_cats==1 && Nsur/Nslipmod>NFM) {
+	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=1;	//since there are not sources of uncertainties.
+	if (flags.err_recfault && no_fm_cats==1 && Nsur>NFM) {
 	    	Nsur=NFM;
 			flags.sample_all=1;
 	    }
@@ -493,7 +490,7 @@ int main (int argc, char **argv) {
 	dta=(nta==0)? 0.0 : (ta_max-ta_min)/nta;
 
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
-	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, 1, DCFS, eqkfm_aft, eqkfm0res, flags,
+	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm0res, flags,
 			tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2,
 			fmin(tstartLL,Tstart-extra_time), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
 
@@ -680,7 +677,7 @@ int main (int argc, char **argv) {
 					p+=1;
 					gammas=NULL;	//fixme check if this should be allowed to be set equal to gammas_bg_rate?
 
-					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, Nslipmod, DCFS, eqkfm_aft,
+					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, DCFS, eqkfm_aft,
 										  	eqkfm0res, flags, tevol_afterslip, crst, AllCoeff,
 										  	L, Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat,
 										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, gammas,
@@ -767,7 +764,7 @@ int main (int argc, char **argv) {
 			sprintf(printall_foret,"%s_forecast_all", outnamemod);
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
-			CRSforecast(&LL, Nsur, Nslipmod, DCFS, eqkfm_aft, eqkfm0res, flags, tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM,
+			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm0res, flags, tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM,
 					&seed, cat, times2,tstart_calc, tts, Ntts, tw, maxAsig[mod], maxta[mod], maxr[mod], gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 

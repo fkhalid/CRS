@@ -8,8 +8,8 @@
 # fixCV		CV0		CV1		CV2		nCV			//obsolete! fixCV must be set to 1.
  100
  1	0.022
- 0      8000  10000   1      
- 0      7000  10000   1       
+ 0      8000   10000   1
+ 0      7000   10000   1
 #======================================#
 #  		  Time of inversion	 	   	   #
 #======================================#
@@ -39,11 +39,11 @@
 #                       3       use all events, use available foc. mech. otherwise, use monte carlo sample of old foc mec.
 #                       4       use only events with foc mec. uses foc mec to create synthetic slip model.
 #
-3	3
-0
-0
-0
+9	3
 1
+1
+0
+0
 0	X	
 #
 #======================================#
@@ -75,7 +75,7 @@
 3000.0
 5000.0
 1000.0
-5.0
+10.0
 #===========================================================#
 #       Parameters Describing crustal properties            #
 #===========================================================#

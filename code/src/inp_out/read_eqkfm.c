@@ -103,20 +103,20 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 		(*eqfm_comb)[c3].nsel=crst.N_allP;
 
 		if(which_slipmod[i]==-1) {
-			if (flags.only_aftershocks_withfm && !eqfm1[i].is_slipmodel){
+			if (flags.sources_without_focmec==0 && !eqfm1[i].is_slipmodel){
 				// flags.only_aftershocks_withfm indicates that only events with focal mechanisms should be used.
 				continue;
 			}
 			else {
 				copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
-				(*eqfm_comb)[c3].nsel=crst.N_allP;	//todo wasteful
-				(*eqfm_comb)[c3].selpoints=all_pts;
+//				(*eqfm_comb)[c3].nsel=crst.N_allP;	//todo wasteful
+//				(*eqfm_comb)[c3].selpoints=all_pts;
 				eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
 				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 
 
 				//flags.full_field=0 indicates that an isotropic slip model should be used for all events (also those with foc mec):
-				if (eqfm1[i].is_slipmodel && flags.full_field!=0) {
+				if (eqfm1[i].is_slipmodel && !flags.sources_all_iso) {
 					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
 					if (err){
 						print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
@@ -131,7 +131,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 
 
 				else{
-					if (!eqfm1[i].is_slipmodel && flags.full_field==2){	//todo NB do not use aftershocks_fixedmec since MC option will be killed.
+					if (!eqfm1[i].is_slipmodel && flags.sources_without_focmec==2){	//todo NB do not use aftershocks_fixedmec since MC option will be killed.
 						(*eqfm_comb)[c3].str1=crst.str0[0];	//fixme should use different regions.
 						(*eqfm_comb)[c3].dip1=crst.dip0[0];	//fixme should use different regions.
 						(*eqfm_comb)[c3].rake1=crst.rake0[0];

@@ -17,7 +17,7 @@ ln1="OutputForecastFile=output_testcases/testE1"
 ln2="Logfile=output_testcases/testE1.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputE
-sed "48s+0+1+"  $parafile > $temppara
+cp  $parafile $temppara
 echo "InputBackgroundRateCatalog=input_testcases/catalog.dat" >> temp_inputE
 $Build/CRS_3.0 temp_inputE
 if [ $Build == "Coverage" ]
@@ -31,7 +31,6 @@ ln1="OutputForecastFile=output_testcases/testE2"
 ln2="Logfile=output_testcases/testE2.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "7s+catalog+catalog4+" > temp_inputE
-sed "48s+0+1+"  $parafile > $temppara
 echo "InputBackgroundRateCatalog=input_testcases/catalog4.dat" >> temp_inputE
 $Build/CRS_3.0 temp_inputE
 if [ $Build == "Coverage" ]
@@ -45,7 +44,6 @@ ln1="OutputForecastFile=output_testcases/testE3"
 ln2="Logfile=output_testcases/testE3.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "7s+catalog+catalog5b+" > temp_inputE
-sed "48s+0+1+"  $parafile > $temppara
 echo "InputBackgroundRateCatalog=input_testcases/catalog5b.dat" >> temp_inputE
 
 $Build/CRS_3.0 temp_inputE

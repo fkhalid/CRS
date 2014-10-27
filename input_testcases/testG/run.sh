@@ -12,17 +12,19 @@ basefile="input_testcases/testG/input.txt"
 parafile="input_testcases/parameters.txt"
 temppara="input_testcases/testG/temp_par.txt"
 
-for i in $(seq 0 4)	#should be 0 4
+m0="iso iso"
+m1="fm  iso"
+m2="fm fix"
+m3="fm no"
+for i in $(seq 0 3)     #should be 0 3
 do
-if [ $i -eq 3 ]
-then
-continue
-fi
 ln1="OutputForecastFile=output_testcases/testG$i"
 ln2="Logfile=output_testcases/testG$i.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputG
-sed "47s+0+1+"  $parafile | sed "47s+X+$i+" | sed "67s+5.95+2.0+" > $temppara
+l160=`echo m$i`
+l16=`echo ${!l160}`
+sed "16s+.*+$l16+"  $parafile | sed '15s+5.95+2.00+'> $temppara
 
 if [ $i -lt 2 ]
 then
@@ -46,7 +48,7 @@ ln1="OutputForecastFile=output_testcases/testGT1"
 ln2="Logfile=output_testcases/testGT1.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputG
-sed "67s+.*+2.00+" $parafile | sed "47s+X+1+" | sed "67s+5.95+2.0+" | sed "75s+.*+3.0+" > $temppara
+sed "16s+.*+$m1+"  $parafile | sed '15s+5.95+2.00+' | sed "17s+.*+3.0+" > $temppara
 sed '9s+focmecfile+focmecfile0+' temp_inputG > tmp
 mv tmp temp_inputG
 

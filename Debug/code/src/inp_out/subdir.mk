@@ -6,6 +6,7 @@
 C_SRCS += \
 ../code/src/inp_out/print_output.c \
 ../code/src/inp_out/propagate_results.c \
+../code/src/inp_out/read_RS.c \
 ../code/src/inp_out/read_crust.c \
 ../code/src/inp_out/read_csep_template.c \
 ../code/src/inp_out/read_eqkfm.c \
@@ -20,6 +21,7 @@ C_SRCS += \
 OBJS += \
 ./code/src/inp_out/print_output.o \
 ./code/src/inp_out/propagate_results.o \
+./code/src/inp_out/read_RS.o \
 ./code/src/inp_out/read_crust.o \
 ./code/src/inp_out/read_csep_template.o \
 ./code/src/inp_out/read_eqkfm.o \
@@ -34,6 +36,7 @@ OBJS += \
 C_DEPS += \
 ./code/src/inp_out/print_output.d \
 ./code/src/inp_out/propagate_results.d \
+./code/src/inp_out/read_RS.d \
 ./code/src/inp_out/read_crust.d \
 ./code/src/inp_out/read_csep_template.d \
 ./code/src/inp_out/read_eqkfm.d \

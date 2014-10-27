@@ -9,7 +9,7 @@ fi
 
 echo "***************************Build="$Build"********************************"
 basefile="input_testcases/testD/input.txt"
-parafile="input_testcases/parameters_aslip.txt"
+parafile="input_testcases/parameters.txt"
 temppara="input_testcases/testD/temp_par.txt"
 
 #no afterslip:

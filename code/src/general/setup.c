@@ -96,7 +96,8 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	if (err) return (err);
 
 	// read catalog of focal mechanisms and merge it with eqkfm structure from catalog:
-	if (flag.full_field || focmec){
+
+	if (!flag.sources_all_iso || focmec){
 		err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
 			reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
 		combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, dt, dM, xytoll, 1);
@@ -117,8 +118,8 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 //			if (Nmain) *Nmain+=1;
 //		}
 //		else{
-			if (flag.only_aftershocks_withfm && !(*eqkfm1)[i].is_slipmodel) (*eqkfm1)[i].nsel=0;
-			if (flag.full_field==0) (*eqkfm1)[i].is_slipmodel=0;
+//			if (flag.sources_without_focmec==0 && !(*eqkfm1)[i].is_slipmodel) (*eqkfm1)[i].nsel=0;
+//			if (flag.sources_all_iso) (*eqkfm1)[i].is_slipmodel=0;
 			//todo check: is this done in add_eqkfm...
 //		}
 	}
