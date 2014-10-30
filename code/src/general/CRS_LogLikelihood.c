@@ -195,6 +195,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 
 		const long newSeed = *seed;
+
 	#else
 		start = 1;
 		end = Nsur + 1;
@@ -621,21 +622,20 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		rate[i]=0.0;
 	}
 
-	#ifdef _CRS_MPI
+	//#ifdef _CRS_MPI
 		// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
 		// parameters are the same ...
 		if(first_timein != 1) {
 			int nsur = 1;
 			which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
 
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst,
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
+								   fmzonelim, NFM, seed, tstart, tt1,
 								   refresh && nsur==1, which_recfault);
-
 			refresh = 0;
 		}
-	#endif
+	//#endif
 
 	//for (int ndt=1; ndt<=NDT; ndt++) net[ndt]=0.0;
 
@@ -665,13 +665,15 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			if(procId == 0) {
 				start = 1;
 			}
+
+			const long newSeed = *seed;
+
 		}
 		else {
 			start = 1;
 			end = Nsur + 1;
 		}
 
-		const long newSeed = *seed;
 	#else
 		start = 1;
 		end = Nsur + 1;

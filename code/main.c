@@ -130,7 +130,6 @@ int main (int argc, char **argv) {
 	double fore_dt;
 	double *tts;
 	int Ntts;
-	double extra_time;
 	double t_firstmain;
 	double smoothing;	//for calculating background seismicity.
 
@@ -234,8 +233,6 @@ int main (int argc, char **argv) {
 
 //-----------------------read model parameters-------------------//
 
-	//todo abolish extra_time.
-	//todo simplify parameter file...
 	err=read_modelparameters(modelparametersfile, &crst, reftime, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0,	&tw, &fore_dt,
 			&Nsur, &flags, &(cat.Mc), &Mag_main, &Mc_source, &dDCFS, &DCFS_cap,
@@ -254,6 +251,7 @@ int main (int argc, char **argv) {
 	if (!focmeccats && flags.err_recfault) {
 		print_screen("Warning: InputCatalogFocMecFile or InputListCatalogFocMecFile not given: will not use variable receiver faults.\n");
 		flags.err_recfault=0;
+		flags.sources_all_iso=1;
 	}
 	if ((strcmp(afterslipmodelfile,"")==0)) {
 		print_screen("InputListAfterslipModels not given: will not use afterslip.\n");
@@ -298,10 +296,12 @@ int main (int argc, char **argv) {
 //----------- Read grid (crst) information from templates -------//
 
 	err=read_crust(fore_template, fixedmecfile , &crst, gridresxy, gridresz, flags.err_recfault);
+
 	if (err) {
 		error_quit("Errors while reading template file %s. Exiting.", fore_template);
 	}
 	NgridT=crst.N_allP;
+
 
 //---------------------------------------------//
 //--------------Setup afterslip----------------//
@@ -327,14 +327,14 @@ int main (int argc, char **argv) {
 	if (flags.err_recfault) {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mc_source, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
-							   flags, &NFM, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
-							   tstartLL-extra_time, tendCat);
+							   flags, &NFM, &Ntot, dt, dM,  xytoll, ztoll, border, tw,
+							   tstartLL, tendCat);
 	}
 	else {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mc_source, crst, &cat, &eqkfm1,   NULL , NULL, flags,
-							   NULL, &Ntot, &Nm, dt, dM,  xytoll, ztoll, border, tw,
-							   tstartLL-extra_time, tendCat);
+							   NULL, &Ntot, dt, dM,  xytoll, ztoll, border, tw,
+							   tstartLL, tendCat);
 	}
 
 	if (err!=0) error_quit("**Error in setting up catalog. Exiting. **");
@@ -492,7 +492,7 @@ int main (int argc, char **argv) {
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
 	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm0res, flags,
 			tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2,
-			fmin(tstartLL,Tstart-extra_time), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
+			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
 
 	for (int p=1; p<=(1+nAsig0)*(1+nta0); p++) LLs[p]=0.0;
 
@@ -745,7 +745,7 @@ int main (int argc, char **argv) {
 				print_logfile("Using steady state starting rates: ");
 				if (use_bg_rate_cat || use_bg_rate_grid) for (int i=1; i<=NgridT; i++) gammasfore[0][i]=(ta/Asig)*gamma_bgrate[i];
 				else gammasfore=NULL;
-				tstart_calc=fmin(Tstart-extra_time, t_firstmain-extra_time);
+				tstart_calc=fmin(Tstart, t_firstmain);
 				multi_gammas=0;
 			}
 

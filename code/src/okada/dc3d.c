@@ -24,11 +24,15 @@
 /* C*****   IRET        : RETURN CODE  ( =0....NORMAL,   =1....SINGULAR )   */
 
 #include <math.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include "../defines.h"
+#include "../util/error.h"
 
 //#include "nrutil.h"
+#ifdef _CRS_MPI
+	#include "mpi.h"
+#endif
 
 void UA(double XI, double ET, double Q, double DISL1, double DISL2, double DISL3, double *U, double Y11, double X11, double ALP2, double ALP1, double TT, double R, double ALE, double XI2, double Y32, double Q2, double SD, double R3,
 		double FY, double D, double EY, double CD, double FZ, double Y, double EZ, double ALX, double GY, double GZ, double HY, double HZ) {

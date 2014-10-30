@@ -100,7 +100,6 @@ void print_screen_fun(char *fun, const char * format, ...){
   va_list args;
   va_start (args, format);
 
-
   	#ifdef _CRS_MPI
   		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
   	#endif

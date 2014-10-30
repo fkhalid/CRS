@@ -22,7 +22,7 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 	double *rate, *rate_tot;
 
 	ind=ivector(1,Ngrid);
-	rate=dvector(1,Ngrid);
+	rate=dvector(0,Ngrid);
 	rate_tot=dvector(1,Ngrid);
 	for (int i=1; i<=Ngrid; i++) rate_tot[i]=0.0;
 
@@ -42,7 +42,7 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 	for (int eq=1; eq<=N; eq++){	//todo parallel.
 		if (!weights || (weights[eq]>0.0)){
 			d=fmax(dist[eq],err[eq]);
-			find_gridpoints_exact(ygrid, xgrid, NULL, dx, dy, 0.0, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0, 10000, &no_ind, ind, rate, 1, 0);
+			find_gridpoints_exact(ygrid, xgrid, NULL, dx, dy, 0.0, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0, 10000, &no_ind, &ind, &rate, 1, 0);
 			w= (weights)? weights[eq] : 1.0;
 			for (int i=1; i<=no_ind; i++) rate_tot[ind[i]]+=w*rate[i];
 		}

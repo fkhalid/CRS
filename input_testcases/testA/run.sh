@@ -4,10 +4,15 @@ if [ $# -eq 0 ]
 then
  Build="Release"
 else
- Build=$1
+ if [ $1 == "MPI" ]
+ then
+  Build="mpirun -n $2 MPI/"
+ else
+  Build=$1
+ fi
 fi
 
-echo "***************************Build="$Build"********************************"
+echo "***************************build="$Build"********************************"
 basefile="input_testcases/testA/input.txt"
 parafile="input_testcases/parameters.txt"
 temppara="input_testcases/testA/temp_par.txt"
@@ -27,7 +32,7 @@ ln2="Logfile=output_testcases/testA2.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputA
 #sed "43s+0+1+"  $parafile > $temppara
-sed "56s+.*+focmec+" $parafile > $temppara
+sed "57s+.*+focmec+" $parafile > $temppara
 echo "InputCatalogFocMecFile=input_testcases/focmecfile.dat" >> temp_inputA
 
 $Build/CRS_3.0 temp_inputA
@@ -41,7 +46,7 @@ fi
 ln1="OutputForecastFile=output_testcases/testA3"
 ln2="Logfile=output_testcases/testA3.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputA
-sed "56s+.*+focmec+" $parafile > $temppara
+sed "57s+.*+focmec+" $parafile > $temppara
 #sed "43s+0+1+"  $parafile > $temppara
 echo "InputListCatalogFocMecFile=input_testcases/listfocmecfiles.txt" >> temp_inputA
 
@@ -58,7 +63,7 @@ ln2="Logfile=output_testcases/testA4.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputA
 #sed "44s+0+1+"  $parafile > $temppara
-sed "57s+.*+1+" $parafile > $temppara
+sed "58s+.*+1+" $parafile > $temppara
 echo "InputCatalogFocMecFile=input_testcases/focmecfile.dat" >> temp_inputA
 
 $Build/CRS_3.0 temp_inputA

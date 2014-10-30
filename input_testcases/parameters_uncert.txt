@@ -13,7 +13,7 @@
 #    DCFS_cap: values of Coulomb stress change with absolute exceeding DCFS_cap will be capped to DCFS_cap (to avoid singularities in Okada solutions).
 # 5. res_xy, res_z: internal horizontal/vertical model resolution.
 5.95	0.0
-fm	no
+fm	iso
 3000
 80      1e6
 5000.0	1000.0

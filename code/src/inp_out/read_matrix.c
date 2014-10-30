@@ -233,6 +233,7 @@ int countcol_header(char *filename, int headerlines){
 		}
 	}
 	fclose(fin);
+
 	return counter+1;
 }
 

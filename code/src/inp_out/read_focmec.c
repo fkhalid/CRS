@@ -71,6 +71,7 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 		}
 	}
 
+
 	#ifdef _CRS_MPI
 		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif

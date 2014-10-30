@@ -160,39 +160,31 @@ void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 	return;
 }
 
-int **imatrix_firstlevel(long nrl, long nrh)
-/* allocate a int matrix with subscript range m[nrl..nrh]; columns will be allocated later. */
+int **imatrix_firstlevel(long nrh)
+/* allocate a int matrix with subscript range m[0..nrh]; columns will be allocated later. */
 {
-	long i, nrow=nrh-nrl+1;
 	int **m;
 
 	/* allocate pointers to rows */
-	m=(int **) malloc((size_t)((nrow+NR_END)*sizeof(int*)));
-	if (!m) nrerror("allocation failure 1 in matrix()");
-	m += NR_END;
-	m -= nrl;
+	m=(int **) malloc((size_t)((nrh+1)*sizeof(int*)));
 
 	/* set rows to NULL (so that later it will be recognized that memory should be allocated).*/
-	for (int i=nrl; i<=nrh; i++) m[i]=NULL;
+	for (int i=0; i<=nrh; i++) m[i]=NULL;
 
 	/* return pointer to array of pointers to rows */
 	return m;
 }
 
-double **dmatrix_firstlevel(long nrl, long nrh)
+double **dmatrix_firstlevel(long nrh)
 /* allocate a double matrix with subscript range m[nrl..nrh];  columns will be allocated later. */
 {
-	long i, nrow=nrh-nrl+1;
 	double **m;
 
 	/* allocate pointers to rows */
-	m=(double **) malloc((size_t)((nrow+NR_END)*sizeof(double*)));
-	if (!m) nrerror("allocation failure 1 in matrix()");
-	m += NR_END;
-	m -= nrl;
+	m=(double **) malloc((size_t)((nrh+1)*sizeof(double*)));
 
 	/* set rows to NULL (so that later it will be recognized that memory should be allocated).*/
-	for (int i=nrl; i<=nrh; i++) m[i]=NULL;
+	for (int i=0; i<=nrh; i++) m[i]=NULL;
 
 	/* return pointer to array of pointers to rows */
 	return m;
@@ -201,14 +193,14 @@ double **dmatrix_firstlevel(long nrl, long nrh)
 void free_imatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
 /* free an int matrix allocated by imatrix_firstlevel() */
 {
-	for (int i=nrl; i<=nrh; i++) free_ivector(m[i], ncl, nch);
+	for (int i=nrl; i<=nrh; i++) if (m[i]) free_ivector(m[i], ncl, nch);
 	free((FREE_ARG) (m+nrl-NR_END));
 }
 
 void free_dmatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
 /* free an int matrix allocated by dmatrix_firstlevel() */
 {
-	for (int i=nrl; i<=nrh; i++) free_dvector(m[i], ncl, nch);
+	for (int i=nrl; i<=nrh; i++) if (m[i]) free_dvector(m[i], ncl, nch);
 	free((FREE_ARG) (m+nrl-NR_END));
 }
 

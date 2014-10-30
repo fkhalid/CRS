@@ -4,7 +4,12 @@ if [ $# -eq 0 ]
 then
  Build="Release"
 else
- Build=$1
+ if [ $1 == "MPI" ]
+ then
+  Build="mpirun -n $2 MPI/"
+ else
+  Build=$1
+ fi
 fi
 
 echo "***************************Build="$Build"********************************"
@@ -12,17 +17,19 @@ basefile="input_testcases/testI/input.txt"
 parafile="input_testcases/parameters.txt"
 temppara="input_testcases/testI/temp_par.txt"
 
-for i in $(seq 0 4)	#should be 0 4
+m0="iso iso"
+m1="fm  iso"
+m2="fm fix"
+m3="fm no"
+for i in $(seq 0 3)     #should be 0 3
 do
-if [ $i -eq 3 ]
-then
-continue
-fi
 ln1="OutputForecastFile=output_testcases/testI$i"
 ln2="Logfile=output_testcases/testI$i.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputI
-sed "47s+0+1+"  $parafile | sed "47s+X+$i+" | sed "67s+5.95+2.0+" > $temppara
+l160=`echo m$i`
+l16=`echo ${!l160}`
+sed "16s+.*+$l16+"  $parafile | sed '15s+5.95+2.00+'> $temppara
 
 #use a different input file with foc. mec. for the mainshocks:
 if [ $i -lt 2 ]
@@ -45,7 +52,7 @@ ln2="Logfile=output_testcases/testIB1.log"
 ln8="InputListSlipModels=input_testcases/slipmodelslist.dat"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "8s+.*+$ln8+" > temp_inputI
-sed "47s+0+1+"  $parafile | sed "47s+X+0+" | sed "67s+5.95+2.0+" > $temppara
+sed "16s+.*+$m0+"  $parafile | sed '15s+5.95+2.00+'> $temppara
 
 $Build/CRS_3.0 temp_inputI
 if [ $Build == "Coverage" ]
@@ -60,7 +67,7 @@ ln2="Logfile=output_testcases/testIB2.log"
 ln8="InputListSlipModels=input_testcases/testI/slipmodelslist2.dat"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "8s+.*+$ln8+" > temp_inputI
-sed "47s+0+1+"  $parafile | sed "47s+X+0+" | sed "67s+5.95+2.0+" > $temppara
+sed "16s+.*+$m0+"  $parafile | sed '15s+5.95+2.00+'> $temppara
 
 $Build/CRS_3.0 temp_inputI
 if [ $Build == "Coverage" ]
@@ -75,7 +82,7 @@ ln2="Logfile=output_testcases/testIB3.log"
 ln8="InputListSlipModels=input_testcases/testI/slipmodelslist3.dat"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "8s+.*+$ln8+" > temp_inputI
-sed "47s+0+1+"  $parafile | sed "47s+X+0+" | sed "67s+5.95+2.0+" > $temppara
+sed "16s+.*+$m0+"  $parafile | sed '15s+5.95+2.00+'> $temppara
 
 $Build/CRS_3.0 temp_inputI
 if [ $Build == "Coverage" ]

@@ -30,8 +30,8 @@ double *** duplicate_d3tensor(double ***S, long nrl, long nrh, long ncl, long nc
 double * duplicate_dvector(double *v, long nrl, long nrh);
 double min_v(double *v, int N);
 double max_v(double *v, int N);
-int **imatrix_firstlevel(long nrl, long nrh);
-double **dmatrix_firstlevel(long nrl, long nrh);
+int **imatrix_firstlevel(long nrh);
+double **dmatrix_firstlevel(long nrh);
 void free_imatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
 void free_dmatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
 

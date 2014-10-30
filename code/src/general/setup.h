@@ -32,7 +32,7 @@
 
 void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index);
 int setup_catalogetc(char *catname, char **focmeccat, int nofmcat, struct tm reftime, double dDCFS, double Mag_main, struct crust crst,
-		struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec, int **firstelements, struct flags flag, int *NFM, int *Ntot, int *Nmain,
+		struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec, int **firstelements, struct flags flag, int *NFM, int *Ntot,
 		double dt, double dM, double xytoll, double ztoll, double dR, double tw, double tstart, double tend);
 int setup_afterslip_eqkfm(struct slipmodels_list slipmodels, struct crust crst, struct eqkfm **eqkfm0res);
 int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodel, char *cmb_format, int no_slipmodels, double mu, double disc,

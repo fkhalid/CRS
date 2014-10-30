@@ -133,7 +133,6 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	double Mc, b, Mc_final=crst.mags[1]-0.5*(crst.dmags), rcat;
 	int ne, h_ind, v_ind, *sel, sel_no=0;
 	double *weights=NULL;
-	FILE *fin;
 	cat.Mc=Mcut;
 
 	zlist=dvector(1,crst.nD);
@@ -205,18 +204,18 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 
 	if (crst.uniform){
 
-	rate_h=Helmstetter_cat(cat, crst, weights, ord);
-	rate_v=fit_depth(zlist, zlist[2]-zlist[1], crst.nD, cat.depths0, cat.verr, weights, cat.Z);
+		rate_h=Helmstetter_cat(cat, crst, weights, ord);
+		rate_v=fit_depth(zlist, zlist[2]-zlist[1], crst.nD, cat.depths0, cat.verr, weights, cat.Z);
 
-	normv(rate_h, NP);
-	normv(rate_v, crst.nD);
+		normv(rate_h, NP);
+		normv(rate_v, crst.nD);
 
-	(*crst_in).rate0=dvector(1,crst.N_allP);
-	for (int p=1; p<=crst.N_allP; p++) {
-		h_ind=(p-1)%NP+1;
-		v_ind=(p-1)/NP+1;
-		(*crst_in).rate0[p]=rate_h[h_ind]*rate_v[v_ind]*crst.N_allP;
-	}
+		(*crst_in).rate0=dvector(1,crst.N_allP);
+		for (int p=1; p<=crst.N_allP; p++) {
+			h_ind=(p-1)%NP+1;
+			v_ind=(p-1)/NP+1;
+			(*crst_in).rate0[p]=rate_h[h_ind]*rate_v[v_ind]*crst.N_allP;
+		}
 	}
 
 	else{

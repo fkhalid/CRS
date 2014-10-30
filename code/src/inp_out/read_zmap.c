@@ -370,7 +370,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	//------------------------------fill in catalog:-------------------------//
 
 	if (cat){
-		(*cat).pcrst=&crst;
+		(*cat).pcrst=&crst;	//todo check: is this ever used?
 		init_cat1(cat, eq2);
 
 		//#pragma omp parallel for private(eq, SD, SDd, x, y) reduction(+:errP)

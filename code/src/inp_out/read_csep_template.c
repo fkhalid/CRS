@@ -95,6 +95,8 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 		data = dmatrix(1,NC, 1, NL+1);
 
 		if(procId == 0) {
+			print_screen("Reading template file %s\n", fname);
+			print_logfile("Reading template file %s\n", fname);
 			err = read_matrix(fname, NC, NH, data, &NR);
 		}
 
@@ -169,7 +171,7 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 	}
 
 	//calculated for uniform grid: (toll since casting is same as floor).
-
+	//fixme testing for uniform grid gives false positives!
 	if (fabs(closest_lat-dlati)<toll && fabs(closest_lon-dloni)<toll && fabs(closest_dep-ddepi)<toll) {
 
 		if (uni)  *uni=1;

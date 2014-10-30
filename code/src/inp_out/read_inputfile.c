@@ -273,16 +273,18 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	}
 
 	// Print out warnings or errors for missing or redundant parameters:
-	if(procId == 0) {
+	// Camilla [askFahad]: I deleted the procId condition here since the output functions print_logfile, print_screen already contain the same condition;
+	// and because some of the variables are changed below (e.g. outname, focmeccat), and they were not broadcast.
+	//if(procId == 0) {
 		if ((value_found[6] + value_found[5] + value_found[15])>1){
 			print_screen("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
 			print_logfile("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
-			return 1;	//todo [askFahad]: should this instead be saved as error and broadcast?
+			err=1;
 		}
 		if ((value_found[11] + value_found[16])>1){
 			print_screen("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[16]);
 			print_logfile("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[16]);
-			return 1;	//todo [askFahad]: should this instead be saved as error and broadcast?
+			err=1;
 		}
 		nofm=0;
 		for (int n=0; n<NP; n++) {
@@ -302,6 +304,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 							print_logfile("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
 						}
 						if (focmeccat) *focmeccat=NULL;
+						if (num_fm) *num_fm=1;
 					}
 					else nofm=1;
 					break;
@@ -312,6 +315,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 							print_logfile("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
 						}
 						if (focmeccat) *focmeccat=NULL;
+						if (num_fm) *num_fm=1;
 					}
 					else nofm=1;
 					break;
@@ -352,14 +356,14 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 				default:
 					print_screen("Error: parameter %s not given in %s.\n", keys[n], input_fname);
 					print_logfile("Error: parameter %s not given in %s.\n", keys[n], input_fname);
-					return 1;	//todo [askFahad]: should this instead be saved as error and broadcast?
+					err=1;
 					break;
 				}
 			}
 		}
-	}
+	//}
 
-	return err;
+	return (err || fileError);
 }
 
 int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {

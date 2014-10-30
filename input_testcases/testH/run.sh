@@ -4,7 +4,12 @@ if [ $# -eq 0 ]
 then
  Build="Release"
 else
- Build=$1
+ if [ $1 == "MPI" ]
+ then
+  Build="mpirun -n $2 MPI/"
+ else
+  Build=$1
+ fi
 fi
 
 echo "***************************Build="$Build"********************************"

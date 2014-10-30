@@ -10,6 +10,14 @@
 
 #include "mem_mgmt.h"
 
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "../defines.h"
+#include "../util/moreutil.h"
+#include "../util/nrutil.h"
+
 //void shift_cat(struct catalog *cat, int N){
 //	/*shifts all vectors in struct cat so than element N becomes the first one.
 //	 * NB: shift back (with N->-N+2) before deallocating memory to avoid seg fault.
@@ -45,9 +53,9 @@ void init_crst(struct crust *crst){
 	(*crst).lon_out=NULL;
 	(*crst).depth_out=NULL;
 	(*crst).dAgrid=NULL;
-	(*crst).str0=ivector(0,0);
-	(*crst).dip0=ivector(0,0);
-	(*crst).rake0=ivector(0,0);
+	(*crst).str0=dvector(0,0);
+	(*crst).dip0=dvector(0,0);
+	(*crst).rake0=dvector(0,0);
 	(*crst).x=NULL;
 	(*crst).y=NULL;
 	(*crst).rate0=NULL;
@@ -74,8 +82,8 @@ void init_cat1(struct catalog *cat, int Zsel){
 	(*cat).verr = dvector(1, Zsel);
 	(*cat).ngrid = ivector(1, Zsel);
 	//just allocate first level since subarrays may have different length (and will be initialized later).
-	(*cat).ngridpoints=imatrix_firstlevel(1,Zsel);
-	(*cat).weights=dmatrix_firstlevel(1,Zsel);		// weights[0] indicates the fraction of the Gaussian ellipsoid outside the grid.
+	(*cat).ngridpoints=imatrix_firstlevel(Zsel);
+	(*cat).weights=dmatrix_firstlevel(Zsel);		// weights[0] indicates the fraction of the Gaussian ellipsoid outside the grid.
 	(*cat).b=1.0;
 
 }
