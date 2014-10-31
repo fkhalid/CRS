@@ -326,13 +326,13 @@ int main (int argc, char **argv) {
 
 	if (flags.err_recfault) {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
-							   dDCFS, Mc_source, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
+							   dDCFS, Mc_source, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
 							   flags, &NFM, &Ntot, dt, dM,  xytoll, ztoll, border, tw,
 							   tstartLL, tendCat);
 	}
 	else {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
-							   dDCFS, Mc_source, crst, &cat, &eqkfm1,   NULL , NULL, flags,
+							   dDCFS, Mc_source, Mag_main, crst, &cat, &eqkfm1,   NULL , NULL, flags,
 							   NULL, &Ntot, dt, dM,  xytoll, ztoll, border, tw,
 							   tstartLL, tendCat);
 	}
@@ -765,7 +765,7 @@ int main (int argc, char **argv) {
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
 			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm0res, flags, tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM,
-					&seed, cat, times2,tstart_calc, tts, Ntts, tw, maxAsig[mod], maxta[mod], maxr[mod], gammasfore, multi_gammas, 1,
+					&seed, cat, times2,tstart_calc, tts, Ntts, maxAsig[mod], maxta[mod], maxr[mod], gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 
 			print_logfile("Output files written: %s, %s, %s, %s, %s, %s, %s.\n",

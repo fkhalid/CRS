@@ -33,7 +33,7 @@
 #endif
 
 int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
-					 struct tm reftime, double dDCFS, double Mag_source, struct crust crst,
+					 struct tm reftime, double dDCFS, double Mag_source, double Mag_main, struct crust crst,
 					 struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec,
 					 int **firstelements, struct flags flag, int *NFM, int *Ntot,
 					 double dt, double dM, double xytoll, double ztoll, double dR, double tw,
@@ -91,7 +91,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 
 	//select events within some tolerance level, since they will have to be matched with focal mechanisms.
 	err += readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat,
-						5.5, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);	//fixme 5.5 should be Mag_main
+			Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
 
 	if (err) return (err);
 

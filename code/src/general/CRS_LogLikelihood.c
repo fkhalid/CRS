@@ -16,7 +16,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				double *tevol, struct crust crst, struct Coeff_LinkList *AllCoeff,
 				int NTScont, int Nm, int NgridT, double **focmec, int *fmzonelim,
 				int NFM, long *seed, struct catalog cat, double *times, double tstart, double *tts,
-				int Ntts, double tw, double Asig, double ta, double r0, double **all_gammas0,
+				int Ntts, double Asig, double ta, double r0, double **all_gammas0,
 				int multiple_input_gammas, int fromstart, char * print_cmb0,
 				char *print_forex0, char *print_foret, char * printall_cmb, char *printall_forex,
 				char *printall_foret, char *print_LL) {
@@ -54,7 +54,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	 * times: time steps for numerical integration.
 	 * tstart: overall time at which calculation of rates should start;
 	 * tts: list of time steps (tts[0] is starting time; tts[1...Ntts] are times at which rate is calculated).
-	 * tw: time window to be ignored after each mainshock;
 	 *
 	 * RS parameters and flags:
 	 * Asig, ta, r0;
@@ -70,8 +69,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	 * print_LL: prints out a file containing log(r_ek) for all events ek.
 	 *
 	 */
-
-	//fixme multiple magnitude bins should not be used when printing out stress field!!
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
@@ -251,61 +248,22 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		tnow=tts[0];
 
 		for(int t=1; t<=Ntts; t++) {
-			//Calculate seismicity evolution (skipping a time window after each mainshock):
-			//fixme: either remove this entirely, or change is as in CRSLogLikelihood.
+			//Calculate seismicity evolutionZzz:
 			tt0=tts[t-1];
 			tt1=tts[t];
 
-			while(current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
+			err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tt0, tt1,
+									 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
+									 Nm, gammas, crst.rate0, dumrate, 1);
 
-			while(current_main<Nm && eqkfm0[current_main].t<tt1) {
-				if (tnow<eqkfm0[current_main].t){
-					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
-											 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
-											 Nm, gammas, crst.rate0, dumrate, 1);
-
-					for(int i=1; i<=NgridT; i++) {
-						ev_x[i]+=ev_x_dum[i];
-					}
-
-					nev[t]=sum;
-					rev[t]=fin_rate;
-					nev_avg[t]+=(sum)/(1.0*Nsur);
-					rev_avg[t]+=(fin_rate)/(1.0*Nsur);
-
-					err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
-											   eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
-											   NgridT, NTScont, Nm, gammas, crst.rate0,
-											   dumrate, 1);
-
-					tnow=eqkfm0[current_main].t+tw;
-				}
-				else if(tnow<eqkfm0[current_main].t+tw) {
-					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
-											 Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, Nm, gammas,
-											 crst.rate0, dumrate, 1);
-
-					tnow=eqkfm0[current_main].t+tw;
-				}
-				current_main+=1;
-
-				if (err) break;
+			for(int i=1; i<=NgridT; i++) {
+				ev_x[i]+=ev_x_dum[i];
 			}
-			if(tnow<tt1) {
-				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, tt1, Asig, ta,
-										   0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
-										   Nm, gammas, crst.rate0, dumrate, 1);
 
-				for(int i=1; i<=NgridT; i++) {
-					ev_x[i]+=ev_x_dum[i];
-				}
-
-				nev[t]=sum;
-				rev[t]=fin_rate;
-				nev_avg[t]+=(sum)/(1.0*Nsur);
-				rev_avg[t]+=(fin_rate)/(1.0*Nsur);
-				tnow=tt1;
-			}
+			nev[t]=sum;
+			rev[t]=fin_rate;
+			nev_avg[t]+=(sum)/(1.0*Nsur);
+			rev_avg[t]+=(fin_rate)/(1.0*Nsur);
 
 			for(int i=1;i<=cat.Z;i++) {
 				if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
@@ -431,40 +389,12 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		if (print_LL || LL){
 			tt0=tts[0];
 			tt1=tts[Ntts];
-			current_main=0;
 			Ldum=0.0;
-			tnow=tt0;
-			int j0=1;
-			while (current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
-			while (current_main<Nm && eqkfm0[current_main].t<tt1){
-				if (tnow<eqkfm0[current_main].t){
-					while(j0<=cat.Z && cat.t[j0]<eqkfm0[current_main].t){
-						if(cat.t[j0]>=tnow) {
-							N+=1;
-							Ldum+=log(r0*rate[j0]);
-							if(procId == 0) {
-								if (print_LL) fprintf(fLLev,"%.10e \t %.5e\n",cat.t[j0], log(r0*rate[j0]));
-							}
-						}
-						j0+=1;
-					}
-//					for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<eqkfm0[current_main].t) {
-//						Ldum+=log(r0*rate[j]);
-//						if(procId == 0) {
-//							if (print_LL) fprintf(fLLev,"%.10e \t %.5e\n",cat.t[j], log(r0*rate[j]));
-//						}
-//					}
-//					j0+=N;
-				}
-				tnow=eqkfm0[current_main].t+tw;
-				current_main+=1;
-			}
-			if (tnow<tt1){
-				for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<tt1) {
-					Ldum+=log(r0*rate[j]);
-					if(procId == 0) {
-						if (print_LL) fprintf(fLLev,"%.10e \t%.5e \t%.5e \t%.5e \t %.5e\n",cat.t[j], cat.lat0[j], cat.lon0[j], cat.depths0[j], log(r0*rate[j]));
-					}
+
+			for(int j=1;j<=cat.Z;j++) if(cat.t[j]>=tt0 && cat.t[j]<tt1) {
+				Ldum+=log(r0*rate[j]);
+				if(procId == 0) {
+					if (print_LL) fprintf(fLLev,"%.10e \t%.5e \t%.5e \t%.5e \t %.5e\n",cat.t[j], cat.lat0[j], cat.lon0[j], cat.depths0[j], log(r0*rate[j]));
 				}
 			}
 
@@ -622,7 +552,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		rate[i]=0.0;
 	}
 
-	//#ifdef _CRS_MPI
+	#ifdef _CRS_MPI
 		// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
 		// parameters are the same ...
 		if(first_timein != 1) {
@@ -635,7 +565,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 								   refresh && nsur==1, which_recfault);
 			refresh = 0;
 		}
-	//#endif
+	#endif
 
 	//for (int ndt=1; ndt<=NDT; ndt++) net[ndt]=0.0;
 
