@@ -17,7 +17,33 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 					  struct tm reftime, double t0, double t1, double tfocmec,
 					  double mag, double ***focmec,	int **firstelements, int *NFM,
 					  int *NFM_timesel, struct eqkfm **eqkfm,int sel, int fm2) {
-// *firstelements should not be initialized (is done inside this function).
+/*
+ * Reads a set of focal mechanisms catalogs and fills in a focmec and a eqkfm structure.
+ *
+ * Input:
+ *  focmecfiles: list of focal mechanisms catalog files [0...nofiles-1]
+ *  nofiles: number of focal mechanisms catalogs
+ *  crst: structure containing domain information
+ *  border, dz: extra (horizontal/vertical) distance to be considered for spatial selection outside of grid in crst.
+ *  dDCFS:	min. value for which grid points should be selected for calculating stress changes from source events
+ *  reftime: IssueTime (times will be calcualted with reference to this time)
+ *  t0,t1: start and end time for selection of focal mechanisms for sources (eqkfm)
+ *  tfocmec: end time for selection of focal mechanisms for receiver faults (focmec). Start time is not bounded.
+ *  mag: minimum magnitude for selection of focal mechanisms for sources (eqkfm). no lower bound for focmec.
+ *  sel: flag indicating is spatial selection should be done.
+ *  fm2: flag indicating is both foc. planes should be selected (if fm2=0, only selects first plane).
+ *
+ * Output:
+ *  focmec:	array containing focal mechanisms [1...NC][1...NFM], where NC=no. of columns in file (set below).
+ *  first_elements:	indices of focmec elements which correspond to the first element of a new focal mechanism area (i.e. a new focal mechanisms catalog)
+ *  	NB firstelements should not be initialized (is done inside this function).
+ *  NFM: length of focmec
+ *  eqkfm: structure containing sources [0...NFM_timesel-1]
+ *  NFM_timesel: length of eqkfm
+ *
+ *  if focmec=NULL or eqkfm=NULL, they will be ignored.
+ *
+ */
 
 	double **focmectemp;
 	int nfmtemp, nfmtemp2, cl;
@@ -45,6 +71,7 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 		}
 	}
 
+
 	#ifdef _CRS_MPI
 		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
@@ -71,13 +98,8 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 						  (eqkfm)? &eqkfmtemp : NULL, sel, fm2);
 
 		if (focmec && !nfmtemp) {
-			if(procId == 0) {
-				if (verbose_level) printf("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
-				if (flog) {
-					fprintf(flog, "**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
-					fflush(flog);
-				}
-			}
+			print_screen("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
+			print_logfile("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
 		}
 
 		if (firstelements) (*firstelements)[n]=nfm_sofar+1;
@@ -105,13 +127,30 @@ int readfocmec(char *focmecfile, struct crust crst,
 			   double t0, double t1, double tfocmec, double mag,
 			   double ***focmec, int *NFM, int *NFM_timesel,
 			   struct eqkfm **eqkfm,int sel, int fm2) {
-// border, dz indicate extra volume to be considered for spatial selection.
-// magnitude selection only applies to sources, not to contents of focmec.
-// sel is flag to specify if spatial selection should be done.
-// fm2 is flag to specify if both mechanisms should be used.
-// focmec will contain all focal mechanisms in the relevant area, and time t<=tfocmec.  size [1...NC,1...NFM]
-// eqkfm will only contain those between time t0, t1 (i.e. to be used as sources). size [0...NFM_timesel]
-// if focmec=NULL or eqkfm=NULL, they will be ignored.
+
+/*
+ * Reads a set of focal mechanisms catalogs and fills in a focmec and a eqkfm structure.
+ *
+ * Input:
+ *  focmecfile: foc. mec. file
+ *  crst: structure containing domain information
+ *  border, dz: extra (horizontal/vertical) distance to be considered for spatial selection outside of grid in crst.
+ *  dDCFS:	min. value for which grid points should be selected for calculating stress changes from source events
+ *  reftime: IssueTime (times will be calcualted with reference to this time)
+ *  t0,t1: start and end time for selection of focal mechanisms for sources (eqkfm)
+ *  tfocmec: end time for selection of focal mechanisms for receiver faults (focmec). Start time is not bounded.
+ *  mag: minimum magnitude for selection of focal mechanisms for sources (eqkfm). no lower bound for focmec.
+ *  sel: flag indicating is spatial selection should be done.
+ *  fm2: flag indicating is both foc. planes should be selected (if fm2=0, only selects first plane).
+ *
+ * Output:
+ *  focmec:	array containing focal mechanisms [1...NC][1...NFM], where NC=no. of columns in file (set below).
+ *  NFM: length of focmec
+ *  eqkfm: structure containing sources [0...NFM_timesel-1]
+ *  NFM_timesel: length of eqkfm
+ *
+ *  if focmec=NULL or eqkfm=NULL, they will be ignored.
+ */
 
 	// [Fahad] Variables used for MPI
 	int fileError = 0;
@@ -121,27 +160,18 @@ int readfocmec(char *focmecfile, struct crust crst,
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	//check if file exists and can be opened.
-	if(procId == 0) {
-		if (flog) {
-			fprintf(flog, "\nReading focal mechanisms from file %s.\n", focmecfile);
-			if (fm2) fprintf(flog, "Using both focal mechanisms.\n");
-			else fprintf(flog, "Using only first focal mechanism.\n");
-			fflush (flog);
-		}
-	}
+	print_logfile("\nReading focal mechanisms from file %s.\n", focmecfile);
+	if (fm2) print_logfile("Using both focal mechanisms.\n");
+	else print_logfile("Using only first focal mechanism.\n");
 
 	FILE *fin;
 
+	//check if file exists and can be opened.
 	if(procId == 0) {
 		fin = fopen(focmecfile,"r");
 		if(fin == NULL) {
-			if (verbose_level>1) printf("** Error: could not open focal mechanisms catalog %s (readfocmec.c). **\n", focmecfile);
-			if (flog) {
-				fprintf(flog, "Error: could not open focal mechanisms catalog (readfocmec.c).\n");
-				fflush (flog);
-			}
-
+			print_screen("** Error: could not open focal mechanisms catalog %s (readfocmec.c). **\n", focmecfile);
+			print_logfile("Error: could not open focal mechanisms catalog (readfocmec.c).\n");
 			fileError = 1;
 		}
 		else {
@@ -177,13 +207,10 @@ int readfocmec(char *focmecfile, struct crust crst,
 			depthmin=fmin(0.0, crst.depmin-dz), \
 			depthmax=crst.depmax+dz;
 
-	int *taper_all;
-	taper_all=ivector(1,4);
-	for (int i=1; i<=4; i++) taper_all[i]=1;
-
 	if(procId == 0) {
 		NFMmax = (fm2==1)? 2*countline(focmecfile) : countline(focmecfile);
-		NC = countcol(focmecfile); //fixme risky (if extra stuff is written in header): could check more than 1 line.
+		NC = countcol_header(focmecfile,1);	//assume one header line (safer than counting columns in header, which may have unwanted spaces);
+		if (NC==-1) countcol(focmecfile); //previous function will return -1 is the file has a single line (and no header); in this case, count columns of this line.
 	}
 
 	#ifdef _CRS_MPI
@@ -199,9 +226,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 		return 1;
 	}
 
-	if(procId == 0) {
-		if (verbose_level>1) printf("Reading catalog of focal mechanisms...");
-	}
+	print_screen("Reading catalog of focal mechanisms...");
 
 	lat_col=3;
 	lon_col=4;
@@ -257,10 +282,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 			}
 		}
 
-		if (flog) {
-			fprintf(flog, "%d events selected as sample of focal planes, %d selected as sources.\n", NFM2, NFM2sources);
-			fflush(flog);
-		}
+		print_logfile("%d events selected as sample of focal planes, %d selected as sources.\n", NFM2, NFM2sources);
 	}
 
 	#ifdef _CRS_MPI
@@ -297,7 +319,9 @@ int readfocmec(char *focmecfile, struct crust crst,
 	if (NFM_timesel) *NFM_timesel= (eqkfm)? NFM2sources : 0;
 	if (eqkfm){
 		*eqkfm=eqkfm_array(0,NFM2sources-1);
-		for (int p0=0; p0<NFM2sources; p0++){		//todo parallel
+
+		#pragma omp parallel for private(p) reduction(+:err)
+		for (int p0=0; p0<NFM2sources; p0++){
 			p=selectedsources[p0+1];
 			(*eqkfm)[p0].t=times[p];
 			(*eqkfm)[p0].lat=focmec0[lat_col][p];
@@ -323,7 +347,6 @@ int readfocmec(char *focmecfile, struct crust crst,
 			(*eqkfm)[p0].np_di=1;
 			(*eqkfm)[p0].pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
 			(*eqkfm)[p0].pos_d=dvector(1,1);
-			(*eqkfm)[p0].taper=taper_all;
 			(*eqkfm)[p0].pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
 			(*eqkfm)[p0].pos_d[1]=0;
 			if ((*eqkfm)[p0].whichfm){
@@ -357,9 +380,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 	free_ivector(selectedsources,1,NFMmax);
 	free_dvector(times,1,NFMmax);
 
-	if(procId == 0) {
-		if (verbose_level>1) printf("done.\n");
-	}
+	print_screen("done.\n");
 
 	return (err!=0);
 

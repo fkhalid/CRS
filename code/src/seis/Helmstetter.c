@@ -22,7 +22,7 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 	double *rate, *rate_tot;
 
 	ind=ivector(1,Ngrid);
-	rate=dvector(1,Ngrid);
+	rate=dvector(0,Ngrid);
 	rate_tot=dvector(1,Ngrid);
 	for (int i=1; i<=Ngrid; i++) rate_tot[i]=0.0;
 
@@ -34,14 +34,15 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 			all_2ndnearestneighbours(xs, ys, N, NULL, &dist);
 			break;
 		default:
-			if (verbose_level>0) printf("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_screen("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_logfile("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
 			return NULL;
 	}
 
 	for (int eq=1; eq<=N; eq++){	//todo parallel.
 		if (!weights || (weights[eq]>0.0)){
 			d=fmax(dist[eq],err[eq]);
-			find_gridpoints_exact(ygrid, xgrid, NULL, dx, dy, 0.0, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0, 10000, &no_ind, ind, rate, 1, 0);
+			find_gridpoints_exact(ygrid, xgrid, NULL, dx, dy, 0.0, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0, 10000, &no_ind, &ind, &rate, 1, 0);
 			w= (weights)? weights[eq] : 1.0;
 			for (int i=1; i<=no_ind; i++) rate_tot[ind[i]]+=w*rate[i];
 		}
@@ -50,6 +51,7 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 	return rate_tot;
 }
 
+// todo [coverage] this block is never tested
 double *Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord){
 /* weights: flags used for declustering (0/1 for excluded/selected events). if NULL, all events are selected with weight=1.
  * ord= 1,2: indicates if first o fsecond nnearest neighbour should be used.
@@ -75,14 +77,15 @@ double *Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, 
 			all_2ndnearestneighbours(xs, ys, N, NULL, &dist);
 			break;
 		default:
-			if (verbose_level>0) printf("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_screen("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_logfile("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
 			return NULL;
 	}
 
 	for (int eq=1; eq<=N; eq++){	//todo parallel.
 		if (!weights || (weights[eq]>0.0)){
 			d=fmax(dist[eq],err[eq]);
-			find_gridpoints(ygrid, xgrid, NULL, NULL, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0001, 1, &no_ind, ind, rate, 1, 0);
+			find_gridpoints(ygrid, xgrid, NULL, NULL, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0001, 1, &no_ind, &ind, &rate, 1, 0);
 			w= (weights)? weights[eq] : 1.0;
 			for (int i=1; i<=no_ind; i++) rate_tot[ind[i]]+=w*rate[i];
 		}

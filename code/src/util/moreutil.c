@@ -13,6 +13,26 @@
 #define SWAP(a,b) temp=(a);(a)=(b);(b)=temp;
 #define NSTACK 50
 
+int closest_element(double *v, int N, double value, double toll){
+	/*
+	 * Returns index of the element in v closes to value; returns -1 if the difference is larger than toll.
+	 * v range [0...N-1]
+	 */
+
+	int i;
+	double mindist=1e30;
+
+	for (int n=0; n<N; n++){
+		if(fabs(v[n]-value)<mindist){
+			mindist=fabs(v[n]-value);
+			i=n;
+		}
+	}
+
+	if (mindist>toll) return -1;
+	else return i;
+}
+
 int *nth_index(int i, int Ndim, int *dim){
 //given linear index and N dimensions with indices [1...dim[0]], [1...dim[1]], ..., [1...dim[Ndim-1]], returns array with indices of each dimension.
 
@@ -140,40 +160,48 @@ void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 	return;
 }
 
-char ***tmatrix(long nrl, long nrh, long ncl, long nch, long length)
-/* allocate a char* matrix with subscript range m[nrl..nrh][ncl..nch] (similar to numerical recipes dmatrix)*/
+int **imatrix_firstlevel(long nrh)
+/* allocate a int matrix with subscript range m[0..nrh]; columns will be allocated later. */
 {
-	long nrow=nrh-nrl+1,ncol=nch-ncl+1;
-	char ***m;
+	int **m;
 
 	/* allocate pointers to rows */
-	m=(char ***) malloc((size_t)((nrow+NR_END)*sizeof(char**)));
-	if (!m) nrerror("allocation failure 1 in tmatrix()");
-	m += NR_END;
-	m -= nrl;
+	m=(int **) malloc((size_t)((nrh+1)*sizeof(int*)));
 
-	/* allocate rows and set pointers to them */
-	m[nrl]=(char **) malloc((size_t)((nrow*ncol+NR_END)*sizeof(char *)));
-	if (!m[nrl]) nrerror("allocation failure 2 in tmatrix()");
-	m[nrl] += NR_END;
-	m[nrl] -= ncl;
-
-
-	/* allocate rows and set pointers to them */
-	m[nrl][ncl]=(char *) malloc((size_t)((nrow*ncol*length+NR_END)*sizeof(char)));
-	if (!m[nrl][ncl]) nrerror("allocation failure 3 in tmatrix()");
-	m[nrl][ncl] += NR_END;
-
-	for(int j=ncl+1;j<=nch;j++) m[nrl][j]=m[nrl][j-1]+length;
-	for(int i=nrl+1;i<=nrh;i++) {
-		m[i]=m[i-1]+ncol;
-		m[i][ncl]=m[i-1][ncl]+ncol*length;
-		for(int j=ncl+1;j<=nch;j++) m[i][j]=m[i][j-1]+length;
-	}
+	/* set rows to NULL (so that later it will be recognized that memory should be allocated).*/
+	for (int i=0; i<=nrh; i++) m[i]=NULL;
 
 	/* return pointer to array of pointers to rows */
 	return m;
+}
 
+double **dmatrix_firstlevel(long nrh)
+/* allocate a double matrix with subscript range m[nrl..nrh];  columns will be allocated later. */
+{
+	double **m;
+
+	/* allocate pointers to rows */
+	m=(double **) malloc((size_t)((nrh+1)*sizeof(double*)));
+
+	/* set rows to NULL (so that later it will be recognized that memory should be allocated).*/
+	for (int i=0; i<=nrh; i++) m[i]=NULL;
+
+	/* return pointer to array of pointers to rows */
+	return m;
+}
+
+void free_imatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
+/* free an int matrix allocated by imatrix_firstlevel() */
+{
+	for (int i=nrl; i<=nrh; i++) if (m[i]) free_ivector(m[i], ncl, nch);
+	free((FREE_ARG) (m+nrl-NR_END));
+}
+
+void free_dmatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
+/* free an int matrix allocated by dmatrix_firstlevel() */
+{
+	for (int i=nrl; i<=nrh; i++) if (m[i]) free_dvector(m[i], ncl, nch);
+	free((FREE_ARG) (m+nrl-NR_END));
 }
 
 void free_tmatrix(char ***m, long nrl, long nrh, long ncl, long nch, long length)
@@ -200,7 +228,6 @@ double **mtimesm3(double **m1, double **m2, double ***m30){
 				m3[i][j]+=m1[i][k]*m2[k][j];
 			}
 		}
-
 	}
 
 	return m3;
@@ -243,16 +270,16 @@ double vdotv(double *v1, double *v2, int D){
 	return temp2;
 }
 
-void statistics(double *data, int L, double *mean, double *SD){
-	int j;
-	*mean=0.0;
-	double SD2=0.0;
-
-	for (j=1; j<=L; j++){*mean+=data[j]*(1.0/L);}
-	for (j=1; j<=L; j++){SD2+=pow((data[j]-*mean),2);}
-	*SD=pow(SD2*(1.0/L),0.5);
-	return;
-}
+//void statistics(double *data, int L, double *mean, double *SD){
+//	int j;
+//	*mean=0.0;
+//	double SD2=0.0;
+//
+//	for (j=1; j<=L; j++){*mean+=data[j]*(1.0/L);}
+//	for (j=1; j<=L; j++){SD2+=pow((data[j]-*mean),2);}
+//	*SD=pow(SD2*(1.0/L),0.5);
+//	return;
+//}
 
 void normv (double *v, int D){
 // normalizes vector v (so that the sum of its elements is 1).
@@ -310,6 +337,7 @@ double ***d3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh)
 	return t;
 }
 
+// todo [coverage] this block is never tested
 void free_d3tensor(double ***t, long nrl, long nrh, long ncl, long nch,
 	long ndl, long ndh)
 /* free a double f3tensor allocated by f3tensor() */
@@ -319,66 +347,66 @@ void free_d3tensor(double ***t, long nrl, long nrh, long ncl, long nch,
 	free((FREE_ARG) (t+nrl-NR_END));
 }
 
-void intersect_lists(int *l1, int *l2, int **l3, int **pts_l1, int **pts_l2, int N1, int N2, int *N3){
-//NB assumes lists are sorted.
-	int p1=1, p2=1, n3=0;
-	int *ltemp, *ltemp_l1, *ltemp_l2;
-
-	if (N1==0 || N2==0) {
-		(*l3)= (*pts_l1) = (*pts_l2) = (int *) 0;
-		*N3=0;
-		return;
-	}
-
-	if (l1==l2){
-		*N3=N1;
-		*l3=l1;
-		if (pts_l1 != (int **) 0) {
-			*pts_l1= ivector(1,*N3);
-			for (int j=1; j<=*N3; j++) (*pts_l1)[j]=j;
-		}
-		if (pts_l2 != (int **) 0) {
-			if (pts_l1 != (int **) 0) *pts_l2=*pts_l1;
-			else {
-				*pts_l2= ivector(1,*N3);
-				for (int j=1; j<=*N3; j++) (*pts_l2)[j]=j;
-			}
-		}
-		return;
-	}
-	ltemp= (N1<=N2)? ivector(1,N1) : ivector(1,N2);
-	ltemp_l1= (N1<=N2)? ivector(1,N1) : ivector(1,N2);
-	ltemp_l2= (N1<=N2)? ivector(1,N1) : ivector(1,N2);
-
-	while (p2<=N2){
-		while (p1<N1 && l1[p1]<l2[p2]) p1++;
-			if (l1[p1]==l2[p2]) {
-				n3++;
-				ltemp[n3]=l1[p1];
-				ltemp_l1[n3]=p1;
-				ltemp_l2[n3]=p2;
-				p2++;
-			}
-			else p2++;
-			if (p1==N1) break;
-	}
-
-	*N3=n3;
-	*l3= ivector(1,n3);
-	if (pts_l1 != (int **) 0) *pts_l1= ivector(1,n3);
-	if (pts_l2 != (int **) 0) *pts_l2= ivector(1,n3);
-	 for (int i=1; i<=n3; i++) {
-		 (*l3)[i]=ltemp[i];
-		 if (pts_l1 != (int **) 0) (*pts_l1)[i]=ltemp_l1[i];
-		 if (pts_l2 != (int **) 0) (*pts_l2)[i]=ltemp_l2[i];
-	 }
-
-	free_ivector(ltemp,1,fmin(N1,N2));
-	free_ivector(ltemp_l1,1,fmin(N1,N2));
-	free_ivector(ltemp_l2,1,fmin(N1,N2));
-
-	return;
-}
+//void intersect_lists(int *l1, int *l2, int **l3, int **pts_l1, int **pts_l2, int N1, int N2, int *N3){
+////NB assumes lists are sorted.
+//	int p1=1, p2=1, n3=0;
+//	int *ltemp, *ltemp_l1, *ltemp_l2;
+//
+//	if (N1==0 || N2==0) {
+//		(*l3)= (*pts_l1) = (*pts_l2) = (int *) 0;
+//		*N3=0;
+//		return;
+//	}
+//
+//	if (l1==l2){
+//		*N3=N1;
+//		*l3=l1;
+//		if (pts_l1 != (int **) 0) {
+//			*pts_l1= ivector(1,*N3);
+//			for (int j=1; j<=*N3; j++) (*pts_l1)[j]=j;
+//		}
+//		if (pts_l2 != (int **) 0) {
+//			if (pts_l1 != (int **) 0) *pts_l2=*pts_l1;
+//			else {
+//				*pts_l2= ivector(1,*N3);
+//				for (int j=1; j<=*N3; j++) (*pts_l2)[j]=j;
+//			}
+//		}
+//		return;
+//	}
+//	ltemp= (N1<=N2)? ivector(1,N1) : ivector(1,N2);
+//	ltemp_l1= (N1<=N2)? ivector(1,N1) : ivector(1,N2);
+//	ltemp_l2= (N1<=N2)? ivector(1,N1) : ivector(1,N2);
+//
+//	while (p2<=N2){
+//		while (p1<N1 && l1[p1]<l2[p2]) p1++;
+//			if (l1[p1]==l2[p2]) {
+//				n3++;
+//				ltemp[n3]=l1[p1];
+//				ltemp_l1[n3]=p1;
+//				ltemp_l2[n3]=p2;
+//				p2++;
+//			}
+//			else p2++;
+//			if (p1==N1) break;
+//	}
+//
+//	*N3=n3;
+//	*l3= ivector(1,n3);
+//	if (pts_l1 != (int **) 0) *pts_l1= ivector(1,n3);
+//	if (pts_l2 != (int **) 0) *pts_l2= ivector(1,n3);
+//	 for (int i=1; i<=n3; i++) {
+//		 (*l3)[i]=ltemp[i];
+//		 if (pts_l1 != (int **) 0) (*pts_l1)[i]=ltemp_l1[i];
+//		 if (pts_l2 != (int **) 0) (*pts_l2)[i]=ltemp_l2[i];
+//	 }
+//
+//	free_ivector(ltemp,1,fmin(N1,N2));
+//	free_ivector(ltemp_l1,1,fmin(N1,N2));
+//	free_ivector(ltemp_l2,1,fmin(N1,N2));
+//
+//	return;
+//}
 
 void nearest_neighbours(int NP, int D1, int D2, int D3, int **nn){
 // points change along D1, then along D2, then along D3 (DX is no of points in each dimension).
@@ -441,17 +469,17 @@ void interp_nn(int NP, int D1, int D2, int D3, double *values, double **allvalue
 	if (nn0== (int **)0) free_imatrix(nn,1,NP,1,6);
 }
 
-double *** duplicate_d3tensor(double ***S, long nrl, long nrh, long ncl, long nch, long ndl, long ndh){
-	double *** Snew=d3tensor(nrl, nrh, ncl, nch, ndl, ndh);
-	for (int r=nrl; r<=nrh; r++){
-		for (int c=ncl; c<=nch; c++){
-			for (int d=ndl; d<=ndh; d++){
-				Snew[r][c][d]=S[r][c][d];
-			}
-		}
-	}
-	return Snew;
-}
+//double *** duplicate_d3tensor(double ***S, long nrl, long nrh, long ncl, long nch, long ndl, long ndh){
+//	double *** Snew=d3tensor(nrl, nrh, ncl, nch, ndl, ndh);
+//	for (int r=nrl; r<=nrh; r++){
+//		for (int c=ncl; c<=nch; c++){
+//			for (int d=ndl; d<=ndh; d++){
+//				Snew[r][c][d]=S[r][c][d];
+//			}
+//		}
+//	}
+//	return Snew;
+//}
 
 double * duplicate_dvector(double *v, long nrl, long nrh){
 	double * vnew=dvector(nrl, nrh);

@@ -1,0 +1,10 @@
+OutputForecastFile=output_testcases/testC
+Logfile=output_testcases/testC.log
+InputModelParametersFile=input_testcases/testM/temp_par.txt
+IssueDate=2010-09-04T17:15:24Z
+ForecastStartDate=2010-09-02T17:15:24Z
+ForecastEndDate=2010-10-02T17:15:24Z
+InputCatalogFile=input_testcases/catalog_darf.dat
+InputListSlipModels=input_testcases/testL/slipmodelslist1.dat
+RandomSeedValue=-37284630
+InversionStartDate=2004-09-28T17:15:24Z

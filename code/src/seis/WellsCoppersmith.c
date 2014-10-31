@@ -67,14 +67,8 @@ int WellsCoppersmith(double M, double rake, double *L, double *W, double *S) {
 				b_RA=0.9;	sd_b_RA=0.03;
 			}
 			else {
-				if(procId == 0) {
-					if (verbose_level>0) printf("Illegal value of rake in function WellsComppersmith!\n");
-					if (flog){
-						fprintf(flog, "Illegal value of rake in function WellsComppersmith!\n");
-						fflush(flog);
-					}
-				}
-
+				print_screen("Illegal value of rake in function WellsComppersmith!\n");
+				print_logfile("Illegal value of rake in function WellsComppersmith!\n");
 				return(1);
 			}
 		}

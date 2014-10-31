@@ -13,8 +13,8 @@
 // ----- [Fahad] Added for MPI -----
 //#define _CRS_MPI						// FIXME [Fahad]: Should be set depending on whether or not mpicc is used ...
 #ifdef _CRS_MPI
-	#define BCAST_FLAGS_SIZE 14				// No. of scalar variables in 'struct flags'
-	#define SIZE_BCAST_MODEL_PARAMETERS 38	// No. of scalar variables in 'struct BCast_Model_Parameters'
+	#define BCAST_FLAGS_SIZE 8				// No. of scalar variables in 'struct flags'
+	#define SIZE_BCAST_MODEL_PARAMETERS 31	// No. of scalar variables in 'struct BCast_Model_Parameters'
 #endif
 // ---------------------------------
 
@@ -35,28 +35,20 @@
 #define SEC2DAY	(1.0/(24.0*3600.0))
 #define T2SEC(x) (x/(double)CLOCKS_PER_SEC)
 #define tol0 1e-10	//tolerance for double comparison.
+#define	MIN(a,b) (((a)<(b))?(a):(b))
+#define	MAX(a,b) (((a)>(b))?(a):(b))
+
+//macros defining functions to be called to output messages:
+#define print_logfile(...) print_logfile_fun(__func__, __VA_ARGS__)
+#define print_screen(...) print_screen_fun(__func__, __VA_ARGS__)
+#define error_quit(...) error_quit_fun(__func__, __VA_ARGS__)
 
 #include <stdio.h>
 
-#define check_if_snapshot_filename "snapshot.info"	//file which exists only if at least one forecast has been already been produced, and contains time to which other files gammas and LL) refer.
-#define LLsnapshot_filename "LL.dat"	//file which exists only if at least one forecast has been already been produced, and contains time to which other files gammas and LL) refer.
-#define gammas_filename "gammas.dat"	//file which exists only if at least one forecast has been already been produced, and contains time to which other files gammas and LL) refer.
-#define old_LLfolder "output/oldLL"
 #define logfolder "output/log/"
 
-/*	verbose_level: only global variable. settings:
- *
- * 	0: output nothing.
- *  1: output to screen: main operations and errors which lead to abort.
- *  2: output to screen: also minor errors and warnings. (also writes log file).
- *  3: output modified slip models, stress fields etc. (produces several files!)
- *  4: output even more files (e.g. Fourier values etc...)
- *
- * */	//todo implement these!!
-
 extern char cmb_format[120];
-extern int verbose_level;
-extern int gridPMax;	//todo global variables are bad...
+extern int extra_verbose, quiet;	//control level of verbosity (screen = log file)
 extern double DCFS_cap;
 extern FILE *flog;
 
@@ -65,21 +57,15 @@ extern FILE *flog;
 //		 be updated as well.
 struct flags{
 	int err_recfault;
-	int err_slipmodel;
-	int err_afterslipmodel;
 	int err_gridpoints;
 	int OOPs;
 	//afterslip:
 	int afterslip;
 	int splines;
 	//control way aftershocks are treated:
-	int aftershocks;
-	int only_aftershocks_withfm;
-	int full_field;			  //if (2): full field for all events.  (1) use available foc mec. (0) use isotropic field for all.
-	int aftershocks_fixedmec; //controls is fixed foc. mec. should be used for events w/o foc mec, when fullfield=2 (otherwise, will draw a random one).
-	int aftershocks_mode;
-	//these can change with each iteration:
-	int new_slipmodel;
+	int sources_all_iso;
+	int sources_without_focmec;
+	//indicates if all foc mec should be sampled sequentially (instead of drawing them randomly).
 	int sample_all;
 };
 
@@ -97,6 +83,7 @@ struct Coeff_LinkList{
 	int which_main;		// index of pscmp DCFS to which earthquake refer;
 	int NP;				// tot. no. of patches (sum of no. of patches of individual faults);
 	int NgridT;			// no. of grid cells.
+	int hasafterslip;	// flag indicating if element should als be used for afterslip.
 	float ***Coeffs_st, ***Coeffs_dip;	// Coefficient for strike slip, dip slip displacements.
 	struct Coeff_LinkList *next;	// pointer to next element.
 };
@@ -216,6 +203,7 @@ struct slipmodels_list{
 	double *mmain;	//magnitudes.
 	double *disc;
 	char **slipmodels;
+	char cmb_format[120];
 };
 
 //structure describing a single fault earthquake (arrays can be used to describe multiple fault events).
@@ -226,7 +214,6 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	int whichfm;		//index of foc. mec. to use (0=both;1;2).
 	int nsel;			//no. of cell points affected by this event.
 	int noise;			// flag (if set, tot_slip refers to model from which noise was generated):
-	int *taper;		// taper [1...4]=top,bottom,right,left.
 	int cuts_surf;	// boolean indicating if slip model should be assumed to cut through the surface.
 	double t;		//time of event.
 	double lat;		//0_lat in Wang input file;
@@ -267,16 +254,12 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 //		   rather than sending each variable separately.
 #ifdef _CRS_MPI
 	struct BCast_Model_Parameters {
-		int N_min_events;
 		int fixr;
 		int fixAsig;
 		int fixta;
 		int nAsig0;
 		int nta0;
 		int Nsur;
-		int Nslipmod;
-		int use_bg_rate;
-		int gridPMax;
 		int LLinversion;
 		int forecast;
 		double r0;
@@ -286,15 +269,12 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 		double Asig_max;
 		double ta_min;
 		double ta_max;
-		double tstartLL;
-		double extra_time;
 		double tw;
 		double fore_dt;
-		double t_back;
-		double Hurst;
-		double Mc_source;
 		double Mc;
 		double Mag_main;
+		double Mc_source;
+		double dCFS;
 		double DCFS_cap;
 		double dt;
 		double dM;
@@ -305,6 +285,7 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 		double gridresxy;
 		double gridresz;
 		double smoothing;
+
 	};
 #endif // _CRS_MPI
 

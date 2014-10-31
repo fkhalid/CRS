@@ -5,8 +5,15 @@
  *      Author: camcat
  */
 
-
 #include "fit_splines.h"
+
+#include <math.h>
+
+#include "../defines.h"
+#include "error.h"
+#include "interp_quad.h"
+#include "nr.h"
+#include "nrutil.h"
 
 void fit_splines(double *t, double *t2, int TS, int TS2, int N, double **slip_before, double *slip_before_err, double ***slip_after,
 		int early_inter_mode, long *seed){
@@ -50,6 +57,7 @@ for (int tt=1; tt<=TS2; tt++) t2f[tt]=(float) t2[tt];
 
 //calculate largest value at each point in time (error is set to be a fraction of this: e(t)=f*max_slip(t)).
 
+// todo [coverage] this block is never tested
 if (mc==1){
 	for (int tt=1; tt<=TS; tt++){
 		et[tt]=0.0;
@@ -62,25 +70,6 @@ else{
 	for(int h=1; h<=N; h++) e[h]=0.0;	//no errors.
 	NIT=2;
 }
-
-//-----find first derivative for each point at x=0 (slope of cubic that fits first 4 points).
-
-//for (int h=1; h<=N; h++){
-//
-//	for (int y1=1;y1<=n;y1++){
-//		b[y1][h]=0;
-//		for (int y2=n;y2>=1;y2--){
-//			a[y1][n-y2+1]=pow(t[y1],y2-1);
-//			b[y1][h]=s[h][y1];
-////			printf("%f\t",a[y1][n-y2+1]);
-//		}
-////	printf("\n");
-//
-//	}
-//
-//	gaussj(a, n, b, 1);
-//
-//}
 
 //-----find first derivative for each point at x=0 (slope of quadratic that fits first 3 points).
 
@@ -126,6 +115,7 @@ for (int h=1; h<=N; h++){
 					if (no_oscillations){
 						//if (t0>2 && sp[TS+1-t0]<sp[TS+2-t0] && mc==1) sp[TS+1-t0]=sp[TS+2-t0];
 						//if (t0==2 && sp[TS+1-t0]<2*sp[TS+2-t0] && mc==1){
+						// todo [coverage] this block is never tested
 						if (t0>2 && sign*sp[TS+1-t0]>sign*sp[TS+2-t0] && mc==1){	//todo check this works with both signs of sp.
 							if (iter % 2 == 0) sp[TS+1-t0]=sp[TS+2-t0];
 							else sp[TS+2-t0]=sp[TS+1-t0];
@@ -133,6 +123,7 @@ for (int h=1; h<=N; h++){
 						if (sign*sp[TS+1-t0]<0  && mc==1) sp[TS+1-t0]=0;
 					}
 				}
+				// todo [coverage] this block is never tested
 				else {
 					sp[t0]=(float)(sp[t0-1]+slip_before[h][t0]+dum*e[h]*et[t0]);
 					if (sp[t0]>sp[t0-1]  && mc==1) ok=0;
@@ -148,11 +139,15 @@ for (int h=1; h<=N; h++){
 		double *sp_values;
 		while (early_fit<TS2 && t2[early_fit]<t[1]) early_fit++;
 		early_fit--;
-		if (early_fit==TS2) printf("* Warning: all time steps are earlier than first input step, spline information not used*\n");
+		if (early_fit==TS2) {
+			print_screen("* Warning: all time steps are earlier than first input step, spline information not used*\n");
+			print_logfile("* Warning: all time steps are earlier than first input step, spline information not used*\n");
+		}
 		sp_values=dvector(1,early_fit);
 
 		switch (early_inter_mode){
 			case 1:
+				// todo [coverage] this block is never tested
 				for (int ts=1;ts<=early_fit; ts++) (*slip_after)[h][ts]+=(sp[1]*(t2[ts]/t[1])*(1.0/NIT));
 				break;
 			case 2:
@@ -172,7 +167,7 @@ for (int h=1; h<=N; h++){
 	}
 }
 
-
+// todo [coverage] this block is never tested
 if (normalize){
 	int t0=TS, t1=0;
 	double final_cumslip0=0.0, final_cumslip1=0.0, dslip;
@@ -180,7 +175,6 @@ if (normalize){
 	while (t0>0 && t[t0]>t2[TS2]) t0--;	//find last input time step within output time span.
 	for (int n=1; n<=N; n++) final_cumslip0+= slip_before[n][t0];
 	while(t1<TS2 && t2[t1+1]<t[t0]) t1++; //find last input time step before selected output time.
-	//if (t0==0 || (t1==TS2 && t2[t1+1]!=t[t0])) printf("* Warning: input starts after end of output time span -> splines were not normalized *\n"); return;
 	for (int h=1; h<=N; h++) {
 		if (t2[t1+1]==t[t0]) {
 			final_cumslip1+= (*slip_after)[h][t1+1];

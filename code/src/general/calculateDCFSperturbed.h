@@ -22,11 +22,11 @@
 #include "mem_mgmt.h"
 
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,
-							struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flag,
+							struct eqkfm *eqkfm0, struct flags flag,
 							double *tevol, double *times, int Nmain, struct crust crst,
-							struct Coeff_LinkList *AllCoeff, int NTScont, int NTSdisc,
+							struct Coeff_LinkList *AllCoeff, int NTScont,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
-							int *fm_number, double tdata0, double tdata1, double Hurst,
+							double tdata0, double tdata1,
 							int refresh, int which_recfault);
 
 void smoothen_DCFS(struct pscmp DCFS, int, int, int, long *seed, int, int **);

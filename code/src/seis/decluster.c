@@ -7,61 +7,61 @@
 
 #include "decluster.h"
 
-int *decluster_catalog_rescalegrid(struct catalog cat, struct crust crst, double Mmain, double **time_missing, int d3){
-/* For each grid point, calculates ratio of (tot. time - time revmoved)/(total time), which ca be re used to rescale the rate;
- * but it's better to weight 	remaining earthquakes instead (due to smoothing). Function: decluster_catalog does this.
- * Returns array containing flag (1/0) for selected/excluded events.
- * time_missing is a pointer to a 1d array which will contain the no. of days missing from each grid point (i.i. no. of days inside time window).
- * If time_missing ==NULL, ignored; if *time_missing==NULL, memory will be allocated.
- * d3: flag indicating if 3d distance (instead of horizontal distance) should be used.
- * events must be sorted chronologically.
- */
-	double D, T, d, *tnow, dt;
-	int j;
-	int *sel=ivector(1,cat.Z);
-	for (int i=1; i<=cat.Z; i++) sel[i]=1;
-	int NP= (d3)? crst.N_allP : crst.nLat*crst.nLon;
-
-	if (time_missing){
-		tnow=dvector(1,NP);
-		if (!(*time_missing)) *time_missing=dvector(1,NP);
-		for (int p=1; p<=NP; p++) {
-			tnow[p]=cat.tstart;
-			(*time_missing)[p]= 0.0;
-		}
-	}
-
-	for (int i=1; i<=cat.Z; i++){
-		if (cat.mag[i]>=Mmain){
-			KG74(cat.mag[i], &D, &T);
-			j=i;
-			//decluster catalog:
-			while(j<=cat.Z && (cat.t[j]-cat.t[i])<=T){
-				d= pow(cat.x0[j]-cat.x0[i],2)+pow(cat.y0[j]-cat.y0[i],2);
-				if (d3) d+=pow(cat.depths0[j]-cat.depths0[i],2);
-				d=sqrt(d);
-				if (d<=D) sel[j]=0;
-				j++;
-			}
-			//calculate period missing for each grid point:
-			if (time_missing){
-				for (int p=1; p<=NP; p++){
-					d= pow(crst.x[p]-cat.x0[i],2)+pow(crst.y[p]-cat.y0[i],2);
-					if (d3) d+=pow(crst.depth[p]-cat.depths0[i],2);
-					d=sqrt(d);
-					if (d<=D) {
-						dt=fmin(cat.tend, cat.t[i]+T)-fmax(cat.t[i], tnow[p]);
-						if (dt>0) (*time_missing)[p]+= dt;
-						tnow[p]=fmax(fmin(cat.tend, cat.t[i]+T),tnow[p]);
-					}
-				}
-			}
-		}
-	}
-
-	if (time_missing) free_dvector(tnow, 1, NP);
-	return sel;
-}
+//int *decluster_catalog_rescalegrid(struct catalog cat, struct crust crst, double Mmain, double **time_missing, int d3){
+///* For each grid point, calculates ratio of (tot. time - time revmoved)/(total time), which ca be re used to rescale the rate;
+// * but it's better to weight 	remaining earthquakes instead (due to smoothing). Function: decluster_catalog does this.
+// * Returns array containing flag (1/0) for selected/excluded events.
+// * time_missing is a pointer to a 1d array which will contain the no. of days missing from each grid point (i.i. no. of days inside time window).
+// * If time_missing ==NULL, ignored; if *time_missing==NULL, memory will be allocated.
+// * d3: flag indicating if 3d distance (instead of horizontal distance) should be used.
+// * events must be sorted chronologically.
+// */
+//	double D, T, d, *tnow, dt;
+//	int j;
+//	int *sel=ivector(1,cat.Z);
+//	for (int i=1; i<=cat.Z; i++) sel[i]=1;
+//	int NP= (d3)? crst.N_allP : crst.nLat*crst.nLon;
+//
+//	if (time_missing){
+//		tnow=dvector(1,NP);
+//		if (!(*time_missing)) *time_missing=dvector(1,NP);
+//		for (int p=1; p<=NP; p++) {
+//			tnow[p]=cat.tstart;
+//			(*time_missing)[p]= 0.0;
+//		}
+//	}
+//
+//	for (int i=1; i<=cat.Z; i++){
+//		if (cat.mag[i]>=Mmain){
+//			KG74(cat.mag[i], &D, &T);
+//			j=i;
+//			//decluster catalog:
+//			while(j<=cat.Z && (cat.t[j]-cat.t[i])<=T){
+//				d= pow(cat.x0[j]-cat.x0[i],2)+pow(cat.y0[j]-cat.y0[i],2);
+//				if (d3) d+=pow(cat.depths0[j]-cat.depths0[i],2);
+//				d=sqrt(d);
+//				if (d<=D) sel[j]=0;
+//				j++;
+//			}
+//			//calculate period missing for each grid point:
+//			if (time_missing){
+//				for (int p=1; p<=NP; p++){
+//					d= pow(crst.x[p]-cat.x0[i],2)+pow(crst.y[p]-cat.y0[i],2);
+//					if (d3) d+=pow(crst.depth[p]-cat.depths0[i],2);
+//					d=sqrt(d);
+//					if (d<=D) {
+//						dt=fmin(cat.tend, cat.t[i]+T)-fmax(cat.t[i], tnow[p]);
+//						if (dt>0) (*time_missing)[p]+= dt;
+//						tnow[p]=fmax(fmin(cat.tend, cat.t[i]+T),tnow[p]);
+//					}
+//				}
+//			}
+//		}
+//	}
+//
+//	if (time_missing) free_dvector(tnow, 1, NP);
+//	return sel;
+//}
 
 
 int *decluster_catalog(struct catalog cat, double Mmain, double **weights, int d3){

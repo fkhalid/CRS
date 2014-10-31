@@ -1,14 +1,11 @@
 OutputForecastFile=output_testcases/testA
 Logfile=output_testcases/testA.log
 InputModelParametersFile=input_testcases/testA/temp_par.txt
-IssueDate=2004-09-30T17:15:24Z
 ForecastStartDate=2004-09-30T17:15:24Z
 ForecastEndDate=2004-10-15T17:15:24Z
+IssueDate=2004-09-30T17:15:24Z
 InputCatalogFile=input_testcases/catalog.dat
-CmbFormat=pscmp
-InputCoulombFile=input_testcases/coulomb.inp
 InputListSlipModels=input_testcases/slipmodelslist.dat
-InputCatalogFocMecFile=input_testcases/focmecfile.dat
 ForecastTemplate=input_testcases/template.dat
 RandomSeedValue=-37284630
-ExtendedOutput=1;
+InversionStartDate=2004-09-28T17:15:24Z

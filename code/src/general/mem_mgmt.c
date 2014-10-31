@@ -10,28 +10,36 @@
 
 #include "mem_mgmt.h"
 
-void shift_cat(struct catalog *cat, int N){
-	/*shifts all vectors in struct cat so than element N becomes the first one.
-	 * NB: shift back (with N->-N+2) before deallocating memory to avoid seg fault.
-	 */
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-	(*cat).t+=N-1;
-	(*cat).mag+=N-1;
-	(*cat).lat0+=N-1;
-	(*cat).lon0+=N-1;
-	(*cat).x0+=N-1;
-	(*cat).y0+=N-1;
-	(*cat).depths0+=N-1;
-	(*cat).err+=N-1;
-	(*cat).verr+=N-1;
-	(*cat).ngrid+=N-1;
-	(*cat).ngridpoints+=N-1;
-	(*cat).weights+=N-1;
+#include "../defines.h"
+#include "../util/moreutil.h"
+#include "../util/nrutil.h"
 
-	(*cat).Z-=N-1;
-
-	return;
-}
+//void shift_cat(struct catalog *cat, int N){
+//	/*shifts all vectors in struct cat so than element N becomes the first one.
+//	 * NB: shift back (with N->-N+2) before deallocating memory to avoid seg fault.
+//	 */
+//
+//	(*cat).t+=N-1;
+//	(*cat).mag+=N-1;
+//	(*cat).lat0+=N-1;
+//	(*cat).lon0+=N-1;
+//	(*cat).x0+=N-1;
+//	(*cat).y0+=N-1;
+//	(*cat).depths0+=N-1;
+//	(*cat).err+=N-1;
+//	(*cat).verr+=N-1;
+//	(*cat).ngrid+=N-1;
+//	(*cat).ngridpoints+=N-1;
+//	(*cat).weights+=N-1;
+//
+//	(*cat).Z-=N-1;
+//
+//	return;
+//}
 
 
 void init_crst(struct crust *crst){
@@ -45,9 +53,9 @@ void init_crst(struct crust *crst){
 	(*crst).lon_out=NULL;
 	(*crst).depth_out=NULL;
 	(*crst).dAgrid=NULL;
-	(*crst).str0=ivector(0,0);
-	(*crst).dip0=ivector(0,0);
-	(*crst).rake0=ivector(0,0);
+	(*crst).str0=dvector(0,0);
+	(*crst).dip0=dvector(0,0);
+	(*crst).rake0=dvector(0,0);
 	(*crst).x=NULL;
 	(*crst).y=NULL;
 	(*crst).rate0=NULL;
@@ -60,7 +68,7 @@ void init_crst(struct crust *crst){
 	return;
 }
 
-void init_cat1(struct catalog *cat, int Zsel, int gridMax){
+void init_cat1(struct catalog *cat, int Zsel){
 
 	(*cat).Z=Zsel;
 	(*cat).t = dvector(1, Zsel);
@@ -73,12 +81,11 @@ void init_cat1(struct catalog *cat, int Zsel, int gridMax){
 	(*cat).err = dvector(1, Zsel);
 	(*cat).verr = dvector(1, Zsel);
 	(*cat).ngrid = ivector(1, Zsel);
-	(*cat).ngridpoints=imatrix(1,Zsel,1,gridMax);
-	(*cat).weights=dmatrix(1,Zsel,0,gridMax);		// weights[0] indicates the fraction of the Gaussian ellipsoid outside the grid.
+	//just allocate first level since subarrays may have different length (and will be initialized later).
+	(*cat).ngridpoints=imatrix_firstlevel(Zsel);
+	(*cat).weights=dmatrix_firstlevel(Zsel);		// weights[0] indicates the fraction of the Gaussian ellipsoid outside the grid.
 	(*cat).b=1.0;
-//	(*cat).xgrid=dvector(1,N);
-//	(*cat).ygrid=dvector(1,N);
-//	(*cat).dAgrid=dvector(1,N);
+
 }
 
 //void init_cat2(struct catalog *cat, int N, struct crust crst){
@@ -94,6 +101,7 @@ void init_cat1(struct catalog *cat, int Zsel, int gridMax){
 //	(*cat).layers=crst.depth;
 //}
 
+// todo [coverage] this block is never tested
 struct set_of_models *set_of_models_array(long n1, long n2){
 /* allocate memory to array of eqkfm. */
 	struct set_of_models *v;
@@ -117,7 +125,6 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 		v[i].slip_dip= NULL;
 		v[i].pos_s= NULL;
 		v[i].pos_d= NULL;
-		v[i].taper=NULL;
 		v[i].selpoints= NULL;
 		v[i].distance= NULL;
 		v[i].is_slipmodel=0;
@@ -205,11 +212,13 @@ struct pscmp *pscmp_arrayinit(struct crust v0, long n1, long n2){
 		return v-n1+NR_END;;
 }
 
+// todo [coverage] this block is never tested
 void free_eqkfmarray(struct eqkfm *v, long n1, long n2){
 /* free a eqkfm vector allocated with eqkfm_array() */
 	free((FREE_ARG) (v+n1-NR_END));
 }
 
+// todo [coverage] this block is never tested
 void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 
 	for (int f=n1; f<=n2; f++){
@@ -218,11 +227,11 @@ void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 		if (v[f].pos_d) free(v[f].pos_d);
 		if (v[f].slip_str) free(v[f].slip_str);
 		if (v[f].slip_dip) free(v[f].slip_dip);
-		if (v[f].taper) free(v[f].taper);
 	}
 	//free((FREE_ARG) (v+n1-NR_END));
 }
 
+// todo [coverage] this block is never tested
 void freepart_pscmparray(struct pscmp *v, long n1, long n2){
 //only frees stuff which wasn't linked to other structure (see pscmp_arrayinit).
 	for (int i=n1; i<=n2; i++){
@@ -242,6 +251,7 @@ void freepart_pscmparray(struct pscmp *v, long n1, long n2){
 	free((FREE_ARG) (v+n1-NR_END));
 }
 
+// todo [coverage] this block is never tested
 void freefull_pscmparray(struct pscmp *v, long n1, long n2){
 
 	for (int i=n1; i<=n2; i++){
@@ -278,8 +288,8 @@ void free_cat(struct catalog cat){
 	free_dvector(cat.y0,1, 0);
 	free_dvector(cat.depths0,1, 0);
 	free_ivector(cat.ngrid,1, 0);
-	free_imatrix(cat.ngridpoints,1,0,1,0);
-	free_dmatrix(cat.weights,1,0,0,0);
+	free_imatrix_firstlevel(cat.ngridpoints,1,cat.Z,1,0);
+	free_dmatrix_firstlevel(cat.weights,1,cat.Z, 1,0);
 //	free_dvector(cat.xgrid,1,0);
 //	free_dvector(cat.ygrid,1,0);
 //	free_dvector(cat.dAgrid,1,0);

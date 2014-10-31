@@ -8,10 +8,8 @@
 #ifndef ERROR_H_
 #define ERROR_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include "../defines.h"
-
-void error_quit(char * message);
+void error_quit_fun(char *fun, const char * format, ...);
+void print_logfile_fun(char *fun, const char * format, ...);
+void print_screen_fun(char *fun, const char * format, ...);
 
 #endif /* ERROR_H_ */

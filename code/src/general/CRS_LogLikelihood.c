@@ -11,13 +11,13 @@
 	#include "mpi.h"
 #endif
 
-int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
-				struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flags,
+int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
+				struct eqkfm *eqkfm0, struct flags flags,
 				double *tevol, struct crust crst, struct Coeff_LinkList *AllCoeff,
-				int NTScont, int NTSdisc, int Nm, int NgridT, double **focmec, int *fmzonelim,
+				int NTScont, int Nm, int NgridT, double **focmec, int *fmzonelim,
 				int NFM, long *seed, struct catalog cat, double *times, double tstart, double *tts,
-				int Ntts, double tw, double Asig, double ta, double r0, double **all_gammas0,
-				int multiple_input_gammas, int fromstart, double Hurst, char * print_cmb0,
+				int Ntts, double Asig, double ta, double r0, double **all_gammas0,
+				int multiple_input_gammas, int fromstart, char * print_cmb0,
 				char *print_forex0, char *print_foret, char * printall_cmb, char *printall_forex,
 				char *printall_foret, char *print_LL) {
 
@@ -35,12 +35,10 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 	 * 		if splines==1
 	 * 		if splines==0
 	 * eqkfm0= array of mainshocks;
-	 * eqkfm1= array of aftershocks (sources);
 	 * tevol= if splines==0, contains factor by which afterslip snapshot is rescaled at each time.
 	 * crst= general model info.
 	 * AllCoeff= Okada Coefficients for all mainshock slip models;
 	 * NTScont=no. of continuous time steps (size of tevol, times2)
-	 * NTSdisc=no of snapshots (size of DCFS);  size of eqkfm1
 	 * Nm=no. of mainshocks;	size of eqkfm0
 	 * focmec= array of focal mechanisms parameters.
 	 * NFM= no. of focal mechanisms
@@ -56,7 +54,6 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 	 * times: time steps for numerical integration.
 	 * tstart: overall time at which calculation of rates should start;
 	 * tts: list of time steps (tts[0] is starting time; tts[1...Ntts] are times at which rate is calculated).
-	 * tw: time window to be ignored after each mainshock;
 	 *
 	 * RS parameters and flags:
 	 * Asig, ta, r0;
@@ -95,7 +92,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 	double *nev, *rev, *nev_avg, *rev_avg, *ev_x_avg, *ev_x_pre, *ev_x_dum;
 	double *cmb, *cmb_avg, *cmbpost, *cmbpost_avg;
 	int N, NgridT_out= crst.uniform ? (crst.nLat_out*crst.nLon_out*crst.nD_out) : NgridT;
-	int err, Nsur_over_Nslipmod=Nsur/Nslipmod;
+	int err;
 	int uniform_bg_rate=0;
 	int current_main, which_recfault;
 	double tnow, tt0, tt1;
@@ -178,8 +175,6 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 			fforet1=fopen(fname,"w");
 			sprintf(fname, "%s_rates.dat",printall_foret);
 			fforet2=fopen(fname,"w");
-			//for (int t=1; t<=Ntts; t++) fprintf(fforet, "%lf\t",tts[t]);
-			//fprintf(fforet, "\n");
 		}
 	}
 
@@ -197,6 +192,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		}
 
 		const long newSeed = *seed;
+
 	#else
 		start = 1;
 		end = Nsur + 1;
@@ -210,22 +206,18 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
 
-		if(procId == 0) {
-			printf("%d...",nsur);
-			fflush(stdout);
-		}
+		print_screen("%d...",nsur);
 
 		if (all_gammas0) gammas0= (multiple_input_gammas)? all_gammas0[nsur] : *all_gammas0;
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
-		flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
 
 		tt0=tts[0];
 		tt1=tts[Ntts];
 		//Set starting rates:
 		if(fromstart) {
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst, 0,
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
+								   fmzonelim, NFM, seed, tstart, tt1, 0,
 								   which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
@@ -234,7 +226,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 
 			err = forecast_stepG2_new(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
 									  (int *) 0, ev_x_dum, (double *) 0, (double *) 0,
-									  NgridT, NTScont, NTSdisc, gammas, crst.rate0,
+									  NgridT, NTScont, Nm, gammas, crst.rate0,
 									  dumrate, 1);
 
 			for(int i=1; i<=NgridT; i++) {
@@ -242,9 +234,9 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 			}
 		}
 		else {
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tt0, tt1, Hurst, 0,
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
+								   fmzonelim, NFM, seed, tt0, tt1, 0,
 								   which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
@@ -256,60 +248,22 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		tnow=tts[0];
 
 		for(int t=1; t<=Ntts; t++) {
-			//Calculate seismicity evolution (skipping a time window after each mainshock):
+			//Calculate seismicity evolutionZzz:
 			tt0=tts[t-1];
 			tt1=tts[t];
 
-			while(current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
+			err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tt0, tt1,
+									 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
+									 Nm, gammas, crst.rate0, dumrate, 1);
 
-			while(current_main<Nm && eqkfm0[current_main].t<tt1) {
-				if (tnow<eqkfm0[current_main].t){
-					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
-											 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
-											 NTSdisc, gammas, crst.rate0, dumrate, 1);
-
-					for(int i=1; i<=NgridT; i++) {
-						ev_x[i]+=ev_x_dum[i];
-					}
-
-					nev[t]=sum;
-					rev[t]=fin_rate;
-					nev_avg[t]+=(sum)/(1.0*Nsur);
-					rev_avg[t]+=(fin_rate)/(1.0*Nsur);
-
-					err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
-											   eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
-											   NgridT, NTScont, NTSdisc, gammas, crst.rate0,
-											   dumrate, 1);
-
-					tnow=eqkfm0[current_main].t+tw;
-				}
-				else if(tnow<eqkfm0[current_main].t+tw) {
-					err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
-											 Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, NTSdisc, gammas,
-											 crst.rate0, dumrate, 1);
-
-					tnow=eqkfm0[current_main].t+tw;
-				}
-				current_main+=1;
-
-				if (err) break;
+			for(int i=1; i<=NgridT; i++) {
+				ev_x[i]+=ev_x_dum[i];
 			}
-			if(tnow<tt1) {
-				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, tt1, Asig, ta,
-										   0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
-										   NTSdisc, gammas, crst.rate0, dumrate, 1);
 
-				for(int i=1; i<=NgridT; i++) {
-					ev_x[i]+=ev_x_dum[i];
-				}
-
-				nev[t]=sum;
-				rev[t]=fin_rate;
-				nev_avg[t]+=(sum)/(1.0*Nsur);
-				rev_avg[t]+=(fin_rate)/(1.0*Nsur);
-				tnow=tt1;
-			}
+			nev[t]=sum;
+			rev[t]=fin_rate;
+			nev_avg[t]+=(sum)/(1.0*Nsur);
+			rev_avg[t]+=(fin_rate)/(1.0*Nsur);
 
 			for(int i=1;i<=cat.Z;i++) {
 				if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
@@ -325,7 +279,7 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		}
 
 		if(print_cmb || printall_cmb) {
-			sum_DCFS(DCFS, &cmb, NTSdisc, NgridT);
+			sum_DCFS(DCFS, &cmb, Nm, NgridT);
 			if (flags.afterslip) sum_DCFSrand(DCFSrand, &cmbpost, NTScont, NgridT);
 			if(print_cmb) {
 				for (int i=1; i<=NgridT; i++) {
@@ -427,38 +381,20 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 		if (print_cmb) {
 			convert_geometry(crst, cmb_avg, &ev_x_new, 0, 0);
 			if(procId == 0) {
-				csep_forecast(print_cmb, crst, ev_x_new, 0);
-				csep_forecast(print_cmb_ref, crst, cmb_avg, 1);
-				if (flags.afterslip) csep_forecast(print_cmbpost, crst, cmbpost_avg, 0);
+				csep_cmbmap(print_cmb, crst, ev_x_new, 0);
+				csep_cmbmap(print_cmb_ref, crst, cmb_avg, 1);
+				if (flags.afterslip) csep_cmbmap(print_cmbpost, crst, cmbpost_avg, 0);
 			}
 		}
 		if (print_LL || LL){
 			tt0=tts[0];
 			tt1=tts[Ntts];
-			current_main=0;
 			Ldum=0.0;
-			tnow=tt0;
-			int j0=1;
-			while (current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
-			while (current_main<Nm && eqkfm0[current_main].t<tt1){
-				if (tnow<eqkfm0[current_main].t){
-					for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<eqkfm0[current_main].t) {
-						Ldum+=log(r0*rate[j]);
-						if(procId == 0) {
-							if (print_LL) fprintf(fLLev,"%.10e \t %.5e\n",cat.t[j], log(r0*rate[j]));
-						}
-					}
-					j0+=N;
-				}
-				tnow=eqkfm0[current_main].t+tw;
-				current_main+=1;
-			}
-			if (tnow<tt1){
-				for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<tt1) {
-					Ldum+=log(r0*rate[j]);
-					if(procId == 0) {
-						if (print_LL) fprintf(fLLev,"%.10e \t%.5e \t%.5e \t%.5e \t %.5e\n",cat.t[j], cat.lat0[j], cat.lon0[j], cat.depths0[j], log(r0*rate[j]));
-					}
+
+			for(int j=1;j<=cat.Z;j++) if(cat.t[j]>=tt0 && cat.t[j]<tt1) {
+				Ldum+=log(r0*rate[j]);
+				if(procId == 0) {
+					if (print_LL) fprintf(fLLev,"%.10e \t%.5e \t%.5e \t%.5e \t %.5e\n",cat.t[j], cat.lat0[j], cat.lon0[j], cat.depths0[j], log(r0*rate[j]));
 				}
 			}
 
@@ -510,14 +446,13 @@ int CRSforecast(double *LL, int Nsur, int Nslipmod, struct pscmp *DCFS, struct e
 }
 
 int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, double *r_out,
-					 int Nsur, int Nslipmod, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
-					 struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, struct flags flags, double Hurst,
+					 int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
+					 struct eqkfm *eqkfm0, struct flags flags,
 					 double *tevol, struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont,
-					 int NTSdisc, int Nm, int NgridT, double **focmec, int *fmzonelim, int NFM,
+					 int Nm, int NgridT, double **focmec, int *fmzonelim, int NFM,
 					 long *seed, struct catalog cat, double *times, double tstart, double tt0,
-					 double tt1, double tw, double Asig, double ta, double r0, int fixr,
-					 double **all_gammas0, double **all_new_gammas, int multiple_input_gammas,
-					 int multiple_output_gammas, int fromstart, char * printall_cmb,
+					 double tt1, double tw, double Mag_main, double Asig, double ta, double r0, int fixr,
+					 double *gammas0, double **all_new_gammas, int fromstart, char * printall_cmb,
 					 char *printall_forex, int refresh) {
 
 	//recfault= [0,1,2] means: don't vary rec. fault, vary (choose random one), vary and sample all catalog in order.
@@ -533,12 +468,10 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	 * 		if splines==1
 	 * 		if splines==0
 	 * eqkfm0= array of mainshocks;
-	 * eqkfm1= array of aftershocks (sources);
 	 * tevol= if splines==0, contains factor by which afterslip snapshot is rescaled at each time.
 	 * crst= general model info.
 	 * AllCoeff= Okada Coefficients for all mainshock slip models;
 	 * NTScont=no. of continuous time steps (size of tevol, times2)
-	 * NTSdisc=no of snapshots (size of DCFS);  size of eqkfm1
 	 * Nm=no. of mainshocks;	size of eqkfm0
 	 * focmec= array of focal mechanisms parameters.
 	 * NFM= no. of focal mechanisms
@@ -589,27 +522,19 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	#endif
 
 	static double **DCFSrand;
-	static double *dumrate, *gammas, *rates_x, *rate, *ev_x;
+	static double *dumrate, *gammas, *rate, *ev_x;
 	double sum, sum1, sum2, integral, Ldum0, r;
-	double *gammas0;
 	static int first_timein=1, N;
 	double Ntot, Itot, LLdum0tot;
-	int err, Nsur_over_Nslipmod=Nsur/Nslipmod;
-	int uniform_bg_rate=0;
+	int err;
 	int current_main, j0, which_recfault;
 	double tnow;
 	FILE *fforex, *fcmb;
 
-	if(procId == 0) {
-		if (LL && verbose_level>0) printf("Calculating LL for Asig=%lf, ta=%lf ...", Asig, ta);
-	}
-
-	if (!all_gammas0)	uniform_bg_rate=1;
+	if (LL) print_screen("Calculating LL for Asig=%lf, ta=%lf ...", Asig, ta);
 
 	if (first_timein==1){
-		if(procId == 0) {
-			if (flog) fprintf(flog,"Setting up variables in CRSLogLikelihood...\n"); fflush(flog);
-		}
+		print_logfile("Setting up variables in CRSLogLikelihood...\n");
 		#ifndef _CRS_MPI
 			// [Fahad] Assignment happens at the end of the function when MPI is being used.
 			first_timein=0;
@@ -618,13 +543,14 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		dumrate=dvector(1,cat.Z);
 		rate=dvector(1,cat.Z);
 		gammas=dvector(1,NgridT);
-		rates_x=dvector(1,NgridT);
 		ev_x=dvector(1,NgridT);
 	}
 
 	sum=sum1=sum2=0.0;
 	integral=0.0;
-	for(int i=1;i<=cat.Z;i++) rate[i]=0.0;
+	for(int i=1;i<=cat.Z;i++) {
+		rate[i]=0.0;
+	}
 
 	#ifdef _CRS_MPI
 		// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
@@ -632,22 +558,15 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if(first_timein != 1) {
 			int nsur = 1;
 			which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
-			flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
 
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst,
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
+								   fmzonelim, NFM, seed, tstart, tt1,
 								   refresh && nsur==1, which_recfault);
-
 			refresh = 0;
 		}
 	#endif
 
-	if (all_new_gammas!=0 && (multiple_output_gammas==0)) {
-		for (int n=1; n<=NgridT; n++) {
-			rates_x[n]=0.0;	//need to save average rate at each location, to find final gamma giving average rate.
-		}
-	}
 	//for (int ndt=1; ndt<=NDT; ndt++) net[ndt]=0.0;
 
 	sum=sum1=sum2=0;
@@ -676,13 +595,15 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			if(procId == 0) {
 				start = 1;
 			}
+
+			const long newSeed = *seed;
+
 		}
 		else {
 			start = 1;
 			end = Nsur + 1;
 		}
 
-		const long newSeed = *seed;
 	#else
 		start = 1;
 		end = Nsur + 1;
@@ -693,70 +614,77 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			*seed = newSeed * (long)nsur;
 		#endif
 
-		if (all_gammas0) {
-			gammas0= (multiple_input_gammas)? all_gammas0[nsur] : *all_gammas0;
-		}
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
-		flags.new_slipmodel= (nsur==1 || !(nsur % Nsur_over_Nslipmod));
-		
+
+		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
+
 		//Set starting rates:
 		if (fromstart){
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tstart, tt1, Hurst,
+		// todo [coverage] this block is never tested
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
+								   fmzonelim, NFM, seed, tstart, tt1,
 								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
-				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
+				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
 			}
 
 			err = forecast_stepG2_new(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
 									  (int *) 0, (double *) 0, (double *) 0, (double *) 0,
-									  NgridT, NTScont, NTSdisc, gammas, (double *) 0,
+									  NgridT, NTScont, Nm, gammas, (double *) 0,
 									  dumrate, 1);
 		}
 		else{
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, eqkfm1, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, NTSdisc, focmec,
-								   fmzonelim, NFM, seed, (int *) 0, tt0, tt1, Hurst,
+			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+								   times, Nm, crst, AllCoeff, NTScont, focmec,
+								   fmzonelim, NFM, seed, tt0, tt1,
 								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
-				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
+				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
 			}
 		}
 
 		//Calculate seismicity evolution (skipping a time window after each mainshock):
 		current_main=0;
 		tnow=tt0;
-		while (current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
+		//find first event which causes a time window of incomplete seismicity:
+		while (current_main<Nm && eqkfm0[current_main].t<tt0 && eqkfm0[current_main].mag<Mag_main) current_main++;
 		while (current_main<Nm && eqkfm0[current_main].t<tt1){
 			if (tnow<eqkfm0[current_main].t){
+				//evolve seismicity up to next large event:
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
-										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, NTSdisc, gammas,
+										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, Nm, gammas,
 										   crst.rate0, dumrate, 1);
 				integral += (sum)/(1.0*Nsur);
 
+				//evolve seismicity during a time window tw:
 				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
-										   eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
-										   NgridT, NTScont, NTSdisc, gammas, crst.rate0,
-										   dumrate, 1);
-
+										eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
+									   NgridT, NTScont, Nm, gammas, crst.rate0,
+									   dumrate, 1);
 				tnow=eqkfm0[current_main].t+tw;
 			}
-			else if (tnow<eqkfm0[current_main].t+tw){
-				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
-						Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, NTSdisc, gammas, crst.rate0,
-						dumrate, 1);
-
-				tnow=eqkfm0[current_main].t+tw;
+			else {
+				//the condition below will be true if the current large event is still within the tw of the previous one.
+				//(Actually, if tw has a fixed value this is always the case).
+				if (tnow<eqkfm0[current_main].t+tw){
+					err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
+							Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, Nm, gammas, crst.rate0,
+							dumrate, 1);
+					tnow=eqkfm0[current_main].t+tw;
+				}
 			}
+
+			//find next event large enough to causes a time window of incomplete seismicity:
 			current_main+=1;
+			while (current_main<Nm && eqkfm0[current_main].mag<Mag_main) current_main++;
 			if (err) break;
 		}
 		if (tnow<tt1){
 			err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, tt1, Asig, ta, 0,
-									   ev_x, &sum, 0, NgridT, NTScont, NTSdisc, gammas,
+									   ev_x, &sum, 0, NgridT, NTScont, Nm, gammas,
 									   crst.rate0, dumrate, 1);
 
 			integral+=(sum)/(1.0*Nsur);
@@ -765,12 +693,10 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (err==1) break;
 
 		for(int i=1;i<=cat.Z;i++) if(cat.t[i]>=tt0 && cat.t[i]<tt1) rate[i]+=1.0*dumrate[i]/(1.0*Nsur);
-		if (all_new_gammas) {
-			if (multiple_output_gammas) for (int n=1; n<=NgridT; n++) all_new_gammas[nsur][n]=gammas[n];
-			else for (int n=1; n<=NgridT; n++) rates_x[n]+=(1.0/gammas[n])/(1.0*Nsur);
-		}
+		if (all_new_gammas) for (int n=1; n<=NgridT; n++) all_new_gammas[nsur][n]=gammas[n];
 
 		if(procId == 0) {
+		// todo [coverage] this block (2x) is never tested
 			if (printall_cmb) {
 				for (int n=1; n<=NgridT; n++) fprintf(fcmb, "%lf\t", DCFS[0].cmb[n]);
 				if (nsur <Nsur) fprintf(fcmb, "\n");
@@ -781,8 +707,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			}
 		}
 	}
-
-//	printf("\n ProcId: %d -- Integral: %f \n", procId, integral);
 
 	#ifdef _CRS_MPI
 		double temp_integral;
@@ -831,32 +755,44 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		current_main=0;
 		tnow=tt0;
 		j0=1;
-		while (current_main<Nm && eqkfm0[current_main].t<tt0) current_main++;
+
+		FILE *fout=fopen("LLs.dat","w");
+
+		while (current_main<Nm && eqkfm0[current_main].t<tt0 && eqkfm0[current_main].mag<Mag_main) current_main++;
 		while (current_main<Nm && eqkfm0[current_main].t<tt1){
-			if (tnow<eqkfm0[current_main].t){
-				for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<eqkfm0[current_main].t) {
-					N+=1;
-					Ldum0+=log(rate[j]);
+			if (tnow<=eqkfm0[current_main].t){
+
+				while(j0<=cat.Z && cat.t[j0]<=eqkfm0[current_main].t){
+					if(cat.t[j0]>=tnow) {
+						N+=1;
+						Ldum0+=log(rate[j0]);
+						fprintf(fout,"%lf\t%lf\t%10e\n", cat.t[j0], cat.mag[j0], rate[j0]);
+					}
+					j0+=1;
 				}
-				j0+=N;
 			}
 			tnow=eqkfm0[current_main].t+tw;
 			current_main+=1;
+			while (current_main<Nm && eqkfm0[current_main].mag<Mag_main) current_main++;
 		}
+
 		if (tnow<tt1){
 			for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<tt1) {
 				N+=1;
 				Ldum0+=log(rate[j]);
+				fprintf(fout,"%lf\t%lf\t%10e\n", cat.t[j],cat.mag[j], rate[j]);
 			}
 		}
+		fclose(fout);
 
 		Ntot= (Nev) ? N+*Nev : N;
 		Itot= (I)? integral/NgridT + *I : integral/NgridT;
 		LLdum0tot= (Ldum0_out) ? Ldum0+*Ldum0_out : Ldum0;
 		r = (fixr)? r0 : Ntot/Itot;
 
-		if(procId == 0) {
-			if(r==0.0 && verbose_level>0) printf("ERROR: ta=%lf  Asig=%lf r=%e\n",ta,Asig,r);
+		if(r==0.0) {
+			print_screen("ERROR: ta=%lf  Asig=%lf r=%e\n",ta,Asig,r);
+			print_logfile("ERROR: ta=%lf  Asig=%lf r=%e\n",ta,Asig,r);
 		}
 
 		if (LL) *LL=LLdum0tot+ Ntot*log(r) - r*Itot;
@@ -864,17 +800,12 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (I) *I=Itot;
 		if (Nev) *Nev=Ntot;
 		if (r_out) *r_out=r;
-		if (all_new_gammas!=0 && multiple_output_gammas==0) for (int n=1; n<=NgridT; n++) (*all_new_gammas)[n]=1.0/rates_x[n];
 
-		if(procId == 0) {
-			if (LL && verbose_level>0) printf("LL=%lf", *LL);
-		}
+		if (LL) print_screen("LL=%lf", *LL);
 	}
 
-	if(procId == 0) {
-		if (verbose_level) printf("\n");
-		if (flog && first_timein) fprintf(flog,"done.\n");
-	}
+	print_screen("\n");
+	if (first_timein) print_logfile("done.\n");
 
 	#ifdef _CRS_MPI
 		first_timein = 0;

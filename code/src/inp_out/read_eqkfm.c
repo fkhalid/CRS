@@ -26,9 +26,8 @@
 #include "read_eqkfm_fsp.h"
 
 int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb,
-						int **which_events, int N1, int *Ncomb, int **nfout,
-						double dt, double dmag, double res, struct crust crst,
-						int refine, int taper) {
+						int N1, int *Ncomb, int **nfout,
+						double dt, double dmag, double res, struct crust crst, struct flags flags) {
 /* assumes that eqfm1 only has single fault events, but slip models may have more...
  * does not do spatial selection (unlike combine_eqkfm).
  * return combined catalog, rather than list of indices mapping one catalog to the other.
@@ -47,20 +46,17 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int c2=0, c3=0;	//counters.
 	int err=0, j;
 	int *all_pts;
-	double d_close=10.0;	//todo read somewhere.
 	static struct set_of_models dummy_parentsetofmodels;
+	char *cmb_format=all_slipmodels.cmb_format;
 	dummy_parentsetofmodels.Nmod=0;	//this value indicates than no slip model is available (will use synthetic slip model from foc. mec. or isotropic field).
 
-	if(procId == 0) {
-		if (flog) fprintf(flog, "\nBuilding mainshock slip models (eqkfm_addslipmodels).\n");
-	}
+	print_logfile("\nBuilding mainshock slip models (eqkfm_addslipmodels).\n");
 
 	N2=all_slipmodels.NSM;
-	nf2=all_slipmodels.Nfaults;
+	nf2=all_slipmodels.Nfaults;	//todo check this is calculated properly for multiple slip models.
 	all_pts=ivector(1,crst.N_allP);
 	for (int i=1; i<=crst.N_allP; i++) all_pts[i]=i;
 
-	if (refine==0) taper=0;
 	*Ncomb=0;
 
 	//find no. of faults in each slip model, and save the largest value for each event.
@@ -74,7 +70,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				else {
 					if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(all_slipmodels.slipmodels[nsm], NULL, all_slipmodels.Nfaults+i);
 					else {
-						if (flog) fprintf(flog,"Unknown slip model format %s (eqkfm_addslipmodels).\n", cmb_format);
+						print_logfile("Unknown slip model format %s (eqkfm_addslipmodels).\n", cmb_format);
 						err=1;
 					}
 				}
@@ -86,11 +82,8 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	}
 
 	if (err){
-		if(procId == 0) {
-			if (verbose_level) printf("Error in reading input files. Exiting.\n");
-			if (flog) fprintf(flog, "Error in reading input files. Exiting.\n");
-		}
-
+		print_screen("Error in reading input files. Exiting.\n");
+		print_logfile("Error in reading input files. Exiting.\n");
 		return 1;
 	}
 
@@ -104,73 +97,88 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	}
 
 	*eqfm_comb=eqkfm_array(0,N3-1);
-	if (which_events!=NULL) {
-		*which_events=ivector(0,N3-1);
-	}
 	if (nfout) *nfout=ivector(0,N1-1);
 
 	for(int i=0; i<N1; i++) {
-		if(eqfm1[i].is_mainshock) {
-			eqfm1[i].nsel=0;	//deactivate it as source aftershock;
-			(*eqfm_comb)[c3].nsel=crst.N_allP;
+		(*eqfm_comb)[c3].nsel=crst.N_allP;
 
-			if(which_slipmod[i]==-1) {
+		if(which_slipmod[i]==-1) {
+			if (flags.sources_without_focmec==0 && !eqfm1[i].is_slipmodel){
+				// flags.only_aftershocks_withfm indicates that only events with focal mechanisms should be used.
+				continue;
+			}
+			else {
 				copy_eqkfm_all(eqfm1[i], (*eqfm_comb)+c3);
-				(*eqfm_comb)[c3].nsel=crst.N_allP;
-				(*eqfm_comb)[c3].selpoints=all_pts;
 				eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
-				if (which_events!=NULL) (*which_events)[c3]=i;
 				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
-				if (!eqfm1[i].is_slipmodel){
-					if(procId == 0) {
-						if (verbose_level>0) printf(" ** Warning: slip model or focal mechanism not available for large event at t=%.2lf, mag=%.2lf -> will use isotropic field. **\n", eqfm1[i].t, eqfm1[i].mag);
-						if (flog) fprintf(flog, "Warning: slip model or focal mechanism not available for large event at t=%.2lf, mag=%.2lf -> will use isotropic field.\n", eqfm1[i].t, eqfm1[i].mag);
+
+
+				//flags.full_field=0 indicates that an isotropic slip model should be used for all events (also those with foc mec):
+				if (eqfm1[i].is_slipmodel && !flags.sources_all_iso) {
+					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
+					if (err){
+						print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+						print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+					}
+					else {
+						//todo add counter and output something at the end.
+//						print_screen("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+//						print_logfile("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
 					}
 				}
-				else {
-					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, refine, taper);
-					if(procId == 0) {
-						if (err && verbose_level>0) printf("Error in creating slip model (function: eqkfm_addslipmodels)\n");
-						else {
-							if (verbose_level>0) printf("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
-							if (flog) fprintf(flog, "Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+
+
+				else{
+					if (!eqfm1[i].is_slipmodel && flags.sources_without_focmec==2){	//todo NB do not use aftershocks_fixedmec since MC option will be killed.
+						(*eqfm_comb)[c3].str1=crst.str0[0];	//fixme should use different regions.
+						(*eqfm_comb)[c3].dip1=crst.dip0[0];	//fixme should use different regions.
+						(*eqfm_comb)[c3].rake1=crst.rake0[0];
+						(*eqfm_comb)[c3].whichfm=1;
+						err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
+						if (err){
+							print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+							print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
 						}
 					}
+
+					else{
+						// If none of the conditions above holds, assume isotropic field.
+						(*eqfm_comb)[c3].is_slipmodel=0;
+
+						/* todo: add counter here and produce some output (similar to what done previously for aftershocks). */
+					}
 				}
+
 				(*nfout)[*Ncomb]=1;
 				c3+=1;
 				*Ncomb+=1;
 			}
-			else {
-				j=which_slipmod[i];
-				nsm=0;
-				for (int n=0; n<j; n++) nsm+=all_slipmodels.no_slipmodels[n];
-				c2=0;
-				if(procId == 0) {
-					if (verbose_level>0) printf("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
-					if (flog) fprintf(flog, "Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
-				}
+		}
 
-				err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm,
-										   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
-										   all_slipmodels.tmain[j], d_close, crst.N_allP, crst.list_allP,
-										   all_slipmodels.mmain+j, refine, 1, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
+		else {
+			j=which_slipmod[i];
+			nsm=0;
+			for (int n=0; n<j; n++) nsm+=all_slipmodels.no_slipmodels[n];
+			c2=0;
+			print_screen("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
+			print_logfile("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
 
-				if (which_events!=NULL) (*which_events)[c3]=i;
-				if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
-				for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) (*eqfm_comb)[c3].distance=eqfm1[i].distance;
-				c3+=nf2[which_slipmod[i]];
-				c_evfound+=1;
-				*Ncomb+=1;
-			}
+			err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm, all_slipmodels.cmb_format,
+									   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
+									   all_slipmodels.tmain[j],crst.N_allP, crst.list_allP,
+									   all_slipmodels.mmain+j, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
+
+			if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
+			for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) (*eqfm_comb)[c3].distance=eqfm1[i].distance;
+			c3+=nf2[which_slipmod[i]];
+			c_evfound+=1;
+			*Ncomb+=1;
 		}
 	}
 
 	if (c_evfound<N2){
-		if(procId == 0) {
-			if (verbose_level>0) printf("** Warning: some slip models are not used, since events were not found in catalog (or are outside time boundaries)! (function: eqkfm_addslipmodels)\n");
-			if (flog) fprintf(flog, "Warning: some slip models are not used, since events were not found in catalog (or are outside time boundaries)! (function: eqkfm_addslipmodels)\n");
-		}
+		print_screen("** Warning: some slip models are not used, since events were not found in catalog (or are outside time boundaries)! (function: eqkfm_addslipmodels)\n");
+		print_logfile("Warning: some slip models are not used, since events were not found in catalog (or are outside time boundaries)! (function: eqkfm_addslipmodels)\n");
 	}
 
 	return (err);
@@ -195,8 +203,6 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 	(*eqkfmP).np_di=1;
 	(*eqkfmP).slip_str=dvector(1,1);
 	(*eqkfmP).slip_dip=dvector(1,1);
-	//(*eqkfmP).taper=dvector(1,4);
-	//	for (int i=1; i<=4; i++) (*eqkfmP).taper=1.0; //probably not used (aftershocks are not resampled or tapered).
 	(*eqkfmP).pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
 	(*eqkfmP).pos_d=dvector(1,1);
 	(*eqkfmP).pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
@@ -205,10 +211,15 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 	//TODO in theory, should find L and W for both mech. (rake differs).
 	WellsCoppersmith((*eqkfmP).mag, (*eqkfmP).rake1, &((*eqkfmP).L), &((*eqkfmP).W), &slip);
 	slip=(*eqkfmP).tot_slip=pow(10,(1.5*((*eqkfmP).mag+6)))*(1.0/(crst.mu*pow(10,12)*(*eqkfmP).W*(*eqkfmP).L));
+
+	// todo [coverage] shifting of fault depth is never tested
 	switch ((*eqkfmP).whichfm){
 		case 1:
 			if ((*eqkfmP).depth<0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1)) {
-				if (verbose_level>1) printf("Shifting center of mainshock fault from depth=%.2lf to depth=%.2lf to avoid fault being above surface (focmec2slipmodel). \n", (*eqkfmP).depth, 0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1));
+				if (extra_verbose) {
+					print_screen("Shifting center of mainshock fault from depth=%.2lf to depth=%.2lf to avoid fault being above surface (focmec2slipmodel). \n", (*eqkfmP).depth, 0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1));
+					print_logfile("Shifting center of mainshock fault from depth=%.2lf to depth=%.2lf to avoid fault being above surface (focmec2slipmodel). \n", (*eqkfmP).depth, 0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1));
+				}
 				(*eqkfmP).depth=0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1);
 			}
 			(*eqkfmP).slip_str[1]=slip*cos(DEG2RAD*(*eqkfmP).rake1);
@@ -216,7 +227,10 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 			break;
 		case 2:
 			if ((*eqkfmP).depth<0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip2)) {
-				if (verbose_level>1) printf("Shifting center of mainshock fault from depth=%.2lf to depth=%.2lf to avoid fault being above surface (focmec2slipmodel). \n", (*eqkfmP).depth, 0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1));
+				if (extra_verbose) {
+					print_screen("Shifting center of mainshock fault from depth=%.2lf to depth=%.2lf to avoid fault being above surface (focmec2slipmodel). \n", (*eqkfmP).depth, 0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1));
+					print_logfile("Shifting center of mainshock fault from depth=%.2lf to depth=%.2lf to avoid fault being above surface (focmec2slipmodel). \n", (*eqkfmP).depth, 0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1));
+				}
 				(*eqkfmP).depth=0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip2);
 			}
 			(*eqkfmP).slip_str[1]=slip*cos(DEG2RAD*(*eqkfmP).rake2);
@@ -224,21 +238,28 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 			break;
 		case 0:
 			if ((*eqkfmP).depth<0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1)) {
-				if (verbose_level>1) printf("Shifting center of mainshock fault from depth=%.2lf to depth=%.2lf to avoid fault being above surface (focmec2slipmodel). \n", (*eqkfmP).depth, 0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1));
+				if (extra_verbose) {
+					print_screen("Shifting center of mainshock fault from depth=%.2lf to depth=%.2lf to avoid fault being above surface (focmec2slipmodel). \n", (*eqkfmP).depth, 0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1));
+					print_logfile("Shifting center of mainshock fault from depth=%.2lf to depth=%.2lf to avoid fault being above surface (focmec2slipmodel). \n", (*eqkfmP).depth, 0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1));
+				}
 				(*eqkfmP).depth=0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1);
 			}
-			if (verbose_level>1) printf("Warning: ambiguous nodal plane (focmec2slipmodel).\n");
+			if (extra_verbose) {
+				print_screen("Warning: ambiguous nodal plane (focmec2slipmodel).\n");
+				print_logfile("Warning: ambiguous nodal plane (focmec2slipmodel).\n");
+			}
 			(*eqkfmP).slip_str[1]=slip*cos(DEG2RAD*(*eqkfmP).rake1);
 			(*eqkfmP).slip_dip[1]=-slip*sin(DEG2RAD*(*eqkfmP).rake1);
 			break;
 		default:
-			if (verbose_level>0) printf("Error: illegal value for whichfm (focmec2slipmodel). Exiting. \n");
+			print_screen("Error: illegal value for whichfm (focmec2slipmodel). Exiting. \n");
+			print_logfile("Error: illegal value for whichfm (focmec2slipmodel). Exiting. \n");
 			return(1);
 	}
 
 	if (refine) {
 		err+=suomod1_resample(eqkfm0, eqfm1, res, 0.0);	//create a slip model with right resolution.
-		if (taper) err+=suomod1_taper((*eqfm1), eqfm1);
+		if (taper) err+=suomod1_taper((*eqfm1), eqfm1, 1, 1, 1, 1);
 	}
 
 	return err;
@@ -247,7 +268,7 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 
 //--------------------------read slip model files----------------------//
 
-int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, double mu) {
+int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out, double *Mw, double mu) {
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
 
@@ -262,22 +283,18 @@ int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, doubl
 	else {
 		if (!(strcmp(cmb_format,"pscmp"))) err=read_pscmp_eqkfm(fname, eqfm1, &NF);
 		else{
-			if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(fname, eqfm1, &NF);
+			if (!(strcmp(cmb_format,"fsp"))) err=read_fsp_eqkfm(fname, eqfm1, &NF);
 			else {
-				if(procId == 0) {
-					if (flog) fprintf(flog,"Unknown slip model format %s (read_eqkfm).\n", cmb_format);
-					if (verbose_level>0) printf(" ** Error: could not read slip model file %s (read_slipmodel). ** \n ", fname);
-				}
+				print_screen(" ** Unknown slip model format %s (read_eqkfm).\n ", cmb_format);
+				print_logfile("Unknown slip model format %s (read_eqkfm).\n", cmb_format);
 				err=1;
 			}
 		}
 	}
 
-	if (err==1){
-		if(procId == 0) {
-			if (verbose_level>0) printf(" ** Error: could not read slip model file %s (read_slipmodel). ** \n ", fname);
-		}
-
+	if (err){
+		print_screen(" ** Error: could not read slip model file %s (read_slipmodel). ** \n ", fname);
+		print_logfile(" ** Error: could not read slip model file %s (read_slipmodel). ** \n ", fname);
 		return (1);
 	}
 
@@ -289,7 +306,6 @@ int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, doubl
 			(*eqfm1)[f].is_slipmodel=1;
 			(*eqfm1)[f].is_mainshock=1;
 			(*eqfm1)[f].noise=0;
-			(*eqfm1)[f].taper=ivector(1,4);
 			(*eqfm1)[f].tot_slip=0.0;
 			NP=(*eqfm1)[f].np_di*(*eqfm1)[f].np_st;
 			for (int p=1; p<=NP; p++) {
@@ -305,10 +321,8 @@ int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, doubl
 	}
 	if (Mw) {
 		if (!eqfm1){
-			if(procId == 0) {
-				if (verbose_level) printf("*Warning: can not calculate Mw since eqfm1==NULL (read_eqkfm).*\n");
-				if (flog) printf("Warning: can not calculate Mw since eqfm1==NULL (read_eqkfm).\n");
-			}
+			print_screen("*Warning: can not calculate Mw since eqfm1==NULL (read_eqkfm).*\n");
+			print_logfile("Warning: can not calculate Mw since eqfm1==NULL (read_eqkfm).\n");
 		}
 		else *Mw=(2.0/3.0)*log10(M0)-6.0;
 	}
@@ -316,6 +330,7 @@ int read_eqkfm(char *fname, struct eqkfm **eqfm1, int *NF_out, double *Mw, doubl
 	return (0);
 }
 
+// todo [coverage] this block is never tested
 int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 	// [Fahad] Variables used for MPI.
 	int fileError = 0;
@@ -346,11 +361,8 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 	#endif
 
 	if(fileError) {
-		if(procId == 0) {
-			if (verbose_level>0) printf("Invalid input file (%s).\n", fname);
-			if (flog) fprintf(flog,"Invalid input file passed to read_farfalle_eqkfm (%s).\n", fname);
-		}
-
+		print_screen("Invalid input file (%s).\n", fname);
+		print_logfile("Invalid input file passed to read_farfalle_eqkfm (%s).\n", fname);
 		return (1);
 	}
 	else {
@@ -512,10 +524,8 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 	#endif
 
 	if(fileError) {
-		if(procId == 0) {
-			if (verbose_level>0) printf("Invalid input file (%s).\n", fname);
-			if (flog) fprintf(flog,"Invalid input file passed to read_pscmp_eqkfm (%s).\n", fname);
-		}
+		print_screen("Invalid input file (%s).\n", fname);
+		print_logfile("Invalid input file passed to read_pscmp_eqkfm (%s).\n", fname);
 
 		return (1);
 	}

@@ -6,12 +6,20 @@
  */
 
 #include "find_gridpoints.h"
+#include <math.h>
+#include <stddef.h>
+
+#include "../defines.h"
+#include "../util/error.h"
+#include "../util/moreutil.h"
+#include "../util/nrutil.h"
 
 
-int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, int Nselmax, double y, double x, double SD, double Depth, double SDd,
-		int cut_sd, int *ngridj0, int *ngridpointj, double *weightsj, int inside, int d3){
+int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, double y, double x, double SD, double Depth, double SDd,
+		int cut_sd, int *ngridj0, int **ngridpointj, double **weightsj, int inside, int d3){
 
 	double r, rmin=1e30, dz, probCum, *prob;
+	int *ngridpointj_temp;
 	int p,p2;
 	int K, Kd;
 	int closestp;
@@ -19,6 +27,7 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	double y1, y2, x1, x2, D1, D2, A, Vfrac=1;
 
 	prob=dvector(0,N+1);
+	ngridpointj_temp=ivector(0,N+1);	//temporary array to store indices of selected points.
 	if (!dAs) inside=1; 	//can't calculate total area, so assume it's all inside.
 
 
@@ -50,21 +59,21 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 			if (r<=K*SD && dz<=Kd*SDd)
 			{
 				ngridj+=1;
-				if (ngridj>Nselmax){
-					if (verbose_level) printf("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-					if (flog){
-						fprintf(flog, "*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-						fflush(flog);
-
-					}
-					return(1);
-				}
-				ngridpointj[ngridj]=p;
+				ngridpointj_temp[ngridj]=p;
 				prob[ngridj]= (d3)? exp(-pow(r,2)/(2*pow(SD,2)))*exp(-pow(dz,2)/(2*pow(SDd,2))) : exp(-pow(r,2)/(2*pow(SD,2)));
 				probCum+=prob[ngridj];
 				if (dAs) A+= dAs[p];
 			}
 		}
+	}
+
+	// allocate memory to *ngridpointj, unless it was allocated before:
+	if (!(*ngridpointj)) {
+		*ngridpointj=ivector(1,MAX(ngridj,1)+1);
+	}
+	if (!(*weightsj)) *weightsj=dvector(0,MAX(ngridj,1)+1);
+	for (p=1; p<=ngridj; p++){
+		(*ngridpointj)[p]=ngridpointj_temp[p];
 	}
 
 // K*SD is cutoff radius (gaussian would imply inf points), so that total area considered is pi*(K*SD). Vfrac is the fraction of area inside grid (if event is located outside grid).
@@ -77,36 +86,31 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	  Vfrac=1;
 	  break;
 	default:
-	  if (verbose_level>1) printf("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
-		if (flog) {
-			fprintf(flog, "Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
-			fflush(flog);
-		}
+	  print_screen("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
+	  print_logfile( "Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
 	  return 1;
 	  break;
 	}
 
 	if (Vfrac>1.1) {
-		if (verbose_level>1) printf("Warning: Vfrac>1 (%lf)\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
-		if (flog) {
-			fprintf(flog,"Warning: Vfrac>1 (%lf) \n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
-			fflush(flog);
-		}
+		print_screen("Warning: Vfrac>1 (%lf)\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
+		print_logfile("Warning: Vfrac>1 (%lf) \n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
 	}
 	if (Vfrac>1) Vfrac=1;
 
-	for (p2=1; p2<=ngridj; p2++) weightsj[p2]=Vfrac*prob[p2]/probCum;
-	weightsj[0]=1-Vfrac;
+	for (p2=1; p2<=ngridj; p2++) (*weightsj)[p2]=Vfrac*prob[p2]/probCum;
+	(*weightsj)[0]=1-Vfrac;
 
 	//if no point is selected, select nearest point:
 	if (ngridj==0){
 		ngridj=1;
-		ngridpointj[1]=closestp;
-		weightsj[1]=1;
+		(*ngridpointj)[1]=closestp;
+		(*weightsj)[1]=1;
 	}
 
 	if (ngridj0) *ngridj0=ngridj;
 	free_dvector(prob, 0, N+1);
+	free_ivector(ngridpointj_temp, 0, N+1);
 	return(0);
 }
 
@@ -170,7 +174,7 @@ int find_gridpoints_d(double *ys, double *xs, double *depths, int *already_selec
 }
 
 int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, double dy, double dz, int N, int Nselmax, double y, double x,
-		double SD, double Depth, double SDd, int cut_sd, int *ngridj, int *ngridpointj, double *weightsj, int inside, int d3){
+		double SD, double Depth, double SDd, int cut_sd, int *ngridj, int **ngridpointj, double **weightsj, int inside, int d3){
 
 /* Instead of simply using center point, integrates over each cell.
  * d3= use 3d distance (as opposed to horizontal).
@@ -183,8 +187,11 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 	double rx, ry, rz;
 	int p,p2;
 	int K, Kd;
+	int *ngridpointj_temp;
 	int closestp, ngridj_int=0;
 	double y1, y2, x1, x2, D1, D2, A, Vfrac=1;
+
+	ngridpointj_temp=ivector(0,N+1);	//temporary array to store indices of selected points.
 
 	if (ngridj) *ngridj=0;
 	probCum=0;
@@ -213,15 +220,11 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 			if (r<=K*SD && (!d3 || rz<=Kd*SDd)){
 				ngridj_int+=1;
 				if (ngridj_int>Nselmax){
-					if (verbose_level) printf("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-					if (flog){
-						fprintf(flog, "*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
-						fflush(flog);
-
-					}
+					print_screen("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
+					print_logfile("*Error: *ngridj>Nselmax in find_gridpoints.c - need to choose larger value for Nselmax. Exiting. **\n");
 					return(1);
 				}
-				ngridpointj[ngridj_int]=p;
+				ngridpointj_temp[ngridj_int]=p;
 				prob[ngridj_int]= exact_prob(rx,ry,rz,dx, dy,dz,SD, SD, SDd, d3);
 				probCum+=prob[ngridj_int];
 			}
@@ -230,42 +233,50 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 
 	A=ngridj_int*dx*dy;
 
+	// allocate memory to *ngridpointj, unless it was allocated before:
+	if (!(*ngridpointj)) {
+		*ngridpointj=ivector(1,MAX(ngridj_int,1));
+	}
+	if (!(*weightsj)) {
+		*weightsj=dvector(0,MAX(ngridj_int,1));
+	}
+	for (p=1; p<=ngridj_int; p++){
+		(*ngridpointj)[p]=ngridpointj_temp[p];
+	}
+
+
 // K*SD is cutoff radius (gaussian would imply inf points), so that total area considered is pi*(K*SD). Vfrac is the fraction of area inside grid (if event is located outside grid).
 // Vfrac is fraction of area inside selected area.
 
 	switch (inside) {
 		case 0:
+		// todo [coverage] this block is never tested
 		  Vfrac=fabs(A/(pi*(K*SD)*(K*SD)));
 		  break;
 		case 1:
 		  Vfrac=1;
 		  break;
 		default:
-	  if (verbose_level>1) printf("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
-		if (flog) {
-			fprintf(flog, "Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
-			fflush(flog);
-		}
+		print_screen("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
+		print_logfile("Error: variable 'inside' has illegal value (%d)! (find_gridpoints).\n");
 	  return 1;
 		  break;
 	}
 
 	if (Vfrac>1.1) {
-		if (verbose_level>1) printf("Warning: Vfrac>1 (%lf)\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
-		if (flog) {
-			fprintf(flog,"Warning: Vfrac>1 (%lf) \n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
-			fflush(flog);
-		}
+		print_screen("Warning: Vfrac>1 (%lf)\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
+		print_logfile("Warning: Vfrac>1 (%lf) \n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t\n [%lf,%lf]\t%lf+/-%lf]t (find_gridpoints).\n", Vfrac,xs[1],xs[N],x,SD,ys[1],ys[N],y,SD,depths[1],depths[N],Depth,SDd);
 	}
 	if (Vfrac>1) Vfrac=1;
 
-	for (p2=1; p2<=ngridj_int; p2++) weightsj[p2]=Vfrac*prob[p2]/probCum;
-	weightsj[0]=1-Vfrac;
+	for (p2=1; p2<=ngridj_int; p2++) (*weightsj)[p2]=Vfrac*prob[p2]/probCum;
+	(*weightsj)[0]=1-Vfrac;
 
 	if (ngridj_int==0){
+		// todo [coverage] this block is never tested
 		ngridj_int=1;
-		ngridpointj[1]=closestp;
-		weightsj[1]=1;
+		(*ngridpointj)[1]=closestp;
+		(*weightsj)[1]=1;
 	}
 
 	if (ngridj) *ngridj=ngridj_int;
@@ -314,6 +325,7 @@ double exact_prob(double rx, double ry, double rz, double dx, double dy, double 
 
 }
 
+// todo [coverage] this function is never tested
 int all_nearestneighbours(double *x, double *y, int N, int **pts, double **dist){
 	/* x, y: coordinates (indices: [1...N]);
 	 * pts: index of nearest neighbour;

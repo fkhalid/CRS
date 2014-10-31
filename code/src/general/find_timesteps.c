@@ -39,70 +39,63 @@ int findtimestepsomori(double te, double t0,double t1, double tstart, double ten
 		t[j+1]=t[j]+dt;
 		j+=1;
 		if (j==(*L)) {
-			if(procId == 0) {
-				printf("** Error: L too small in findtimestepsomori.c. Exiting. **\n");
-				if (flog){
-					fprintf(flog,"** Error: L too small in findtimestepsomori.c. Exiting. **\n");
-					fflush(flog);
-				}
-			}
+			print_screen("** Error: L too small in findtimestepsomori.c. Exiting. **\n");
+			print_logfile("** Error: L too small in findtimestepsomori.c. Exiting. **\n");
 			err=1;
 			break;
 		}
 	}
 
-	if(procId == 0) {
-		if (j>1000) printf("\n ** Warning: findtimesteps.m produced %d time steps! **\n",j);
-	}
+	if (j>1000) print_screen("\n ** Warning: findtimesteps.m produced %d time steps! **\n",j);
+
 	*L=j;
 	if (K_over_tau0) *K_over_tau0=K_over_tau;
 
 	return err;
 }
 
-void findtimestepslog(double t0,double t1, double tau0, double Dtau, double w, double **times, int *L){
+//void findtimestepslog(double t0,double t1, double tau0, double Dtau, double w, double **times, int *L){
+//
+//	double dfdt, dt;
+//	double *t;
+//	int N, j=0;
+//
+////	*K_over_tau=1/(pow(c+tend,1.0-p)-pow(c+tstart,1.0-p));
+//
+//	dfdt=tau0*w/(w*t0+1);
+//	dt=Dtau*(1.0/dfdt);
+//	N=(int) (t1-t0)*(1.0/dt);			//N is always > than the needed number of elements since the first derivative is monotonically decreasing.
+//
+//	t=dvector(0,N-1);
+//	t[0]=t0;
+//
+//	while (t[j]<=t1){
+//		dfdt=tau0*w/(w*t[j]+1);
+//		dt=Dtau*(1.0/dfdt);
+//		t[j+1]=t[j]+dt;
+//		j+=1;
+//	}
+//
+//	if (j>10000) print_screen("\n ** Warning: findtimesteps.m produced more than 10000 time steps! **\n");
+//
+//	*times=t;
+//	*L=j-1;
+//}
 
-	double dfdt, dt;
-	double *t;
-	int N, j=0;
-
-//	*K_over_tau=1/(pow(c+tend,1.0-p)-pow(c+tstart,1.0-p));
-
-	dfdt=tau0*w/(w*t0+1);
-	dt=Dtau*(1.0/dfdt);
-	N=(int) (t1-t0)*(1.0/dt);			//N is always > than the needed number of elements since the first derivative is monotonically decreasing.
-
-	t=dvector(0,N-1);
-	t[0]=t0;
-
-	while (t[j]<=t1){
-		dfdt=tau0*w/(w*t[j]+1);
-		dt=Dtau*(1.0/dfdt);
-		t[j+1]=t[j]+dt;
-		j+=1;
-	}
-
-	if (j>10000) printf("\n ** Warning: findtimesteps.m produced more than 10000 time steps! **\n");
-
-	*times=t;
-	*L=j-1;
-}
-
-void tevolomori(double te, double *times, double Kotau, double p, double c, double *tevol, int L){
-//te = earthquake time
-
-	double dum1, dum2;
-	FILE *fout;
-
-	fout =fopen("/home/des/camcat/temp/times.dat","w");
-	if (times[0]+c-te==0) printf("\n***Achtung!*** times[0]+c-te==0\n\n");
-	dum2=pow(times[0]+c-te,1.0-p);
-	for (int y=0; y<=L; y++){
-		dum1=dum2;
-		dum2=pow(times[y+1]+c-te,1.0-p);
-		tevol[y]=Kotau*(dum2-dum1);
-		fprintf(fout, "%lf\t%lf\n",times[y],tevol[y]);
-	}
-
-	fclose(fout);
-}
+//void tevolomori(double te, double *times, double Kotau, double p, double c, double *tevol, int L){
+////te = earthquake time
+//
+//	double dum1, dum2;
+//	FILE *fout;
+//
+//	fout =fopen("/home/des/camcat/temp/times.dat","w");
+//	dum2=pow(times[0]+c-te,1.0-p);
+//	for (int y=0; y<=L; y++){
+//		dum1=dum2;
+//		dum2=pow(times[y+1]+c-te,1.0-p);
+//		tevol[y]=Kotau*(dum2-dum1);
+//		fprintf(fout, "%lf\t%lf\n",times[y],tevol[y]);
+//	}
+//
+//	fclose(fout);
+//}

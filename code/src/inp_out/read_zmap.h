@@ -25,4 +25,6 @@
 int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *, char *file, struct crust crst, struct tm reftime, double t0s, double t1s,
 		double t0c, double t1c, double Mmain, double tw, double border, double, double dDCFS, int findgridpoints);
 
+int read_firstlineZMAP(char *file, struct tm reftime, double *time);
+
 #endif /* READ_ZMAP_H_ */

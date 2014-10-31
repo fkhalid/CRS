@@ -7,6 +7,7 @@
 
 # include <math.h>
 
+int closest_element(double *v, int N, double value, double toll);
 int *nth_index(int i, int Ndim, int *dim);
 void nrerrorsoft(char error_text[]);
 void copy_matrix( double **m1, double ***m2, int a, int b);
@@ -29,5 +30,11 @@ double *** duplicate_d3tensor(double ***S, long nrl, long nrh, long ncl, long nc
 double * duplicate_dvector(double *v, long nrl, long nrh);
 double min_v(double *v, int N);
 double max_v(double *v, int N);
+int **imatrix_firstlevel(long nrh);
+double **dmatrix_firstlevel(long nrh);
+void free_imatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
+void free_dmatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
+
+
 
 

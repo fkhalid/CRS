@@ -5,7 +5,13 @@
  *      Author: camcat
  */
 
-#include "splines_eqkfm.h"
+#include <math.h>
+
+#include "../defines.h"
+#include "../general/eqkfm_copy.h"
+#include "fit_splines.h"
+#include "nrutil.h"
+
 
 void splines_eqkfm(struct eqkfm *eqkfm_aft, int Nas, int NF, double *times1, double *times2, int L, struct eqkfm *all_afterslips, long *seed){
 	double **slipbefore_st, **slipbefore_di, **slip_after_st, **slip_after_di;
@@ -39,8 +45,10 @@ void splines_eqkfm(struct eqkfm *eqkfm_aft, int Nas, int NF, double *times1, dou
 			}
 		}
 		if (pure_thrustnorm==0) fit_splines(times1, times2, Nas, L, NP[f], slipbefore_st, (double *) 0, &slip_after_st, 2, seed);
+		// todo [coverage] this block is never tested
 		else for (int pt=1; pt<=NP[f]; pt++) for (int t=1; t<=L; t++) slip_after_st[pt][t]=0.0;
 		if (pure_strslip==0) fit_splines(times1, times2, Nas, L, NP[f], slipbefore_di, (double *) 0, &slip_after_di, 2, seed);
+		// todo [coverage] this block is never tested
 		else for (int pt=1; pt<=NP[f]; pt++) for (int t=1; t<=L; t++) slip_after_di[pt][t]=0.0;
 		for (int t=1; t<=L; t++){
 			copy_eqkfm_all(eqkfm_aft[f],all_afterslips+NF*(t-1)+f);

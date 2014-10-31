@@ -25,6 +25,7 @@ double *assign_GRnorm(double *mags, int N, double b, int Minf){
 		weights[1]=1;
 	}
 
+	// todo [coverage] this block is never tested
 	else {
 		weights=dvector(1,N);
 		dm=mags[2]-mags[1];

@@ -15,8 +15,8 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 // *new_v will be initialized if NULL; otherwise, must have correct no. of elements!
 
 	int P[3], Pn[3], nsub[3];
-	int D1, D2, D3, D1D2;	//no o fpoints per dimension (old geometry);
-	int D1n, D2n, D3n;	//no o fpoints per dimension (new geometry);
+	int D1, D2, D1D2;	//no o fpoints per dimension (old geometry);
+	int D1n, D2n;	//no o fpoints per dimension (new geometry);
 	int NP, NPn, nsub_tot;
 	int ind;
 
@@ -28,24 +28,21 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 		return 0;
 	}
 
+	// todo [coverage] from here on is never tested
 	if (increase_resolution){
 		D1=crst.nLat_out;
 		D2=crst.nLon_out;
-		D3=crst.nD_out;
 		D1D2=D1*D2;
 		D1n=crst.nLat;
 		D2n=crst.nLon;
-		D3n=crst.nD;
 	}
 
 	else {
 		D1=crst.nLat;
 		D2=crst.nLon;
-		D3=crst.nD;
 		D1D2=D1*D2;
 		D1n=crst.nLat_out;
 		D2n=crst.nLon_out;
-		D3n=crst.nD_out;
 	}
 
 	//no. of grid points between high resolution geometry and low resolution geometry (per dimension);
@@ -55,7 +52,8 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 	nsub_tot=nsub[0]*nsub[1]*nsub[2];
 
 	if (crst.nLat%crst.nLat_out!=0 || crst.nLon%crst.nLon_out!=0 || crst.nD%crst.nD_out!=0) {
-		if (verbose_level>0) printf(" ** Error: calculation cells are not a multiple of forecast cells - can not recalculate geometry -> Using old geometry. (convert_geometry)\n");
+		print_screen(" ** Error: calculation cells are not a multiple of forecast cells - can not recalculate geometry -> Using old geometry. (convert_geometry)\n");
+		print_logfile(" ** Error: calculation cells are not a multiple of forecast cells - can not recalculate geometry -> Using old geometry. (convert_geometry)\n");
 		*new_v=old_v;
 		return(1);
 	}

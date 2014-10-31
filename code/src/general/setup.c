@@ -7,28 +7,69 @@
 
 #include "setup.h"
 
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include "../defines.h"
+#include "../geom/coord_trafos.h"
+#include "../geom/top_of_slipmodel.h"
+#include "../inp_out/read_eqkfm.h"
+#include "../inp_out/read_focmec.h"
+#include "../inp_out/read_zmap.h"
+#include "../okada/okadaDCFS.h"
+#include "../util/error.h"
+#include "../util/moreutil.h"
+#include "../util/nrutil.h"
+#include "../util/splines_eqkfm.h"
+#include "eqkfm_copy.h"
+#include "find_timesteps.h"
+#include "mem_mgmt.h"
+#include "struct_conversions.h"
+
 #ifdef _CRS_MPI
 	#include "mpi.h"
 #endif
 
 int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
-					 struct tm reftime, double dDCFS, double Mag_main, struct crust crst,
+					 struct tm reftime, double dDCFS, double Mag_source, double Mag_main, struct crust crst,
 					 struct catalog *cat, struct eqkfm **eqkfm1, double ***focmec,
-					 int **firstelements, struct flags flag, int *NFM, int *Ntot, int *Nmain,
+					 int **firstelements, struct flags flag, int *NFM, int *Ntot,
 					 double dt, double dM, double xytoll, double ztoll, double dR, double tw,
-					 double tstart, double tend, double Mc_source) {
-//  focmec will contain matrix with focal mechanisms (*NFM of them). can be null, and will be ignored.
-//	double t0, double tw1, double tw2, double t1 =	tstartLL, tmain[0], tmain[0]+tw, fmax(tendLL,Tend)
-//  dt, dM, xytoll, ztoll: expected difference b/t/ events from catalog and focmec catalog; dR= extra distance to be considered for sources.
-//	focal mechanisms are ignored if focmeccat is NULL.
-//  tstartLL: start of LL inversion (only focal mechanisms before this time will be included).
-//  tstartData: time after which which events should be included as sources.
+					 double tstart, double tend) {
 
+/*	Reads catalog and focal mechanisms catalog, and fills cat, eqkfm structures accordingly.
+ *
+ * Input:
+ *
+ * catname:	ZMAP catalog file
+ * focmeccat:	list of focal mechanisms catalog files [0...nofmcat-1]
+ * nofmcat:	number of focal mechanisms catalogs
+ * reftime: IssueTime (times will be calcualted with reference to this time)
+ * dDCFS:	min. value for which grid points should be selected for calculating stress changes from source events
+ * Mag_main:	magnitude of mainshocks (i.e. events which are included as sources also if flags.aftershocks==0)
+ * crst:	structure containing domain information
+ * flag:	flags structure
+ * dt, dM, xytoll, ztoll: max. expected difference (tolerance) between events from catalog and focmec catalog;
+ * dR: extra distance to be considered for sources.
+ * tw:	time window to be ignored for event selection after each mainshock (NB only ignored in cat, still included as sources in eqkfm).
+ * tstart: start time for including sources and catalog events //todo they should be different to include foreshocks?
+ * tend: end time for forecast (sourced only included up to IssueTime, i.e. t=0)
+ *
+ * Output:
+ *
+ * cat:	catalog structure used for LL calculations
+ * eqkfm1:	eqkfm structure containing stress sources. Can be NULL, and will be ignored.	[0...Ntot-1]
+ * focmec:	array containing focal mechanisms [1...NFM]
+ * first_elements:	indices of focmec elements which correspond to the first element of a new focal mechanism area (i.e. a new focal mechanisms catalog)
+ * NFM:	length of focmec
+ * Ntot: length of eqkfm1
+ * Nmain:	number of mainshocks in eqkfm1
+ *
+ */
 
 //todo make sure that first focal mechanism is the best oriented.
-//todo only include as sources events large enough to affect more than 1 grid point...
-//todo so far, many events are selected and  eqkfm[n].nsel=0 is used to deactivate them. This is a waste (done this way to avoid messing up indices, but should be changed).
-//todo check Mc_source works.
 
 	// [Fahad] Variables used for MPI
 	int procId = 0;
@@ -39,67 +80,55 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 
 	struct eqkfm *eqkfm1fm;
 	double tstartS, tendS, tstartCat, tendCat;
+	double minmag;
 	int err=0, errP, NgridT=crst.N_allP;
 	int Nfm;
 
-	if(procId == 0) {
-		if (verbose_level>0) printf("Setting up catalog...\n");
-	}
+	print_screen("Setting up catalog...\n");
 
 	tendS=0;		//this is the "IssueDate", up to which data is available.
 	tendCat=tend;	//this is (presumably) the "ForecastDate", up to which data is available. Events after t=0 used to calculate LL of forecast.
 
 	//select events within some tolerance level, since they will have to be matched with focal mechanisms.
 	err += readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat,
-						Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
+			Mag_main, tw, fmax(xytoll, dR), fmax(ztoll, dR), dDCFS, 1);
 
-	//fixme check that foc mec are read when aftershocks==1.
-	if (flag.aftershocks){
-		//if (focmec){
-			err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
-					reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
-			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
-		//}
-		eqk_filter(eqkfm1, Ntot, (Mc_source>20) ? (*cat).Mc : Mc_source, crst.depmax+fmax(dR,ztoll));
-		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
+	if (err) return (err);
+
+	// read catalog of focal mechanisms and merge it with eqkfm structure from catalog:
+
+	if (focmeccat && (!flag.sources_all_iso || focmec)){
+		err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
+				reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
+		combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, dt, dM, xytoll, 1);
 	}
 
-	else {
-		if (focmec){
-			err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
-					reftime, tstart, tendS, tendS, Mag_main, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);
-			errP=combine_eqkfm(*eqkfm1, eqkfm1fm, *Ntot, Nfm, tendS, dt, dM, xytoll, 1);
-		}
-		eqk_filter(eqkfm1, Ntot, Mag_main, crst.depmax+fmax(dR,ztoll));	//only keep mainshocks.
-		eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 0);
-	}
+	// filter eqkfm according to magnitude, depth.
+	minmag= Mag_source;
+	eqk_filter(eqkfm1, Ntot, minmag , crst.depmax+fmax(dR,ztoll));
 
-	if (Nmain) *Nmain=0;
-	for (int i=0; i<(*Ntot); i++) {
-		if ((*eqkfm1)[i].mag>=Mag_main) {
-			(*eqkfm1)[i].is_mainshock=1;
-			if (Nmain) *Nmain+=1;
-		}
-		else{
-			if (flag.only_aftershocks_withfm && !(*eqkfm1)[i].is_slipmodel) (*eqkfm1)[i].nsel=0;
-			if (flag.full_field==0) (*eqkfm1)[i].is_slipmodel=0;
-		}
-	}
+	// calculate distances between source events and grid points.
+	eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
 
-	if(procId == 0) {
-		if (verbose_level>0) printf("%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
-		if (flog) {
-			fprintf(flog,"%d events used for catalog, %d events used as sources, %d of which mainshocks.\n", (int) (*cat).Z, *Ntot, *Nmain);
-			fflush(flog);
-		}
-	}
+
+	print_screen("%d events used for catalog, %d events used as sources.\n", (int) (*cat).Z, *Ntot);
+	print_logfile("%d events used for catalog, %d events used as sources.\n", (int) (*cat).Z, *Ntot);
+
+	//todo warning if no events are selected as sources.
 
 	return (err!=0);
 }
 
-int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, int resample, struct eqkfm **eqkfm0res){
-//input models are the models to be used at a given time (NB: only one model per event).
-//is_afterslip indicates that all models have same geometry: Nfaults and no_slipmodels only have 1 element.
+int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, struct eqkfm **eqkfm0res){
+/*
+ * Reads afterslip files into eqkfm structure.
+ *
+ * Input:
+ * 	list_slipmodel: list of slip model files
+ * 	crst: structure containing crust setup information
+ * 	models are the models to be used at a given time (NB: only one model per event).
+ *is_afterslip indicates that all models have same geometry: Nfaults and no_slipmodels only have 1 element.
+ */
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
@@ -114,9 +143,9 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 	int *no_slipmodels=list_slipmodels.no_slipmodels;
 	double *disc=list_slipmodels.disc;
 	int *Nfaults=list_slipmodels.Nfaults;
-	double d_touching_faults=3.0;	//todo: set somewhere else.
     int NFtot=0;
     int err=0;
+    char *cmb_format=list_slipmodels.cmb_format;
 
 
     	if (!(strcmp(cmb_format,"farfalle"))) err+=read_farfalle_eqkfm(slipmodels[0], NULL, Nfaults);
@@ -125,13 +154,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 			else {
 				if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(slipmodels[0], NULL, Nfaults);
 				else {
-					if(procId == 0) {
-						if (flog) {
-							fprintf(flog,"Unknown slip model format %s (setup_afterslip_eqkfm).\n", cmb_format);
-							fflush(flog);
-						}
-					}
-
+					print_logfile("Unknown slip model format %s (setup_afterslip_eqkfm).\n", cmb_format);
 					return 1;
 				}
 			}
@@ -141,20 +164,19 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     *eqkfm0res=eqkfm_array(0, NFtot-1);
 
     //TODO: implement multiple slip models with non strike slip event.
+    //todo: make sure than cuts_surf is read independently for coseismic/afterslip when different structure is introduced.
     NFtot=0;
     for (int nn=0; nn<Nm; nn++){
-    	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, no_slipmodels[0], crst.mu, disc[0], tmain[nn], d_touching_faults, crst.N_allP, crst.list_allP, NULL, resample, 0, list_slipmodels.cut_surf[nn], Nfaults, crst.lat0, crst.lon0);
+    	err+=setup_eqkfm_element((*eqkfm0res)+NFtot, slipmodels+nn, cmb_format, no_slipmodels[0], crst.mu, disc[0], tmain[nn], crst.N_allP, crst.list_allP, NULL, list_slipmodels.cut_surf[nn], Nfaults, crst.lat0, crst.lon0);
 		NFtot+=Nfaults[0];
 	}
-
-    top_of_slipmodel(*eqkfm0res, NFtot-1);
 
     return(err);
 }
 
-int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipmodels,
-						double mu, double disc, double tmain, double d_close, int nsel,
-						int *sel_pts, double *mmain, int resample, int tap_bot, int cuts_surf,
+int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_format, int no_slipmodels,
+						double mu, double disc, double tmain, int nsel,
+						int *sel_pts, double *mmain, int cuts_surf,
 						int *NF0, double lat0, double lon0) {
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
@@ -163,25 +185,20 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	static struct set_of_models setmodels;
-	static struct eqkfm *eqkfmall;
+	struct set_of_models setmodels;
 	struct eqkfm *eqkfm0;
 	int err=0, NF, nftot=0, nfmax=0;
 	double 	toll=1e-10, discx, discy;
 
-	(*eqkfm0res).parent_set_of_models=&setmodels;
 	setmodels.NF_models=ivector(1,no_slipmodels);
 	setmodels.Nmod=no_slipmodels;
 	setmodels.current_model=1;
 
 	for (int m=0; m<no_slipmodels; m++){
-		err=read_eqkfm(slipmodels[m], NULL, &NF, NULL, mu);
+		err=read_eqkfm(slipmodels[m], cmb_format, NULL, &NF, NULL, mu);
 		if (err){
-			if(procId == 0) {
-				if (verbose_level>0) printf(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
-				if (flog) fprintf(flog, " ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
-			}
-
+			print_screen(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
+			print_logfile(" ** Error: Input slip model %s could not be read (setup_eqkfm_element). **\n", slipmodels[m]);
 			return (1);
 		}
 		setmodels.NF_models[m+1]=NF;
@@ -189,12 +206,11 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 		nftot+=NF;
 	}
 	setmodels.NFmax=nfmax;
-	eqkfmall=eqkfm_array(0,nftot-1);
-	setmodels.set_of_eqkfm=eqkfmall;
+	setmodels.set_of_eqkfm=eqkfm_array(0,nftot-1);
 
 	nftot=0;
 	for (int m=0; m<no_slipmodels; m++){
-		err=read_eqkfm(slipmodels[m], &eqkfm0, &NF, mmain, mu);
+		err=read_eqkfm(slipmodels[m], cmb_format, &eqkfm0, &NF, mmain, mu);
 		if (err) return (err);
 
 		if (cuts_surf) {
@@ -202,7 +218,6 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 			for (int i=0; i<NF; i++) eqkfm0[i].cuts_surf=1;
 		}
 
-		which_taper(eqkfm0, NF, tap_bot, 0, d_close);
 		for (int nf=0; nf<NF; nf++) {
 			eqkfm0[nf].t=tmain;
 			eqkfm0[nf].nsel=nsel;
@@ -211,35 +226,14 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, int no_slipm
 			eqkfm0[nf].is_mainshock=1;
 			eqkfm0[nf].is_slipmodel=1;
 			latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
-			if (resample) {
-			  	discx=eqkfm0[nf].L/eqkfm0[nf].np_st;
-			  	discy=eqkfm0[nf].W/eqkfm0[nf].np_di;
-			  	//if current discretization is larger than required, resample:
-			  	if (discx>disc || discy>disc) {
-			  		suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, disc, 0.0);
-					if(procId == 0) {
-				  		if (flog){
-							fprintf(flog, "slip model %s is resampled from res=[str=%.3lf, dip=%.3lf] to res=%.3lf (setup.c).\n", slipmodels[m], discx, discy, disc);
-							fflush(flog);
-						}
-					}
-			  	}
-			  	else {
-					if (fabs(discx-discy)>toll) {
-						err+=suomod1_resample(eqkfm0[nf], eqkfmall+nftot+nf, fmin(discx, discy), 0.0);	//create a slip model with square patches.
-						if (flog){
-							fprintf(flog, "slip model %s is resampled to obtain square patches (setup.c).\n", slipmodels[m]);
-							fflush(flog);
-						}
-					}
-					else copy_eqkfm_all(eqkfm0[nf], eqkfmall+nftot+nf);
-			  	}
-				err+=suomod1_taper(eqkfmall[nftot+nf], eqkfmall+nftot+nf);	//just taper old slip model.
-			}
-			else err+=suomod1_taper(eqkfm0[nf], eqkfmall+nftot+nf);	//just taper old slip model.
+			setmodels.set_of_eqkfm[nftot+nf]=eqkfm0[nf];
 		}
 		nftot+=NF;
 	}
+
+	//allocate memory and copy values from setmodels;
+	(*eqkfm0res).parent_set_of_models=(struct set_of_models *) malloc((size_t) (sizeof(struct set_of_models)));
+	memcpy((*eqkfm0res).parent_set_of_models, &setmodels, (size_t) sizeof(struct set_of_models));
 
 	set_current_slip_model(eqkfm0res,1);
 	if (NF0) *NF0=nfmax;
@@ -270,20 +264,17 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 	for (int nf=0; nf<allmod.NF_models[slipmodel_index]; nf++) copy_eqkfm_all(eqkfmall[nf+nftot], eqkfm0+nf);
 	for (int nf=allmod.NF_models[slipmodel_index]; nf<allmod.NFmax; nf++) empty_eqkfm(eqkfm0+nf);
 
-	if(procId == 0) {
-		if (flog) {
-			fprintf(flog,"Slip model set to no. %d.\n", slipmodel_index);
-			fflush(flog);
-		}
-	}
+	print_logfile("Slip model set to no. %d.\n", slipmodel_index);
 
 	return;
 }
 
 int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out,
-		struct crust crst, struct eqkfm *eqkfm0, struct eqkfm *eqkfm1, int Nm,
-		int Ntot, int *Nfaults, int *which_main) {
-	//set Ntot=0 if aftershocks should not be considered.
+		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults, double aftersliptime, int afterslip) {
+	/*
+	 *  aftersliptime: event time of the mainshock containing afterslip.
+	 *  int afterslip: flag indicating if afterslip should be used.
+	 */
 
 	// [Fahad] Variables used for MPI
 	int procId = 0;
@@ -295,80 +286,52 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 	struct pscmp *DCFS;
     struct Coeff_LinkList *AllCoeff, *temp;
     int NFsofar=0, Nsel, Nsteps, NFtot, eq;
+    int mainshock_withafterslip;
     double M0;
 
     //----------set up Coefficients----------------//
 
     if (Coefficients!=NULL) {
-		AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
+    	//todo make sure that coefficients are only recalculated when needed (i.e. only for events for which several slip model are available).
+
+    	//Create elements of structure (allocate memory):
+    	AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
 		temp= AllCoeff;
 		for(int i=0; i<Nm; i++) {
-			if (eqkfm0[NFsofar].is_slipmodel) {
-				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
-						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
-			}
-			else {
-				temp->Coeffs_st=temp->Coeffs_dip=NULL;
-			}
-			temp->NgridT=eqkfm0[0].nsel;
-			temp->NF=Nfaults[i];
-			temp->NP=0;
-			for(int f=0; f<Nfaults[i]; f++) {
-				temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
-			}
-			temp->which_main=which_main[i];
-			NFsofar+=Nfaults[i];
 			if (i<Nm-1) {
+				temp->hasafterslip=0;
 				temp->next= malloc(sizeof(struct Coeff_LinkList));
 				temp= temp->next;
 			}
-			else temp->next=(struct Coeff_LinkList *) 0;
-		}
-		*Coefficients=AllCoeff;
-		if(procId == 0) {
-			if (flog){
-				fprintf(flog,"Okada Coefficients structure set up.\n");
-				fflush(flog);
+			else {
+				temp->hasafterslip=0;
+				temp->next=(struct Coeff_LinkList *) 0;
 			}
 		}
+
+		*Coefficients=AllCoeff;
+		print_logfile("Okada Coefficients structure set up.\n");
     }
 
     //--------------set up DCFS-------------------//
 
     if (DCFS_out!=NULL){
-		Nsteps= fmax(Ntot,Nm);
-		DCFS=pscmp_arrayinit(crst,0,Nsteps-1);
 
-		for (int eq1=0; eq1<Ntot; eq1++){
-			Nsel = eqkfm1[eq1].nsel;
-			DCFS[eq1].NF=1;
-			DCFS[eq1].index_cat=eqkfm1[eq1].index_cat;
-			DCFS[eq1].which_pts=eqkfm1[eq1].selpoints;
-			DCFS[eq1].fdist=eqkfm1[eq1].distance;
-			DCFS[eq1].nsel=Nsel;
-			DCFS[eq1].t=eqkfm1[eq1].t;
-			DCFS[eq1].m=eqkfm1[eq1].mag;
-			if (Nsel>0){
-				DCFS[eq1].S = d3tensor(1,Nsel,1,3,1,3);
-				DCFS[eq1].cmb=dvector(1,Nsel);
-				for (int i=1; i<=Nsel; i++) DCFS[eq1].cmb[i]=0.0;
-			}
-		}
+		DCFS=pscmp_arrayinit(crst,0,Nm-1);
 
 		NFtot=0;
-		//substitute mainshocks:
-		for (int eq1=0; eq1<Nm; eq1++){
-			eq= which_main[eq1];
+		for (int eq=0; eq<Nm; eq++){
 			Nsel = eqkfm0[NFtot].nsel;
 			DCFS[eq].fdist=eqkfm0[NFtot].distance;
 			DCFS[eq].index_cat=eqkfm0[NFtot].index_cat;
 			DCFS[eq].which_pts=eqkfm0[NFtot].selpoints;
 			DCFS[eq].t=eqkfm0[NFtot].t;
 			M0=0.0;
-			for (int f=0; f<Nfaults[eq1]; f++) M0+=pow(10,1.5*(eqkfm0[NFtot+f].mag+6));
+			for (int f=0; f<Nfaults[eq]; f++) M0+=pow(10,1.5*(eqkfm0[NFtot+f].mag+6));
 			DCFS[eq].m=(2.0/3.0)*log10(M0)-6;
-			DCFS[eq].NF=Nfaults[eq1];
+			DCFS[eq].NF=Nfaults[eq];
 			if (DCFS[eq].nsel!=Nsel){
+				// todo [coverage] this block is never tested
 				if (DCFS[eq].nsel>0){
 					free_d3tensor(DCFS[eq].S,1,DCFS[eq].nsel,1,3,1,3);
 					free_dvector(DCFS[eq].cmb,1,DCFS[eq].nsel);
@@ -378,17 +341,94 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 				DCFS[eq].cmb=dvector(1,Nsel);
 				for (int i=1; i<=Nsel; i++) DCFS[eq].cmb[i]=0.0;
 			}
-			NFtot+=Nfaults[eq1];
+			NFtot+=Nfaults[eq];
 		}
 
 		*DCFS_out=DCFS;
-		if(procId == 0) {
-			if (flog){
-				fprintf(flog,"DCFS structure set up.\n");
-				fflush(flog);
+		print_logfile("DCFS structure set up.\n");
+    }
+
+    //--------------associates afterslip with one mainshock-------------------//
+	// uses a ~1 sec tolerance
+
+    if (afterslip){
+    	int i=0;
+		mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, aftersliptime, 0.000011575);
+		if (mainshock_withafterslip==-1){
+			print_logfile("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
+			print_screen("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
+			return(1);
+		}
+		struct Coeff_LinkList *temp;
+		temp=AllCoeff;
+		while (i<Nm && i!=mainshock_withafterslip) {
+			i++;
+			temp=temp->next;
+		}
+		temp->hasafterslip=1;
+    }
+
+    return(0);
+}
+
+int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
+		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults) {
+
+	// [Fahad] Variables used for MPI
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
+    struct Coeff_LinkList *temp;
+    struct set_of_models tmp_setofmodels;
+    int NFsofar=0;
+    static int first_timein=1, switch_slipmodel;
+
+	//Fill in elements of structure:
+	temp= *Coefficients;
+	for(int i=0; i<Nm; i++) {
+		if (eqkfm0[NFsofar].is_slipmodel) {
+			// coefficients should only calculated if more than one slip model is provided (switch_slipmodel):
+			tmp_setofmodels=*(eqkfm0[NFsofar].parent_set_of_models);
+			switch_slipmodel= (tmp_setofmodels.Nmod > 1);
+			if (first_timein || switch_slipmodel){
+				if (!first_timein){
+					if (temp->Coeffs_st) free_f3tensor(temp->Coeffs_st, 1,0,1,0,1,0);
+					if (temp->Coeffs_dip) free_f3tensor(temp->Coeffs_dip, 1,0,1,0,1,0);
+				}
+				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+					   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+				temp->NgridT=eqkfm0[0].nsel;
+				temp->NF=Nfaults[i];
+				temp->NP=0;
+				for(int f=0; f<Nfaults[i]; f++) {
+					temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+				}
+				temp->which_main=i;
 			}
 		}
-    }
+		else {
+			temp->Coeffs_st=temp->Coeffs_dip=NULL;
+			if (first_timein){
+				temp->NgridT=eqkfm0[0].nsel;
+				temp->NF=Nfaults[i];
+				temp->NP=0;
+				for(int f=0; f<Nfaults[i]; f++) {
+					temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+				}
+				temp->which_main=i;
+			}
+		}
+		NFsofar+=Nfaults[i];
+		if (i<Nm-1) {
+			temp= temp->next;
+		}
+	}
+	print_logfile("Okada Coefficients structure updated.\n");
+
+	first_timein=0;
 
     return(0);
 }
@@ -485,6 +525,7 @@ int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *t
 		}
 	}
 
+// todo [coverage] this block is never tested
 	else {
 		for (int t=1; t<=*L; t++) (*tevol_afterslip)[t-1]=0;
 	}

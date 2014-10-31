@@ -15,16 +15,28 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			  struct crust crst, struct tm reftime, double t0s, double t1s,
 			  double t0c, double t1c, double Mmain, double tw, double border,
 			  double extra_d, double dDCFS, int findgridpoints) {
-/* t0s,t1s: for considering sources.
- * t0c,t1c: for catalog (LL periods).
- * a time window of length tw will be discarded after each event of magnitude >=Mmain in calculating Mc, b values. (these events should not be used in the LL calculations).
- * all are given in days from reftime.
- * border (in km): extra distance to be considered for sources.
- * cat, eqfm can be given as NULL, and will be skipped.
- * findgridpoints = flag indicating if grid points corresponding to events should be calculated (expensive).
- * Otherwise, everything in these structures is initialized.
+/*
+ * Reads catalog in zmap format into structure cat (used for LL calculation) and structure eqfm (for stress sources).
  *
- *  * */
+ * Input:
+ * 	file: zmap catalog.
+ * 	crst: structure containing model domain information (used to distribute events across grid points);
+ * 	reftime: reference time (IssueTime)
+ * 	t0s,t1s: start/end time for considering sources.
+ * 	t0c,t1c: start/end for catalog (LL period).
+ * 	To avoid using incomplete parts of the catalog, a time window of length tw will be discarded after each event of magnitude >=Mmain in calculating Mc, b values.
+ * 		(these events should not be used in the LL calculations).
+ * 	border (in km): extra horizontal distance outside of model domain to be considered for sources.
+ * 	extra_d (in km): extra vertical distance outside of model domain to be considered for sources.
+ * 	findgridpoints: flag indicating if grid points corresponding to events should be calculated (expensive).
+ * 	dDCFS: minimum stress value for which grid points should be considered.
+ *
+ * Output:
+ * 	cat: structure containing events to be used for LL calculation (both retrospective and for forecast)
+ * 	eqkfm: contains events to be used as sources. It can be given as NULL, and will be skipped.
+ * 	Otherwise, everything in these structures is initialized.
+ *
+ */
 
 	// [Fahad] Variables used for MPI
 	int fileError = 0;
@@ -118,11 +130,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	#endif
 
 	if(fileError) {
-		if(procId == 0) {
-			if (verbose_level) printf("**Error: unable to open input file %s (readZMAP).**\n", file);
-			if (flog) fprintf(flog,"**Error: unable to open input file %s (readZMAP).**\n", file);
-		}
-
+		print_screen("**Error: unable to open input file %s (readZMAP).**\n", file);
+		print_logfile("**Error: unable to open input file %s (readZMAP).**\n", file);
 		return (1);
 	}
 
@@ -137,6 +146,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			lines+=1;
 			st=fgets(line,line_length,fin);
 
+			//determine if notation is exponential:
 			if (lines==1) {
 				for (int i=0; i<strlen(line) && !exp_not; i++) {
 					if (line[i]==ex[0]) exp_not=1;
@@ -206,29 +216,29 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 				if (mag[valid+1]<-10 || mag[valid+1]>12) mag_out_of_range=1;
 				if (dep[valid+1]<0 || dep[valid+1]>2000) dep_out_of_range=1;
 
+				// todo [coverage] this block is never tested
 				if (lon_out_of_range || lat_out_of_range || date_out_of_range || time_out_of_range || mag_out_of_range || dep_out_of_range) {
 					missing_values+=1;
 					if (hh!=no_expected_columns || missing_values){
-						if (verbose_level>1) {
-							printf("** Warning: line %d has following columns out of range:", lines);
-							if (lon_out_of_range) printf("lon, ");
-							if (lat_out_of_range) printf("lat, ");
-							if (dep_out_of_range) printf("dep, ");
-							if (mag_out_of_range) printf("mag, ");
-							if (date_out_of_range) printf("date, ");
-							if (time_out_of_range) printf("time, ");
-							printf(" and will be skipped. ** \n");
-						}
-						if (flog) {
-							fprintf(flog, "Warning: line %d has following columns out of range:", lines);
-							if (lon_out_of_range) fprintf(flog, "lon (%.2lf), ", lon[valid+1]);
-							if (lat_out_of_range) fprintf(flog, "lat (%.2lf), ", lat[valid+1]);
-							if (dep_out_of_range) fprintf(flog, "dep (%.2lf), ", dep[valid+1]);
-							if (mag_out_of_range) fprintf(flog, "mag (%.2lf), ", mag[valid+1]);
-							if (date_out_of_range) fprintf(flog, "date (%2d-%2d-%4.lf), ", day, mon, year);
-							if (time_out_of_range) fprintf(flog, "time (%2d:%2d:%2d). ", hour, min, sec);
-							fprintf(flog, " and will be skipped.\n");
-						}
+
+						print_screen("** Warning: line %d has following columns out of range:", lines);
+						if (lon_out_of_range) print_screen("lon, ");
+						if (lat_out_of_range) print_screen("lat, ");
+						if (dep_out_of_range) print_screen("dep, ");
+						if (mag_out_of_range) print_screen("mag, ");
+						if (date_out_of_range) print_screen("date, ");
+						if (time_out_of_range) print_screen("time, ");
+						print_screen(" and will be skipped. ** \n");
+
+						print_logfile("Warning: line %d has following columns out of range:", lines);
+						if (lon_out_of_range) print_logfile("lon (%.2lf), ", lon[valid+1]);
+						if (lat_out_of_range) print_logfile("lat (%.2lf), ", lat[valid+1]);
+						if (dep_out_of_range) print_logfile("dep (%.2lf), ", dep[valid+1]);
+						if (mag_out_of_range) print_logfile("mag (%.2lf), ", mag[valid+1]);
+						if (date_out_of_range) print_logfile("date (%2d-%2d-%4.lf), ", day, mon, year);
+						if (time_out_of_range) print_logfile("time (%2d:%2d:%2d). ", hour, min, sec);
+						print_logfile(" and will be skipped.\n");
+
 					}
 					else valid+=1;
 				}
@@ -237,14 +247,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		}
 		fclose(fin);
 
-		if (verbose_level > 2) printf("%d of %d lines are valid; %d have missing values; %d are empty\n", valid, lines, missing_values, empty);
-		if (flog) fprintf(flog, "%d of %d lines are valid; %d have missing values; %d are empty\n", valid, lines, missing_values, empty);
-		else {
-			if (valid!=lines && verbose_level>0) {
-				printf("** Warning: %d invalid lines skipped in catalog: %s (%d lines have missing values; %d are empty). **\n", missing_values+empty, file, missing_values, empty);
-				if (flog) fprintf(flog, "Warning: %d invalid lines skipped in catalog: %s (%d lines have missing values; %d are empty).\n", missing_values+empty, file, missing_values, empty);
-			}
-		}
+		print_screen("%d of %d lines are valid; %d have missing values; %d are empty\n", valid, lines, missing_values, empty);
+		print_logfile("%d of %d lines are valid; %d have missing values; %d are empty\n", valid, lines, missing_values, empty);
 	}
 
 	#ifdef _CRS_MPI
@@ -296,7 +300,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 		if (mag[i]>= Mc-dM && lat[i]+SDlat>=lat0l && lat[i]-SDlat<=lat1l && lon[i]+SDlon>=lon0l && lon[i]-SDlon<=lon1l && dep[i]+SDd>=dep0l && dep[i]-SDd<=dep1l){
 			if (times[i]>=t0s && times[i]<=t1s) {
-
 				seleq1[eq1]=i;
 				eq1+=1;
 			}
@@ -313,18 +316,17 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		if (mag[i]>=Mmain) t_last_large=times[i];
 	}
 
+	// todo [coverage] this block is never tested
 	if (!eq1 && !eq2) {
 		if (cat) (*cat).Z=0;
 		if (Ntot) *Ntot=0;
+		print_logfile("No events found as sources or for LL inversion. Exiting.\n");
+		print_screen("No events found as sources or for LL inversion. Exiting.\n");
 		return 1;
 	}
 
-	if(procId == 0) {
-		if (flog){
-			fprintf(flog, "%d events selected for LL inversion. \n", eq2);
-			fprintf(flog, "%d events selected as sources. \n", eq1);
-		}
-	}
+	print_logfile("%d events selected for LL inversion. \n", eq2);
+	print_logfile("%d events selected as sources. \n", eq1);
 
 
 	//----------------------------find completeness magnitude and-------------------------//
@@ -360,22 +362,20 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		}
 		eq1=k;
 
-		if(procId == 0) {
-			if (flog){
-				fprintf(flog, "Calculated completeness magnitude (using maximum curvature): Mc=%.2lf\n", (*cat).Mc);
-				fprintf(flog, "%d events selected for LL inversion. \n", eq2);
-				fprintf(flog, "%d events selected as sources. \n", eq1);
-			}
-		}
+		print_logfile("Calculated completeness magnitude (using maximum curvature): Mc=%.2lf\n", (*cat).Mc);
+		print_logfile("%d events selected for LL inversion. \n", eq2);
+		print_logfile("%d events selected as sources. \n", eq1);
 	}
 
 	//------------------------------fill in catalog:-------------------------//
 
 	if (cat){
-		(*cat).pcrst=&crst;
-		init_cat1(cat, eq2, gridPMax);
+		(*cat).pcrst=&crst;	//todo check: is this ever used?
+		init_cat1(cat, eq2);
 
-		for (int i=1; i<=eq2; i++){		//todo parallel
+		//#pragma omp parallel for private(eq, SD, SDd, x, y) reduction(+:errP)
+		for (int i=1; i<=eq2; i++){
+		if (errP) continue;
 		eq=seleq2[i-1];
 			SD=f*herr[eq];
 			SDd=f*verr[eq];
@@ -391,24 +391,18 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			(*cat).x0[i]=x;
 			(*cat).y0[i]=y;
 	    	if (findgridpoints){
-				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, gridPMax, y, x, SD, dep[eq], SDd, cut_sd, (*cat).ngrid + i, (*cat).ngridpoints[i], (*cat).weights[i], 1, 1);
-				if (errP) break;
+				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, y, x, SD, dep[eq], SDd, cut_sd, (*cat).ngrid + i, &((*cat).ngridpoints[i]), &((*cat).weights[i]), 1, 1);
 			}
 		}
 		(*cat).tstart=fmax(t0c, (*cat).t[1]);
 		(*cat).tend=fmin(t1c, (*cat).t[(*cat).Z]);
 
 		if (!errP) {
-		if ((*cat).Mc>=20) (*cat).Mc=Mc_maxcurv((*cat).mag+1, (*cat).Z)+Mc_offset;
-		(*cat).b=calculatebvalue((*cat).mag+1, (*cat).Z, (*cat).Mc);
+			if ((*cat).Mc>=20) (*cat).Mc=Mc_maxcurv((*cat).mag+1, (*cat).Z)+Mc_offset;
+			(*cat).b=calculatebvalue((*cat).mag+1, (*cat).Z, (*cat).Mc);
 
-		if(procId == 0) {
-			if (verbose_level>1) printf("Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
-				if (flog) {
-					fprintf(flog, "Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
-					fflush(flog);
-				}
-			}
+			print_screen("Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
+			print_logfile("Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
 		}
 	}
 
@@ -420,7 +414,9 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		if (Ntot) *Ntot=eq1;
 		*eqfm=eqkfm_array(0,eq1-1);
 
-		for (int i=0; i<eq1; i++){	//todo parallel.
+		#pragma omp parallel for private(eq) reduction(+:errP)
+		for (int i=0; i<eq1; i++){
+			if (errP) continue;
 			eq=seleq1[i];
 			(*eqfm)[i].t=times[eq];
 			(*eqfm)[i].lat=lat[eq];
@@ -428,12 +424,10 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			(*eqfm)[i].depth=dep[eq];
 			(*eqfm)[i].mag=mag[eq];
 			(*eqfm)[i].index_cat= catindex[i];
-
 	    	latlon2localcartesian((*eqfm)[i].lat, (*eqfm)[i].lon, crst.lat0, crst.lon0, &((*eqfm)[i].y), &((*eqfm)[i].x));
 	    	if (findgridpoints){
 				if (catindex[i]!=0) errP+=find_gridpoints_d(ygrid, xgrid, depgrid, (*cat).ngridpoints[catindex[i]], (*cat).ngrid[catindex[i]], N, (*eqfm)[i].y, (*eqfm)[i].x, (*eqfm)[i].depth,  (*eqfm)[i].mag, dDCFS,  &((*eqfm)[i].nsel), &((*eqfm)[i].selpoints));
 				else errP+=find_gridpoints_d(ygrid, xgrid, depgrid, (int *) 0, 0, N, (*eqfm)[i].y, (*eqfm)[i].x, (*eqfm)[i].depth,  (*eqfm)[i].mag, dDCFS,  &((*eqfm)[i].nsel), &((*eqfm)[i].selpoints));
-				if (errP) break;
 	    	}
 
 		}
@@ -446,4 +440,112 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	return (errP!=0);
 }
 
+
+int read_firstlineZMAP(char *file, struct tm reftime, double *stime){
+/*
+ * Reads first line of ZMAP file and return time of the event. Used to determine start time of a catalog (assumed to be chronological).
+ *
+ * Input:
+ * 	file: ZMAP catalog file
+ * 	reftime: reference time
+ *
+ * Output:
+ *  stime: time of first event, in days, relative to reftime.
+ */
+
+
+	// [Fahad] Variables used for MPI
+	int fileError = 0;
+	int procId = 0;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+
+	int line_length=2000;
+	FILE *fin;
+	char line[line_length], *st;
+	int mon, day, hour, min, sec;
+	double fyear, fmon, fday, fhour, flmin, fsec;
+	double year, this_year;
+	struct tm ev;
+	time_t t;
+
+	t=time(NULL);
+	this_year=(*localtime(&t)).tm_year+1900;
+
+	setenv("TZ", "UTC", 1);
+
+	if(procId == 0) {
+		fin = fopen(file,"r");
+
+		if(fin == NULL) {
+			fileError = 1;
+		}
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	#endif
+
+	if(fileError) {
+		print_screen("**Error: unable to open input file %s (readZMAP).**\n", file);
+		print_logfile("**Error: unable to open input file %s (readZMAP).**\n", file);
+		return (1);
+	}
+
+
+	//------------------------------read first line if catalog:-------------------------//
+
+	int exp_not=0;
+	char ex[]="e";
+
+	if(procId == 0) {
+		st=fgets(line,line_length,fin);
+
+		//determine if notation is exponential:
+		for (int i=0; i<strlen(line) && !exp_not; i++) {
+			if (line[i]==ex[0]) exp_not=1;
+		}
+
+		if (exp_not) {
+			sscanf(line, "%*25le %*25le %25le %25le %25le %*25le %*25le %25le %25le %25le %*25le %*25le %*25le",
+						&fyear, &fmon, &fday, &fhour, &flmin, &fsec);
+
+			year=(int) fyear;
+			mon=(int) fmon;
+			day=(int) fday;
+			hour=(int) fhour;
+			min= (int) flmin;
+			sec= (int) fsec;
+		}
+		// todo [coverage] this block is never tested
+		else {
+			sscanf(line, "%*lf %*lf %lf %lf %lf %*lf %*lf %lf %lf %lf %*lf %*lf %*lf\n",	&fyear, &fmon, &fday, &fhour, &flmin, &fsec);
+			year=(int) fyear;
+			mon=(int) fmon;
+			day=(int) fday;
+			hour=(int) fhour;
+			min= (int) flmin;
+			sec= (int) fsec;
+		}
+
+		ev.tm_year=floor(year)-1900;
+		ev.tm_mon=mon-1;
+		ev.tm_mday=day;
+		ev.tm_isdst=0;
+		ev.tm_hour=hour;
+		ev.tm_min=min;
+		ev.tm_sec=(int) sec;
+
+		*stime=difftime(mktime(&ev),mktime(&reftime))*SEC2DAY;
+	}
+
+	//todo [askFahad] is this ok? (stime is passed a function argument)
+	#ifdef _CRS_MPI
+		MPI_Bcast(stime, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	#endif
+
+	return 0;
+}
 

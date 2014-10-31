@@ -7,28 +7,42 @@
 
 #include "read_inputfile.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#include "../defines.h"
+#include "../util/error.h"
+#include "../util/nrutil.h"
+
 #ifdef _CRS_MPI
 	#include "mpi.h"
 #endif
 
-int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *crust_file, char *fore_template,
-		char *catname, char ***focmeccat, char *background_rate_file, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
-		char *model_parameters_file, char *Logfile, int *extraoutput, struct tm *reftime,
-		double *Tstart, double *Tend, long *seed, char *cmb_format, int *num_fm){
+int read_inputfile(char *input_fname, char *outname, char *fore_template,
+		char *catname, char ***focmeccat, char *background_rate_grid, char *background_rate_cat, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
+		char *model_parameters_file, char *Logfile, struct tm *reftime,
+		double *Tstart, double *Tend, double *tstartLL, long *seed, int *num_fm){
 
-	/* input: file name input_fname
+	//todo check string length is enough?
+	/* Read master input file.
+	 *
+	 * input: file name input_fname
 	 *
 	 * output:
-	 * 		outname: output file
-	 * 		reftime_str: string containing the reference time (issue time)
+	 * 		outname: output file name (without extension)
 	 * 		reftime: structure containing the reference time (issue time)
 	 * 		Tstart, Tend: time in days from reftime
-	 * 		crust_file: input file for farfalle code (general file with info about the crust etc).
 	 * 		fore_template: forecast template
-	 * 		catname: catalog
+	 * 		catname: catalog (ZMAP)
 	 * 		focmeccat: catalog of focal mechanisms
-	 * 		background_rate_file: file containing background seismicity model
+	 * 		background_rate_grid: file containing background seismicity model
 	 * 		slipmodefile, afterslipmodelfile: files containing a list of slip models/afterslipmodel snapshots
+	 * 		model_parameters_file: file containing model parameters
+	 * 		Logfile: log file to be written
+	 * 		seed: seed for random number generator
+	 * 		num_fm: number of focal mechanisms areas
 	 *
 	 * NB: all pointers will be ignored if NULL is passed; otherwise, char* should already be initialized.
 	 */
@@ -49,8 +63,9 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	char line[Nchar], listfocmeccat[Nchar];
 	char *key, *value;
 	int NP=18, i, err=0;
-	struct tm times;
-	int value_found[NP], listfm=0, nofm=0;
+	struct tm times0, times1, times2, times3;
+	int value_found[NP];
+	int listfm=0, nofm=0;	//listfm is a flag indicating whether multiple focal mechanism catalogs are given. nofm is the number of such catalogs.
 	char comment[]="#", comm=comment[0];
 
 	for (int n=0; n<NP; n++) value_found[n]=0;
@@ -64,17 +79,19 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	/*5*/	"InputCatalogFocMecFile",	\
 	/*6*/	"InputListCatalogFocMecFile",	\
 	/*7*/	"ForecastTemplate", \
-	/*8*/	"InputCoulombFile", \
+	/*8*/	"", \
 	/*9*/	"InputListSlipModels", \
 	/*10*/	"InputListAfterslipModels", \
-	/*11*/	"InputBackgroundRateFile",\
+	/*11*/	"InputBackgroundRateGrid",\
 	/*12*/	"InputModelParametersFile",\
 	/*13*/	"RandomSeedValue",\
 	/*14*/	"Logfile",\
-	/*15*/	"ExtendedOutput",\
-	/*16*/	"CmbFormat", \
-	/*17*/	"FixedMecFile"
+	/*15*/	"FixedMecFile", \
+	/*16*/	"InputBackgroundRateCatalog", \
+	/*18*/	"InversionStartDate"
 	};
+
+	// NB: arguments 5,6,17 are alternative (different ways to treat receiver faults)
 
 	// [Fahad] If there is a file error, only root will know about it.
 	//		   So it is important that the error is broadcast to all
@@ -83,10 +100,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	if(procId == 0) {
 		fin = fopen(input_fname, "r");
 		if(fin == NULL) {
-			if(verbose_level > 1) {
-				fprintf(stderr, "Error read_input: unable to open input file %s.\n", input_fname);
-			}
-
+			print_screen("Error read_input: unable to open input file %s.\n", input_fname);
 			fileError = 1;
 		}
 	}
@@ -104,8 +118,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 			fgets(line,Nchar,fin);
 			if (line[0]==comm) continue;
 			if (ferror(fin)) {
-				if (verbose_level>1) error_quit("Error reading input data using fgets!\n");
-
+				error_quit("Error reading input data using fgets!\n");
 				fileError = 1;
 				break;
 			}
@@ -115,34 +128,39 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 			i=0;
 			while (i<NP && strcmp(key,keys[i])) i++;
 			if (i>=NP){
-				if (verbose_level>0) fprintf(stderr, "Error read_input: parameter \" %s\" in file \"%s\" not recognized.\n", key, input_fname);
-				continue;
+				print_screen("Error read_inputfile: parameter \" %s\" in file \"%s\" not recognized.\n", key, input_fname);
+				print_logfile("Error read_inputfile: parameter \" %s\" in file \"%s\" not recognized.\n", key, input_fname);
+				fileError = 1;
+				break;
 			}
 
 			value_found[i]=1;
 
+			// Fill in output variables with values from file:
 			switch(i){
 				case 0:
-					sscanf(value,"%s",reftime_str);
-					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-					times.tm_year-=1900;
-					times.tm_mon-=1;
-					times.tm_isdst=0;
-					if (reftime) *reftime=times;
+					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times0.tm_year), &(times0.tm_mon), &(times0.tm_mday), &(times0.tm_hour), &(times0.tm_min), &(times0.tm_sec));
+					times0.tm_year-=1900;
+					times0.tm_mon-=1;
+					times0.tm_isdst=0;
+					if (reftime) *reftime=times0;
+					if (Tstart && value_found[1]) *Tstart=difftime(mktime(&times1),mktime(&times0))*SEC2DAY;
+					if (Tend && value_found[2]) *Tend=difftime(mktime(&times2),mktime(&times0))*SEC2DAY;
+					if (tstartLL && value_found[18]) *tstartLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
 					break;
 				case 1:
-					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-					times.tm_year-=1900;
-					times.tm_mon-=1;
-					times.tm_isdst=0;
-					if (Tstart) *Tstart=difftime(mktime(&times),mktime(reftime))*SEC2DAY;
+					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times1.tm_year), &(times1.tm_mon), &(times1.tm_mday), &(times1.tm_hour), &(times1.tm_min), &(times1.tm_sec));
+					times1.tm_year-=1900;
+					times1.tm_mon-=1;
+					times1.tm_isdst=0;
+					if (Tstart && value_found[0]) *Tstart=difftime(mktime(&times1),mktime(&times0))*SEC2DAY;
 					break;
 				case 2:
-					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-					times.tm_year-=1900;
-					times.tm_mon-=1;
-					times.tm_isdst=0;
-					if (Tend) *Tend=difftime(mktime(&times),mktime(reftime))*SEC2DAY;
+					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times2.tm_year), &(times2.tm_mon), &(times2.tm_mday), &(times2.tm_hour), &(times2.tm_min), &(times2.tm_sec));
+					times2.tm_year-=1900;
+					times2.tm_mon-=1;
+					times2.tm_isdst=0;
+					if (Tend && value_found[0]) *Tend=difftime(mktime(&times2),mktime(&times0))*SEC2DAY;
 					break;
 				case 3:
 					if (outname) sscanf(value,"%s",outname);
@@ -152,6 +170,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					break;
 				case 5:
 					if (focmeccat) {
+						// In this case a single focal mechanism catalog is given:
+						// the file name can be read directly into the 0th element of focmeccat.
 						*focmeccat= malloc(sizeof(char*));
 						(*focmeccat)[0]=malloc(120*sizeof(char));
 						sscanf(value,"%s",(*focmeccat)[0]);
@@ -161,6 +181,8 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					if (num_fm) *num_fm=1;
 					break;
 				case 6:
+					// In this case several catalog of focal mechanisms are given:
+					// the names of the catalogs, listed in the file "listfocmeccat" will be read later on.
 					if (focmeccat) sscanf(value,"%s",listfocmeccat);
 					listfm=1;
 					break;
@@ -168,7 +190,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					if (fore_template) sscanf(value,"%s",fore_template);
 					break;
 				case 8:
-					if (crust_file) sscanf(value,"%s",crust_file);
+					// just empty line
 					break;
 				case 9:
 					if (slipmodelfile) sscanf(value,"%s",slipmodelfile);
@@ -177,7 +199,7 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					if (afterslipmodelfile) sscanf(value,"%s",afterslipmodelfile);
 					break;
 				case 11:
-					if (background_rate_file) sscanf(value,"%s",background_rate_file);
+					if (background_rate_grid) sscanf(value,"%s",background_rate_grid);
 					break;
 				case 12:
 					if (model_parameters_file) sscanf(value,"%s",model_parameters_file);
@@ -189,13 +211,17 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 					if (Logfile) sscanf(value,"%s",Logfile);
 					break;
 				case 15:
-					if (extraoutput) sscanf(value,"%d",extraoutput);
+					if (fixedmecfile) sscanf(value,"%s",fixedmecfile);
 					break;
 				case 16:
-					if (cmb_format) sscanf(value,"%s",cmb_format);
+					if (background_rate_cat) sscanf(value,"%s",background_rate_cat);
 					break;
 				case 17:
-					if (fixedmecfile) sscanf(value,"%s",fixedmecfile);
+					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times3.tm_year), &(times3.tm_mon), &(times3.tm_mday), &(times3.tm_hour), &(times3.tm_min), &(times3.tm_sec));
+					times3.tm_year-=1900;
+					times3.tm_mon-=1;
+					times3.tm_isdst=0;
+					if (tstartLL && value_found[0]) *tstartLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
 					break;
 			}
 		}
@@ -213,16 +239,15 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
-		// 		   setting certain flags. 'cmb_format' is used at
-		//		   multiple points where files are read.
-		// 		   catname is used in setup.c.
-		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(background_rate_file,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		// 		   setting certain flags. catname is used in setup.c.
+		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD); //todo [askFahad]: do we need to broadcast this?
+		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(cmb_format, 			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(Tstart, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(Tend, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(tstartLL, 			 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(seed, 				 1,   MPI_LONG,   0, MPI_COMM_WORLD);
 		MPI_Bcast(num_fm, 				 1,   MPI_INT, 	  0, MPI_COMM_WORLD);
 
@@ -240,73 +265,118 @@ int read_inputfile(char *input_fname, char *outname, char *reftime_str, char *cr
 	#endif
 
 	if (focmeccat && listfm) {
-		err = read_slipformecfiles(listfocmeccat, focmeccat, num_fm);
-		if(procId == 0) {
-			if (err) {
-				if (verbose_level) printf("Error: could not read file %s.\n", listfocmeccat);
-				if (flog) fprintf(flog,"Error: could not read file %s.\n", listfocmeccat);
-			}
+		err = read_slipfocmecfiles(listfocmeccat, focmeccat, num_fm);
+		if (err) {
+			print_screen("Error: could not read file %s.\n", listfocmeccat);
+			print_logfile("Error: could not read file %s.\n", listfocmeccat);
 		}
 	}
 
-	if(procId == 0) {
+	// Print out warnings or errors for missing or redundant parameters:
+	// Camilla [askFahad]: I deleted the procId condition here since the output functions print_logfile, print_screen already contain the same condition;
+	// and because some of the variables are changed below (e.g. outname, focmeccat), and they were not broadcast.
+	//if(procId == 0) {
+		if ((value_found[6] + value_found[5] + value_found[15])>1){
+			print_screen("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
+			print_logfile("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
+			err=1;
+		}
+		if ((value_found[11] + value_found[16])>1){
+			print_screen("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[16]);
+			print_logfile("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[16]);
+			err=1;
+		}
 		nofm=0;
 		for (int n=0; n<NP; n++) {
 			if (!value_found[n]) {
 				switch (n){
 				case 3:
-					if (verbose_level>2) printf("Warning: parameter %s not given in %s -> will use output/forecast.\n", keys[n], input_fname);
+					if (extra_verbose) {
+						print_screen("Warning: parameter %s not given in %s -> will use output/forecast.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s -> will use output/forecast.\n", keys[n], input_fname);
+					}
 					if (outname) strcpy(outname,"output/forecast");
 					break;
 				case 5:
 					if (nofm){
-						if (verbose_level>2) printf("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+						if (extra_verbose) {
+							print_screen("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+							print_logfile("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+						}
 						if (focmeccat) *focmeccat=NULL;
+						if (num_fm) *num_fm=1;
 					}
 					else nofm=1;
 					break;
 				case 6:
 					if (nofm){
-						if (verbose_level>2) printf("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+						if (extra_verbose) {
+							print_screen("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+							print_logfile("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
+						}
 						if (focmeccat) *focmeccat=NULL;
+						if (num_fm) *num_fm=1;
 					}
 					else nofm=1;
 					break;
+				case 8:
+					//just empty line
+					break;
 				case 9:
-					if (verbose_level>2) printf("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					if (extra_verbose) {
+						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					}
 					if (slipmodelfile) strcpy(slipmodelfile,"");
 					break;
 				case 10:
-					if (verbose_level>2) printf("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					if (extra_verbose) {
+						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					}
 					if (afterslipmodelfile) strcpy(afterslipmodelfile,"");
 					break;
 				case 11:
-					if (verbose_level>2) printf("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
-					if (background_rate_file) strcpy(background_rate_file,"");
+					if (extra_verbose) {
+						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					}
+					if (background_rate_grid) strcpy(background_rate_grid,"");
 					break;
 				case 14:
 					if (Logfile) strcpy(Logfile,"");
 					break;
-			case 17:
-				if (fixedmecfile) strcpy(fixedmecfile,"");
-				break;
-				case 13:
-					if (extraoutput) extraoutput=0;
+				case 15:
+					if (fixedmecfile) strcpy(fixedmecfile,"");
 					break;
+				case 16:
+					if (background_rate_cat) strcpy(background_rate_cat,"");
+					break;
+
 				default:
-					if (verbose_level) printf("Error: parameter %s not given in %s.\n", keys[n], input_fname);
-					if (flog) fprintf(flog, "Error: parameter %s not given in %s.\n", keys[n], input_fname);
-					return 1;
+					print_screen("Error: parameter %s not given in %s.\n", keys[n], input_fname);
+					print_logfile("Error: parameter %s not given in %s.\n", keys[n], input_fname);
+					err=1;
 					break;
 				}
 			}
 		}
-	}
+	//}
 
-	return err;
+	return (err || fileError);
 }
 
-int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
+int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
+
+/* Read a file containing a list of focal mechanism catalogs files (corresponding to different areas).
+ *
+ * input: inputfile
+ *
+ * output:
+ * listfiles, a list of filenames;
+ * nflies, the number of files.
+ *
+ */
 
 	int Nchar=1000;
 	char line[Nchar];
@@ -322,12 +392,8 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 	if(procId == 0) {
 		if (!(fin=fopen(inputfile,"r"))) {
-			if (verbose_level) printf("Error: can not open file %s (read_slipformecfiles), Exiting.\n", inputfile);
-			if (flog) {
-				fprintf(flog, "Error: can not open file %s (read_slipformecfiles), Exiting.\n", inputfile);
-				fflush(flog);
-			}
-
+			print_screen("Error: can not open file %s (read_slipfocmecfiles), Exiting.\n", inputfile);
+			print_logfile("Error: can not open file %s (read_slipfocmecfiles), Exiting.\n", inputfile);
 			fileError = 1;
 		}
 	}
@@ -344,7 +410,7 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 	if(procId == 0) {
 		line[0]=comm;
 		while (line[0]==comm)fgets(line,Nchar,fin);
-		if (ferror(fin)) fprintf(stderr, "ERROR reading input data (file: %s) using fgets!\n", inputfile);
+		if (ferror(fin)) print_screen("Error reading input data (file: %s) using fgets!\n", inputfile);
 		sscanf(line,"%d", nfiles);
 
 		*listfiles = malloc((*nfiles)*sizeof(char*));
@@ -353,7 +419,7 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 			line[0]=comm;
 			while (line[0]==comm)fgets(line,Nchar,fin);
 			if (ferror(fin)) {
-				fprintf(stderr, "ERROR reading input data (file: %s) using fgets!\n", inputfile);
+				print_screen("Error reading input data (file: %s) using fgets!\n", inputfile);
 
 				fileError = 1;
 
@@ -369,6 +435,7 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 		// FIXME: [Fahad] The following will generate an error if ferror(fin)
 		//		  was true in any of the iterations of the while loop above.
 		//		  Check with the author and implement the correct code.
+		// todo [askFahad]: can we just move broadcasting fileError and returning 1 above this block?
 		if(procId != 0) {
 			*listfiles = malloc((*nfiles)*sizeof(char*));
 			for(int i = 0; i < (*nfiles); ++i) {
@@ -395,6 +462,20 @@ int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 // FIXME: [Fahad] MPI code this this function requires optimization ...
 int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels,
 					   double res, int is_afterslip) {
+	/*
+	 * Read a file containing a list of slip models.
+	 *
+	 * input:
+	 * 	input_fname (file name)
+	 * 	reftime: structure containing the value of corresponding to reference time (IssueTime).
+	 * 	is_afterslip: flag indicating whether the file contains coseismic slip models or afterslip (files are organized differently).
+	 * 	res: desired slip model resolution
+	 *
+	 * output:
+	 * 	allslipmodels: list of slip models;
+	 *
+	 */
+
 	// [Fahad] Variables used for MPI
 	int procId = 0;
 	int fileError = 0, size_slipmodels = 0;
@@ -411,7 +492,6 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	double t0;
 	struct tm times;
 	int Nm0, nsm, no_slipmod;
-	int cuts_surf=0;	//fixme this should be read from file, for individual events!!
 
 	if(procId == 0) {
 		fin = fopen(input_fname, "r");
@@ -425,13 +505,8 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	#endif
 
 	if(fileError) {
-		if(procId == 0) {
-			if (verbose_level>1) fprintf(stderr, "Warning read_input: no slip model file found (read_listslipmodel).\n");
-			if (flog) {
-				fprintf(flog, "\nWarning read_input: slip model file %s not found (read_listslipmodel).\n", input_fname);
-				fflush(flog);
-			}
-		}
+		print_screen("Warning read_input: no slip model file found (read_listslipmodel).\n");
+		print_logfile("\nWarning read_input: slip model file %s not found (read_listslipmodel).\n", input_fname);
 		(*allslipmodels).NSM=0;
 		(*allslipmodels).is_afterslip=is_afterslip;
 		(*allslipmodels).tmain= NULL;
@@ -451,7 +526,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			sscanf(line,"%d", &Nm0);
 			fgets(line,Nchar,fin);
 			if (is_afterslip) {
-				sscanf(line,"%s", cmb_format);
+				sscanf(line,"%s", &((*allslipmodels).cmb_format));
 				fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 				sscanf(line, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
 				times.tm_year-=1900;
@@ -460,14 +535,14 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				t0=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
 			}
 			else {
-				sscanf(line,"%s %d", cmb_format, &((*allslipmodels).constant_geometry));
+				sscanf(line,"%s %d", &((*allslipmodels).cmb_format), &((*allslipmodels).constant_geometry)); //todo check this is the same as coseismic models.
 			}
 		}
 
 		#ifdef _CRS_MPI
 			MPI_Bcast(&Nm0, 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&((*allslipmodels).constant_geometry), 1, MPI_INT, 0, MPI_COMM_WORLD);
-			MPI_Bcast(cmb_format, 120, MPI_CHAR, 0, MPI_COMM_WORLD);
+			MPI_Bcast(&((*allslipmodels).cmb_format), 120, MPI_CHAR, 0, MPI_COMM_WORLD);
 
 			if(is_afterslip) {
 				MPI_Bcast(&t0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -476,9 +551,10 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 		(*allslipmodels).NSM=Nm0;
 		(*allslipmodels).is_afterslip=is_afterslip;
-		(*allslipmodels).tmain=dvector(0,Nm0-1);
+		(*allslipmodels).tmain= (is_afterslip)? dvector(-1,Nm0-1) : dvector(0,Nm0-1);	//-1 element to store mainshock time (when afterslip starts).
 		(*allslipmodels).mmain= (is_afterslip)? NULL : dvector(0,Nm0-1);
 		(*allslipmodels).cut_surf=ivector(0,Nm0-1);
+		if (is_afterslip) (*allslipmodels).tmain[-1]=t0;
 		if (is_afterslip){
 			(*allslipmodels).disc=dvector(0,0);
 			(*allslipmodels).disc[0]=res;
@@ -495,12 +571,11 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		nsm=0;
 		if(procId == 0) {
 			for (int nn=0; nn<Nm0; nn++) {
-			(*allslipmodels).cut_surf[nn]=cuts_surf;	//fixme read from file.
 				if (is_afterslip){
 					(*allslipmodels).slipmodels[nn] = malloc(120 * sizeof(char));
 					(*allslipmodels).Nfaults[nn]=1;	//actual value found later.
 					fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-					sscanf(line,"%lf %s", (*allslipmodels).tmain+nn, (*allslipmodels).slipmodels[nn]);
+					sscanf(line,"%lf %d %s", (*allslipmodels).tmain+nn, (*allslipmodels).cut_surf+nn, (*allslipmodels).slipmodels[nn]);
 					(*allslipmodels).tmain[nn]+=t0;
 				}
 				else{
@@ -522,7 +597,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 					 for (int n=1; n<=no_slipmod; n++){
 						(*allslipmodels).slipmodels[nsm] = malloc(120 * sizeof(char));
 						fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-						sscanf(line,"%s", (*allslipmodels).slipmodels[nsm]);
+						sscanf(line,"%d %s", (*allslipmodels).cut_surf+nsm, (*allslipmodels).slipmodels[nsm]);
 						nsm++;
 
 					}
@@ -580,26 +655,21 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		#endif
 	}
 
-	if(procId == 0) {
-		if (flog) {
-			nsm=0;
-			if (is_afterslip) fprintf(flog, "\nAfterslip input file: %s.\n", input_fname);
-			else fprintf(flog, "\nSlip input file: %s.\n", input_fname);
-			fprintf(flog, "%d %s slip models:\n", (*allslipmodels).NSM, is_afterslip? "after" : "");
-			for (int m=0; m<(*allslipmodels).NSM; m++){
-				if (is_afterslip){
-					if (m==0) fprintf(flog, "\t time \t name\n");
-					fprintf(flog, "\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).slipmodels[m]);
-				}
-				else{
-					if (m==0) fprintf(flog, "\t time \t mag \t name\n");
-					for (int n=1; n<=(*allslipmodels).no_slipmodels[m]; n++){
-						fprintf(flog, "\t%.2lf\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).mmain[m], (*allslipmodels).slipmodels[nsm]);
-						nsm++;
-					}
-				}
+	nsm=0;
+	if (is_afterslip) print_logfile("\nAfterslip input file: %s.\n", input_fname);
+	else print_logfile("\nSlip input file: %s.\n", input_fname);
+	print_logfile("%d %s slip models:\n", (*allslipmodels).NSM, is_afterslip? "after" : "");
+	for (int m=0; m<(*allslipmodels).NSM; m++){
+		if (is_afterslip){
+			if (m==0) print_logfile("\t time \t name\n");
+			print_logfile("\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).slipmodels[m]);
+		}
+		else{
+			if (m==0) print_logfile("\t time \t mag \t name\n");
+			for (int n=1; n<=(*allslipmodels).no_slipmodels[m]; n++){
+				print_logfile("\t%.2lf\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).mmain[m], (*allslipmodels).slipmodels[nsm]);
+				nsm++;
 			}
-			fflush(flog);
 		}
 	}
 

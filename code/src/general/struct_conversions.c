@@ -14,10 +14,20 @@
 //------------------ combining -------------------//
 
 int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
-				   double tend, double dt, double dM, double dR, int overwrite) {
-//joins 2 eqkfm catalogs, where each member corresponds to an earthquake (i.e. no multifault events). Keeps event number of first catalog.
-//dt, dM are ranges within which earthquakes are considered to be the same.
-//indices range between [0,N1-1] and [0,N2-1].
+				   double dt, double dM, double dR, int overwrite) {
+
+	/* Finds common elements of two eqkfm structures, where each member corresponds to an earthquake (i.e. no multifault events).
+	 *
+	 * Input:
+	 *  eqkfm2, eqkfm2:	structures to be combined. range [0,N1-1] and [0,N2-1].
+	 *  N1, N2: length of eqkfm1, eqkfm2
+	 *  dt, dM, dR: ranges within which earthquakes are considered to be the same.
+	 *  overwrite: flag indicating if elements of eqkfm1 should be overwritten with values from eqkfm2.
+	 *
+	 * Output:
+	 *  return array of indices of eqkfm1 corresponding to elements in eqkfm2. Value -1 if event is not found in eqkfm1.
+	 *  if (overwrite==1), also changes values in eqkfm1.
+	 */
 
 	// [Fahad] Variables used for MPI
 	int procId = 0;
@@ -29,26 +39,14 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 	int n1=0, n10=0, n12=0; //indices of next and previous event and closest in time.
 	double dist20, dist2, dlon;
 	int selected, *sel, *sel1;
-	int N20=N2, N10=N1;
 	double dx, dy, dz, r;
-	int verbose=0, not_selected=0;	//verbose can be reactivated for printing out selected events (e.g. for debugging).
+	int outfile=0, not_selected=0;	//outfile can be reactivated for printing out selected events (e.g. for debugging).
 	char fname[120];
 	FILE *fout;
 
-	//recalculate N1, N2 to exclude events after tend.
-	N2=N1=0;
-	while (N2<N20 && eqkfm2[N2].t<=tend) N2++;
-	while (N1<N10 && eqkfm1[N1].t<=tend) N1++;
-
 	if (N1==0 | N2==0) {
-		if(procId == 0) {			
-			if (verbose_level>1) printf("Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
-			if (flog) {
-				fprintf(flog, "Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
-				fflush(flog);
-			}
-		}
-
+		print_screen("Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
+		print_logfile("Warning - one of the eqkfm structures is empty! (combine_eqkfm) \n");
 		return NULL;
 	}
 
@@ -83,7 +81,7 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 
 		if (fabs(eqkfm2[n2].mag-eqkfm1[n12].mag) <=(dM+0.001) && fabs(eqkfm2[n2].t-eqkfm1[n12].t) <=dt && r<=dR){
 			if(procId == 0) {
-				if (verbose==1) fprintf(fout,"%lf\t%lf\t%lf\t%lf\t%lf\t%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 1, eqkfm1[n12].t, eqkfm1[n12].lat, eqkfm1[n12].lon, eqkfm1[n12].depth, eqkfm1[n12].mag,r);
+				if (outfile) fprintf(fout,"%lf\t%lf\t%lf\t%lf\t%lf\t%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 1, eqkfm1[n12].t, eqkfm1[n12].lat, eqkfm1[n12].lon, eqkfm1[n12].depth, eqkfm1[n12].mag,r);
 			}
 			if (overwrite==1){
 				//copy_eqkfm_nolocation_noindex_notime(eqkfm2[n2], eqkfm1+n12);	//todo decide which one is better (temporary change for iquique).
@@ -96,50 +94,56 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 
 		else {
 			if(procId == 0) {
-				if (verbose==1) fprintf(fout,"%.8lf\t%lf\t%lf\t%lf\t%lf\t%d\t%.8lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 0, 0.0 ,0.0 ,0.0 ,0.0, 0.0, 0.0);
+				if (outfile) fprintf(fout,"%.8lf\t%lf\t%lf\t%lf\t%lf\t%d\t%.8lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 0, 0.0 ,0.0 ,0.0 ,0.0, 0.0, 0.0);
 			}
 		}
 
-		if (selected!=1 && eqkfm2[n2].t<tend) {
+		if (selected!=1) {
 			sel[n2]=-1;
-			if (!selected && (verbose_level || flog)) {
+			if (!selected) {
 				not_selected+=1;
-				if (verbose_level>2) {
-					if(procId == 0) {
-						if (verbose_level) printf("Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
-						if (flog) {
-							fprintf(flog, "Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
-							fflush(flog);
-						}
-					}
+				if (extra_verbose) {
+					print_screen("Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
+					print_logfile("Warning: element %d [t=%lf, Mw=%lf, d=%.3lf] from eqkfm2 missing in eqkfm1 (function: combine_eqkfm)!!\n",n2,eqkfm2[n2].t,eqkfm2[n2].mag, eqkfm2[n2].depth);
 				}
 			}
 		}
 	}
 			
-	if (not_selected && (verbose_level || flog)){
-		if(procId == 0) {
-			if (verbose_level) printf("Warning: %d elements from focal mechanism catalog missing from earthquake catalog.\n", not_selected);
-			if (flog) fprintf(flog, "Warning: %d elements from focal mechanism catalog missing from earthquake catalog.\n", not_selected);
-			fflush(flog);
-		}
+	if (not_selected){
+		print_screen("Warning: %d elements from focal mechanism catalog missing from earthquake catalog.\n", not_selected);
+		print_logfile("Warning: %d elements from focal mechanism catalog missing from earthquake catalog.\n", not_selected);
 	}
 
 	if(procId == 0) {
-		if (verbose==1) fclose(fout);
+		if (outfile) fclose(fout);
 	}
 
 	return sel;
 }
 
 int *combine_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2, double dt, double dM){
-	//t1, mX have indices [0...NX-1].
+	/*
+	 * Finds common elements of two earthquake catalogs based on time and magnitudes
+	 *
+	 * Input:
+	 *  t1, m1: event times, magnitudes in catalog 1; range [0...N1-1]
+	 *  t2, m2: event times, magnitudes in catalog 2; range [0...N2-1]
+	 *  N1, N2: size of tx, mx.
+	 *  dt, dM: tolerance
+	 *
+	 * Output:
+	 *  returns array of indices of [t1,m1] corresponding to elements in [t2, m2]. Value -1 if event is not found in [t1, m1].	 *
+	 */
+
+
 	int n1=0, n10=0, n12=0; //indices of next and previous event and closest in time.
 	int selected;
 	int *sel, *sel1;
 	double dist2, dist20;
 
 	if (!N2) return NULL;
+	// todo [coverage] this block is never tested
 	if (!N1) {
 		sel= ivector(0,N2-1);
 		for (int n=0; n<N2; n++) sel[n]=-1;
@@ -180,10 +184,24 @@ int *combine_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2
 }
 
 double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2, double dt, double dM, int ***ind, int *tot){
+	/*
+	 * Combines two earthquake catalogs based on time and magnitudes.
+	 *
+	 * Input:
+	 *  t1, m1: event times, magnitudes in catalog 1; range [0...N1-1]
+	 *  t2, m2: event times, magnitudes in catalog 2; range [0...N2-1]
+	 *  N1, N2: size of tx, mx.
+	 *  dt, dM: tolerance
+	 *
+	 * Output:
+	 *  returns
 	//t1, mX have indices [0...NX-1].
 	//gives times and magnitude combined (also non common elements).
 	//value of -1 in ind[x][y] means that element y was not found in one [tx mx], otherwise index is given.
 	//results and ind have indices [0...tot-1].
+	 * */
+
+	//todo [attheend]: comment this function is still used.
 
 	int n1=0, n10=0, n12=0, n120; //indices of next and previous event, closest and closest to previous element.
 	int selected, count=0;
@@ -194,6 +212,7 @@ double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int 
 	if (ind) *ind=imatrix(1,2,0,N1+N2);
 	res=dmatrix(1,2,0,N1+N2);
 
+	// todo [coverage] this block is never tested
 	if (!N1){
 		if (tot) *tot=N2;
 		for (int i=0; i<N2; i++){
@@ -305,8 +324,19 @@ double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int 
 //------------------ filtering -------------------//
 
 void eqk_filter(struct eqkfm **eqkfm1, int *Ntot, double Mag, double Depth){
-	//inefficient (3 loops), but uses as little memory as possible.
-	//if free==1, frees memory.
+	/*
+	 * Filters eqkfm structure base magnitude and depth.
+	 *
+	 * Input:
+	 * 	eqkfm1 [0...Ntot-1] structure
+	 * 	Ntot: size of eqkfm1
+	 * 	Mag: selection magnitude (m>=Mag)
+	 * 	Depth: depth magnitude (depth<=Depth)
+	 *
+	 * Output:
+	 * 	eqkfm1 is substituted with filtered version.
+	 */
+
 	struct eqkfm *eqkfm0;
 	int j=0;
 	int Ntot_new=0;
@@ -328,19 +358,24 @@ void eqk_filter(struct eqkfm **eqkfm1, int *Ntot, double Mag, double Depth){
 
 	for (int i=0; i<Ntot_new; i++) copy_eqkfm_all(eqkfm0[i],(*eqkfm1)+i);
 	*Ntot=Ntot_new;
-	if (verbose_level>2) printf("%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
-	if (flog){
-		fprintf(flog,"%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
-		fflush(flog);
-	}	
+	print_screen("%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
+	print_logfile("%d events with Mw>=%.3lf, z<=%.3lf selected from eqkfm (eqk_filter).\n",Ntot_new, Mag, Depth);
 	return;
 }
 
 //--------------------extracting 1d arrays------------------------//
 
 double *timesfromeqkfm(struct eqkfm *eqkfm1, int N, int *NF){
-/* simply copy times from eqkfm to double vector. indices: [0...N]
- * NF contains no. of faults for each event; if NULL, assume single fault events. */
+	/* Copies times from eqkfm to double vector.
+	 *
+	 * Input:
+	 *  eqkfm1: range [0...nel-1], where nel is the sum of the elements in NF
+	 *  N: number of events in eqkfm1 (may be <nel is events are multiple fault events).
+	 *  NF: number of faults for each event; range [0, N-1]. If NULL, assume single fault events.
+	 *
+	 * Output
+	 *  returns array of events times; range [0...N-1].
+	 */
 
 
 	double *times=dvector(0,N-1);
@@ -355,8 +390,17 @@ double *timesfromeqkfm(struct eqkfm *eqkfm1, int N, int *NF){
 }
 
 double *magssfromeqkfm(struct eqkfm *eqkfm1, int N, int *NF){
-/*simply copy times from eqkfm to double vector. indices: [0...N]
- * NF contains no. of faults for each event; if NULL, assume single fault events. */
+	/* Copies magnitudes from eqkfm to double vector.
+	 *
+	 * Input:
+	 *  eqkfm1: range [0...nel-1], where nel is the sum of the elements in NF
+	 *  N: number of events in eqkfm1 (may be <nel is events are multiple fault events).
+	 *  NF: number of faults for each event; range [0, N-1]. If NULL, assume single fault events.
+	 *
+	 * Output
+	 *  returns array of events magnitudes; range [0...N-1].
+	 */
+
 
 	double *mags=dvector(0,N-1);
 	int counter=0, NF_i;
@@ -374,7 +418,15 @@ double *magssfromeqkfm(struct eqkfm *eqkfm1, int N, int *NF){
 }
 
 double *timesfrompscmp(struct pscmp *DCFS, int N){
-//simply copy times from DCFS to double vector. indices: [0...N]
+	/* Copies times from DCFS to double vector.
+	 *
+	 * Input:
+	 *  DCFS: range [0...N-1].
+	 *  N: size of DCFS
+	 *
+	 * Output
+	 *  returns array of events times; range [0...N-1].
+	 */
 
 double *times=dvector(0,N-1);
 for (int i=0; i<N; i++) times[i]=DCFS[i].t;
@@ -383,7 +435,15 @@ return times;
 }
 
 double *magsfrompscmp(struct pscmp *DCFS, int N){
-//simply copy magnitudes from DCFS to double vector. indices: [0...N]
+	/* Copies magnitudes from DCFS to double vector.
+	 *
+	 * Input:
+	 *  DCFS: range [0...N].
+	 *  N: size of DCFS
+	 *
+	 * Output
+	 *  returns array of events magnitudes; range [0...N-1].
+	 */
 
 double *mags=dvector(0,N-1);
 for (int i=0; i<N; i++) mags[i]=DCFS[i].m;
@@ -393,31 +453,40 @@ return mags;
 
 //todo move somewhere else?
 void eqkfm2dist(struct eqkfm *eqkfm1, double *lats, double *lons, double *depths, int N, int Ntot, int all){
-// if flag all=0, only find distance if eqkfm[i].is_slipmodel=0.
+	/*
+	 * Calculates distances between sources in eqjfm1 and grid points, and writes them into eqkfm1[i].dist.
+	 *
+	 * Input:
+	 *  eqkfm1:	structure containing sources. Range [0...Ntot-1]
+	 *  lats, lons, depths: coordinates of grid points. range [1...N]
+	 *  N, Ntot: sizes of grid (lat, lon, depths) and eqkfm structure.
+	 *  all: flag indicating if distance should calculated for all elements of eqkfm, or only when eqkfm[i].is_slipmodel==1.
+	 *
+	 */
 
-double x,y, *xs, *ys, Depth;
-double lat0, lon0;
-int nsel, pt;
+	double x,y, *xs, *ys, Depth;
+	double lat0, lon0;
+	int nsel, pt;
 
-ys=dvector(1,N);
-xs=dvector(1,N);
-lat0=0.5*(lats[N]+lats[1]);
-lon0=0.5*(lons[N]+lons[1]);
-for (int k0=1; k0<=N;k0++) latlon2localcartesian(lats[k0], lons[k0], lat0, lon0, ys+k0, xs+k0);
+	ys=dvector(1,N);
+	xs=dvector(1,N);
+	lat0=0.5*(lats[N]+lats[1]);
+	lon0=0.5*(lons[N]+lons[1]);
+	for (int k0=1; k0<=N;k0++) latlon2localcartesian(lats[k0], lons[k0], lat0, lon0, ys+k0, xs+k0);
 
-for (int i=0; i<Ntot; i++){
-	if (all==1 || eqkfm1[i].is_slipmodel==0){
-		nsel=eqkfm1[i].nsel;
-		if (nsel==0) continue;
+	for (int i=0; i<Ntot; i++){
+		if (all==1 || eqkfm1[i].is_slipmodel==0){
+			nsel=eqkfm1[i].nsel;
+			if (nsel==0) continue;
 
-		latlon2localcartesian(eqkfm1[i].lat, eqkfm1[i].lon, lat0, lon0, &y, &x);
-		Depth=eqkfm1[i].depth;
-		eqkfm1[i].distance=dvector(1,nsel);	//TODO deallocate.
+			latlon2localcartesian(eqkfm1[i].lat, eqkfm1[i].lon, lat0, lon0, &y, &x);
+			Depth=eqkfm1[i].depth;
+			eqkfm1[i].distance=dvector(1,nsel);	//TODO deallocate.
 
-		for (int p=1; p<=nsel; p++) {
-			pt=eqkfm1[i].selpoints[p];
-			eqkfm1[i].distance[p]= sqrt(pow(ys[pt]-y,2)+pow(xs[pt]-x,2)+pow(depths[pt]-Depth,2));
+			for (int p=1; p<=nsel; p++) {
+				pt=eqkfm1[i].selpoints[p];
+				eqkfm1[i].distance[p]= sqrt(pow(ys[pt]-y,2)+pow(xs[pt]-x,2)+pow(depths[pt]-Depth,2));
+			}
 		}
 	}
-}
 }

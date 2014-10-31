@@ -14,20 +14,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 #include "../defines.h"
-#include "../general/forecast_stepG.h"
 #include "../general/mem_mgmt.h"
 #include "../geom/convert_geometry.h"
 #include "../geom/coord_trafos.h"
 #include "../geom/dist2fault.h"
 #include "../geom/find_gridpoints.h"
 #include "../inp_out/print_output.h"
-#include "../inp_out/read_crust.h"
+//#include "../inp_out/read_crust.h"
 #include "../inp_out/read_csep_template.h"
 #include "../inp_out/read_eqkfm.h"
-#include "../inp_out/read_eqkfm_fsp.h"
 #include "../inp_out/read_focmec.h"
 #include "../inp_out/read_inputfile.h"
 #include "../inp_out/read_matrix.h"
@@ -40,7 +37,7 @@
 #include "../seis/decluster.h"
 #include "../seis/GR.h"
 #include "../seis/Helmstetter.h"
-#include "../seis/soumod1.h"
+//#include "../seis/soumod1.h"
 #include "../util/hash.h"
 #include "../util/moreutil.h"
 #include "../util/nr.h"
@@ -64,42 +61,77 @@ char *testfolder="test";
 extern int gridPMax;
 double DCFS_cap=1e7;
 
-//int test_readmultiplefocmec(){
-//
-//	int nf=3;
-//	char **files;
-//	int NFM, NFM2;
-//	double **focmec;
-//	struct eqkfm *eqkfm;
-//	int NFM0, NFM20;
-//	double **focmec0;
-//	struct eqkfm *eqkfm0;
-//	struct crust crst;
-//	struct tm reftime;
-//	char *crust_file="/home/des/camcat/Code/CRS_2.01/input/Tohoku_new.inp";
-//	char *temp_file="/home/des/camcat/Code/CRS_2.01/input/tohoku_template_nonuniform2.dat";
-//	double res=1000.0;
-//	int *firstel;
-//
-//	files=malloc(nf*sizeof(char *));
-//	for (int i=1; i<=nf; i++){
-//		files[i-1]=malloc(120*sizeof(char));
-//		sprintf(files[i-1],"input/other/NIED_GMTformat%d.dat",i);
-//	}
-//
-//	sscanf("2011-03-11T14:46:18Z", "%d-%d-%dT%d:%d:%dZ", &(reftime.tm_year), &(reftime.tm_mon), &(reftime.tm_mday), &(reftime.tm_hour), &(reftime.tm_min), &(reftime.tm_sec));
-//	reftime.tm_year-=1900;
-//	reftime.tm_mon-=1;
-//	reftime.tm_isdst=0;
-//
+int quick_pointertest(){
+
+	double a=5;
+	double *b=&a;
+	double c=*b;
+	double *d=malloc(sizeof(double));
+
+	memcpy (d, &a, sizeof(double));
+
+	printf("%lf \n%lf \n%lf\n", a, c, *d);
+
+}
+
+
+int test_countcolheader(){
+	/* testfile.txt is the following:
+	 *
+	 *  this    line    has     5       columns
+		here is just some blabla this is supposed to be a header
+		only    three   columns
+	 *
+	 */
+
+	int n=countcol_header("testfile.txt", 2);
+	printf("%d\n",n);	//should be 3
+
+	n=countcol("testfile.txt");
+	printf("%d\n",n);	//should be 5
+
+	n=countcol_header("testfile.txt",3);
+	printf("%d\n",n);	//should be -1
+
+}
+
+int test_readmultiplefocmec(){
+
+	int nf=3;
+	char **files;
+	int NFM, NFM2;
+	double **focmec;
+	struct eqkfm *eqkfm;
+	int NFM0, NFM20;
+	double **focmec0;
+	struct eqkfm *eqkfm0;
+	struct crust crst;
+	struct tm reftime;
+	char *crust_file="/home/des/camcat/Code/CRS_2.01/input/Tohoku_new.inp";
+	char *temp_file="/home/des/camcat/Code/CRS_2.01/input/tohoku_template_nonuniform2.dat";
+	double res=1000.0;
+	int *firstel;
+
+	files=malloc(nf*sizeof(char *));
+	for (int i=1; i<=nf; i++){
+		files[i-1]=malloc(120*sizeof(char));
+		sprintf(files[i-1],"input/other/NIED_GMTformat%d.dat",i);
+	}
+
+	sscanf("2011-03-11T14:46:18Z", "%d-%d-%dT%d:%d:%dZ", &(reftime.tm_year), &(reftime.tm_mon), &(reftime.tm_mday), &(reftime.tm_hour), &(reftime.tm_min), &(reftime.tm_sec));
+	reftime.tm_year-=1900;
+	reftime.tm_mon-=1;
+	reftime.tm_isdst=0;
+
+	//broken (no crust_file anymore)
 //	read_crust(crust_file, temp_file, &crst, NULL, res, res);
-//	readmultiplefocmec(files, nf, "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec, &firstel, &NFM, &NFM2, &eqkfm, 1, 0);
-//	readfocmec("input/other/NIED_GMTformat.dat", "CSEP", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec0, &NFM0, &NFM20, &eqkfm0, 1, 0);
-//
-//	for (int i=0; i<=nf; i++) printf("%d\n", firstel[i]);
-//
-//	return 0;
-//}
+	readmultiplefocmec(files, nf, crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec, &firstel, &NFM, &NFM2, &eqkfm, 1, 0);
+	readfocmec("input/other/NIED_GMTformat.dat", crst, 0.0, 0.0, 0.0, reftime, 0.0, 100, 100, 2.0, &focmec0, &NFM0, &NFM20, &eqkfm0, 1, 0);
+
+	for (int i=0; i<=nf; i++) printf("%d\n", firstel[i]);
+
+	return 0;
+}
 
 int test_next_separator(){
 
@@ -138,23 +170,22 @@ int test_nth_index(){
 int test_read_inputfiles(){
 
 	char *file="input/testinput.txt";
-	char outname[120], reftime_str[120], crust_file[120], fore_template[120], catname[120], focmeccat[120], \
-		background_rate_file[120], slipmodelfile[120], afterslipmodelfile[120];
+	char outname[120], reftime_str[120], fore_template[120], catname[120], focmeccat[120], \
+		background_rate_grid[120], slipmodelfile[120], afterslipmodelfile[120];
 	struct tm reftime;
 	double tstart, tend;
 	struct slipmodels_list slip_list;
 	int nfm;
 
-	read_inputfile(file, outname, reftime_str, crust_file, fore_template, catname, focmeccat, background_rate_file, NULL,
-			slipmodelfile, afterslipmodelfile, NULL, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
+	read_inputfile(file, outname, reftime_str, fore_template, catname, focmeccat, background_rate_grid, NULL, NULL,
+			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, &nfm);
 
 	printf("outname=%s\n", outname);
 	printf("reftime_str=%s\n", reftime_str);
-	printf("crust_file=%s\n", crust_file);
 	printf("fore_template=%s\n", fore_template);
 	printf("catname=%s\n", catname);
 	printf("focmeccat=%s\n", focmeccat);
-	printf("background_rate_file=%s\n", background_rate_file);
+	printf("background_rate_grid=%s\n", background_rate_grid);
 	printf("slipmodelfile=%s\n", slipmodelfile);
 	printf("afterslipmodelfile=%s\n", afterslipmodelfile);
 	printf("reftime=%d-%d-%dT%d:%d:%dZ\n", reftime.tm_year+1900, reftime.tm_mon+1, reftime.tm_mday, reftime.tm_hour, reftime.tm_min, reftime.tm_sec);
@@ -246,127 +277,129 @@ int test_read_inputfiles(){
 //	return 0;
 //}
 
-int test_background_rate(){
+//int test_background_rate(){
+//
+//	char fname[120];
+//	FILE *fout;
+//	char crust_file[]="input/inCan.dat";
+//	char fore_file[]="input/darf_temp.txt";
+//	char cat_file[]="/home/des/camcat/Data/Catalogs/ZMAP/new_zeland/nz_2009_2011_fixed.dat";
+//	struct crust crst;
+//	struct tm reftime;
+//	struct catalog cat;
+//	double Mcut=20, Mmain=7.0;
+//	double dR=50, dZ=50;
+//	int ord=1;
+//	double res=3.0, res_z=1.0;
+//	double *rates=NULL;
+//
+//	sscanf("2010-09-03T16:35:42Z", "%d-%d-%dT%d:%d:%dZ", &(reftime.tm_year), &(reftime.tm_mon), &(reftime.tm_mday), &(reftime.tm_hour), &(reftime.tm_min), &(reftime.tm_sec));
+//	reftime.tm_year-=1900;
+//	reftime.tm_mon-=1;
+//	reftime.tm_isdst=0;
+//
+//	//broken (no crust_file anymore)
+//	//read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
+//	background_rate(cat_file, &crst, reftime, Mcut, Mmain, -1e30, 1e30,  dR, dZ, ord);
+//
+//	cat.Mc=Mcut;
+//	crst.GRmags=dvector(1,1);
+//	crst.GRmags[1]=1.0;
+//	readZMAP(&cat, NULL, NULL, cat_file, crst, reftime, 0.0, 0.0, -1e30, 0.0, 10, 0.0, 0.0, 0.0, 0.0, 0);
+//
+////	sprintf(fname, "%s/Helm_cat_Darf_past_3d_MC3.0.dat",testfolder);
+////	fout=fopen(fname,"w");
+////	for (int i=1; i<=cat.Z; i++) fprintf(fout,"%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n", cat.lat0[i], cat.lon0[i], cat.depths0[i], cat.t[i], cat.mag[i]);
+////	fclose(fout);
+//
+//	sprintf(fname, "%s/Background_Darf_hr.dat", testfolder);
+//	for (int i=1; i<=crst.N_allP; i++) crst.rate0[i]*=crst.r0;
+//	print_rate(fname, crst, 3.0, crst.rate0);
+//
+//	convert_geometry(crst, crst.rate0, &rates, 1, 0);
+//	sprintf(fname, "%s/Background_Darf.dat", testfolder);
+//	csep_forecast(fname, crst, rates, 0);
+//
+////	sprintf(fname, "%s/Helm_rate_Darf_3d_MC3.0.dat", testfolder);
+////	fout=fopen(fname,"w");
+////	for (int i=1; i<=crst.N_allP; i++) {
+////		fprintf(fout,"%.5lf\t%.5lf\t%.5lf\t%.5e\n",crst.lat[i], crst.lon[i], crst.depth[i], crst.rate0[i]);
+////	}
+////	fclose(fout);
+////
+////	sprintf(fname, "%s/Helm_bgrate_Darf_3d_MC3.0.dat", testfolder);
+////	fout=fopen(fname,"w");
+////	fprintf(fout,"Background rate= %.6lf earthquakes/day (M>=%.1lf)\n", crst.r0, crst.mags[1]);
+////	fclose(fout);
+//
+//	return 0;
+//}
 
-	char fname[120];
-	FILE *fout;
-	char crust_file[]="input/inCan.dat";
-	char fore_file[]="input/darf_temp.txt";
-	char cat_file[]="/home/des/camcat/Data/Catalogs/ZMAP/new_zeland/nz_2009_2011_fixed.dat";
-	struct crust crst;
-	struct tm reftime;
-	struct catalog cat;
-	double Mcut=20, Mmain=7.0;
-	double dR=50, dZ=50;
-	int ord=1;
-	double res=3.0, res_z=1.0;
-	double *rates=NULL;
-
-	sscanf("2010-09-03T16:35:42Z", "%d-%d-%dT%d:%d:%dZ", &(reftime.tm_year), &(reftime.tm_mon), &(reftime.tm_mday), &(reftime.tm_hour), &(reftime.tm_min), &(reftime.tm_sec));
-	reftime.tm_year-=1900;
-	reftime.tm_mon-=1;
-	reftime.tm_isdst=0;
-
-	read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
-	background_rate(cat_file, &crst, reftime, Mcut, Mmain, -1e30, 1e30,  dR, dZ, ord);
-
-	cat.Mc=Mcut;
-	crst.GRmags=dvector(1,1);
-	crst.GRmags[1]=1.0;
-	readZMAP(&cat, NULL, NULL, cat_file, crst, reftime, 0.0, 0.0, -1e30, 0.0, 10, 0.0, 0.0, 0.0, 0.0, 0);
-
-//	sprintf(fname, "%s/Helm_cat_Darf_past_3d_MC3.0.dat",testfolder);
+//int test_decluster_catalog(){
+//
+//	char fname[120];
+//	double Mmain=6.0;
+//	double *time_missing=NULL;
+//	FILE *fout;
+//	char crust_file[]="input/Tohoku_simple_vert.inp";
+//	char fore_file[]="input/tohoku_template.dat";
+//	char cat_file[]="/home/des/camcat/Data/Catalogs/Others/jma_cat_2010_2013_update20130329_sel_2.5.dat";
+//	struct catalog cat;
+//	struct crust crst;
+//	struct tm tt;
+//	time_t t;
+//	int *dec;
+//	double *weights;
+//	double *rate, r;
+//	double res=6.0;
+//
+//	time(&t);
+//	tt=*(localtime(&t));
+//
+//	//broken (no crust_file anymore)
+//	//read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
+//	cat.Mc=0.0;
+//	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
+//	weights=dvector(1,cat.Z);
+//
+//
+//	//old declustering method (rescales rates after calculating them):
+//	dec=decluster_catalog_rescalegrid(cat, crst, Mmain, &time_missing, 0);
+//
+//	for (int i=1; i<=cat.Z; i++) weights[i]=(double) dec[i];
+//
+//	rate=Helmstetter_cat(cat, crst, weights, 2);
+//
+//	sprintf(fname, "%s/Helm_rate_dec6.0_2nd.dat", testfolder);
 //	fout=fopen(fname,"w");
-//	for (int i=1; i<=cat.Z; i++) fprintf(fout,"%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n", cat.lat0[i], cat.lon0[i], cat.depths0[i], cat.t[i], cat.mag[i]);
+//	for (int i=1; i<=crst.nLat*crst.nLon; i++) fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],rate[i]);
 //	fclose(fout);
-
-	sprintf(fname, "%s/Background_Darf_hr.dat", testfolder);
-	for (int i=1; i<=crst.N_allP; i++) crst.rate0[i]*=crst.r0;
-	print_rate(fname, crst, 3.0, crst.rate0);
-
-	convert_geometry(crst, crst.rate0, &rates, 1, 0);
-	sprintf(fname, "%s/Background_Darf.dat", testfolder);
-	csep_forecast(fname, crst, rates, 0);
-
-//	sprintf(fname, "%s/Helm_rate_Darf_3d_MC3.0.dat", testfolder);
+//
+//	sprintf(fname, "%s/Helm_rate_dec_rescaled6.0_2nd.dat", testfolder);
 //	fout=fopen(fname,"w");
-//	for (int i=1; i<=crst.N_allP; i++) {
-//		fprintf(fout,"%.5lf\t%.5lf\t%.5lf\t%.5e\n",crst.lat[i], crst.lon[i], crst.depth[i], crst.rate0[i]);
+//	for (int i=1; i<=crst.nLat*crst.nLon; i++) {
+//		r=(cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]);
+//		fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],r*rate[i]);
 //	}
 //	fclose(fout);
 //
-//	sprintf(fname, "%s/Helm_bgrate_Darf_3d_MC3.0.dat", testfolder);
+//	//new declustering method (weights earthquakes):
+//	decluster_catalog(cat, Mmain, &weights, 0);
+//
+//	sprintf(fname, "%s/Dec_cat6.0.dat",testfolder);
 //	fout=fopen(fname,"w");
-//	fprintf(fout,"Background rate= %.6lf earthquakes/day (M>=%.1lf)\n", crst.r0, crst.mags[1]);
+//	for (int i=1; i<=cat.Z; i++) fprintf(fout,"%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n", cat.lat0[i], cat.lon0[i], cat.depths0[i], cat.mag[i], cat.t[i], weights[i]);
 //	fclose(fout);
-
-	return 0;
-}
-
-int test_decluster_catalog(){
-
-	char fname[120];
-	double Mmain=6.0;
-	double *time_missing=NULL;
-	FILE *fout;
-	char crust_file[]="input/Tohoku_simple_vert.inp";
-	char fore_file[]="input/tohoku_template.dat";
-	char cat_file[]="/home/des/camcat/Data/Catalogs/Others/jma_cat_2010_2013_update20130329_sel_2.5.dat";
-	struct catalog cat;
-	struct crust crst;
-	struct tm tt;
-	time_t t;
-	int *dec;
-	double *weights;
-	double *rate, r;
-	double res=6.0;
-
-	time(&t);
-	tt=*(localtime(&t));
-
-	read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
-	cat.Mc=0.0;
-	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
-	weights=dvector(1,cat.Z);
-
-
-	//old declustering method (rescales rates after calculating them):
-	dec=decluster_catalog_rescalegrid(cat, crst, Mmain, &time_missing, 0);
-
-	for (int i=1; i<=cat.Z; i++) weights[i]=(double) dec[i];
-
-	rate=Helmstetter_cat(cat, crst, weights, 2);
-
-	sprintf(fname, "%s/Helm_rate_dec6.0_2nd.dat", testfolder);
-	fout=fopen(fname,"w");
-	for (int i=1; i<=crst.nLat*crst.nLon; i++) fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],rate[i]);
-	fclose(fout);
-
-	sprintf(fname, "%s/Helm_rate_dec_rescaled6.0_2nd.dat", testfolder);
-	fout=fopen(fname,"w");
-	for (int i=1; i<=crst.nLat*crst.nLon; i++) {
-		r=(cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]);
-		fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],r*rate[i]);
-	}
-	fclose(fout);
-
-	//new declustering method (weights earthquakes):
-	decluster_catalog(cat, Mmain, &weights, 0);
-
-	sprintf(fname, "%s/Dec_cat6.0.dat",testfolder);
-	fout=fopen(fname,"w");
-	for (int i=1; i<=cat.Z; i++) fprintf(fout,"%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n", cat.lat0[i], cat.lon0[i], cat.depths0[i], cat.mag[i], cat.t[i], weights[i]);
-	fclose(fout);
-
-	rate=Helmstetter_cat(cat, crst, weights, 2);
-	sprintf(fname, "%s/Helm_rate_dec_rescaled_new6.0_2nd.dat", testfolder);
-	fout=fopen(fname,"w");
-	for (int i=1; i<=crst.nLat*crst.nLon; i++) fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],rate[i]);
-	fclose(fout);
-
-	return 0;
-
-}
+//
+//	rate=Helmstetter_cat(cat, crst, weights, 2);
+//	sprintf(fname, "%s/Helm_rate_dec_rescaled_new6.0_2nd.dat", testfolder);
+//	fout=fopen(fname,"w");
+//	for (int i=1; i<=crst.nLat*crst.nLon; i++) fprintf(fout,"%.5lf\t%.5lf\t%.5lf\n",crst.lat[i], crst.lon[i],rate[i]);
+//	fclose(fout);
+//
+//	return 0;
+//
+//}
 
 int test_fit_depth(){
 
@@ -386,9 +419,9 @@ int test_fit_depth(){
 	time(&t);
 	tt=*(localtime(&t));
 
-	read_crust(crust_file, fore_file,NULL,  &crst, 100.0, 1.0);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_file,NULL,  &crst, 100.0, 1.0);
 //	gridPMax=crst.N_allP;
-	gridPMax=1000;
 	cat.Mc=0.0;
 	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
 
@@ -424,7 +457,6 @@ int test_Helmstetter_cat(){
 //	char fore_file[]="input/tohoku_template.dat";
 //	char cat_file[]="/home/des/camcat/Data/Catalogs/Others/jma_cat_2010_2013_update20130329_sel_2.5.dat";
 	//Darfield:
-	sprintf(cmb_format, "farfalle");
 	char crust_file[]="input/inCan.dat";
 	char fore_file[]="input/darf_temp.txt";
 	//char cat_file[]="input/quake_recent.dat";
@@ -440,9 +472,9 @@ int test_Helmstetter_cat(){
 	reftime.tm_mon-=1;
 	reftime.tm_isdst=0;
 
-	read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
 //	gridPMax=crst.N_allP;
-	gridPMax=1000;
 	cat.Mc=0.0;
 	readZMAP(&cat, NULL, NULL, cat_file, crst, reftime, 0.0, 0.0, -1e30, 0.0, 10, 0.0, 0.0, 0.0, 0.0, 0);
 
@@ -707,13 +739,11 @@ int test_readZMAP_tw(){
 	char fname[120];
 	char *file="/home/des/camcat/Data/Catalogs/Others/jma_cat_2010_2013_update20130329_sel_2.5.dat";
 	char *crust_file="/home/des/camcat/Code/CRS_1.0/INPUT/Tohoku_new.inp";
-	sprintf(cmb_format, "pscmp");
 	char *fore_template="input/tohoku_template_sparse.dat";
 	double t0=0.0, t1=300, tw=1.0;
 	double Mmain=6.8;
 	double res=100;
 
-	gridPMax=1000;
 //	2011-03-11T14:46:18Z
 
 	setenv("TZ", "UTC", 1);
@@ -725,13 +755,14 @@ int test_readZMAP_tw(){
 	reftime.tm_min=46;
 	reftime.tm_sec=18;
 
-	read_crust(crust_file, fore_template, NULL,  &crst, res, res);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_template, NULL,  &crst, res, res);
 	readZMAP (&cat, NULL, &NT, file, crst, reftime, t0,t1, t0, t1, Mmain, 0.0, 0, 0, 1e5, 1);
 	sprintf(fname, "%s/cat_notw.dat", testfolder);
-	print_cat(fname, cat);
+	//print_cat(fname, cat);	//broken since print_cat does not exist anymore.
 	readZMAP (&cat, NULL, &NT, file, crst, reftime, t0,t1, t0, t1, Mmain, tw, 0, 0, 1e5, 1);
 	sprintf(fname, "%s/cat_tw.dat", testfolder);
-	print_cat(fname, cat);
+	//print_cat(fname, cat);
 
 	return 0;
 }
@@ -866,8 +897,6 @@ int test_allOkada_simple_multiplerec(){
  * python /home/des/camcat/Code/Scripts/Foremap2vtk.py okadaDCFS$i.dat Tohoku; done
  */
 
-	verbose_level=2;
-
 	int N=6;
 	long seed=-19329935;
 	double res=6.0;
@@ -909,7 +938,8 @@ int test_allOkada_simple_multiplerec(){
 		}
 	}
 
-	read_pscmp_crust("/home/des/camcat/Code/CRS_2.01/input/Tohoku_simple_new.inp",&crst);
+	//broken: function does not exist anymore
+	//read_pscmp_crust("/home/des/camcat/Code/CRS_2.01/input/Tohoku_simple_new.inp",&crst);
 	sprintf(fname0, "%s/okada3/fm_slipmodels_summary.txt",testfolder);
 	fout=fopen(fname0,"w");
 
@@ -917,9 +947,6 @@ int test_allOkada_simple_multiplerec(){
 	eqfm.lat=lat0;
 	eqfm.lon=lon0;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=3; i++) eqfm.taper[i]=1;
-	eqfm.taper[4]=0;
 
 	dcfs.NF=1;
 	crst.fmzone=ivector(1,NP);
@@ -1052,8 +1079,6 @@ int test_allOkada_simple(){
  * python /home/des/camcat/Code/Scripts/Foremap2vtk.py okadaDCFS$i.dat Tohoku; done
  */
 
-	verbose_level=2;
-
 	int N=6;
 	//long seed=-19329935;
 	double res=6.0;
@@ -1094,7 +1119,8 @@ int test_allOkada_simple(){
 		}
 	}
 
-	read_pscmp_crust("/home/des/camcat/Code/CRS_2.01/input/Tohoku_simple_new.inp",&crst);
+	//broken: function does not exist anymore
+	//read_pscmp_crust("/home/des/camcat/Code/CRS_2.01/input/Tohoku_simple_new.inp",&crst);
 	sprintf(fname0, "%s/okada2/fm_slipmodels_summary.txt",testfolder);
 	fout=fopen(fname0,"w");
 
@@ -1102,9 +1128,6 @@ int test_allOkada_simple(){
 	eqfm.lat=lat0;
 	eqfm.lon=lon0;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=3; i++) eqfm.taper[i]=1;
-	eqfm.taper[4]=0;
 
 	dcfs.NF=1;
 	crst.nLat=Nlat;
@@ -1227,8 +1250,6 @@ int test_allOkada(){
  * python /home/des/camcat/Code/Scripts/Foremap2vtk.py okadaDCFS$i.dat Darfield; done
  */
 
-	verbose_level=2;
-
 	int N=3;
 	//long seed=-19329935;
 	double res=6.0;
@@ -1269,7 +1290,9 @@ int test_allOkada(){
 		}
 	}
 
-	read_farfalle_crust("input/inCan.dat", &crst);
+	init_crst(&crst);
+	//broken: function does not exist anymore
+	//read_farfalle_crust("/home/des/camcat/Code/CRS_2.01/input/inCan.dat", &crst);
 	sprintf(fname0, "%s/okada/fm_slipmodels_summary.txt",testfolder);
 	fout=fopen(fname0,"w");
 
@@ -1277,9 +1300,6 @@ int test_allOkada(){
 	eqfm.lat=lat0;
 	eqfm.lon=lon0;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=3; i++) eqfm.taper[i]=1;
-	eqfm.taper[4]=0;
 
 	dcfs.NF=1;
 	crst.nLat=Nlat;
@@ -1293,6 +1313,8 @@ int test_allOkada(){
 	crst.dlat=dlat/Nlat;
 	crst.dlon=dlon/Nlon;
 	crst.ddepth=ddep/Ndep;
+	crst.x=dvector(1,NP);
+	crst.y=dvector(1,NP);
 	for (int i=1; i<=NP; i++) latlon2localcartesian(latgrid[i], longrid[i], lat0, lon0, crst.y+i, crst.x+i);
 	latlon2localcartesian(eqfm.lat, eqfm.lon, crst.lat0, crst.lon0, &(eqfm.y), &(eqfm.x));
 
@@ -1312,7 +1334,7 @@ int test_allOkada(){
 
 		fprintf(fout, "%.0lf\t%.0lf\t%.0lf\t%.1lf\t%.1lf\n", eqfm.str1, eqfm.dip1, eqfm.rake1, eqfm.mag, res);
 		focmec2slipmodel(crst, &eqfm, res, 1, 1);
-		//find_gridpoints_d(crst.y, crst.x, depgrid, (int *) 0, 0, NP, eqfm.y, eqfm.x, eqfm.depth, eqfm.mag, 100000,  &(eqfm.nsel), &(eqfm.selpoints));
+		find_gridpoints_d(crst.y, crst.x, depgrid, (int *) 0, 0, NP, eqfm.y, eqfm.x, eqfm.depth, eqfm.mag, 100000,  &(eqfm.nsel), &(eqfm.selpoints));
 		dcfs.nsel=eqfm.nsel;
 		dcfs.which_pts=eqfm.selpoints;
 		printf("%d\n",dcfs.nsel);
@@ -1327,22 +1349,22 @@ int test_allOkada(){
 		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1), 0);
 		sprintf(fname, "%s/okada/okadaDCFSfixA%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
 	//	okadaDCFS(dcfs, &eqfm, 1, crst, 0.0, 0.0, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, NULL, 1);
 		sprintf(fname, "%s/okada/okadaDCFSfix_optrakeB%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1), 0);
 		sprintf(fname, "%s/okada/okadaDCFSfixB%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 		DCFScmbopt(&dcfs, 0, crst);
 		sprintf(fname, "%s/okada/okadaDCFSopt%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
 		//2) using okadaCoeff:
@@ -1353,25 +1375,25 @@ int test_allOkada(){
 
 		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst,  &eqfm.str1, &eqfm.dip1, 0);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_optrakeA%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-	//	okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, 0.0, 0.0, 1);
+		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, NULL, NULL, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, NULL, 1);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_optrakeB%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-	//	okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, 0.0, 0.0, 1);
+		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, NULL, NULL, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1), 0);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_A%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
 		okadaCoeff_resolve(coeffs, &resCoeff_st, &resCoeff_di, crst, &eqfm.str1, &eqfm.dip1, &eqfm.rake1);
 		resolvedCoeff2DCFS(resCoeff_st, resCoeff_di, dcfs, &eqfm, crst);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_B%d.dat",testfolder, n);
-		//print_grid(fname, dcfs, crst, NULL);
+		print_grid(fname, dcfs, crst, NULL);
 
 		free_dvector(dcfs.cmb,1,dcfs.nsel);
 		free_ivector(dcfs.which_pts,1,dcfs.nsel);
@@ -1416,78 +1438,87 @@ int test_latlon2localcartesian(){
 
 }
 
-int test_distance(){
-
-	 /* Results can be visualized in matlab:
-	 *  for n=1:4
-		figure(n)
-		Plot_sliponfault(n,strcat('~/Code/dist2fault/tests/',num2str(n),'_fault_'))
-		l=load(strcat('~/Code/CRS_2.01/test/',num2str(n),'_dist.dat'));
-		scatter3(l(:,2),l(:,1),-l(:,3),30,abs(l(:,4)),'filled')
-		caxis([-100 100])
-		end
-	 */
-
-	FILE *fout1;
-	char fname1[120];
-	long seed=-36294638;
-	double strikes[]={0.0, 45.0, 0.0, 0.0};
-	double dips[]={90.0, 70.0, 15.0, 0.1};
-	double Lat0=45, Lon0=0.0, D0=0;
-	double pos_d[]={0,50};
-	double pos_s[]={-60,60};
-	double *d;
-	double dlat=2.0, dlon=2.0, ddep=100;
-	int NP=1000;
-	double lats[NP+1], lons[NP+1], deps[NP+1];
-
-	for (int i=1; i<=NP; i++){
-		lats[i]= Lat0-0.5*dlat+ dlat*ran1(&seed);
-		seed=-seed;
-		lons[i]= Lon0-0.5*dlon+ dlon*ran1(&seed);
-		seed=-seed;
-		deps[i]= ddep*ran1(&seed);
-		seed=-seed;
-	}
-
-
-	for (int i=0; i<4; i++){
-		d=dist2fault0(lats, lons, deps, NP, strikes[i], dips[i],	Lat0, Lon0, D0, pos_s, pos_d);
-
-		sprintf(fname1, "%s/%d_fault_allpatches.dat", testfolder, i+1);
-		fout1=fopen(fname1, "w");
-		fprintf(fout1,  "%d   %.4lf   %.4lf   %.3lf   %.2lf   %.2lf   %.3lf   %.3lf   %d   %d   %.5lf\n", 1, Lat0, Lon0, D0, pos_s[1]-pos_s[0], pos_d[1]-pos_d[0], strikes[i], dips[i], 1, 1, 0.0);
-		fclose(fout1);
-		sprintf(fname1, "%s/%d_fault_patch1.dat", testfolder, i+1);
-		fout1=fopen(fname1, "w");
-		fprintf(fout1, "%12.5lf\t%12.5lf\t%12.5lf\t%12.5lf\t%12.5lf\n", 0.5*(pos_s[0]+pos_s[1]), 0.5*(pos_d[0]+pos_d[1]), 1.0, 1.0, 0.0);
-		fclose(fout1);
-
-		sprintf(fname1, "%s/%d_dist.dat", testfolder, i+1);
-		fout1=fopen(fname1, "w");
-		for (int p=1; p<=NP; p++) fprintf(fout1, "%lf\t%lf\t%lf\t%lf\n", lats[p], lons[p], deps[p], d[p]);
-		fclose(fout1);
-
-		free_dvector(d,1,NP);
-	}
-
-	printf("done.\n");
-	return 0;
-}
+//int test_distance(){
+//
+//	 /* Results can be visualized in matlab:
+//	 *  for n=1:4
+//		figure(n)
+//		Plot_sliponfault(n,strcat('~/Code/dist2fault/tests/',num2str(n),'_fault_'))
+//		l=load(strcat('~/Code/CRS_2.01/test/',num2str(n),'_dist.dat'));
+//		scatter3(l(:,2),l(:,1),-l(:,3),30,abs(l(:,4)),'filled')
+//		caxis([-100 100])
+//		end
+//	 */
+//
+//	FILE *fout1;
+//	char fname1[120];
+//	long seed=-36294638;
+//	double strikes[]={0.0, 45.0, 0.0, 0.0};
+//	double dips[]={90.0, 70.0, 15.0, 0.1};
+//	double Lat0=45, Lon0=0.0, D0=0;
+//	double pos_d[]={0,50};
+//	double pos_s[]={-60,60};
+//	double *d;
+//	double dlat=2.0, dlon=2.0, ddep=100;
+//	int NP=1000;
+//	double lats[NP+1], lons[NP+1], deps[NP+1];
+//
+//	for (int i=1; i<=NP; i++){
+//		lats[i]= Lat0-0.5*dlat+ dlat*ran1(&seed);
+//		seed=-seed;
+//		lons[i]= Lon0-0.5*dlon+ dlon*ran1(&seed);
+//		seed=-seed;
+//		deps[i]= ddep*ran1(&seed);
+//		seed=-seed;
+//	}
+//
+//
+//	for (int i=0; i<4; i++){
+//		d=dist2fault0(lats, lons, deps, NP, strikes[i], dips[i],	Lat0, Lon0, D0, pos_s, pos_d);
+//
+//		sprintf(fname1, "%s/%d_fault_allpatches.dat", testfolder, i+1);
+//		fout1=fopen(fname1, "w");
+//		fprintf(fout1,  "%d   %.4lf   %.4lf   %.3lf   %.2lf   %.2lf   %.3lf   %.3lf   %d   %d   %.5lf\n", 1, Lat0, Lon0, D0, pos_s[1]-pos_s[0], pos_d[1]-pos_d[0], strikes[i], dips[i], 1, 1, 0.0);
+//		fclose(fout1);
+//		sprintf(fname1, "%s/%d_fault_patch1.dat", testfolder, i+1);
+//		fout1=fopen(fname1, "w");
+//		fprintf(fout1, "%12.5lf\t%12.5lf\t%12.5lf\t%12.5lf\t%12.5lf\n", 0.5*(pos_s[0]+pos_s[1]), 0.5*(pos_d[0]+pos_d[1]), 1.0, 1.0, 0.0);
+//		fclose(fout1);
+//
+//		sprintf(fname1, "%s/%d_dist.dat", testfolder, i+1);
+//		fout1=fopen(fname1, "w");
+//		for (int p=1; p<=NP; p++) fprintf(fout1, "%lf\t%lf\t%lf\t%lf\n", lats[p], lons[p], deps[p], d[p]);
+//		fclose(fout1);
+//
+//		free_dvector(d,1,NP);
+//	}
+//
+//	printf("done.\n");
+//	return 0;
+//}
 
 int test_matrix(){
 
-	double 	s[]={-10.0,-0.5,-0.1},\
-			st[]={115.0, 0.0, 25.0},\
-			di[]={0.0,90.0,0.0};
+//	double 	s[]={-10.0,-0.5,-0.1},\
+//			st[]={115.0, 0.0, 25.0},\
+//			di[]={0.0,90.0,0.0};
+
+	double 	s[]={-10.0,-0.1,-0.5},\
+			st[]={115.0, 25.0, 205.0},\
+			di[]={0.0,10.0,80.0};
+
+//	double  s[]={-5.0, 5.0, 0.0},\
+//			st[]= {6.646198, -83.345443, 60.000013 },	\
+//			di[]={-0.596911, -0.802279, 89.000000};
 
 	float eig[4];
 	float **v;
-	double **S;
+	double **S, *sigma;
 	float **Sf;
 	int j;
 	double cmb, st1, st2, di1, di2, ra1, ra2;
 
+	sigma=dvector(0,2);
 	v=matrix(1,3,1,3);
 	Sf=matrix(1,3,1,3);
 	S=prestress_eigen(s, st, di);
@@ -1500,7 +1531,8 @@ int test_matrix(){
 		printf("\n");
 	}
 
-	jacobi(Sf, 3, eig, v, &j);
+	//broken since jacobi is commented out.
+	//jacobi(Sf, 3, eig, v, &j);
 	printf("\nv: \n");
 	for (int i=1; i<=3; i++){
 		for (int j=1; j<=3; j++) {
@@ -1512,6 +1544,31 @@ int test_matrix(){
 	printf("\n eigenvalues:\n");
 	for (int i=1; i<=3; i++) printf("%f\n", eig[i]);
 
+
+	//transform eigenvectors into strike, dip:
+	for (int i=1; i<=3; i++){
+		di[i-1]=RAD2DEG*asin(v[3][i]);
+		st[i-1]=RAD2DEG*atan2(v[2][i],v[1][i]);
+		sigma[i-1]=(double) eig[i];
+	}
+
+	//st[2]=0.0;
+
+	printf("\nstrikes: %lf, %lf, %lf \n", st[0], st[1], st[2]);
+	printf("\ndips:    %lf, %lf, %lf \n", di[0], di[1], di[2]);
+
+	//recalculate S from eigenvectors:
+	S=prestress_eigen(sigma, st, di);
+	printf("\nS: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%lf\t", S[i][j]);
+			Sf[i][j]=(float)S[i][j];
+		}
+		printf("\n");
+	}
+
+
 	cmbopt(S[1][1], S[2][2], S[3][3], S[1][2], S[2][3], S[1][3], 0.0, 0.4, 0.0, 90.0, 180.0, &cmb, &st1, &di1, &ra1, &st2, &di2, &ra2);
 	printf("\n oops:\n");
 	printf("st1=%lf\t di1=%lf\t ra1=%lf\n", st1, di1, ra1);
@@ -1520,12 +1577,78 @@ int test_matrix(){
 	return 0;
 }
 
-int test_read_crust(){
+int test_matrix2(){
 
-	struct crust crst;
-	read_crust("input/inCan.dat", "input/nz_temp.forecast.xml", NULL, &crst, 3.0, 3.0);
-	return (0);
+	double 	s[]={5.0,-5.0,0.0};
+	double st[3], di[3], sigma[3];
+	double st_oop=330.0;
+	double di_oop=89.0;
+	double ra_oop=180;
+	double p=0.0, fr=0.3;
 
+	float eig[4];
+	float **v;
+	double **S;
+	float **Sf;
+	int j;
+	double cmb, st1, st2, di1, di2, ra1, ra2;
+
+	v=matrix(1,3,1,3);
+	Sf=matrix(1,3,1,3);
+
+	//calculate matrix using orientation of oops:
+	prestress(s[0],s[1],s[2],st_oop, di_oop, ra_oop, p, fr, &S);
+	printf("\nS: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%lf\t", S[i][j]);
+			Sf[i][j]=(float)S[i][j];
+		}
+		printf("\n");
+	}
+
+	//find eigenvalues/eigenvectors of matrix:
+	//broken since jacobi is commented out.
+	//jacobi(Sf, 3, eig, v, &j);
+	printf("\nv: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%lf\t", v[i][j]);
+		}
+		printf("\n");
+	}
+
+	printf("\n eigenvalues:\n");
+	for (int i=1; i<=3; i++) printf("%f\n", eig[i]);
+
+	//transform eigenvectors into strike, dip:
+	for (int i=1; i<=3; i++){
+		di[i-1]=RAD2DEG*asin(v[3][i]);
+		st[i-1]=RAD2DEG*atan2(v[2][i],v[1][i]);
+		sigma[i-1]=(double) eig[i];
+	}
+
+	printf("\nstrikes: %lf, %lf, %lf \n", st[0], st[1], st[2]);
+	printf("\ndips:    %lf, %lf, %lf \n", di[0], di[1], di[2]);
+
+	//recalculate S from eigenvectors:
+	S=prestress_eigen(sigma, st, di);
+	printf("\nS2: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%lf\t", S[i][j]);
+			Sf[i][j]=(float)S[i][j];
+		}
+		printf("\n");
+	}
+
+	//calculate oops from new S:
+	cmbopt(S[1][1], S[2][2], S[3][3], S[1][2], S[2][3], S[1][3], 0.0, fr, 0.0, 90.0, 180.0, &cmb, &st1, &di1, &ra1, &st2, &di2, &ra2);
+	printf("\n oops:\n");
+	printf("st1=%lf\t di1=%lf\t ra1=%lf\n", st1, di1, ra1);
+	printf("st2=%lf\t di2=%lf\t ra2=%lf\n", st2, di2, ra2);
+
+	return 0;
 }
 
 int test_readZMAP(){
@@ -1557,7 +1680,8 @@ int test_readZMAP(){
 //	read_xmltemplate(xmlfile, &tnow, &t0c, &t1c, &junk, &junk, &crst, &djunk, &djunk);
 	//crst.x=crst.y=crst.dAgrid=crst.depth;
 
-	read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
+	//broken (no crust_file anymore)
+	//read_crust(crust_file, fore_file, NULL, &crst, res, res_z);
 	readZMAP (&cat, &eqfm, NULL, file, crst, reftime, t0s, t1s, t0c, t1c, 10.0, 0.0, border, border, dDCFS, 0);
 
 //	readZMAP (&cat, &eqfm, NULL, file, crst, tnow, t0s, t1s, t0c, t1c, 10.0, 0.0, border, border, dDCFS, 1);
@@ -1664,9 +1788,10 @@ void test_convertgeometry(){
 	char fname[120];
 	extern int farfalle;
 
-	sprintf(cmb_format, "farfalle");
 //	read_crust("input/crust.dat", NULL, &cr, 3.0,5.0);
-	read_crust("input/inCan.dat", "input/darf_temp.txt", NULL, &cr, 3.0,5.0);
+
+	//broken (no crust_file anymore)
+	//read_crust("input/inCan.dat", "input/darf_temp.txt", NULL, &cr, 3.0,5.0);
 	d=pscmp_arrayinit(cr, 0,0);	//used for output.
 	d[0].which_pts=ivector(1,cr.N_allP);
 
@@ -1833,24 +1958,24 @@ int testspeed_coeff(){
    	return(0);
    	}
 
-int test_hash(){
-
-	long int res2, res=1;
-	char string[120]="blablablablablabla";
-	char string2[120]="blablablablablablablu";
-
-	sprintf(string2,"%s%s",string,string);
-	res=hashlittle( string, strlen(string), 1);
-	res2=hashlittle( string2, strlen(string), 1);
-
-	printf("%ld\n",res);
-	printf("%ld\n",res2);
-
-	printf("\n string length= %d\n", (int) strlen(string));
-	printf("\n string2 length= %d\n", (int) strlen(string2));
-
-	return (res==res2);
-}
+//int test_hash(){
+//
+//	long int res2, res=1;
+//	char string[120]="blablablablablabla";
+//	char string2[120]="blablablablablablablu";
+//
+//	sprintf(string2,"%s%s",string,string);
+//	res=hashlittle( string, strlen(string), 1);
+//	res2=hashlittle( string2, strlen(string), 1);
+//
+//	printf("%ld\n",res);
+//	printf("%ld\n",res2);
+//
+//	printf("\n string length= %d\n", (int) strlen(string));
+//	printf("\n string2 length= %d\n", (int) strlen(string2));
+//
+//	return (res==res2);
+//}
 
 void test_taper_multislip(){
 /*
@@ -1877,8 +2002,6 @@ void test_taper_multislip(){
 		eqfm[0].dip1=90.0-2.0+4.0*ran1(&seed);
 		eqfm[0].rake1=180.0;
 		eqfm[0].mag=mag;
-		if (n==1) eqfm[0].taper=ivector(1,4);
-		for (int i=1; i<=4; i++) eqfm[0].taper[i]=0;
 
 		focmec2slipmodel(crst, eqfm, res, 1, 1);
 		sign2=ran1(&seed)-0.5;
@@ -1890,8 +2013,6 @@ void test_taper_multislip(){
 			eqfm[f].rake1=180.0;
 			eqfm[f].whichfm=1;
 			eqfm[f].mag=mag;
-			if (n==1) eqfm[f].taper=ivector(1,4);
-			for (int i=1; i<=4; i++) eqfm[f].taper[i]=0;
 			sign=sign2;
 			sign2=ran1(&seed)-0.5;
 			sign2*=1.0/fabs(sign2);	//-1 or 1;
@@ -1902,7 +2023,8 @@ void test_taper_multislip(){
 			focmec2slipmodel(crst, eqfm+f, res, 1, 1);
 			north= 0.5*(sign*eqfm[f-1].L*cos(DEG2RAD*eqfm[f-1].str1)+sign2*eqfm[f].L*cos(DEG2RAD*eqfm[f].str1))+noise1;
 			east= 0.5*(sign*eqfm[f-1].L*sin(DEG2RAD*eqfm[f-1].str1)+sign2*eqfm[f].L*sin(DEG2RAD*eqfm[f].str1))+noise2;
-			localcartesian2latlon(north, east, eqfm[f-1].lat, eqfm[f-1].lon,  &(eqfm[f].lat), &(eqfm[f].lon));
+			//broken since localcartesian2latlon is commented out.
+			//localcartesian2latlon(north, east, eqfm[f-1].lat, eqfm[f-1].lon,  &(eqfm[f].lat), &(eqfm[f].lon));
 			//focmec2slipmodel(crst, eqfm+f, res, 1, 1);
 
 		}
@@ -1938,9 +2060,6 @@ void test_focmec2slipmodel(){
 	eqfm.lat=-43.56;
 	eqfm.lon=172.12;
 	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=3; i++) eqfm.taper[i]=1;
-	eqfm.taper[4]=0;
 
 	for (int n=0; n<N; n++){
 		eqfm.str1=360*ran1(&seed);
@@ -1977,8 +2096,6 @@ void tests_eqkfm_addslipmodels(){
 	int err;
 	int *NFout;
 
-	verbose_level=4;
-
 	crst.lambda=31226, crst.mu=26624;//calculated for Vp=5.7,Vs=3.2, rho=2600 (from Wang psgrn input file for Parkfield). MPa.
 	crst.N_allP=20;
 	crst.list_allP=pts-1;
@@ -1998,8 +2115,6 @@ void tests_eqkfm_addslipmodels(){
 
 	eq_in1=eqkfm_array(0,N1-1);
 	for (int i=0; i<N1; i++){
-		eq_in1[i].taper=ivector(1,4);
-		for (int ii=1; ii<=4; ii++) eq_in1[i].taper[ii]=1;
 		eq_in1[i].str1=360*(double) (i%N1);
 		eq_in1[i].dip1=90*(double) (i+5%N1);
 		eq_in1[i].rake1=180.0;
@@ -2018,65 +2133,10 @@ void tests_eqkfm_addslipmodels(){
 		}
 	}
 
-	err= eqkfm_addslipmodels(eq_in1, all_slipmodels, &eq_out, &indices, N1, &Nout, &NFout, 0.001, 0.3, 1.0, crst, 1, 1);
-
-	//if (err==1 & (verbose_level>1)) printf("Warning: some events from catalog 2 not selected, or some slip models could not be created.\n");
+	//broken since needs additional flags argument (at the end).
+	//err= eqkfm_addslipmodels(eq_in1, all_slipmodels, &eq_out, &indices, N1, &Nout, &NFout, 0.001, 0.3, 1.0, crst);
 
 	return;
-}
-
-void test_suomod1_hf(){
-	/* to visualize (in Matlab):
-	 *
-	 for k=1:9; figure(k); Plot_sliponfault(k,strcat('~/Code/CRS_2.0/tests/suomod1_',num2str(k),'_')); set(gca,'CameraPosition',[137.4177  -43.6711   -9.0672]);  end
-	 *
-	 */
-
-	struct eqkfm eqfm, eqfm2;
-	struct crust crst;
-	long seed=-19329935;
-	char fname0[120];
-	double H=1.0;	//Hurst exponent.
-	int N=10;
-	int noise_only=0;
-	time_t t0,t1;
-
-	verbose_level=3;
-
-	crst.lambda=31226, crst.mu=26624;//calculated for Vp=5.7,Vs=3.2, rho=2600 (from Wang psgrn input file for Parkfield). MPa.
-
-	eqfm.lat=-43.56;
-	eqfm.lon=172.12;
-	eqfm.whichfm=1;
-	eqfm.taper=ivector(1,4);
-	for (int i=1; i<=4; i++) eqfm.taper[i]=1;
-	eqfm.whichfm=1;
-	eqfm.mag=7.0;
-	eqfm.str1=0.0;
-	eqfm.dip1=90.0;
-	eqfm.rake1=180.0;
-
-	focmec2slipmodel(crst, &eqfm, 1.0,1,0);
-
-//	time(&t0);
-//	for (int n=1; n<=N; n++){
-//		sprintf(fname0, "%s/suomod1old_%d.dat",testfolder,n);
-//		suomod1_addhf_old(eqfm, &eqfm2, 0.0, &seed, 1,1);
-//		print_slipmodel(fname0, &eqfm2, 1);
-//	}
-//	time(&t1);
-//	printf("Old function takes %.2f seconds\n", difftime(t1,t0));
-
-	time(&t0);
-	for (int n=1; n<=N; n++){
-		sprintf(fname0, "%s/suomod%.1f_%d.dat",testfolder,H,n);
-		suomod1_hf(eqfm, &eqfm2, H, &seed, noise_only);
-		print_slipmodel(fname0, &eqfm2, 1);
-	}
-	time(&t1);
-
-	//printf("New function takes %.2f seconds\n", difftime(t1,t0));
-
 }
 
 void test_reduction(){

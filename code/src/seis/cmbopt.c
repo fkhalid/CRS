@@ -7,14 +7,21 @@
 
 #include "cmbopt.h"
 
+
+// todo [coverage] this block is never tested
 void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
-	//ind gives the index of last element of DCFS that should be included in stress field calculation; if 0, only one element.
-	int j, *k;
+	/* Calculates OOPs in a stress field given by the sum of background stress field (crst.S) and stress steps contained in DCFS.
+	 * Also calculates Coulomb stress change due to DCFS[ind] on these planes.
+	 * ind gives the index of last element of DCFS that should be included in stress field calculation; (e.g. if 0, only one element).
+	 *
+	 * Results stored in: DCFS[ind].st1, di1, ra1[2]; largest stress changes from DCFS[ind] stored in DCFS[ind].cmb
+	 */
+
+	int j, k, ev;
 	double cmb1, cmb2;
 	double sxx, syy, szz, sxy, syz, sxz;
 	double MaxDCFS=DCFS_cap;
 
-	//TODO maybe make this internal variable in this function and remove it from DCFS structure.
 	DCFS[ind].st1=dvector(1,DCFS[ind].nsel);
 	DCFS[ind].di1=dvector(1,DCFS[ind].nsel);
 	DCFS[ind].ra1=dvector(1,DCFS[ind].nsel);
@@ -22,24 +29,23 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 	DCFS[ind].di2=dvector(1,DCFS[ind].nsel);
 	DCFS[ind].ra2=dvector(1,DCFS[ind].nsel);
 
-	k=ivector(0,ind);
-	for (int ev=0; ev<=ind; ev++) k[ev]=0;
-
-	for (int i=1; i<=DCFS[ind].nsel; i++){//todo parallel.
+	#pragma omp parallel for private(j, sxx, sxy, syy, syz, szz, sxz, cmb1, cmb2, k, ev)
+	for (int i=1; i<=DCFS[ind].nsel; i++){
 		j=DCFS[ind].which_pts[i];
 
 		sxx=crst.S[1][1]; 		syy=crst.S[2][2];		szz=crst.S[3][3];
 		sxy=crst.S[1][2]; 		syz=crst.S[2][3];		sxz=crst.S[1][3];
 
-		for (int ev=0; ev<=ind; ev++){
-			while (k[ev]<DCFS[ev].nsel && DCFS[ev].which_pts[k[ev]]<j) k[ev]++;
-			if (DCFS[ev].which_pts[k[ev]]==j){
-				sxx+=DCFS[ev].S[k[ev]][1][1];
-				syy+=DCFS[ev].S[k[ev]][2][2];
-				szz+=DCFS[ev].S[k[ev]][3][3];
-				sxy+=DCFS[ev].S[k[ev]][1][2];
-				syz+=DCFS[ev].S[k[ev]][2][3];
-				sxz+=DCFS[ev].S[k[ev]][1][3];
+		for (ev=0; ev<=ind; ev++){
+			k=0;
+			while (k<DCFS[ev].nsel && DCFS[ev].which_pts[k]<j) k++;
+			if (DCFS[ev].which_pts[k]==j){
+				sxx+=DCFS[ev].S[k][1][1];
+				syy+=DCFS[ev].S[k][2][2];
+				szz+=DCFS[ev].S[k][3][3];
+				sxy+=DCFS[ev].S[k][1][2];
+				syz+=DCFS[ev].S[k][2][3];
+				sxz+=DCFS[ev].S[k][1][3];
 			}
 		}
 
@@ -59,7 +65,6 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 	free_dvector(DCFS[ind].st2,1,DCFS[ind].nsel);
 	free_dvector(DCFS[ind].di2,1,DCFS[ind].nsel);
 	free_dvector(DCFS[ind].ra2,1,DCFS[ind].nsel);
-	free_ivector(k,0,ind);
 
 }
 
@@ -73,8 +78,8 @@ void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double s
 	str0, di0, rake0: a reference focal mechanism: output focal mechanisms str1, di1, rake1 refer to mechanism closer to this.
 
  *  output:
-	max. Coulomb stress at the two optimally oriented fault planes
-	strike, dip, rake of the two OOPs.
+	cmb: max. Coulomb stress at the two optimally oriented fault planes
+	st1, di1, ra1, [2]: strike, dip, rake of the two OOPs.
 */
 
       int j0,j1,j2,jmin,jmax;
@@ -152,7 +157,10 @@ void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double s
       else{
         jmin=j0;
         jmax=j0;
-        printf("* Warning: more than two optimal rupture orientations! *");
+        if (extra_verbose){
+			print_screen("* Warning: more than two optimal rupture orientations! *");
+			print_logfile("* Warning: more than two optimal rupture orientations! *");
+        }
       }
       for (int j=jmin; j<=jmax; j++){
         det1=syz*syz-(syy-s[j])*(szz-s[j]);
