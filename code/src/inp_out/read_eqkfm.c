@@ -99,6 +99,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	*eqfm_comb=eqkfm_array(0,N3-1);
 	if (nfout) *nfout=ivector(0,N1-1);
 
+	//todo speed up this loop (try to parallelize?)
 	for(int i=0; i<N1; i++) {
 		(*eqfm_comb)[c3].nsel=crst.N_allP;
 

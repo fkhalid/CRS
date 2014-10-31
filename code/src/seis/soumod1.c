@@ -126,6 +126,7 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 	odiscx=oxdim/nsx;
 	odiscy=oydim/nsy;
 
+	#pragma omp parallel for
 	for (int np=1; np<=ns; np++){
 		REslipo[np]=pow(eqkfm1.slip_str[np]*eqkfm1.slip_str[np]+eqkfm1.slip_dip[np]*eqkfm1.slip_dip[np],0.5);
 		rake_v[np]=(-180/pi)*atan2(eqkfm1.slip_dip[np],eqkfm1.slip_str[np]);	//check this! (sign)
@@ -171,8 +172,8 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 	                  i++;
 	                }
 	        }
-	  // todo [coverage] this block is never tested
-      if (ndiscx<odiscx && ndiscy<odiscy) {// refine slip distribution
+
+	  if (ndiscx<odiscx && ndiscy<odiscy) {// refine slip distribution
           for (int i=1; i<=nns; i++){
         	  l=1;
         	  while (l<ns && (fabs(ox[l]-nx[i])>odiscx || fabs(oy[l]-ny[i])>odiscy)) l++;
@@ -290,8 +291,10 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
     if (eqkfm1.np_di==1) top=bottom=0;
     if (ns==1) {
     	copy_eqkfm_all(eqkfm1, eqkfm2);	//bug fix: using copy_eqkfm_slipmodel did not copy nsel, so no points were selected.
-    	print_screen("** Warning: model has a single patch, will not be tapered.**\n");
-    	print_logfile("** Warning: model has a single patch, will not be tapered.**\n");
+    	if (extra_verbose) {
+    		print_screen("** Warning: model has a single patch, will not be tapered.**\n");
+    	   	print_logfile("** Warning: model has a single patch, will not be tapered.**\n");
+    	}
     	return 0;
     }
 
@@ -339,6 +342,7 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
 	odiscx=oxdim/nsx;
 	odiscy=oydim/nsy;
 
+	#pragma omp parallel for
 	for (int np=1; np<=ns; np++) {
 		REslipo[np]=pow(eqkfm1.slip_str[np]*eqkfm1.slip_str[np]+eqkfm1.slip_dip[np]*eqkfm1.slip_dip[np],0.5);
 		rakes[np]=(-180/pi)*atan2(eqkfm1.slip_dip[np],eqkfm1.slip_str[np]);
@@ -367,6 +371,7 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
 	alphax=0.51;
 	alphay=0.51;
 
+	#pragma omp parallel for
 	for (int i=1;i<=nns;i++){
 		taper[i] = ((right==1 && (nx[i]-(nsx-1)/2*odiscx)>alphax*nsx/2*odiscx) || (left==1 && -(nx[i]-(nsx-1)/2*odiscx)>alphax*nsx/2*odiscx))?
 			  cos(pi/2*(fabs(fabs(nx[i]-(nsx-1)/2*odiscx)-alphax*nsx/2*odiscx))/((1-alphax)*nsx/2*odiscx)) : 1;
@@ -391,7 +396,10 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
 
   }
 
-	for (int p=1; p<=nns; p++) slip[p]=REslipo[p]*taper[p];		//final slip.
+	#pragma omp parallel for
+	for (int p=1; p<=nns; p++) {
+		slip[p]=REslipo[p]*taper[p];		//final slip.
+	}
 
 	scale_to_mag(eqkfm1, eqkfm2, slip, rakes);		//final slip.
 	(*eqkfm2).tot_slip=tot_slip(*eqkfm2);

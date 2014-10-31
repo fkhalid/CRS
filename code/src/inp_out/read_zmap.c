@@ -373,7 +373,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		(*cat).pcrst=&crst;	//todo check: is this ever used?
 		init_cat1(cat, eq2);
 
-		//#pragma omp parallel for private(eq, SD, SDd, x, y) reduction(+:errP)
+		#pragma omp parallel for private(eq, SD, SDd, x, y) reduction(+:errP)
 		for (int i=1; i<=eq2; i++){
 		if (errP) continue;
 		eq=seleq2[i-1];
