@@ -160,7 +160,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 	}
 
-
 		//-----------------------------------------------------------------//
 		//							Mainshock							   //
 		//-----------------------------------------------------------------//
@@ -204,7 +203,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 	}
 
-
 	if (afterslip==1 && vary_recfault==2) {
 		print_screen("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when afterslip is included!!*\n");
 		print_logfile("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when afterslip is included!!*\n");
@@ -237,7 +235,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				strike0= crst.str0;
 				dip0=crst.dip0;
 			}
-
 			else{
 				*strike0= crst.str0[0];
 				*dip0=crst.dip0[0];
