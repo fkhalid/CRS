@@ -63,6 +63,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	nsm=0;
 	for (int i=0; i<all_slipmodels.NSM; i++){
 		nfaults=0;
+
 		for (int n=1; n<=all_slipmodels.no_slipmodels[i]; n++){
 			if (!(strcmp(cmb_format,"farfalle"))) err+=read_farfalle_eqkfm(all_slipmodels.slipmodels[nsm], NULL, all_slipmodels.Nfaults+i);
 			else {
@@ -80,6 +81,13 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 		}
 		all_slipmodels.Nfaults[i]=nfaults;
 	}
+
+//	// FIXME: Fahad - For debugging purposes only ...
+//	#ifdef _CRS_MPI
+//		MPI_Barrier(MPI_COMM_WORLD);
+//
+//		error_quit("read_eqkfm.c -- Exiting at line 88 \n");
+//	#endif
 
 	if (err){
 		print_screen("Error in reading input files. Exiting.\n");

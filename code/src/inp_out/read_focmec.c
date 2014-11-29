@@ -98,8 +98,10 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 						  (eqkfm)? &eqkfmtemp : NULL, sel, fm2);
 
 		if (focmec && !nfmtemp) {
-			print_screen("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
-			print_logfile("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
+//			if(procId == 0) { // FIXME: Fahad - Added during debugging ...
+				print_screen("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
+				print_logfile("**Warning: no focal mechanisms selected from file %s. (readmultiplefocmec).**\n", focmecfiles[n]);
+//			}
 		}
 
 		if (firstelements) (*firstelements)[n]=nfm_sofar+1;

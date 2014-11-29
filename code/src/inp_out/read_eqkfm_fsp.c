@@ -232,7 +232,6 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 	}
 
 	return (err!=0);
-
 }
 
 void track_position(long *pos, int NP, FILE* fin){	//todo move to more general file.

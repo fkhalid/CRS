@@ -53,6 +53,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	int procId = 0;
 	int fileError = 0;
 	int bCastFocmeccat = 0;
+	int focmeccatIsNull = 0;
 
 	#ifdef _CRS_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
@@ -237,6 +238,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		return 1;
 	}
 
+
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags. catname is used in setup.c.
@@ -273,9 +275,10 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	}
 
 	// Print out warnings or errors for missing or redundant parameters:
-	// Camilla [askFahad]: I deleted the procId condition here since the output functions print_logfile, print_screen already contain the same condition;
+	// Camilla [askFahad]: I deleted the procId condition here since the
+	// output functions print_logfile, print_screen already contain the same condition;
 	// and because some of the variables are changed below (e.g. outname, focmeccat), and they were not broadcast.
-	//if(procId == 0) {
+	if(procId == 0) {
 		if ((value_found[6] + value_found[5] + value_found[15])>1){
 			print_screen("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
 			print_logfile("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
@@ -303,7 +306,11 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 							print_screen("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
 							print_logfile("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
 						}
-						if (focmeccat) *focmeccat=NULL;
+						if (focmeccat) {
+							*focmeccat=NULL;
+
+							focmeccatIsNull = 1;
+						}
 						if (num_fm) *num_fm=1;
 					}
 					else nofm=1;
@@ -314,7 +321,11 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 							print_screen("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
 							print_logfile("Warning: parameters %s, %s not given in %s.\n", keys[5], keys[6], input_fname);
 						}
-						if (focmeccat) *focmeccat=NULL;
+						if (focmeccat) {
+							*focmeccat=NULL;
+
+							focmeccatIsNull = 1;
+						}
 						if (num_fm) *num_fm=1;
 					}
 					else nofm=1;
@@ -361,7 +372,19 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 				}
 			}
 		}
-	//}
+	}
+
+	#ifdef _CRS_MPI
+		MPI_Bcast(num_fm, 				1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&nofm, 				1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&focmeccatIsNull, 	1, MPI_INT, 0, MPI_COMM_WORLD);
+
+		if(procId != 0) {
+			if(focmeccatIsNull) {
+				*focmeccat=NULL;
+			}
+		}
+	#endif
 
 	return (err || fileError);
 }
@@ -608,6 +631,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 		#ifdef _CRS_MPI
 			MPI_Bcast((*allslipmodels).tmain, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			MPI_Bcast((*allslipmodels).cut_surf, Nm0, MPI_INT, 0, MPI_COMM_WORLD);
 
 			if(is_afterslip) {
 				if(procId != 0) {

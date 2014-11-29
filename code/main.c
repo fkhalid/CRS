@@ -241,7 +241,7 @@ int main (int argc, char **argv) {
 	if (err) {
 		error_quit("Error reading InputModelParametersFile file %s.\n", modelparametersfile);
 	}
-	
+
 	//future events (cat.t[i]>0) are only needed to calculate LL for forecast, if forecast is produced.
 	//todo remove if decides not to print out LLevents.
 	tendCat= (forecast)? Tend : 0;
@@ -301,7 +301,6 @@ int main (int argc, char **argv) {
 		error_quit("Errors while reading template file %s. Exiting.", fore_template);
 	}
 	NgridT=crst.N_allP;
-
 
 //---------------------------------------------//
 //--------------Setup afterslip----------------//
@@ -373,6 +372,13 @@ int main (int argc, char **argv) {
 
 	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst, flags);
 	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **\n");
+
+//	// FIXME: Fahad - For debugging purposes only ...
+//	#ifdef _CRS_MPI
+//		MPI_Barrier(MPI_COMM_WORLD);
+//
+//		error_quit("main.c -- Exiting at line 401 \n");
+//	#endif
 
 	if(LLinversion){
 		print_logfile("Inversion time period: [%2.lf - %2.lf]days, ", tstartLL, tendLL);
@@ -493,6 +499,7 @@ int main (int argc, char **argv) {
 	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm0res, flags,
 			tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2,
 			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
+
 
 	for (int p=1; p<=(1+nAsig0)*(1+nta0); p++) LLs[p]=0.0;
 

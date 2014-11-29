@@ -176,7 +176,8 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 	return(0);
 }
 
-// todo [coverage] this block is never tested
+// FIXME: [Fahad] -- This function will serve as the parallel version of okadaCoeff().
+//					 Not complete yet.
 int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1,
 			   int NF, struct crust crst, double *lats, double *lons, double *depths) {
 	//lats, lons, depths contain complete list of grid points.
@@ -391,6 +392,7 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 	return(0);
 }
 
+// todo [coverage] this block is never tested
 int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF,
 			   struct crust crst, double *lats, double *lons, double *depths) {
 	//lats, lons, depths contain complete list of grid points. Only the ones with indices eqkfm1.selpoints will be used.

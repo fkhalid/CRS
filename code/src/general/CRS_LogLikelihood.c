@@ -596,13 +596,15 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				start = 1;
 			}
 
-			const long newSeed = *seed;
+//			const long newSeed = *seed;
 
 		}
 		else {
 			start = 1;
 			end = Nsur + 1;
 		}
+
+		const long newSeed = *seed;
 
 	#else
 		start = 1;

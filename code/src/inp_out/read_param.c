@@ -53,6 +53,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		if(fin == NULL) {
 			print_screen("Error: parameter file %s could not be opened. Exit. \n", modelparametersfile);
 			print_logfile("Error: parameter file %s could not be opened. Exit. \n", modelparametersfile);
+
 			fileError = 1;
 		}
 	}
@@ -255,9 +256,6 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 	// TODO: [Fahad] Look into how much of the following code can be moved to
 	//		 a separate function ...
 
-
-
-
 	#ifdef _CRS_MPI
 		// Copy scalars to the BCast_Model_Parameters struct
 		struct BCast_Model_Parameters modelParams;
@@ -355,7 +353,6 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		MPI_Address(&(modelParams.smoothing),   &addresses_ModelParameters[30]);
 
 
-
 		// Set displacements
 		for(int i = 0; i < SIZE_BCAST_MODEL_PARAMETERS; ++i) {
 			displacements_ModelParameters[i] = addresses_ModelParameters[i] - baseAddress_ModelParameters;
@@ -403,7 +400,6 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 			*gridresxy      = modelParams.gridresxy;
 			*gridresz       = modelParams.gridresz;
 			*smoothing      = modelParams.smoothing;
-
 		}
 
 		// Map struct flags to MPI struct type
@@ -443,19 +439,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 
 		MPI_Bcast(flags, 1, CRS_MPI_BCast_Flags, 0, MPI_COMM_WORLD);
 
-		// Broadcast crust structure and related variables:
-//		MPI_Bcast(&((*crst).lambda),	1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(&((*crst).mu), 		1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(&((*crst).fric), 		1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(&((*crst).skepton), 	1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(&((*crst).str0), 		1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(&((*crst).dip0), 		1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(&((*crst).rake0), 	1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(s, 	3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(st, 	3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(di, 	3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//		MPI_Bcast(regstress_mode, 		120, MPI_CHAR,   0, MPI_COMM_WORLD);
-
+		// Broadcast variables from the crst struct.
 		MPI_Bcast(s,  3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(st, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(di, 3, MPI_DOUBLE, 0, MPI_COMM_WORLD);

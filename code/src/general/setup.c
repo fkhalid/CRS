@@ -178,6 +178,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 						double mu, double disc, double tmain, int nsel,
 						int *sel_pts, double *mmain, int cuts_surf,
 						int *NF0, double lat0, double lon0) {
+
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
 
