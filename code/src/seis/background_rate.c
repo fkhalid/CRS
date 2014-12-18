@@ -129,7 +129,7 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 	double *zlist;
 	double t0;
 	int NP= crst.uniform? (crst.nLat*crst.nLon) : crst.N_allP;
-	double T, *rate_h, *rate_v=NULL;
+	double T, *rate_h=NULL, *rate_v=NULL;
 	double Mc, b, Mc_final=crst.mags[1]-0.5*(crst.dmags), rcat;
 	int ne, h_ind, v_ind, *sel, sel_no=0;
 	double *weights=NULL;
@@ -225,7 +225,7 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, do
 
 	free_cat(cat);
 	free_dvector(zlist,1,crst.nD);
-	free_dvector(rate_h, 1, NP);
+	if (rate_h)	free_dvector(rate_h, 1, NP);
 	if (rate_v) free_dvector(rate_v, 1, crst.nD);
 
 	return 0;

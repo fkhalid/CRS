@@ -59,7 +59,7 @@ int main (int argc, char **argv) {
 	#endif
 
 	setenv("TZ", "UTC", 1);
-	int run_tests=0;
+	int run_tests=1;
 
 	extra_verbose=0;
 	quiet=0;
@@ -68,6 +68,7 @@ int main (int argc, char **argv) {
 		extra_verbose=1;
 		//test_countcolheader();
 		//test_allOkada();
+		background_rates();
 		// TODO: [Fahad] There should be provision for ignoring MPI
 		//				  when running tests ...
 		print_screen("Done!\n");
