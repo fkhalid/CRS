@@ -1,0 +1,8 @@
+# no. of snapshots models (lines to read)
+# format
+# reference time
+# time cuts_surf path_to_file 
+1
+pscmp
+2011-03-11T14:46:18Z
+360.0	0	input_testcases/longtest2/360ext.inp
