@@ -176,8 +176,280 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 	return(0);
 }
 
-// FIXME: [Fahad] -- This function will serve as the parallel version of okadaCoeff().
-//					 Not complete yet.
+//int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1,
+//			   int NF, struct crust crst, double *lats, double *lons, double *depths) {
+//	//lats, lons, depths contain complete list of grid points.
+//	// Only the ones with indices eqkfm1.selpoints will be used.
+//
+//	// [Fahad] Variables used for MPI.
+//	int procId = 0, numProcs = 1;
+//	int start, end, partitionSize;
+//
+//	#ifdef _CRS_MPI
+//		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+//		MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
+//	#endif
+//
+//	double north, east, eqnorth, eqeast;
+//	double len, width, depth; //for individual patches.
+//	double depth0; //to differentiate between blind fault (depth0=0) or fault cutting through surface.
+//	double strike, dip, rake;
+//	double alpha;
+//	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
+//	int Nsel = eqkfm1[0].nsel;
+//	int NP_tot = 0, p1, i;
+//	int pure_thrustnorm, pure_strslip;
+//	int err=0;
+//
+//	for(int j=0; j<NF; j++) {
+//		NP_tot+=eqkfm1[j].np_di*eqkfm1[j].np_st;
+//	}
+//
+//	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
+//	depth0=eqkfm1[0].cuts_surf ? eqkfm1[0].top : 0.0;
+//
+//	print_logfile("Depth of surface: %.3lf km.\n", depth0);
+//
+//	//---------initialize DCFS----------//
+//	*Coeffs_st  = f3tensor(1, NP_tot, 1, Nsel, 1, 6);	//TODO should deallocate at the end (in main.c).
+//	*Coeffs_dip = f3tensor(1, NP_tot, 1, Nsel, 1, 6);
+////
+////	for (int p1=1; p1<=NP_tot-1; p1++){
+////		for (int i=1; i<=Nsel; i++){
+////			for (int j=1; j<=6; j++){
+////				(*Coeffs_st)[p1][i][j]=0.0;
+////				(*Coeffs_dip)[p1][i][j]=0.0;
+////			}
+////		}
+////	}
+////	float ***Coeffs_st1, ***Coeffs_dip1;
+////	Coeffs_st1  = f3tensor(1,NP_tot,1,Nsel,1,6);
+////	Coeffs_dip1 = f3tensor(1,NP_tot,1,Nsel,1,6);
+//
+////	for (int p1=1; p1<=NP_tot; p1++){
+////		for (int i=1; i<=Nsel; i++){
+////			for (int j=1; j<=6; j++){
+////				(*Coeffs_st)[p1][i][j]=0.0;
+////				(*Coeffs_dip)[p1][i][j]=0.0;
+////			}
+////		}
+////	}
+//
+//
+//	// [Fahad] - Create a linearized full tensor.
+////	size_t fullTensorSize = ((NP_tot-1) * Nsel * 6) - 1;
+//	size_t fullTensorSize = ((NP_tot) * Nsel * 6);
+//	float *coeffs_st  = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
+//	float *coeffs_dip = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
+//
+//	//-----------------------------------------------------------------------------------------//
+//	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
+//	//-----------------------------------------------------------------------------------------//
+//
+//	print_screen("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
+//	print_logfile("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
+//
+//	p1=0;	//count total number of patches (in all faults);
+//	for (int j=0; j<NF; j++) {
+//		pure_thrustnorm=pure_strslip=0;
+//
+//		if ((err=choose_focmec(eqkfm1[j], &strike, &dip, &rake))!=0){
+//			print_screen("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
+//			print_logfile("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
+//			return(1);
+//		}
+//
+//		len=eqkfm1[j].L*(1.0/eqkfm1[j].np_st);
+//		width=eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
+//
+////		int numPatches = eqkfm1[j].np_di*eqkfm1[j].np_st - 1;
+//		int numPatches = eqkfm1[j].np_di*eqkfm1[j].np_st;
+//
+//		#ifdef _CRS_MPI
+//			// FIXME: Write a simple algorithm to fit lower Nsur values to numProcs ...
+//			if(numProcs > numPatches) {
+//				if(procId == 0) {
+//					printf("\n Number of processes: %d", numProcs);
+//					printf("\n Number of iterations: %d", numPatches);
+//				}
+//				error_quit("\n **numPatches must be greater than or equal to the number of processes ** \n");
+//			}
+//
+//			partitionSize = numPatches / numProcs;
+//
+//			// If partionSize leaves one or more elements at the end
+//			if(partitionSize * numProcs != numPatches) {
+//				partitionSize += 1;
+//
+//				coeffs_st  = (float*) realloc(coeffs_st,  (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
+//				coeffs_dip = (float*) realloc(coeffs_dip, (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
+//			}
+//
+//			start = (procId * partitionSize);
+//			end = start + partitionSize;
+//
+////			// The very last process
+////			if(procId / (numProcs-1) == 1) {
+////				// If partionSize leaves one or more elements at the end
+////				if(partitionSize * numProcs != numPatches) {
+////					// Include the remaining elements
+////					partitionSize += numPatches - (partitionSize * numProcs);
+////				}
+////			}
+//
+////			if(procId == 0) {
+////				start = 1;
+////			}
+//		#else
+//			start = 1;
+//			end = numPatches + 1;
+//		#endif
+//
+//		// [Fahad] - Create a linearized partitioned tensor.
+//		size_t partitionedTensorSize = partitionSize * Nsel * 6;
+//		float *coeffs_st_partitioned  = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
+//		float *coeffs_dip_partitioned = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
+//
+//		for(int i = 0; i < partitionedTensorSize; ++i) {
+//			coeffs_st_partitioned [i] = 0.0;
+//			coeffs_dip_partitioned[i] = 0.0;
+//		}
+//
+////		if(procId != 0) {
+////			printf("\n numPatches: %d", numPatches);
+////			printf("\n partitionSize: %d", partitionSize);
+////			printf("\n partitionedTensorSize: %d", partitionedTensorSize);
+////		}
+//
+//		int p2 = start, index=0;
+//		for(int p = 0; p < partitionSize; p++) {
+//			patch_pos(eqkfm1[j], p2+1, &eqeast, &eqnorth, &depth);
+//			++p2;
+//
+//			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i)
+//			for(int i0=0; i0<Nsel; i0++) {
+//				i=eqkfm1[0].selpoints[i0+1];	// [Fahad] Added '1' to the index
+//				north=crst.y[i];
+//				east=crst.x[i];
+//
+//				if(pure_thrustnorm!=1) {
+//					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1, 0,
+//							north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
+//							alpha, crst.lambda, crst.mu, crst.fric);
+//
+//					index = (p * Nsel * 6) + (i0 * 6);
+//
+//					coeffs_st_partitioned[index + 0] += 1e6*Sxx;
+//					coeffs_st_partitioned[index + 1] += 1e6*Syy;
+//					coeffs_st_partitioned[index + 2] += 1e6*Szz;
+//					coeffs_st_partitioned[index + 3] += 1e6*Sxy;
+//					coeffs_st_partitioned[index + 4] += 1e6*Syz;
+//					coeffs_st_partitioned[index + 5] += 1e6*Sxz;
+//				}
+//
+//				if(pure_strslip!=1) {
+//					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0, -1,
+//							 north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
+//							 alpha, crst.lambda, crst.mu, crst.fric);
+//
+//					index = (p * Nsel * 6) + (i0 * 6);
+//
+//					coeffs_dip_partitioned[index + 0] += 1e6*Sxx;
+//					coeffs_dip_partitioned[index + 1] += 1e6*Syy;
+//					coeffs_dip_partitioned[index + 2] += 1e6*Szz;
+//					coeffs_dip_partitioned[index + 3] += 1e6*Sxy;
+//					coeffs_dip_partitioned[index + 4] += 1e6*Syz;
+//					coeffs_dip_partitioned[index + 5] += 1e6*Sxz;
+//				}
+//			}
+//		}
+//
+////		if(procId != 0) {
+////			printf("\n ProcId %d -- coeffs_st_partitioned[0]:  %f \n", procId, coeffs_st_partitioned[0]);
+////			printf("\n ProcId %d -- coeffs_st_partitioned[(partitionSize-1)*Nsel*6]:  %f \n", procId, coeffs_st_partitioned[(partitionSize-1)*Nsel*6]);
+////		}
+//
+//		#ifdef _CRS_MPI
+//			MPI_Allgather(coeffs_st_partitioned, partitionedTensorSize,
+//						  MPI_FLOAT, coeffs_st, partitionedTensorSize,
+//						  MPI_FLOAT, MPI_COMM_WORLD);
+//
+//			MPI_Allgather(coeffs_dip_partitioned, partitionedTensorSize,
+//						  MPI_FLOAT, coeffs_dip, partitionedTensorSize,
+//						  MPI_FLOAT, MPI_COMM_WORLD);
+//		#endif
+//
+//		free(coeffs_st_partitioned);
+//		free(coeffs_dip_partitioned);
+//	}
+//
+////	if(procId != 0) {
+////		printf("\n ProcId %d -- coeffs_st[0]:  %f \n", procId, coeffs_st[0]);
+////		printf("\n ProcId %d -- coeffs_st[80*Nsel*6]:  %f \n", procId, coeffs_st[80*Nsel*6]);
+////		printf("\n ProcId %d -- coeffs_st[81*Nsel*6]:  %f \n", procId, coeffs_st[81*Nsel*6]);
+////		printf("\n ProcId %d -- coeffs_st[160*Nsel*6]:  %f \n", procId, coeffs_st[160*Nsel*6]);
+////	}
+//
+//	// [Fahad] - Copy data from the linearized tensor to the f3tensor.
+//	int index = 0;
+//	for(int i = 0; i < NP_tot; ++i) {
+//		for(int j = 0; j < Nsel; ++j) {
+//			for(int k = 0; k < 6; ++k) {
+//				index = (i * Nsel * 6) + (j * 6) + k;
+//
+//				(*Coeffs_st) [i+1][j+1][k+1] = coeffs_st [index];
+//				(*Coeffs_dip)[i+1][j+1][k+1] = coeffs_dip[index];
+//			}
+//		}
+//	}
+//
+//	if(procId != 0) {
+////		printf("\n\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId, (*Coeffs_st1)[1][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_st) [81][1][1]: %f \n", procId, (*Coeffs_st1)[81][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_st) [82][1][1]: %f \n", procId, (*Coeffs_st1)[82][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_st) [83][1][1]: %f \n", procId, (*Coeffs_st1)[83][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_st) [161][1][1]: %f \n", procId, (*Coeffs_st1)[161][1][1]);
+////
+////		printf("\n\n ProcId %d -- (*Coeffs_dip) [1][1][1]:  %f \n", procId, (*Coeffs_dip)[1][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_dip) [81][1][1]: %f \n", procId, (*Coeffs_dip)[81][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_dip) [82][1][1]: %f \n", procId, (*Coeffs_dip)[82][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_dip) [83][1][1]: %f \n", procId, (*Coeffs_dip)[83][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_dip) [161][1][1]: %f \n", procId, (*Coeffs_dip)[161][1][6]);
+//
+////		printf("\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId,  (*Coeffs_st)[1][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_st) [94][1][1]: %f \n", procId,  (*Coeffs_st)[94][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_st) [95][1][1]: %f \n", procId,  (*Coeffs_st)[95][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_st) [96][1][1]: %f \n", procId,  (*Coeffs_st)[96][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_st) [188][1][1]: %f \n", procId, (*Coeffs_st)[188][1][1]);
+////
+////		printf("\n\n ProcId %d -- (*Coeffs_dip)[1][1][1]:  %f \n", procId, (*Coeffs_dip)[1][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_dip)[94][1][1]: %f \n", procId,   (*Coeffs_dip)[94][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_dip)[95][1][1]: %f \n", procId,   (*Coeffs_dip)[95][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_dip)[96][1][1]: %f \n", procId,   (*Coeffs_dip)[96][1][1]);
+////		printf("\n ProcId %d -- (*Coeffs_dip)[188][1][1]: %f \n", procId,  (*Coeffs_dip)[188][1][1]);
+//	}
+//
+//	free(coeffs_st);
+//	free(coeffs_dip);
+//
+////	for (int p1=1; p1<=NP_tot; p1++){
+////		for (int i=1; i<=Nsel; i++){
+////			for (int j=1; j<=6; j++){
+////				if((*Coeffs_st)[p1][i][j] != Coeffs_st1[p1][i][j]) {
+////					if(procId != 0) {
+////						printf("\n Mismatch detected: %f --- %f", (*Coeffs_st)[p1][i][j], Coeffs_st1[p1][i][j]);
+////					}
+////				}
+////			}
+////		}
+////	}
+////
+////	(*Coeffs_st) = Coeffs_st1;
+//
+//	return(0);
+//}
+
+// Same function as the one commented out above, just cleaned up a bit.
 int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1,
 			   int NF, struct crust crst, double *lats, double *lons, double *depths) {
 	//lats, lons, depths contain complete list of grid points.
@@ -212,20 +484,14 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 
 	print_logfile("Depth of surface: %.3lf km.\n", depth0);
 
-
 	//---------initialize DCFS----------//
+	*Coeffs_st  = f3tensor(1, NP_tot, 1, Nsel, 1, 6);	//TODO should deallocate at the end (in main.c).
+	*Coeffs_dip = f3tensor(1, NP_tot, 1, Nsel, 1, 6);
 
-	*Coeffs_st = f3tensor(1,NP_tot,1,Nsel,1,6);	//TODO should deallocate at the end (in main.c).
-	*Coeffs_dip = f3tensor(1,NP_tot,1,Nsel,1,6);
-
-	for (int p1=1; p1<=NP_tot; p1++){
-		for (int i=1; i<=Nsel; i++){
-			for (int j=1; j<=6; j++){
-				(*Coeffs_st)[p1][i][j]=0.0;
-				(*Coeffs_dip)[p1][i][j]=0.0;
-			}
-		}
-	}
+	// [Fahad] - Create a linearized full tensor.
+	size_t fullTensorSize = ((NP_tot) * Nsel * 6);
+	float *coeffs_st  = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
+	float *coeffs_dip = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
 
 	//-----------------------------------------------------------------------------------------//
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
@@ -234,15 +500,9 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 	print_screen("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
 	print_logfile("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
 
-	// FIXME: [Fahad] For testing purposes only ...
-	printf("\n ProcId %d -- NF: %d \n", procId, NF);
-
 	p1=0;	//count total number of patches (in all faults);
 	for (int j=0; j<NF; j++) {
 		pure_thrustnorm=pure_strslip=0;
-//		todo: check rake for all patches:
-//		if (fmod(eqkfm1[j].rake1+90,180.0)!=0) pure_thrustnorm=0;
-//		if (fmod(eqkfm1[j].rake1,180.0)!=0) pure_strslip=0;
 
 		if ((err=choose_focmec(eqkfm1[j], &strike, &dip, &rake))!=0){
 			print_screen("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
@@ -254,10 +514,8 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 		width=eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
 
 		int numPatches = eqkfm1[j].np_di*eqkfm1[j].np_st;
-		printf("\n ProcId %d -- numPatches: %d \n", procId, numPatches);	//todo remove this output
 
 		#ifdef _CRS_MPI
-			// FIXME: Write a simple algorithm to fit lower Nsur values to numProcs ...
 			if(numProcs > numPatches) {
 				if(procId == 0) {
 					printf("\n Number of processes: %d", numProcs);
@@ -267,127 +525,104 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 			}
 
 			partitionSize = numPatches / numProcs;
-			start = (procId * partitionSize) + 1;
-			end = start + partitionSize;
 
-			if(procId == 0) {
-				start = 1;
+			// If partionSize leaves one or more elements at the end
+			if(partitionSize * numProcs != numPatches) {
+				partitionSize += 1;
+
+				coeffs_st  = (float*) realloc(coeffs_st,  (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
+				coeffs_dip = (float*) realloc(coeffs_dip, (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
 			}
 
-			// FIXME: This does not seem to tbe the correct logic for p1 ...
-//			p1 = start-1;
-//			if(procId != 0) {
-//				//p1 += partitionSize - 1;
-//			}
+			start = (procId * partitionSize);
+			end = start + partitionSize;
 		#else
 			start = 1;
 			end = numPatches + 1;
 		#endif
 
-		// [Fahad] Temporary tensors used in MPI_Allgather()
-		float ***Coeffs_st_partition  = f3tensor(1, partitionSize, 1, Nsel, 1, 6);
-		float ***Coeffs_dip_partition = f3tensor(1, partitionSize, 1, Nsel, 1, 6);
+		// [Fahad] - Create a linearized partitioned tensor.
+		size_t partitionedTensorSize = partitionSize * Nsel * 6;
+		float *coeffs_st_partitioned  = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
+		float *coeffs_dip_partitioned = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
 
-		int p2 = start;
-		for(int p = 1; p <= partitionSize; p++) {
-//		for(int p = start; p < end; p++) {
-//			printf("%d", p);
-//		for(int p=1; p<=eqkfm1[j].np_di*eqkfm1[j].np_st; p++) {
-//			p1 += 1;	// TODO: [Fahad] reduction variable ...
-			patch_pos(eqkfm1[j], p2, &eqeast, &eqnorth, &depth);
+		for(int i = 0; i < partitionedTensorSize; ++i) {
+			coeffs_st_partitioned [i] = 0.0;
+			coeffs_dip_partitioned[i] = 0.0;
+		}
+
+		int p2 = start, index=0;
+		for(int p = 0; p < partitionSize; p++) {
+			patch_pos(eqkfm1[j], p2+1, &eqeast, &eqnorth, &depth);
 			++p2;
 
 			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i)
-			for(int i0=1; i0<=Nsel; i0++) {
-				i=eqkfm1[0].selpoints[i0];
+			for(int i0=0; i0<Nsel; i0++) {
+				i=eqkfm1[0].selpoints[i0+1];	// [Fahad] Added '1' to the index
 				north=crst.y[i];
 				east=crst.x[i];
+
 				if(pure_thrustnorm!=1) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1, 0,
 							north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							alpha, crst.lambda, crst.mu, crst.fric);
 
-					Coeffs_st_partition[p][i0][1] += 1e6*Sxx;
-					Coeffs_st_partition[p][i0][2] += 1e6*Syy;
-					Coeffs_st_partition[p][i0][3] += 1e6*Szz;
-					Coeffs_st_partition[p][i0][4] += 1e6*Sxy;
-					Coeffs_st_partition[p][i0][5] += 1e6*Syz;
-					Coeffs_st_partition[p][i0][6] += 1e6*Sxz;
+					index = (p * Nsel * 6) + (i0 * 6);
 
-//					(*Coeffs_st)[p1][i0][1]+=1e6*Sxx;
-//					(*Coeffs_st)[p1][i0][2]+=1e6*Syy;
-//					(*Coeffs_st)[p1][i0][3]+=1e6*Szz;
-//					(*Coeffs_st)[p1][i0][4]+=1e6*Sxy;
-//					(*Coeffs_st)[p1][i0][5]+=1e6*Syz;
-//					(*Coeffs_st)[p1][i0][6]+=1e6*Sxz;
+					coeffs_st_partitioned[index + 0] += 1e6*Sxx;
+					coeffs_st_partitioned[index + 1] += 1e6*Syy;
+					coeffs_st_partitioned[index + 2] += 1e6*Szz;
+					coeffs_st_partitioned[index + 3] += 1e6*Sxy;
+					coeffs_st_partitioned[index + 4] += 1e6*Syz;
+					coeffs_st_partitioned[index + 5] += 1e6*Sxz;
 				}
 
-				if(pure_strslip!=1){
+				if(pure_strslip!=1) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0, -1,
 							 north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							 alpha, crst.lambda, crst.mu, crst.fric);
-					Coeffs_dip_partition[p][i0][1] += 1e6*Sxx;
-					Coeffs_dip_partition[p][i0][2] += 1e6*Syy;
-					Coeffs_dip_partition[p][i0][3] += 1e6*Szz;
-					Coeffs_dip_partition[p][i0][4] += 1e6*Sxy;
-					Coeffs_dip_partition[p][i0][5] += 1e6*Syz;
-					Coeffs_dip_partition[p][i0][6] += 1e6*Sxz;
 
-//					(*Coeffs_dip)[p1][i0][1]+=1e6*Sxx;
-//					(*Coeffs_dip)[p1][i0][2]+=1e6*Syy;
-//					(*Coeffs_dip)[p1][i0][3]+=1e6*Szz;
-//					(*Coeffs_dip)[p1][i0][4]+=1e6*Sxy;
-//					(*Coeffs_dip)[p1][i0][5]+=1e6*Syz;
-//					(*Coeffs_dip)[p1][i0][6]+=1e6*Sxz;
+					index = (p * Nsel * 6) + (i0 * 6);
+
+					coeffs_dip_partitioned[index + 0] += 1e6*Sxx;
+					coeffs_dip_partitioned[index + 1] += 1e6*Syy;
+					coeffs_dip_partitioned[index + 2] += 1e6*Szz;
+					coeffs_dip_partitioned[index + 3] += 1e6*Sxy;
+					coeffs_dip_partitioned[index + 4] += 1e6*Syz;
+					coeffs_dip_partitioned[index + 5] += 1e6*Sxz;
 				}
 			}
 		}
 
-		printf("\n ProcId %d -- Coeffs_st_partition[1][1][1]: %f \n", procId, Coeffs_st_partition[1][1][1]);
-		printf("\n ProcId %d -- Coeffs_dip_partition[1][1][1]: %f \n", procId, Coeffs_dip_partition[1][1][1]);
-		printf("\n ProcId %d -- Coeffs_st_partition[partitionSize][1][1]: %f \n", procId, Coeffs_st_partition[partitionSize][1][1]);
-		printf("\n ProcId %d -- Coeffs_dip_partition[partitionSize][1][1]: %f \n", procId, Coeffs_dip_partition[partitionSize][1][1]);
-
 		#ifdef _CRS_MPI
-			long nrl=1, nrh=partitionSize, ncl=1, nch=Nsel, ndl=1, ndh=6;
-			long nrow=nrh-nrl+1,ncol=nch-ncl+1,ndep=ndh-ndl+1;
-
-			printf("\n ProcId %d -- nrow*ncol*ndep+1: %ld \n", procId, nrow*ncol*ndep+1);
-
-			MPI_Allgather(Coeffs_st_partition[nrl][ncl], nrow*ncol*ndep+1,
-						  MPI_FLOAT, (*Coeffs_st)[1][1], nrow*ncol*ndep+1,
+			MPI_Allgather(coeffs_st_partitioned, partitionedTensorSize,
+						  MPI_FLOAT, coeffs_st, partitionedTensorSize,
 						  MPI_FLOAT, MPI_COMM_WORLD);
 
-			MPI_Allgather(Coeffs_dip_partition[nrl][ncl], nrow*ncol*ndep+1,
-						  MPI_FLOAT, (*Coeffs_dip)[1][1], nrow*ncol*ndep+1,
+			MPI_Allgather(coeffs_dip_partitioned, partitionedTensorSize,
+						  MPI_FLOAT, coeffs_dip, partitionedTensorSize,
 						  MPI_FLOAT, MPI_COMM_WORLD);
 		#endif
 
-		free_f3tensor(Coeffs_st_partition,  1, partitionSize, 1, Nsel, 1, 6);
-		free_f3tensor(Coeffs_dip_partition, 1, partitionSize, 1, Nsel, 1, 6);
-
-		printf("\n ProcId %d -- (*Coeffs_st)[1][1][1]: %f \n", procId, (*Coeffs_st)[1][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_st)[280][1][1]: %f \n", procId, (*Coeffs_st)[280][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_st)[281][1][1]: %f \n", procId, (*Coeffs_st)[281][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_st)[560][1][1]: %f \n", procId, (*Coeffs_st)[560][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_dip)[1][1][1]: %f \n", procId, (*Coeffs_dip)[1][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_dip)[280][1][1]: %f \n", procId, (*Coeffs_dip)[280][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_dip)[281][1][1]: %f \n", procId, (*Coeffs_dip)[281][1][1]);
-		printf("\n ProcId %d -- (*Coeffs_dip)[560][1][1]: %f \n", procId, (*Coeffs_dip)[560][1][1]);
-
-//		#ifdef _CRS_MPI
-//		// FIXME: This could also be statically computed instead ...
-//		if(numProcs > 1) {
-//			MPI_Status status;
-//			if(procId == (numProcs - 1)) {	// Process with highest rank value
-//				MPI_Send(&p1, 1, MPI_INT, 0, 1, MPI_COMM_WORLD);
-//			}
-//			else {
-//				MPI_Recv(&p1, 1, MPI_INT, 1, 1, MPI_COMM_WORLD, &status);
-//			}
-//		}
-//		#endif
+		free(coeffs_st_partitioned);
+		free(coeffs_dip_partitioned);
 	}
+
+	// [Fahad] - Copy data from the linearized tensor to the f3tensor.
+	int index = 0;
+	for(int i = 0; i < NP_tot; ++i) {
+		for(int j = 0; j < Nsel; ++j) {
+			for(int k = 0; k < 6; ++k) {
+				index = (i * Nsel * 6) + (j * 6) + k;
+
+				(*Coeffs_st) [i+1][j+1][k+1] = coeffs_st [index];
+				(*Coeffs_dip)[i+1][j+1][k+1] = coeffs_dip[index];
+			}
+		}
+	}
+
+	free(coeffs_st);
+	free(coeffs_dip);
 
 	return(0);
 }
@@ -491,6 +726,43 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 			}
 		}
 
+		if(procId == 0) {
+//			printf("\n\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId, (*Coeffs_st)[1][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [81][1][1]: %f \n", procId, (*Coeffs_st)[81][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [82][1][1]: %f \n", procId, (*Coeffs_st)[82][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [83][1][1]: %f \n", procId, (*Coeffs_st)[83][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [161][1][1]: %f \n", procId, (*Coeffs_st)[161][1][1]);
+//
+//			printf("\n\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId, (*Coeffs_dip)[1][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [81][1][1]: %f \n", procId, (*Coeffs_dip)[81][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [82][1][1]: %f \n", procId, (*Coeffs_dip)[82][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [83][1][1]: %f \n", procId, (*Coeffs_dip)[83][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [161][1][1]: %f \n", procId, (*Coeffs_dip)[161][1][6]);
+
+//			printf("\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId, (*Coeffs_st)[1][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [94][1][1]: %f \n", procId, (*Coeffs_st)[94][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [95][1][1]: %f \n", procId, (*Coeffs_st)[95][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [96][1][1]: %f \n", procId, (*Coeffs_st)[96][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [188][1][1]: %f \n", procId, (*Coeffs_st)[188][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_dip)[1][1][1]:  %f \n", procId, (*Coeffs_dip)[1][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_dip)[94][1][1]: %f \n", procId, (*Coeffs_dip)[94][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_dip)[95][1][1]: %f \n", procId, (*Coeffs_dip)[95][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_dip)[96][1][1]: %f \n", procId, (*Coeffs_dip)[96][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [187][1][1]: %f \n", procId, (*Coeffs_st)[187][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [188][1][1]: %f \n", procId, (*Coeffs_st)[188][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [189][1][1]: %f \n", procId, (*Coeffs_st)[189][1][1]);
+
+
+//			printf("\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId, (*Coeffs_st)[1][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [94][1][1]: %f \n", procId, (*Coeffs_st)[94][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [95][1][1]: %f \n", procId, (*Coeffs_st)[95][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_st) [189][1][1]: %f \n", procId, (*Coeffs_st)[188][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_dip)[1][1][1]:  %f \n", procId, (*Coeffs_dip)[1][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_dip)[94][1][1]: %f \n", procId, (*Coeffs_dip)[94][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_dip)[95][1][1]: %f \n", procId, (*Coeffs_dip)[95][1][1]);
+//			printf("\n ProcId %d -- (*Coeffs_dip)[189][1][1]: %f \n", procId, (*Coeffs_dip)[188][1][1]);
+		}
+
 //		printf("\n ProcId %d -- (*Coeffs_st)[1][1][1]: %f \n", procId, (*Coeffs_st)[1][1][1]);
 //		printf("\n ProcId %d -- (*Coeffs_st)[280][1][1]: %f \n", procId, (*Coeffs_st)[280][1][1]);
 //		printf("\n ProcId %d -- (*Coeffs_st)[281][1][1]: %f \n", procId, (*Coeffs_st)[281][1][1]);
@@ -506,6 +778,14 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 
 
 int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, struct pscmp DCFS, struct eqkfm *eqkfm1, struct crust crst, double *strikeR, double *dipR, int full_tensor){
+
+	// [Fahad] Variables used for MPI.
+	int procId = 0, numProcs = 1;
+
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+		MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
+	#endif
 
 	double strike, dip, rake;
 	double alpha;
