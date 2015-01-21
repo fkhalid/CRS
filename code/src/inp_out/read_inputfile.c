@@ -611,6 +611,14 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 					times.tm_isdst=0;
 					 (*allslipmodels).tmain[nn]=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
 
+	                        	//check if catalog is chronological:
+	        	                if (nn>=1 && (*allslipmodels).tmain[nn]<(*allslipmodels).tmain[nn-1]){
+        	        	                print_logfile("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
+                	        	        print_screen("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
+                        	        	fileError=1;
+                       			 }
+
+
 					 (*allslipmodels).no_slipmodels[nn]=no_slipmod;
 					 if (nsm+1+no_slipmod>Nm0) {
 						 (*allslipmodels).slipmodels=realloc((*allslipmodels).slipmodels, (nsm+1+no_slipmod) * sizeof(char*));
@@ -627,6 +635,14 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				}
 			}
 			fclose(fin);
+		}
+
+                #ifdef _CRS_MPI
+                        MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		#endif  
+
+		if (fileError){
+			return(1);
 		}
 
 		#ifdef _CRS_MPI

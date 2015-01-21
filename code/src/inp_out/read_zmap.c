@@ -67,7 +67,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	time_t t;
 
 	int eq1=0, eq2=0, eq;
-	int errP=0;
+	int errP=0, file_err=0;
 	int *seleq1, *seleq2, *catindex;	//catindex: indices of events in catalog, to be copied into eqkfm.
 	double SD, SDd, SDlat, SDlon, f=1.0;
 	double lat0l, lat1l, lon0l, lon1l, dep0l, dep1l;
@@ -205,6 +205,13 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 			times[valid+1]=difftime(mktime(&ev),mktime(&reftime))*SEC2DAY;
 
+			//check if catalog is chronological:
+			if (valid>=1 && times[valid+1]<times[valid]){
+				print_logfile("Error: catalog %s not chronological (ln.%d). Exiting.\n", file, lines);
+                                print_screen("Error: catalog %s not chronological (ln.%d). Exiting.\n", file, lines);
+				file_err=1;
+			}
+
 			if (st==NULL) empty+=1;
 			else {
 				lon_out_of_range = lat_out_of_range = date_out_of_range = time_out_of_range = mag_out_of_range = dep_out_of_range = 0;
@@ -253,6 +260,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 	#ifdef _CRS_MPI
 		MPI_Bcast(&valid, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        MPI_Bcast(&file_err, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
 
 	if(valid == 0){

@@ -299,7 +299,7 @@ int main (int argc, char **argv) {
 	err=read_crust(fore_template, fixedmecfile , &crst, gridresxy, gridresz, flags.err_recfault);
 
 	if (err) {
-		error_quit("Errors while reading template file %s. Exiting.", fore_template);
+		error_quit("Errors while reading template file %s. Exiting.\n", fore_template);
 	}
 	NgridT=crst.N_allP;
 
@@ -308,9 +308,9 @@ int main (int argc, char **argv) {
 //---------------------------------------------//
 
 	if (flags.afterslip !=0) {
-		read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1);
-		err=setup_afterslip_eqkfm(all_aslipmodels, crst, &eqkfm_aft);
-		if (err!=0) error_quit("Error in setting up afterslip slip model - exiting.");
+		err=read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1);
+		err+=setup_afterslip_eqkfm(all_aslipmodels, crst, &eqkfm_aft);
+		if (err!=0) error_quit("Error in setting up afterslip slip model. Exiting.\n");
 	}
 	else eqkfm_aft=NULL;
 
@@ -337,7 +337,7 @@ int main (int argc, char **argv) {
 							   tstartLL, tendCat);
 	}
 
-	if (err!=0) error_quit("**Error in setting up catalog. Exiting. **");
+	if (err!=0) error_quit("Error in setting up catalog. Exiting.\n");
 
 	if (flags.err_recfault && (no_fm_cats!=crst.nofmzones)){
 		if (crst.nofmzones>no_fm_cats){
@@ -372,7 +372,7 @@ int main (int argc, char **argv) {
 //----------------------------------------------------------//
 
 	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst, flags);
-	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **\n");
+	if (err!=0) error_quit("Error in setting up catalog or associating events with mainshocks. Exiting.\n");
 
 //	// FIXME: Fahad - For debugging purposes only ...
 //	#ifdef _CRS_MPI
