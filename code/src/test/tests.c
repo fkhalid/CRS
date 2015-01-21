@@ -770,33 +770,46 @@ int test_readZMAP_tw(){
 int test_forecast_stepG2_new(){
 //tests forecast after stress steps (and potentially, also afterslip).
 
-	char name[]="1_2aslipeqks";	//file name.
-	int NP=10, Neq=3, NTS=2, n_samples=3000;
+	char name[]="Test1C";	//file name.
+	int NP=1, Neq=0, NTS=10000, n_samples=10000;	//NB: NTS must be larger than expected number of time steps.
+	double t_aft=1.0;	//parameters for time evolution of afterslip.
+	double *times_aft=NULL;	//times of afterslip time steps.
+	double dtau=7000;
 	struct catalog cat;
 	struct pscmp *DCFS;
-	double times[NTS-1];
 	double **cmpdata;	//afterslip.
-	double Asig=1000, ta=1000;
-	double cmb_step=20000;
+	double Asig=15000, ta=10000;
+	double cmb_step=2000000;
 	double *gamma0;
 	double *Nend=dvector(1,n_samples);
 	double *Rend=dvector(1,n_samples);
-	double t0=0, t1=300;
+	double t0=0, t1=100;
 	double dt=(t1-t0)/n_samples;
 	int *points;
 	char fname[120];
-	double f=0.5;
+	double f0=0.0, f=1.0; //factors scaling co/post seismic stresses.
+	double now, curr, prev, norm;	//used for afterslip time evol.
 	FILE *fout;
 
 	points=ivector(1,NP);
 	for (int j=1; j<=NP; j++) points[j]=j;
 
-	for (int i=0; i<NTS; i++) times[i]= t0-0.001+i*(t1+0.001-t0)/(NTS-1);
+	//find time steps:
+	times_aft=dvector(0,NTS);
+	findtimestepsomori(0.0, t0, t1, 0, 183, cmb_step, dtau, 0.6, 0.001, times_aft+1, NULL, &NTS);
+	times_aft[0]=-1e-4;
 
+	//setup afterslip evolution:
 	cmpdata=dmatrix(0,NTS,1,NP);
-	for (int i=0; i<=NTS; i++){
+	norm=log(1+(t1-t0)/t_aft);	//normalizing factor.
+	curr=0.0;
+
+	for (int t=1; t<=NTS; t++){
+		prev=curr;
+		now= times_aft[t];
+		curr=log(1+now/t_aft);
 		for (int j=1; j<=NP; j++){
-			cmpdata[i][j]=f*cmb_step*(log(2+i)-log(1+i))/log(2+NTS);
+			cmpdata[t-1][j]=f*cmb_step*(curr-prev)/norm;
 		}
 	}
 
@@ -807,26 +820,31 @@ int test_forecast_stepG2_new(){
 		DCFS[i].nsel=NP;
 		DCFS[i].which_pts=points;
 		DCFS[i].cmb=dvector(1,NP);
-		for (int j=1; j<=NP; j++) DCFS[i].cmb[j]=cmb_step;
+		for (int j=1; j<=NP; j++) DCFS[i].cmb[j]=f0*cmb_step;
 	}
 
 	cat.Z=0;
 
 	gamma0=dvector(1,NP);
-	for (int j=1; j<=NP; j++) gamma0[j]=Asig/ta;
+	for (int j=1; j<=NP; j++) gamma0[j]=ta/Asig;
 
-	//for (int t=1; t<=n_samples; t++) forecast_stepG2_new(cat, times, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, Nend+t, Rend+t, NP, NTS, Neq, gamma0, NULL, 1);
+	//uses linear approx. between time steps:
+	for (int t=1; t<=n_samples; t++) forecast_stepG2_new(cat, times_aft, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, Nend+t, Rend+t, NP, NTS, Neq, gamma0, NULL, NULL, 1);
 
-	sprintf(fname, "%s/forecast_stepG2_new3/%s.readme", testfolder, name);
+	//uses step approx. between time stpes:
+	//for (int t=1; t<=n_samples; t++) forecast_stepG2_old(cat, times_aft, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, NULL, Rend+t, NP, NTS, Neq, gamma0, NULL, NULL, 1);
+
+//	sprintf(fname, "%s/forecast_stepG2_new3/%s.readme", testfolder, name);
+//	fout=fopen(fname,"w");
+//	fprintf(fout, "Asig\t\tta\tcmb_step\t\tafterslip_cmb_step\tt0\tt1\tdt\n");
+//	fprintf(fout, "%.2lf\t%.2lf\t%.2lf\t%.2lf\t%.2lf\t%.2lf\t%.5lf\n", Asig, ta, cmb_step, f*cmb_step, t0, t1, fmin((t1+0.001-t0)/(NTS-1), (t1-t0)/n_samples));
+//	fprintf(fout, "Output format: \ntime(days)	cumu no.\trate(1/days)\n");
+//	fclose(fout);
+
+//	sprintf(fname, "%s/forecast_stepG2_new3/%s.dat", testfolder, name);
+	sprintf(fname, "%s/%s.dat", testfolder, name);
 	fout=fopen(fname,"w");
-	fprintf(fout, "Asig\t\tta\tcmb_step\t\tafterslip_cmb_step\tt0\tt1\tdt\n");
-	fprintf(fout, "%.2lf\t%.2lf\t%.2lf\t%.2lf\t%.2lf\t%.2lf\t%.5lf\n", Asig, ta, cmb_step, f*cmb_step, t0, t1, fmin((t1+0.001-t0)/(NTS-1), (t1-t0)/n_samples));
-	fprintf(fout, "Output format: \ntime(days)	cumu no.\trate(1/days)\n");
-	fclose(fout);
-
-	sprintf(fname, "%s/forecast_stepG2_new3/%s.dat", testfolder, name);
-	fout=fopen(fname,"w");
-	for (int i=1; i<=n_samples; i++) fprintf(fout, "%lf\t%lf\t%lf\n", t1+dt*i, Nend[i], Rend[i]);
+	for (int i=1; i<=n_samples; i++) fprintf(fout, "%lf\t%lf\t%lf\n", t0+dt*i, Nend[i], Rend[i]);
 	fclose(fout);
 
 	printf("Done!\n");

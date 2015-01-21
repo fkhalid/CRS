@@ -1,19 +1,23 @@
-/*
+/* This is the same as forecast_stepG.c, but uses steps insted of linear evolution b/w time steps.
  * forecastG.c
  *
  *  Created on: May 17, 2012
  *      Author: camcat
  */
 
-#include "forecast_stepG.h"
+#include "forecast_old.h"
 
 #ifdef _CRS_MPI
 	#include "mpi.h"
 #endif
 
-int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1, double Asig, double ta,
+#define Max 100000
+#define MaxTS 1000
+#define Maxeq 10000
+
+int forecast_stepG2_old(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1, double Asig, double ta,
 			int points[], double *out_NeX, double *NeT, double *Rate_end, int N, int NTS, int Neqks, double *gamma_init, double *back_rate, double *R, int last){
-//assumes stress grows linearly during each time step.
+//assumes stress grows as a step in the center of each time step.
 //NB assumes that times, cat, DCFS, NTS are always the same (each time function is called).
 // if points==NULL, use sequence [1,2,3,...,N].
 // cmbdata can be NULL, and will be ignored.
@@ -190,7 +194,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 
     while (counter_eqk<num_eqk[n] && events[1][which_eqk[n][counter_eqk]]<tt0) counter_eqk+=1;
 
-    while (tol0<(tt1-t_now)){
+    while (t_now<tt1){
 
     	if (err!=0) break;	//error in a previous loop;
     	if (counter_eqk>=num_eqk[n]) reach_end=1;
@@ -209,16 +213,9 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 
     	dtau_dt=(cmpdata && j0-1>=0 )? (Asig/ta)+cmpdata[j0-1][n]/dt[j0-1] : (Asig/ta);
 
-    	if (t_pre>tol0){
+    	if (t_pre>0.0){
 			tau=dtau_dt*t_pre;
-			ta1=Asig/dtau_dt;
-			if (NeX) {
-				a=gamma*dtau_dt-1;
-				b=a*exp(-t_pre/ta1)+1;
-
-				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
-			}
-			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
+			gamma=(gamma+t_pre/(2.0*Asig))*exp(-tau/Asig)+t_pre/(2.0*Asig);
     	}
 
     	t_now+=t_pre;
@@ -226,29 +223,16 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 		for(int j=j0;j<next_TS;j++){
 			dtau_dt=(cmpdata)? (Asig/ta)+cmpdata[j][n]/dt[j] : (Asig/ta);
 			tau=dtau_dt*dt[j];
-			ta1=Asig/dtau_dt;
-			if (NeX) {
-				a=gamma*dtau_dt-1;
-				b=a*exp(-dt[j]/ta1)+1;
-
-				if (!isinf(fabs(b))) NeX[m]+=fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(dt[j]+ta1*log(b/(gamma*dtau_dt))));	//condition since for gamma -> inf, Nev-> 0 (can do algebra to confirm).
-			}
-			gamma=(fabs(tau/Asig)>1e-10)? (gamma-dt[j]/(tau))*exp(-tau/Asig)+dt[j]/(tau) : gamma*(1-tau/Asig)+dt[j]/Asig;
+			gamma=(gamma+dt[j]/(2.0*Asig))*exp(-tau/Asig)+dt[j]/(2.0*Asig);
 			t_now+=dt[j];
 		}
 
 		t_pre=t_endstep-t_now;
 
-		if (t_pre>tol0) {
+		if (t_pre>0.0) {
 			dtau_dt=(cmpdata)? (Asig/ta)+(1.0/dt[next_TS])*cmpdata[next_TS][n] : (Asig/ta);
 			tau=dtau_dt*t_pre;
-			ta1=Asig/dtau_dt;
-			if (NeX) {
-				a=gamma*dtau_dt-1;
-				b=a*exp(-t_pre/ta1)+1;
-				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
-			}
-			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
+			gamma= (gamma+t_pre/(2.0*Asig))*exp(-tau/Asig)+t_pre/(2.0*Asig);
 		}
 
 		t_now+=t_pre;
@@ -289,3 +273,4 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   return(errtot);
 
 }
+
