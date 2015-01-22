@@ -488,7 +488,8 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 	*Coeffs_st  = f3tensor(1, NP_tot, 1, Nsel, 1, 6);	//TODO should deallocate at the end (in main.c).
 	*Coeffs_dip = f3tensor(1, NP_tot, 1, Nsel, 1, 6);
 
-	// [Fahad] - Create a linearized full tensor.
+	// [Fahad] - Create linearized full tensors for use in MPI communication
+	//			 routines
 	size_t fullTensorSize = ((NP_tot) * Nsel * 6);
 	float *coeffs_st  = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
 	float *coeffs_dip = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
@@ -541,7 +542,8 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 			end = numPatches + 1;
 		#endif
 
-		// [Fahad] - Create a linearized partitioned tensor.
+		// [Fahad] - Create linearized partitioned tensors for use in MPI
+		//			 communication routines.
 		size_t partitionedTensorSize = partitionSize * Nsel * 6;
 		float *coeffs_st_partitioned  = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
 		float *coeffs_dip_partitioned = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
@@ -608,7 +610,7 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 		free(coeffs_dip_partitioned);
 	}
 
-	// [Fahad] - Copy data from the linearized tensor to the f3tensor.
+	// [Fahad] - Copy data from the linearized tensors to the f3tensors.
 	int index = 0;
 	for(int i = 0; i < NP_tot; ++i) {
 		for(int j = 0; j < Nsel; ++j) {
