@@ -203,15 +203,19 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 		// todo [coverage] this block is never tested
 		// if a refined grid is being used, focal mechanism values should me mapped to refined geometry:
 		if (is_refined){
+			//allocate strtmp and diptmp since 0th element is also needed:
+			strtmp=dvector(0,(*crst).N_allP);
+			diptmp=dvector(0,(*crst).N_allP);
+
 			err1+=convert_geometry((*crst),(*crst).str0, &strtmp, 0, 1);
 			(*crst).str0=strtmp;
 			err1+=convert_geometry((*crst),(*crst).dip0, &diptmp, 0, 1);
 			(*crst).dip0=strtmp;
-			err1+=convert_geometry((*crst),(*crst).rake0, &raketmp, 0, 1);
-			(*crst).rake0=strtmp;
+			//err1+=convert_geometry((*crst),(*crst).rake0, &raketmp, 0, 1);
+			//(*crst).rake0=strtmp;
 		}
 
-		//copy regional mechanism into zeroth element:
+		//copy regional mechanism into 0th element:
 		(*crst).str0[0]=str0tmp;
 		(*crst).dip0[0]=dip0tmp;
 

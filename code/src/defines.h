@@ -140,7 +140,9 @@ struct crust{
 //describes elastic properties of the entire crustal volume.
 
 	//physical properties:
-	double *str0, *dip0, *rake0; // orientation of best oriented mechanism in regional stress field; may be uniform (given by stress tensor below) or not, if different setup provided by user.
+	double *str0, *dip0, *rake0; // orientation of best oriented mechanism in regional stress field.
+								 // str0[0], dip0[0], rake0[0] contains regional mechanism.
+								 // str0[1...N_allP], dip0[1...N_allP] may contain spatially variable rec. fault (if FixedMecFile is provided).
 	double fric;		// coefficient of friction.
 	double skepton;		// skeption coefficient
 	double **S;			// regional stress tensor;

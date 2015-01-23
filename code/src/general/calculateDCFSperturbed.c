@@ -153,7 +153,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			for (int i=0; i<DCFS_Af_size; i++)	{
 				okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS_Af[i], eqkfmAf+i*DCFS_Af[0].NF, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
 				if (vary_recfault==0) {
-					resolve_DCFS(DCFS_Af[i], crst, crst.str0, crst.dip0, NULL, 1);
+					resolve_DCFS(DCFS_Af[i], crst, crst.str0, crst.dip0, NULL, 1);	//todo check what happens inside this function.
 					if (splines && i<DCFS_Af_size-1){
 						for (int n=1; n<=NgridT; n++) cmb_cumu[n]+=DCFS_Af[i].cmb[n];
 					}
@@ -162,40 +162,73 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 	}
 
-		//-----------------------------------------------------------------//
-		//							Mainshock							   //
-		//-----------------------------------------------------------------//
+	//-----------------------------------------------------------------//
+	//							Mainshock							   //
+	//-----------------------------------------------------------------//
 
 	if (time_in==1 || refresh){
 		if (afterslip!=2){
 			NFsofar=0;
 			temp=AllCoeff;
 			for (int i=0; i<Nmain; i++){
+
+				//Don't do anything if event is outside data time period:
+				if (DCFS[temp->which_main].t <tdata0 || DCFS[temp->which_main].t>tdata1){
+					NFsofar+=temp->NF;
+					temp=temp->next;
+					continue;
+				}
+
 				if (eqkfm0[NFsofar].is_slipmodel){
+					//calculate stress tensor at each grid point:
 					Coeffs_st=temp->Coeffs_st;
 					Coeffs_dip=temp->Coeffs_dip;
 					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS[temp->which_main], eqkfm0+NFsofar, crst, NULL, NULL, 1);
-				}
-				NFsofar+=temp->NF;
-				temp=temp->next;
-			}
+					//resolve coefficients if receiver faults don't change between iterations:
+					switch (vary_recfault){
+						case 0:
+							resolve_DCFS(DCFS[temp->which_main], crst, crst.str0, crst.dip0, NULL, 1);
+							if (gridpoints_err){
+								int eq1=temp->which_main;
 
-			//prepare isotropic fields:
-			NFsofar=0;
-			temp=AllCoeff;
-			for (int i=0; i<Nmain; i++){
-				if (!eqkfm0[NFsofar].is_slipmodel){
-					int eq1=temp->which_main;
-					isoDCFS(DCFS[eq1], eqkfm0[NFsofar]);
-					if (gridpoints_err){
-						for (int i=1; i<=NgridT; i++) mycmb[i]=0.0;
-						for (int i=1; i<=DCFS[eq1].nsel; i++) mycmb[DCFS[eq1].which_pts[i]]=DCFS[eq1].cmb[i];
-						interp_nn(NgridT,crst.nLat, crst.nLon, crst.nD, mycmb,interp_DCFS,0,nn);
-						DCFS[eq1].cmb0=dvector(1,DCFS[eq1].nsel);
-						DCFS[eq1].Dcmb=dvector(1,DCFS[eq1].nsel);
-						for (int i=1; i<=DCFS[eq1].nsel; i++){
-							DCFS[eq1].cmb0[i]=0.5*(interp_DCFS[DCFS[eq1].which_pts[i]][1]+interp_DCFS[DCFS[eq1].which_pts[i]][2]);
-							DCFS[eq1].Dcmb[i]=fabs(interp_DCFS[DCFS[eq1].which_pts[i]][1]-interp_DCFS[DCFS[eq1].which_pts[i]][2]);
+								//need to copy field into cmb0, so that each iteration will smooth the original field (and not the one smoothed in prev. iteration).
+								for (int i=1; i<=NgridT; i++) mycmb[i]=0.0;
+								for (int i=1; i<=DCFS[eq1].nsel; i++) mycmb[DCFS[eq1].which_pts[i]]=DCFS[eq1].cmb[i];
+								interp_nn(NgridT,crst.nLat, crst.nLon, crst.nD, mycmb,interp_DCFS,0,nn);
+								DCFS[eq1].cmb0=dvector(1,DCFS[eq1].nsel);
+								DCFS[eq1].Dcmb=dvector(1,DCFS[eq1].nsel);
+								for (int i=1; i<=DCFS[eq1].nsel; i++){
+									DCFS[eq1].cmb0[i]=0.5*(interp_DCFS[DCFS[eq1].which_pts[i]][1]+interp_DCFS[DCFS[eq1].which_pts[i]][2]);
+									DCFS[eq1].Dcmb[i]=fabs(interp_DCFS[DCFS[eq1].which_pts[i]][1]-interp_DCFS[DCFS[eq1].which_pts[i]][2]);
+								}
+							}
+
+							break;
+						case 2:
+							// todo [coverage] this block is never tested
+							DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from afterslip, assuming that from mainshocks is much larger this is ok.
+							break;
+						default:
+							break;
+					}
+
+				}
+
+				else{
+					//prepare isotropic stress fields:
+					if (!eqkfm0[NFsofar].is_slipmodel){
+						int eq1=temp->which_main;
+						isoDCFS(DCFS[eq1], eqkfm0[NFsofar]);
+						if (gridpoints_err){
+							for (int i=1; i<=NgridT; i++) mycmb[i]=0.0;
+							for (int i=1; i<=DCFS[eq1].nsel; i++) mycmb[DCFS[eq1].which_pts[i]]=DCFS[eq1].cmb[i];
+							interp_nn(NgridT,crst.nLat, crst.nLon, crst.nD, mycmb,interp_DCFS,0,nn);
+							DCFS[eq1].cmb0=dvector(1,DCFS[eq1].nsel);
+							DCFS[eq1].Dcmb=dvector(1,DCFS[eq1].nsel);
+							for (int i=1; i<=DCFS[eq1].nsel; i++){
+								DCFS[eq1].cmb0[i]=0.5*(interp_DCFS[DCFS[eq1].which_pts[i]][1]+interp_DCFS[DCFS[eq1].which_pts[i]][2]);
+								DCFS[eq1].Dcmb[i]=fabs(interp_DCFS[DCFS[eq1].which_pts[i]][1]-interp_DCFS[DCFS[eq1].which_pts[i]][2]);
+							}
 						}
 					}
 				}
@@ -205,53 +238,41 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 	}
 
+
+	//----------------------------------------------//
+	//	 		Other things to check/setup			//
+	//----------------------------------------------//
+
+
+	//At the moment afterslip and OOPs at the same time are not implemented.
 	if (afterslip==1 && vary_recfault==2) {
 		print_screen("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when afterslip is included!!*\n");
 		print_logfile("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when afterslip is included!!*\n");
 		return;
 	}
 
-	switch (vary_recfault){
-		case 1:
-			//if vary_recfault==1, receiver fault changes at each MC iteration.
-			if (which_recfault==0) {
-				//randomly pick a mechanism for each zone:
-				for (int fmzone=0; fmzone<crst.nofmzones; fmzone++){
-					first=fmzoneslim[fmzone];
-					last=fmzoneslim[fmzone+1]-1;
-					rand= (int) ((last-first)*ran1(seed)+first);
-					*seed=-*seed;
-					strike0[fmzone]=focmec[1][rand];
-					dip0[fmzone]=focmec[2][rand];
-					rake0[fmzone]=focmec[3][rand];	//only used for splines==1 (see below).
-				}
+	//pick receiver faults from catalog of focal mechanisms:
+	if (vary_recfault==1){
+		//if vary_recfault==1, receiver fault changes at each MC iteration.
+		if (which_recfault==0) {
+			//randomly pick a mechanism for each zone:
+			for (int fmzone=0; fmzone<crst.nofmzones; fmzone++){
+				first=fmzoneslim[fmzone];
+				last=fmzoneslim[fmzone+1]-1;
+				rand= (int) ((last-first)*ran1(seed)+first);
+				*seed=-*seed;
+				strike0[fmzone]=focmec[1][rand];
+				dip0[fmzone]=focmec[2][rand];
+				rake0[fmzone]=focmec[3][rand];	//only used for splines==1 (see below).
 			}
-			else {
-				// use the foc. mec. for this iteration (this is done when all focal mechanisms should be sampled; only activated in main.c if nofmzones=1).
-				// todo [coverage] this block is never tested
-				*strike0=focmec[1][which_recfault];
-				*dip0=focmec[2][which_recfault];
-				*rake0=focmec[3][which_recfault];	//only used for splines==1 (see below).
-			}
-			break;
-
-		case 0:
-			//if vary_recfault=0, fixed receiver faults are used.
-			if (crst.variable_fixmec){
-				//strike(dip)0 is the vector crst.str(dip)0 (one value for each point). //fixme may want to use crst.str0[1] instead??
-				strike0= crst.str0;
-				dip0=crst.dip0;
-			}
-			else{
-				//use a single value for entire domain.
-				*strike0= crst.str0[0];
-				*dip0=crst.dip0[0];
-			}
-			*rake0=crst.rake0[0];	//only used for splines==1 (see below). todo allow rake to be passed by user as well.
-			break;
-
-		case 2:
-			break;	//receiver fault varies for each point (OOP).
+		}
+		else {
+			// use the foc. mec. for this iteration (this is done when all focal mechanisms should be sampled; only activated in main.c if nofmzones=1).
+			// todo [coverage] this block is never tested
+			*strike0=focmec[1][which_recfault];
+			*dip0=focmec[2][which_recfault];
+			*rake0=focmec[3][which_recfault];	//only used for splines==1 (see below).
+		}
 	}
 
 	//------------------------------------------//
@@ -269,7 +290,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		if (times[0]<tdata1 && times[NTScont-1]>=tdata0){
 
 			if (splines==0){
-				if (vary_recfault!=0) resolve_DCFS(DCFS_Af[0], crst, strike0, dip0, NULL, 1);
+				if (vary_recfault==1) resolve_DCFS(DCFS_Af[0], crst, strike0, dip0, NULL, 1);
 				for (int l=0; l<NTScont; l++) {
 					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
 					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=tevol[l]*DCFS_Af[0].cmb[n];
@@ -277,7 +298,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			}
 
 			else{
-				if (vary_recfault!=0){
+				if (vary_recfault==1){
 					// todo [coverage] this block is never tested
 					for (int n=1; n<=NgridT; n++) cmb_cumu[n]=0.0;
 					for (int l=0; l<NTScont; l++) {
@@ -317,15 +338,18 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			}
 			else{
 				if (eqkfm0[NFsofar].is_slipmodel){
-					Coeffs_st=temp->Coeffs_st;
-					Coeffs_dip=temp->Coeffs_dip;
-					if (vary_recfault!=2) resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1);
-					// todo [coverage] this block is never tested	
-					else DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from afterslip, assuming that from mainshocks is much larger this is ok.
+					if (vary_recfault==1){	// In this case stress tensor has to be resolved on a different plane at each iteration:
+						resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1);
+					}
 
-					if (gridpoints_err==1) smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, seed, 0, nn);
+					if (gridpoints_err==1) {
+						//if vary_recfault==0, the field hasn't changed and cmb0 should be used.
+						smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, seed, vary_recfault==0, nn);
+					}
 				}
 				else {
+					//if the earthquake does not have a slip model, the isotropic field does not change between iterations and has already been calculated.
+					//only need to calculated error from gridpoints.
 					if (gridpoints_err==1) smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, seed, 1, nn);
 				}
 

@@ -46,7 +46,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int c2=0, c3=0;	//counters.
 	int err=0, j;
 	int *all_pts;
-	int no_synthetic_slipmodels;
+	int no_synthetic_slipmodels=0;
 	static struct set_of_models dummy_parentsetofmodels;
 	char *cmb_format=all_slipmodels.cmb_format;
 	dummy_parentsetofmodels.Nmod=0;	//this value indicates than no slip model is available (will use synthetic slip model from foc. mec. or isotropic field).
