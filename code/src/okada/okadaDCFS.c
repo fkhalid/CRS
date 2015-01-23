@@ -19,8 +19,24 @@
 //---------------------------------------------------------------------//
 
 int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double *dipRs, double *rake, int optrake){
-	//To be called after filling in DCFS.S. (with functions below).
-	//todo make vectors static to avoid repeated memory allocations?
+	/* Resolves stress tensor in DCFS on receiver faults given by strikeRs, dipRs, rake, and stores result in DCFS.cmb.
+	 * To be called after filling in DCFS.S. (stress tensor).
+	 *
+	 * Input:
+	 *
+	 *  DCFS.S: stress tensor.
+	 *  strikeRs, dipRs:	strike and dip. It can be a vector if multiple zones with different receiver faults are used
+	 *  crst.nofmzones:	contains no. of receiver fault zones, i.e. size of strikeRs,dipRs [0...crst.nofmzones-1]
+	 *  rake: pointer to value of rake (a single value, not a vector). if NULL, optimal rake will be used.
+	 *  optrake:	flag indicating if optimal rake should be used. If optrake=1, the value of *rake will be ignored.
+	 *
+	 * Output:
+	 *
+	 *  DCFS.cmb: coulomb stress field.
+	 *
+	 * todo make vectors static to avoid repeated memory allocations?
+	 *
+	 */
 
 	// [Fahad] Variables used for MPI
 	int procId = 0;
@@ -31,7 +47,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 
 	double *sigma0s;
 	double **stress0s;
-	double **n, **s;
+	double **n, **s;	//normal vectors, slip vectors.
 	double MaxDCFS=DCFS_cap;
 	int Nsel=DCFS.nsel;
 	int fm;
@@ -44,6 +60,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	sigma0s=dvector(0,no_fm_zones-1);
 
 	for (int i=0; i<no_fm_zones; i++) {
+		//calculate normal vector:
 		strikeR=strikeRs[i];
 		dipR=dipRs[i];
 		n[i]=normal_vector(strikeR, dipR);
@@ -54,6 +71,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 				print_logfile("** Warning: optrake=0, but rake is NULL: will use optimal rake (resolve_DCFS).**\n");
 				optrake=1;
 			}
+			//calculate slip vector:
 			s[i]=slip_vector(strikeR, dipR, *rake);
 		}
 		else s[i]=NULL;
@@ -65,7 +83,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 
 	#pragma omp parallel for private(fm)
 	for (int i=1; i<=Nsel; i++){
-		fm= (no_fm_zones==1) ? 0 : crst.fmzone[i];
+		fm= (no_fm_zones==1) ? 0 : crst.fmzone[i];	//zone index.
 		DCFS.cmb[i]=resolve_n(DCFS.S[i], n[fm], NULL, crst.fric, stress0s[fm], sigma0s[fm], s[fm]);
 		if (DCFS.cmb[i]>MaxDCFS) DCFS.cmb[i]=MaxDCFS;
 		if (DCFS.cmb[i]<-MaxDCFS) DCFS.cmb[i]=-MaxDCFS;
