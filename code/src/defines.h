@@ -158,11 +158,13 @@ struct crust{
 	int nLat_out, \
 		nLon_out, \
 		nD_out;
+	//int Nout;			// no. of points for output. [if decide to use this, remember to broadcast it].
 	double dlat_out;
 	double dlon_out;
 	double ddepth_out;
+
 	// grid for calculations:
-	int N_allP;			// no. of points (should be same as DCFS0).
+	int N_allP;			// no. of points (should be same as DCFS0) for calculation grid.
 	int *list_allP;		// list. of points (should be same as DCFS0): [1,2,3,...N_allP].
 	double dlat;		// spacing (lat)
 	double dlon;		// ...

@@ -8,16 +8,32 @@
 #include "convert_geometry.h"
 
 int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, int increase_resolution){
-// if increase_resolution, will use crst.nX_out as starting points, and calculate new values for crst.nX; otherwise, will convert from larger to smaller cells.
-// for sum==0, quantity is an intensive variable -> take average. for sum==1, takes sum (only for increase_resolution==0).
-// points change along lat, then along lon, then along depth.
-// indices start from 1.
-// *new_v will be initialized if NULL; otherwise, must have correct no. of elements!
+/* Convert a vector (old_v) between large/small grid in crst.
+ * old_v, new_v have size [1...NP], [1...NPn].
+ *
+ * Input:
+ *  crst: structure containing large grid (crst.nLat_out, crst.nLon_out, crst.nD_out) and small grid (crst.nLat, crst.nLon, crst.nD);
+ *  old_v: original vector
+ *  increase_resolution: flag. if 1, will use crst.nX_out as starting points (large cells), and calculate new values for crst.nX (small cells);
+ *  		otherwise, will convert from larger to smaller cells.
+ *  sum: flag. for sum==0, quantity is an intensive variable -> take average. for sum==1, takes sum (only for increase_resolution==0).
+ *  		only used if (increase_resolution==0).
+ *
+ * Output:
+ *  new_v: new vector
+ *
+ * points change along lat, then along lon, then along depth.
+ * indices start from 1.
+ * new_v will be initialized if NULL; otherwise, must have correct no. of elements!
+ *
+ */
 
 	int P[3], Pn[3], nsub[3];
-	int D1, D2, D1D2;	//no o fpoints per dimension (old geometry);
-	int D1n, D2n;	//no o fpoints per dimension (new geometry);
-	int NP, NPn, nsub_tot;
+	int D1, D2, D1D2;	//no of points per dimension (old geometry);
+	int D1n, D2n;		//no of points per dimension (new geometry);
+	int NP,		//original no. of points
+		NPn, 	//new number of points
+		nsub_tot;	//ratio.
 	int ind;
 
 	NPn= (increase_resolution)? crst.N_allP : crst.nLat_out*crst.nLon_out*crst.nD_out;
@@ -30,18 +46,18 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 
 	// todo [coverage] from here on is never tested
 	if (increase_resolution){
-		D1=crst.nLat_out;
+		D1=crst.nLat_out;	//large cells
 		D2=crst.nLon_out;
 		D1D2=D1*D2;
-		D1n=crst.nLat;
+		D1n=crst.nLat;		//small cells
 		D2n=crst.nLon;
 	}
 
 	else {
-		D1=crst.nLat;
+		D1=crst.nLat;	//small cells
 		D2=crst.nLon;
 		D1D2=D1*D2;
-		D1n=crst.nLat_out;
+		D1n=crst.nLat_out;	//large cells
 		D2n=crst.nLon_out;
 	}
 
@@ -92,7 +108,6 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 	}
 
 	return(0);
-
 }
 
 

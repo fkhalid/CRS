@@ -46,6 +46,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int c2=0, c3=0;	//counters.
 	int err=0, j;
 	int *all_pts;
+	int no_synthetic_slipmodels;
 	static struct set_of_models dummy_parentsetofmodels;
 	char *cmb_format=all_slipmodels.cmb_format;
 	dummy_parentsetofmodels.Nmod=0;	//this value indicates than no slip model is available (will use synthetic slip model from foc. mec. or isotropic field).
@@ -121,7 +122,6 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
 				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 
-
 				//flags.full_field=0 indicates that an isotropic slip model should be used for all events (also those with foc mec):
 				if (eqfm1[i].is_slipmodel && !flags.sources_all_iso) {
 					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
@@ -130,15 +130,13 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 						print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
 					}
 					else {
-						//todo add counter and output something at the end.
-//						print_screen("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
-//						print_logfile("Using synthetic slip model from focal mechanism for large event at t=%.5e, mag=%.2lf\n", eqfm1[i].t, eqfm1[i].mag);
+						no_synthetic_slipmodels+=1;
 					}
 				}
 
 
 				else{
-					if (!eqfm1[i].is_slipmodel && flags.sources_without_focmec==2){	//todo NB do not use aftershocks_fixedmec since MC option will be killed.
+					if (!eqfm1[i].is_slipmodel && flags.sources_without_focmec==2){
 						(*eqfm_comb)[c3].str1=crst.str0[0];	//fixme should use different regions.
 						(*eqfm_comb)[c3].dip1=crst.dip0[0];	//fixme should use different regions.
 						(*eqfm_comb)[c3].rake1=crst.rake0[0];
@@ -183,6 +181,12 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 			c_evfound+=1;
 			*Ncomb+=1;
 		}
+	}
+
+	if (no_synthetic_slipmodels){
+		print_screen("Using synthetic slip model from focal mechanism for %i earthquakes\n", no_synthetic_slipmodels);
+		print_logfile("Using synthetic slip model from focal mechanism for %i earthquakes\n", no_synthetic_slipmodels);
+
 	}
 
 	if (c_evfound<N2){

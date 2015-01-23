@@ -60,7 +60,6 @@ int main (int argc, char **argv) {
 
 	setenv("TZ", "UTC", 1);
 	int run_tests=0;
-
 	extra_verbose=0;
 	quiet=0;
 
@@ -79,84 +78,107 @@ int main (int argc, char **argv) {
 
 	FILE *fout, *fin, *foutfore;
 
-	int LLinversion, forecast;
-	int Nchar=120, Nchar_long=500;
-	char fname[Nchar],	infile[Nchar], fore_template[Nchar], catname[Nchar], outname[Nchar],
-		syscopy[Nchar], background_rate_grid[Nchar], background_rate_cat[Nchar], slipmodelfile[Nchar], afterslipmodelfile[Nchar], modelparametersfile[Nchar],
-		logfile[Nchar], print_LL[Nchar], outnamemod[Nchar];
-	char print_cmb[Nchar],  print_forex[Nchar],  print_foret[Nchar],  printall_cmb[Nchar],  printall_forex[Nchar],  printall_foret[Nchar];
-	char line[Nchar_long];
+	int LLinversion, forecast;	//flags indicating if parameter inversion should be done, an if forecast should be produced.
+	int Nchar=120;
+	char fname[Nchar],	syscopy[Nchar], outname[Nchar], outnamemod[Nchar], logfile[Nchar],
+		print_LL[Nchar], print_cmb[Nchar],  print_forex[Nchar],  print_foret[Nchar],
+		printall_cmb[Nchar],  printall_forex[Nchar],  printall_foret[Nchar];	//output related file names
+	char infile[Nchar], fore_template[Nchar], catname[Nchar],
+		background_rate_grid[Nchar], background_rate_cat[Nchar], slipmodelfile[Nchar],
+		afterslipmodelfile[Nchar], modelparametersfile[Nchar], fixedmecfile[Nchar];	//input related file names
 	char **focmeccats;
-	char fixedmecfile[Nchar];
+
 
 	//Slip model + catalog variables:
-    struct slipmodels_list all_slipmodels, all_aslipmodels;
-	struct eqkfm *eqkfm1=0, *eqkfm0res=0, *eqkfm_aft=0;	//contain respectively: aftershocks with fm, aftershocks, mainshocks, mainshocks resampled, afterslip, afterslip resampled.
+    struct slipmodels_list all_slipmodels, all_aslipmodels;	/*contain seismic and aseismic slip models respectively*/
+	struct eqkfm *eqkfm_temp=0, 	//temporary structure to store earthquakes from catalog of foc. mec. (later copied in eqkfm_co)
+			*eqkfm_co=0, 			//contains all slip models for seismic sources (including synthetic ones from focal mechanisms).
+			*eqkfm_aft=0;			//contains all aseismic slip models.
 	double Mag_main, Mc_source;	//Mag_main used to skip tw for LL calculations (todo: should not do this for forecasts).
-								//Mag_main also used for declustering in case background rate; should put it somewhere else in input file.
-	double dt, dM, xytoll, ztoll, border;
+								//Mag_main also used for declustering in case background rate; todoshould put it somewhere else in input file.
+								//Mc_sources is the minimum magnitude of earthquakes to be used as stress sources.
 
-	int Nm, *Nfaults_all=0;
-	double res, gridresxy, gridresz;
-	struct catalog cat, cat2;
-	int Ntot;
-	double **focmec=0;
-	int *fmzonelimits;
+	double dt, dM, xytoll, ztoll, border;	//tolerance used to match earthquakes from catalog and from focal mechanism catalog.
+
+	int Ntemp,		//size of eqkfm_temp
+		Nco,		//number of seismic sources. size of Nfaults_co.
+		*Nfaults_co=0;	//number of faults for each seismic source. size of eqkfm_co is the sum of its elements.
+
+	double res, 	//slip model resolution
+		gridresxy, 	//horizontal resolution of calculation grid
+		gridresz;	//vertical resolution of calculation grid
+
+	struct catalog cat;	//earthquake catalog
+	double **focmec=0;	//matrix containing focal mechanisms
+	int *fmzonelimits;	//indices of focmec corresponding to different zones
+	int no_fm_cats;		//number of focal mechanisms catalogs (each defining a zone)
 
 	//DCFS variables:
-	struct pscmp *DCFS;
-	double dDCFS;
-	struct crust crst;
-	int NgridT, NFM=0;	//number of gridpoints, number of aftershocks for which foc.mec is known, number of foc.mec from past seismicity.
-	struct Coeff_LinkList *AllCoeff;
-    int *which_main;
+	struct pscmp *DCFS;	//contains stress fields from seismic sources (eqkfm_co)
+	double dDCFS;		//min. value for which grid points should be selected for calculating stress changes from source events
 
-	//RateState variables
-	int fixta, fixAsig, fixr;
-	double Asig_min, Asig_max, Asig0, min_dAsig;
-	double ta_min, ta_max, ta0, min_dta;
-	double r0;
-	int nAsig0, nAsig;
-	int nta0, nta;
-	double *maxAsig, *maxta, *maxr;
-	double *rate_dum;
-	double Asig, dAsig, ta, dta, r;
+	struct crust crst;	//contains description of model domain (grid) and other crust properties.
+	int NgridT, 	//number of gridpoints (crst.N_allP)
+		Nfocmec=0;	//number of focal mechanisms (size of focmec).
 
-	struct flags flags;
-	int Nsur, Nslipmod;
-	int no_fm_cats;
 
-	struct tm reftime, times;
-	double tstartLL, tendLL=0, Tend, Tstart, tw, tstart_calc, tendCat, time_min_focmec; //todo read tendLL from file.
-	double fore_dt;
-	double *tts;
-	int Ntts;
-	double t_firstmain;
-	double smoothing;	//for calculating background seismicity.
+	struct Coeff_LinkList *AllCoeff;	//contains okada coefficients.
+
+	//RateState variables:
+	int fixta, fixAsig, fixr;		//flags indicating if parameters should be fixed (not inverted for).
+	double Asig_min, Asig_max, Asig0;	//range of Asig for parameter search; value to be used if fixAsig=1 or LLinversion=0.
+	double ta_min, ta_max, ta0;		//range of ta for parameter search; value to be used if fixta=1 or LLinversion=0.
+	double r0;						//value of background rate to be used if fixta=1 or LLinversion=0.
+	int nAsig, nta;					//number of Asig, ta values to use in grid search.
+	double *maxAsig, *maxta, *maxr;	//optimal values from grid search.
+	double Asig, ta, r,		// these are assigned during each grid search iteration.
+			dAsig, dta;		// interval between values in grid search.
+
+	struct flags flags;	//structure containing flags.
+	int Nsur;	//no. of Monte Carlo iterations.
+
+	struct tm reftime;	//reference time (IssueTime)
+	double tstartLL, tendLL=0,	//start, end time of LL inversion. //todo read tendLL from file.
+			Tend, Tstart,	//start, end time of forecast.
+			tw,				//time window to skip after each event with Mw>=Mag_main in LL calculation (due to catalog incompleteness)
+			tstart_calc; 	//start of calculation time for forecast (to avoid recalculating stuff from inversion period).
+	double fore_dt;			//step between forecast output (temporal forecast).
+	double *tts;			//vector containing times of forecast output (temporal forecast).
+	int Ntts;				//size of tts.
+	//double t_firstmain;
+	double smoothing;	//smoothing used for calculating background seismicity.
 
 	//grid search variables:
-	int p=0, p_found;
-	int multi_gammas, use_bg_rate_cat, use_bg_rate_grid;
-	double *LLs, *Ldums0, *Nev, *I, LLmax, LL;
-	double *gamma_bgrate=NULL;
-	double 	*gammas=NULL;
-	double 	**gammas_new=NULL, \
-			**gammas_old=NULL, \
-			**gammas_maxLL=NULL, \
+	int p=0;	//dummy variable
+	int multi_gammas,	//If forecast==1, LLinversion==1 and  Tstart>=tendLL, the calculations from LL inversion will be used as starting values for forecast calculations.
+						//multi_gammas is a flag indicating that this is the case.
+		use_bg_rate_cat, //flag indicating that spatially variable background rate should be calculated from catalog provided.
+		use_bg_rate_grid;//flag indicating that a pre-calculated spatially variable background rate should be used.
+
+	double *LLs, *Ldums0, *Nev, *I,	//vectors containing LL inversion values for all grid search iterations.
+									//LL: Log likelihood; Ldums0: first term of LL (\sum_{i} \log{\lambda(t_i, x_i)}); Nev=no. of events; I= second term of LL (integral)
+									//rates in Ldums0, I should be multiplied by r(average background rate):
+									//LL=
+			LLmax, LL;	// maximum LL; dummy variable.
+
+	double *gamma_bgrate=NULL;	//spatially variable steady state gamma derived
+	double 	*gammas=NULL;	//fixme this is allocated but then just set to NULL...
+	double 	**gammas_new=NULL,
+			**gammas_maxLL=NULL, 	//If forecast==1, LLinversion==1 and  Tstart>=tendLL, the calculations from LL inversion will be used as starting values for forecast calculations.
+									//gammas_maxLL contains the values of gamma for all iterations, saved from LL inversion and used as starting values for forecast.
 			**gammasfore=NULL;
 
 	//to switch between slip models.
-	int refresh;
-	int slipmodel_combinations=1;
-	int *dim;
-	int *Nsm, nf=0;
+	int slipmodel_combinations=1;	//number of slip model combinations (since each earthquake may have multiple alternative slip models).
+	int *dim;	//number of slip models available for each earthquake
+	int *Nsm, 	//contains the index of the slip model that should be used for each earthquake;
+		nf=0;	//dummy variable to count no. of faults for each earthquake.
+				//TODO: document how eqkfm_co looks like for multiple slip models, and explain the mess with slipmodel_combinations loop.
 
 	//temporary variables.
-	double minmag;
-	long seed;
-	int nc;
-	int j0, N;
-	int input_file_name_given=0;
+	double minmag;	//minimum magnitude in background_rate_grid file.
+	long seed;		//for random number generator
+	int input_file_name_given=0;	//flag to check if used provided master input file.
 
 	// FIXME: [Fahad] For testing purposes only ...
 	#ifdef _CRS_MPI
@@ -235,7 +257,7 @@ int main (int argc, char **argv) {
 //-----------------------read model parameters-------------------//
 
 	err=read_modelparameters(modelparametersfile, &crst, reftime, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
-			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig0, &nta0,	&tw, &fore_dt,
+			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig, &nta,	&tw, &fore_dt,
 			&Nsur, &flags, &(cat.Mc), &Mag_main, &Mc_source, &dDCFS, &DCFS_cap,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
 
@@ -243,17 +265,22 @@ int main (int argc, char **argv) {
 		error_quit("Error reading InputModelParametersFile file %s.\n", modelparametersfile);
 	}
 
-	//future events (cat.t[i]>0) are only needed to calculate LL for forecast, if forecast is produced.
-	//todo remove if decides not to print out LLevents.
-	tendCat= (forecast)? Tend : 0;
+	if (!forecast) Tend=tendLL;	//if forecast should not be produced, only needs to consider inversion time (tendLL).
 
 //------- change flags if input files are missing:----//
 
 	if (!focmeccats && flags.err_recfault) {
+		//can not use variable receiver fault (flags.err_recfault) if catalog of focal mechanisms is not given.
 		print_screen("Warning: InputCatalogFocMecFile or InputListCatalogFocMecFile not given: will not use variable receiver faults.\n");
 		flags.err_recfault=0;
 		flags.sources_all_iso=1;
 	}
+
+	if ((!strcmp(fixedmecfile,"")==0) && (flags.err_recfault || flags.OOPs)){
+		//fixedmecfile (containing spatially variable fixed mechanisms) will not be used if variable receiver faults (focmec) or OOPS are given in parameter file flag.
+		print_screen("Warning: FixedMecFile will not be used (receiver fault flag in parameter file not set to 'fixed').\n");
+	}
+
 	if ((strcmp(afterslipmodelfile,"")==0)) {
 		print_screen("InputListAfterslipModels not given: will not use afterslip.\n");
 		flags.afterslip=0;
@@ -267,6 +294,7 @@ int main (int argc, char **argv) {
 
 	if (strcmp(background_rate_cat,"")==0)	use_bg_rate_cat=0;
 	else use_bg_rate_cat=1;
+
 
 //----------- Copy input and parameters file to log file -------//
 
@@ -299,7 +327,7 @@ int main (int argc, char **argv) {
 	err=read_crust(fore_template, fixedmecfile , &crst, gridresxy, gridresz, flags.err_recfault);
 
 	if (err) {
-		error_quit("Errors while reading template file %s. Exiting.\n", fore_template);
+		error_quit("Errors while reading ForecastTemplate or FixedMecFile. Exiting.\n", fore_template);
 	}
 	NgridT=crst.N_allP;
 
@@ -325,16 +353,17 @@ int main (int argc, char **argv) {
 	if (err) error_quit("Error in reading slip model file. Exiting.\n");
 
 	if (flags.err_recfault) {
+		// catalog should be filled up to Tend (forecast end time) since it will be used to calculate LLevents for future events too //todo remove if decide to remove LLevents.
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
-							   dDCFS, Mc_source, Mag_main, crst, &cat, &eqkfm1, &focmec, &fmzonelimits,
-							   flags, &NFM, &Ntot, dt, dM,  xytoll, ztoll, border, tw,
-							   tstartLL, tendCat);
+							   dDCFS, Mc_source, Mag_main, crst, &cat, &eqkfm_temp, &focmec, &fmzonelimits,
+							   flags, &Nfocmec, &Ntemp, dt, dM,  xytoll, ztoll, border, tw,
+							   tstartLL, Tend);
 	}
 	else {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
-							   dDCFS, Mc_source, Mag_main, crst, &cat, &eqkfm1,   NULL , NULL, flags,
-							   NULL, &Ntot, dt, dM,  xytoll, ztoll, border, tw,
-							   tstartLL, tendCat);
+							   dDCFS, Mc_source, Mag_main, crst, &cat, &eqkfm_temp,   NULL , NULL, flags,
+							   NULL, &Ntemp, dt, dM,  xytoll, ztoll, border, tw,
+							   tstartLL, Tend);
 	}
 
 	if (err!=0) error_quit("Error in setting up catalog. Exiting.\n");
@@ -357,13 +386,13 @@ int main (int argc, char **argv) {
 
 	if (flags.err_recfault){
 		//only use focal mechanisms before start of LL period (Tstart).
-		select_fm_time(focmec, &NFM, Tstart);
-		if (!NFM) {
+		select_fm_time(focmec, &Nfocmec, Tstart);
+		if (!Nfocmec) {
 			print_logfile("\nNo focal mechanisms available before t=%.2lf (ForecastStartDate). Will not use multiple receiver faults.\n", Tstart);
 			flags.err_recfault=0;
 		}
 		else {
-			print_logfile("\nWill use %d receiver focal mechanisms up to t=%.2lf (ForecastStartDate)\n", NFM,  Tstart);
+			print_logfile("\nWill use %d receiver focal mechanisms up to t=%.2lf (ForecastStartDate)\n", Nfocmec,  Tstart);
 		}
 	}
 
@@ -371,7 +400,7 @@ int main (int argc, char **argv) {
 //----------------------Add slip models --------------------//
 //----------------------------------------------------------//
 
-	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst, flags);
+	err=eqkfm_addslipmodels(eqkfm_temp, all_slipmodels, &eqkfm_co, Ntemp, &Nco, &Nfaults_co, dt, dM, res, crst, flags);
 	if (err!=0) error_quit("Error in setting up catalog or associating events with mainshocks. Exiting.\n");
 
 //	// FIXME: Fahad - For debugging purposes only ...
@@ -395,16 +424,16 @@ int main (int argc, char **argv) {
 	#endif
 
 	if (flags.afterslip){
-		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, Nm, Nfaults_all, all_aslipmodels.tmain[-1], 1);
+		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, all_aslipmodels.tmain[-1], 1);
 	}
 	else{
-		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm0res, Nm, Nfaults_all, 0.0, 0);
+		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, 0.0, 0);
 	}
 	if (err){
 		error_quit("Error in setting up okada coefficients structure or associating afterslip with a mainshock.\n");
 	}
 
-	update_CoeffsDCFS(&AllCoeff, crst, eqkfm0res, Nm, Nfaults_all);
+	update_CoeffsDCFS(&AllCoeff, crst, eqkfm_co, Nco, Nfaults_co);
 
 	#ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -420,28 +449,17 @@ int main (int argc, char **argv) {
 	//--------------------------------------------------------------//
 
 	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=1;	//since there are not sources of uncertainties.
-	if (flags.err_recfault && no_fm_cats==1 && Nsur>NFM) {
-	    	Nsur=NFM;
-			flags.sample_all=1;
+	if (flags.err_recfault && no_fm_cats==1 && Nsur>Nfocmec) {
+	    	Nsur=Nfocmec;		//it doesn't make sense to have more iterations than focal mechanisms.
+			flags.sample_all=1;	//all focal mechanisms can be sampled (one per iteration).
 	    }
 	else flags.sample_all=0;
 
 	if (!flags.err_recfault && flags.OOPs) flags.err_recfault=2;	//by convention, this value means OOPs when passed to calculateDCFSrandomized.
-	if (!flags.err_recfault) {
-		if (crst.variable_fixmec){
-			crst.nofmzones=crst.N_allP;
-			crst.fmzone=ivector(1,crst.N_allP);
-			for (int i=1; i<=crst.N_allP; i++) crst.fmzone[i]=i-1;
-		}
-		else{
-			crst.nofmzones=1;
-			crst.fmzone=NULL;
-		}
-	}
 
 	if (!crst.uniform && flags.err_gridpoints) {
-			print_screen("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
-			print_logfile("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
+		print_screen("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
+		print_logfile("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
 		flags.err_gridpoints=0;
 	}
 
@@ -487,22 +505,21 @@ int main (int argc, char **argv) {
 		gammas_maxLL=dmatrix(1,Nsur,1,NgridT);
 	}
 
-	LLs=dvector(1,(1+nAsig0)*(1+nta0));
-	Ldums0=dvector(1,(1+nAsig0)*(1+nta0));
-	Nev=dvector(1,(1+nAsig0)*(1+nta0));
-	I=dvector(1,(1+nAsig0)*(1+nta0));
+	LLs=dvector(1,(1+nAsig)*(1+nta));
+	Ldums0=dvector(1,(1+nAsig)*(1+nta));
+	Nev=dvector(1,(1+nAsig)*(1+nta));
+	I=dvector(1,(1+nAsig)*(1+nta));
 
-	nAsig=nAsig0; nta=nta0;
 	dAsig=(nAsig==0)? 0.0 : (Asig_max-Asig_min)/nAsig;	//first case to avoid 0/0 later.
 	dta=(nta==0)? 0.0 : (ta_max-ta_min)/nta;
 
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
-	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm0res, flags,
-			tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat, times2,
+	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm_co, flags,
+			tevol_afterslip, crst, AllCoeff, L, Nco, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat, times2,
 			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
 
 
-	for (int p=1; p<=(1+nAsig0)*(1+nta0); p++) LLs[p]=0.0;
+	for (int p=1; p<=(1+nAsig)*(1+nta); p++) LLs[p]=0.0;
 
 
 	//-----------------set up background rate:----------------------//
@@ -591,11 +608,11 @@ int main (int argc, char **argv) {
 		double forecastStartTime, forecastEndTime, forecastTotalTime = 0.0;
 	#endif
 
-	dim=ivector(0,Nm-1);
-	for (int n=0; n<Nm; n++) {
-		if (eqkfm0res[nf].parent_set_of_models->Nmod) slipmodel_combinations*=eqkfm0res[nf].parent_set_of_models->Nmod;
-		dim[n]=MAX(eqkfm0res[nf].parent_set_of_models->Nmod, 1);
-		nf+=Nfaults_all[n];
+	dim=ivector(0,Nco-1);
+	for (int n=0; n<Nco; n++) {
+		if (eqkfm_co[nf].parent_set_of_models->Nmod) slipmodel_combinations*=eqkfm_co[nf].parent_set_of_models->Nmod;
+		dim[n]=MAX(eqkfm_co[nf].parent_set_of_models->Nmod, 1);
+		nf+=Nfaults_co[n];
 	}
 
 	maxAsig=dvector(1,slipmodel_combinations);
@@ -610,26 +627,26 @@ int main (int argc, char **argv) {
 		#endif
 
 		print_screen("Slip model(s) no. %d\n", mod);
-		Nsm=nth_index(mod, Nm, dim);
+		Nsm=nth_index(mod, Nco, dim);
 		nf=0;
-		for (int n=0; n<Nm; n++) {
-			set_current_slip_model(eqkfm0res+nf,Nsm[n]);
-			nf+=Nfaults_all[n];
+		for (int n=0; n<Nco; n++) {
+			set_current_slip_model(eqkfm_co+nf,Nsm[n]);
+			nf+=Nfaults_co[n];
 		}
 
 		//print information about slip models to log file:
 		nf=0;
 		int i=0, nn0=0; //counter: slip model names, events which have a slip model.
 		print_logfile("Using slip models:\n");
-		for (int n=0; n<Nm; n++) {
+		for (int n=0; n<Nco; n++) {
 			//fixme this is wrong is a slip model in the list is not used.
-			if (eqkfm0res[nf].parent_set_of_models->Nmod) {
+			if (eqkfm_co[nf].parent_set_of_models->Nmod) {
 				print_logfile("\t%s\n",all_slipmodels.slipmodels[i+Nsm[n]-1]);
 				i+=all_slipmodels.no_slipmodels[nn0];
 				nn0+=1;
 			}
 			else print_logfile("\t%s\n","Synthetic slip model (or isotropic field)");
-			nf+=Nfaults_all[n];
+			nf+=Nfaults_co[n];
 		}
 
 
@@ -638,7 +655,7 @@ int main (int argc, char **argv) {
 //				if (AllCoeff->Coeffs_dip) free_f3tensor(AllCoeff->Coeffs_dip, 1,0,1,0,1,0);
 //				if (AllCoeff->Coeffs_st) free_f3tensor(AllCoeff->Coeffs_st, 1,0,1,0,1,0);
 //				if (AllCoeff) free(AllCoeff);
-				update_CoeffsDCFS(&AllCoeff, crst, eqkfm0res, Nm, Nfaults_all);
+				update_CoeffsDCFS(&AllCoeff, crst, eqkfm_co, Nco, Nfaults_co);
 			}
 		}
 
@@ -683,11 +700,11 @@ int main (int argc, char **argv) {
 					err=0;
 					ta= (fixta)? ta0 : ta_min+tai*dta;
 					p+=1;
-					gammas=NULL;	//fixme check if this should be allowed to be set equal to gammas_bg_rate?
+					gammas=NULL;	//fixme check if this should be allowed to be set equal to gammas_bg_rate? (or is there a problem in doing it for the forecast?)
 
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, DCFS, eqkfm_aft,
-										  	eqkfm0res, flags, tevol_afterslip, crst, AllCoeff,
-										  	L, Nm, NgridT, focmec, fmzonelimits, NFM, &seed, cat,
+										  	eqkfm_co, flags, tevol_afterslip, crst, AllCoeff,
+										  	L, Nco, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat,
 										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, gammas,
 										  	gammas_new, 0, 0, 0, !tai && !as);
 
@@ -753,7 +770,7 @@ int main (int argc, char **argv) {
 				print_logfile("Using steady state starting rates: ");
 				if (use_bg_rate_cat || use_bg_rate_grid) for (int i=1; i<=NgridT; i++) gammasfore[0][i]=(ta/Asig)*gamma_bgrate[i];
 				else gammasfore=NULL;
-				tstart_calc=fmin(Tstart, t_firstmain);
+				tstart_calc=Tstart;
 				multi_gammas=0;
 			}
 
@@ -772,7 +789,7 @@ int main (int argc, char **argv) {
 			sprintf(printall_foret,"%s_forecast_all", outnamemod);
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
-			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm0res, flags, tevol_afterslip, crst, AllCoeff, L, Nm, NgridT, focmec, fmzonelimits, NFM,
+			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, tevol_afterslip, crst, AllCoeff, L, Nco, NgridT, focmec, fmzonelimits, Nfocmec,
 					&seed, cat, times2,tstart_calc, tts, Ntts, maxAsig[mod], maxta[mod], maxr[mod], gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 

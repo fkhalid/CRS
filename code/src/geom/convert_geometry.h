@@ -13,7 +13,6 @@
 #include "../defines.h"
 #include "../util/nrutil.h"
 
-int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, int);
-
+int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, int increase_resolution);
 
 #endif /* CONVERT_GEOMETRY_H_ */

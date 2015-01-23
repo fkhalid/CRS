@@ -209,7 +209,8 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		print_screen("%d...",nsur);
 
 		if (all_gammas0) gammas0= (multiple_input_gammas)? all_gammas0[nsur] : *all_gammas0;
-		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
+		//if (flags.sample_all), each iteration corresponds to a focal mechanism. Otherwise, which_recfault=0 means: choose random one.
+		which_recfault= flags.sample_all? nsur : 0;
 
 		tt0=tts[0];
 		tt1=tts[Ntts];
@@ -557,7 +558,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		// parameters are the same ...
 		if(first_timein != 1) {
 			int nsur = 1;
-			which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
+			//if (flags.sample_all), each iteration corresponds to a focal mechanism. Otherwise, which_recfault=0 means: choose random one.
+			which_recfault= flags.sample_all? nsur : 0;
 
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
 								   times, Nm, crst, AllCoeff, NTScont, focmec,
@@ -616,6 +618,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			*seed = newSeed * (long)nsur;
 		#endif
 
+		//if (flags.sample_all), each iteration corresponds to a focal mechanism. Otherwise, which_recfault=0 means: choose random one.
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
 
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;

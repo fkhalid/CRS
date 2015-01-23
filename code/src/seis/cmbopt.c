@@ -36,8 +36,10 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 		sxx=crst.S[1][1]; 		syy=crst.S[2][2];		szz=crst.S[3][3];
 		sxy=crst.S[1][2]; 		syz=crst.S[2][3];		sxz=crst.S[1][3];
 
+		//loop over events un to ind:
 		for (ev=0; ev<=ind; ev++){
 			k=0;
+			//find if grid point is affected by event ev, and if so add its stresses:
 			while (k<DCFS[ev].nsel && DCFS[ev].which_pts[k]<j) k++;
 			if (DCFS[ev].which_pts[k]==j){
 				sxx+=DCFS[ev].S[k][1][1];
@@ -50,6 +52,7 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 		}
 
 		//find OOPs and resolve total stress (DCFS+S0):
+		//out of the two, the oop closest to the regional mechanism (crst.str0[0], crst.dip0[0], crst.rake0[0]) is chosen.
 		cmbopt(sxx, syy, szz, sxy, syz, sxz, 0, crst.fric, crst.str0[0], crst.dip0[0], crst.rake0[0], DCFS[ind].cmb+i, DCFS[ind].st1+i, DCFS[ind].di1+i, DCFS[ind].ra1+i, DCFS[ind].st2+i, DCFS[ind].di2+i, DCFS[ind].ra2+i);
 		//resolve background stress on both planes and calculate largest DCFS:	//todo think: should do this or use plane with largest *total* stress?
 		cmb1=resolve_S(DCFS[ind].S[i], DCFS[ind].st1[i], DCFS[ind].di1[i], DCFS[ind].ra1[i], crst.fric, NULL, 0.0, NULL, 0);

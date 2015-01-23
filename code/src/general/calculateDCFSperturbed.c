@@ -98,12 +98,14 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			mycmb=dvector(1,NgridT);
 		}
 
-		if (crst.variable_fixmec || (vary_recfault==1 && which_recfault==0)){
+		if (vary_recfault==1 && which_recfault==0){
+		//different focal mechanisms selected if MC iterations of focal mechanism should be used. However, if which_recfault!=0, a single mechanism should be used (focmec[X][which_recfault]).
 			strike0=dvector(0,crst.nofmzones-1);
 			dip0=dvector(0,crst.nofmzones-1);
 			rake0=dvector(0,crst.nofmzones-1);
 		}
 		else {
+		//in this case a single foc. mec. is needed.
 			strike0=malloc(sizeof(double));
 			dip0=malloc(sizeof(double));
 			rake0=malloc(sizeof(double));
@@ -211,11 +213,13 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 	switch (vary_recfault){
 		case 1:
+			//if vary_recfault==1, receiver fault changes at each MC iteration.
 			if (which_recfault==0) {
+				//randomly pick a mechanism for each zone:
 				for (int fmzone=0; fmzone<crst.nofmzones; fmzone++){
 					first=fmzoneslim[fmzone];
 					last=fmzoneslim[fmzone+1]-1;
-					rand= (int) ((last-first)*ran1(seed)+first); ///*********************************
+					rand= (int) ((last-first)*ran1(seed)+first);
 					*seed=-*seed;
 					strike0[fmzone]=focmec[1][rand];
 					dip0[fmzone]=focmec[2][rand];
@@ -223,7 +227,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				}
 			}
 			else {
-		// todo [coverage] this block is never tested
+				// use the foc. mec. for this iteration (this is done when all focal mechanisms should be sampled; only activated in main.c if nofmzones=1).
+				// todo [coverage] this block is never tested
 				*strike0=focmec[1][which_recfault];
 				*dip0=focmec[2][which_recfault];
 				*rake0=focmec[3][which_recfault];	//only used for splines==1 (see below).
@@ -231,11 +236,14 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			break;
 
 		case 0:
+			//if vary_recfault=0, fixed receiver faults are used.
 			if (crst.variable_fixmec){
+				//strike(dip)0 is the vector crst.str(dip)0 (one value for each point). //fixme may want to use crst.str0[1] instead??
 				strike0= crst.str0;
 				dip0=crst.dip0;
 			}
 			else{
+				//use a single value for entire domain.
 				*strike0= crst.str0[0];
 				*dip0=crst.dip0[0];
 			}

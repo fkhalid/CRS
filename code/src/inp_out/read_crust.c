@@ -13,7 +13,7 @@
 
 //TODO: if more slip models are contained, make sure they have consistent geometry (they must cover all sampling points).
 
-int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, double resxy, double resz, int multiple_focmecfiles){
+int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, double resxy, double resz, int vary_focmec){
 /*
  * Read crust master file into crst structure.
  *
@@ -44,7 +44,8 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 	double dx, dy, dAeq;
 	double lat0, lat1,lon0, lon1, d0, d1;
 	double *strtmp=0, *diptmp=0, *raketmp=0;
-	double *dumrate=NULL, *bg_rate=NULL;
+	double str0tmp, dip0tmp;
+	double *dumzoneindex=NULL, *zoneindex=NULL;
 
 	print_screen("Loading model setup...");
 	print_logfile("\nEntering read_crust...\n");
@@ -53,9 +54,11 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 
 	//--------------read grid file:------------------------------//
 
+
+	//The last column of the file contains indices with indices of focal mechanism zones; it should only be read if (vary_focmec)==1.
 	err = read_csep_template(fnametemplate, &no_magbins, &((*crst).nLat_out), &((*crst).nLon_out),
 							 &((*crst).nD_out), &((*crst).N_allP), &((*crst).dlat_out), &((*crst).dlon_out),
-							 &((*crst).ddepth_out), &((*crst).dmags), &olats, &olons, &odeps, (multiple_focmecfiles) ? &dumrate : NULL,
+							 &((*crst).ddepth_out), &((*crst).dmags), &olats, &olons, &odeps, (vary_focmec) ? &dumzoneindex : NULL,
 							 &((*crst).latmin), &((*crst).latmax), &((*crst).lonmin), &((*crst).lonmax),
 							 &((*crst).depmin), &((*crst).depmax), &mag1, &mag2, &((*crst).uniform));
 
@@ -76,6 +79,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 	(*crst).depth_out=odeps;
 	(*crst).lat0=0.5*(lat1+lat0);
 	(*crst).lon0=0.5*(lon1+lon0);
+	//(*crst).NPout=(*crst).N_allP;
 
 	print_logfile( "Model domain: \n lat=[%.2lf, %.2lf], %d points; \n lon=[%.2lf, %.2lf], %d points; \n dep=[%.2lf, %.2lf], %d points; \n",
 					lat0, lat1, (*crst).nLat_out, lon0, lon1, (*crst).nLon_out, d0, d1, (*crst).nD_out);
@@ -91,6 +95,8 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 	print_logfile(" mag=[%.2lf, %.2lf], %d bins.\n", (*crst).mags[1], (*crst).mags[(*crst).nmags], (*crst).nmags);
 
 	//--------------calculate refined geometry:-------------//
+
+	//todo allow grid refinement for non uniform grid.
 
 	dy=Re*DEG2RAD*(*crst).dlat_out;
 	dx=Re*DEG2RAD*cos(DEG2RAD*(0.5*(lat1+lat0)))*(*crst).dlon_out;
@@ -163,6 +169,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 		for (int i=1; i<=NG; i++) (*crst).list_allP[i]=i;
 	}
 
+	//todo think about these output messages if points are not a uniform grid.
 	print_logfile("Forecast resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km;\n", dy, dx, (*crst).ddepth_out);
 	if (is_refined) {
 		print_logfile( "Internal resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km -> %d x %d x %d = %d grid points.\n", resxy, resxy, resz, NLat, NLon, Nd, NG);
@@ -183,11 +190,18 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 	//--------------read value of focal mechanism grid from file:-------------//
 	//----------(this applies is a single foc mec is given per grid point)----//
 
+	//if focmecgridfile is given, each point has its own focal mechanism:
 	if (focmecgridfile && strcmp(focmecgridfile,"")!=0){
 
+		//save regional mechanism str0, dip0 (if OOPs are used, these values are use to establish which OOPs should be selected):
+		str0tmp=(*crst).str0[0];
+		dip0tmp=(*crst).dip0[0];
+
+		//read file of focal mechanisms:
 		err1 = read_focmecgridfile(focmecgridfile, crst);
 
 		// todo [coverage] this block is never tested
+		// if a refined grid is being used, focal mechanism values should me mapped to refined geometry:
 		if (is_refined){
 			err1+=convert_geometry((*crst),(*crst).str0, &strtmp, 0, 1);
 			(*crst).str0=strtmp;
@@ -197,34 +211,51 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 			(*crst).rake0=strtmp;
 		}
 
+		//copy regional mechanism into zeroth element:
+		(*crst).str0[0]=str0tmp;
+		(*crst).dip0[0]=dip0tmp;
+
 		if(err1){
 			print_screen("*Warning: errors occurred while reading focmecgridfile (%s)*\n", focmecgridfile);
 			print_logfile("*Warning: errors occurred while reading focmecgridfile*\n");
 		}
 	}
 
-	//---------------read indices and no. of foc. mec zones into crst-----------//
-	//---(this applies is a set of foc mec is associated to each grid point)----//
+	//--------------if (vary_focmec==1), read indices and no. of foc. mec zones into crst-----------//
+
+	//NB: vary_focmec and focmecgridfile are mutually exclusive (complains in read_inputfile.c if both files are given).
 
 	else{
-		if(multiple_focmecfiles) {
+		if(vary_focmec) {
+			//allocate vector containing indices of zones:
 			(*crst).fmzone=ivector(1,(*crst).N_allP);
-
-			err+=convert_geometry(*crst, dumrate, &bg_rate, 1, 1);
-			for (int n=1; n<=(*crst).N_allP; n++) (*crst).fmzone[n]= (int)bg_rate[n] -1;
-			(*crst).nofmzones=(int) max_v(bg_rate+1,(*crst).N_allP);
-			if (dumrate!=bg_rate) free_dvector(dumrate, 1, 1);
-			free_dvector(bg_rate, 1, 1);
+			//convert indices to refined grid:
+			err+=convert_geometry(*crst, dumzoneindex, &zoneindex, 1, 1);
+			//indices are in range [0...nofmzones-1]:
+			for (int n=1; n<=(*crst).N_allP; n++) (*crst).fmzone[n]= (int)zoneindex[n] -1;
+			//the number of zones is equal to the largest index:
+			(*crst).nofmzones=(int) max_v(zoneindex+1,(*crst).N_allP);
+			//free arrays:
+			if (dumzoneindex!=zoneindex) free_dvector(dumzoneindex, 1, 1);
+			free_dvector(zoneindex, 1, 1);
 		}
 	}
 
-
 	print_screen("done\n");
 
-	return(err!=0);
+	return(err!=0 || err1!=0);
 }
 
 int read_focmecgridfile(char *fname, struct crust *crst) {
+	/* Reads file containing focal mechanisms for individual grid points into crst structure. The file should use the output geometry.
+	 *
+	 * Input:
+	 * 	fname: 	file name
+	 *
+	 * Output:
+	 *
+	 *
+	 */
 	// Variables used for MPI
 	int procId = 0;
 	int fileError = 0;
@@ -235,9 +266,10 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 
 	double strtmp, diptmp, raketmp;
 	double **data;
-	int err=0, NL, NP=(*crst).nLat_out*(*crst).nLon_out*(*crst).nD_out;
+	int err=0, NL,
+		NP= (*crst).uniform? (*crst).nLat_out*(*crst).nLon_out*(*crst).nD_out : (*crst).N_allP;	//expected no. of lines in file (no. of forecast points).
 
-	data=dmatrix(1,2,1,(*crst).N_allP);
+	data=dmatrix(1,2,1,NP);
 
 	if(procId == 0) {
 		err = read_matrix(fname, 2, 0, data, &NL);
@@ -253,34 +285,35 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 	#endif
 
 	if (err || NL!=NP){
-		if (NL!=NP) {
-			print_screen("Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, NP);
-			print_logfile("Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, NP);
-		}
-		else {
+		if (err) {
 			print_screen("Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
 			print_logfile("Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
 		}
+		else {
+			print_screen("Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, NP);
+			print_logfile("Error: wrong number of lines in file %s (%d lines found; %d expected). (read_focmecgridfile).\n", fname, NL, NP);
+		}
 
-		free_dmatrix(data, 1,2,1,(*crst).N_allP);
+		free_dmatrix(data, 1,2,1,NP);
 
 		return 1;
 	}
 
-	strtmp=(*crst).str0[0];
-	diptmp=(*crst).dip0[0];
-	//raketmp=(*crst).rake0[0];
 	(*crst).variable_fixmec=1;
+	//NB zeroth element assigned because it will contain regional mechanism.
 	(*crst).str0=dvector(0,(*crst).N_allP);
 	(*crst).dip0=dvector(0,(*crst).N_allP);
 	//(*crst)->rake0=dvector(0,crst.N_allP);
 
-	(*crst).str0[0]=strtmp;
-	(*crst).dip0[0]=diptmp;
 	for (int i=1; i<=crst->N_allP; i++){
 		(*crst).str0[i]=data[1][i];
 		(*crst).dip0[i]=data[2][i];
 	}
+
+	//assign a different zone to each grid point:
+	(*crst).nofmzones=(*crst).N_allP;
+	(*crst).fmzone=ivector(1,(*crst).N_allP);
+	for (int i=1; i<=(*crst).N_allP; i++) (*crst).fmzone[i]=i-1;
 
 	free_dmatrix(data, 1,2,1,(*crst).N_allP);
 
