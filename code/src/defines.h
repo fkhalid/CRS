@@ -289,4 +289,21 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	};
 #endif // _CRS_MPI
 
+// [Fahad] -- Added for use in partition size calculation when using
+//			  MPI enabled code.
+inline int roundUpFrac(double x) {
+	double integralPart, fractionalPart, result;
+
+	fractionalPart = modf(x, &integralPart);
+
+	if(integralPart != 0.0 && fractionalPart != 0.0) {
+		result = ceil(x + 0.5);
+	}
+	else {
+		result = integralPart;
+	}
+
+	return result;
+}
+
 #endif //DEFINES_H
