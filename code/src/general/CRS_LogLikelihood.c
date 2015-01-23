@@ -180,16 +180,16 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 	#ifdef _CRS_MPI
 		if(numProcs > Nsur) {
+			if(procId == 0) {
+				printf("\n Number of processes: %d", numProcs);
+				printf("\n Number of iterations: %d", Nsur);
+			}
 			error_quit("\n **Nsur must be greater than or equal to the number of processes ** \n");
 		}
 
-		partitionSize = Nsur / numProcs;
+		partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
 		start = (procId * partitionSize) + 1;
 		end = start + partitionSize;
-
-		if(procId == 0) {
-			start = 1;
-		}
 
 		const long newSeed = *seed;
 
@@ -198,10 +198,26 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		end = Nsur + 1;
 	#endif
 
-	for(int nsur = start; nsur < end; nsur++) {
+//	// FIXME: [Fahad] For testing purposes only ...
+//	print_screen("\nNsur: %d\n", Nsur);
+//	//print_screen("\nSeed values: ");
+//	if(procId != 0) {
+//		printf("\nSeed values: ");
+//	}
+//
+//	long seeds[] = {-790681929, -579655516, -514965959, -822046922, -1573897304, -1841105815, -1637052556, -883886176, -1757295209};
+
+	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
 		#ifdef _CRS_MPI
 			*seed = newSeed * (long)nsur;
+//			*seed = seeds[nsur-1];
 		#endif
+
+//		// FIXME: [Fahad] For testing purposes only ...
+//		if(procId != 0) {
+//			printf("%ld, ", *seed);
+//		}
+//		print_screen("%ld, ", *seed);
 
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
@@ -320,6 +336,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 	}
 
+//	// FIXME: [Fahad] For testing purposes only ...
+//	print_screen("\n");
+
 	#ifdef _CRS_MPI
 		double *recv_rate, *recv_nev_avg, *recv_rev_avg, *recv_cmb_avg, *recv_ev_x_avg;
 		recv_rate = dvector(1, cat.Z);
@@ -407,6 +426,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				for (int t=1; t<=Ntts; t++) integral+= nev_avg[t];
 				*LL=Ldum-integral*r0/(1.0*NgridT);
 			}
+
+//			// FIXME: [Fahad] For testing purposes only ...
+//			print_screen("\nLL: %lf", *LL);
 		}
 	}
 
@@ -552,20 +574,22 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		rate[i]=0.0;
 	}
 
-	#ifdef _CRS_MPI
-		// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
-		// parameters are the same ...
-		if(first_timein != 1) {
-			int nsur = 1;
-			which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
-
-			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
-								   times, Nm, crst, AllCoeff, NTScont, focmec,
-								   fmzonelim, NFM, seed, tstart, tt1,
-								   refresh && nsur==1, which_recfault);
-			refresh = 0;
-		}
-	#endif
+	// TODO: [Fahad] Check with Camilla -- in which cases is the following block used, if
+	//									   at all ...
+//	#ifdef _CRS_MPI
+//		// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
+//		// parameters are the same ...
+//		if(first_timein != 1) {
+//			int nsur = 1;
+//			which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
+//
+//			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
+//								   times, Nm, crst, AllCoeff, NTScont, focmec,
+//								   fmzonelim, NFM, seed, tstart, tt1,
+//								   refresh && nsur==1, which_recfault);
+//			refresh = 0;
+//		}
+//	#endif
 
 	//for (int ndt=1; ndt<=NDT; ndt++) net[ndt]=0.0;
 
@@ -588,16 +612,9 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				error_quit("\n **Nsur must be greater than or equal to the number of processes ** \n");
 			}
 
-			partitionSize = Nsur / numProcs;
+			partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
 			start = (procId * partitionSize) + 1;
 			end = start + partitionSize;
-
-			if(procId == 0) {
-				start = 1;
-			}
-
-//			const long newSeed = *seed;
-
 		}
 		else {
 			start = 1;
@@ -605,16 +622,34 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		}
 
 		const long newSeed = *seed;
-
 	#else
 		start = 1;
 		end = Nsur + 1;
 	#endif
 
-	for(int nsur = start; nsur < end; nsur++) {
+//	// FIXME: [Fahad] For testing purposes only ...
+//	print_screen("\nNsur: %d\n", Nsur);
+//	//print_screen("\nSeed values: ");
+//	if(procId != 0) {
+//		printf("\nSeed values: ");
+//	}
+//
+//	//long seeds[] = {-1564380170, -687176600, -1546470689, -725980954, -2027138524, -2085544457, -425835527, -292315045, -2126472361};
+//	long seeds[] = {-2141324670, -1131088987, -1302328973, -498457813, -1143054344, -1938613554, -149055727, -1505749609, -2075065137};
+
+	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
 		#ifdef _CRS_MPI
 			*seed = newSeed * (long)nsur;
+//			if(first_timein != 1) {
+//				*seed = seeds[nsur-1];
+//			}
 		#endif
+
+//		// FIXME: [Fahad] For testing purposes only ...
+//		if(procId != 0) {
+//			printf("%ld, ", *seed);
+//		}
+//		print_screen("%ld, ", *seed);
 
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
 
@@ -708,7 +743,14 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				if (nsur <Nsur) fprintf(fforex, "\n");
 			}
 		}
+
+//		// FIXME: [Fahad] For testing purposes only ...
+//		print_screen("%ld, ", *seed);
 	}
+
+//	// FIXME: [Fahad] For testing purposes only ...
+//	print_screen("\n");
+
 
 	#ifdef _CRS_MPI
 		double temp_integral;
@@ -812,29 +854,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	#ifdef _CRS_MPI
 		first_timein = 0;
 	#endif
-
-//	// FIXME: [Fahad] The following send/recv code block is used for testing with two
-//	//		  MPI ranks only (on local machine). This is being done to ensure that
-//	//		  both processes start with the same seed when the next slip model calls
-//	//		  this function from the mod loop in main. This way, the result are exactly
-//	//		  the same as with execution with one process. (The final seed value when
-//	//		  run with one process is the same as the final seed value for process '1'
-//	//		  when run with 2 processes. This is because the seed value depends on the
-//	//		  nsur value; the latest of which only process '1' has ...
-//	if(numProcs == 2) {
-//		MPI_Status status;
-//		if(procId == 1) {
-//			MPI_Send(seed, 1, MPI_LONG, 0, 1, MPI_COMM_WORLD);
-//		}
-//		else if(procId == 0) {
-//			MPI_Recv(seed, 1, MPI_LONG, 1, 1, MPI_COMM_WORLD, &status);
-//		}
-//	}
-
-//	// FIXME: [Fahad] For MPI testing only ...
-//	if(LL) {
-//		printf("\n ProcId: %d -- LL: %f \n", procId, *LL);
-//	}
 
 	return(err);
 }
