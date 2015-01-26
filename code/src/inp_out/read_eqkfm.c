@@ -317,7 +317,6 @@ int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out,
 			(*eqfm1)[f].dip2=(*eqfm1)[f].dip1;	//in this case there is no ambiguity (correct plane is known).
 			(*eqfm1)[f].whichfm=1;
 			(*eqfm1)[f].is_slipmodel=1;
-			(*eqfm1)[f].is_mainshock=1;
 			(*eqfm1)[f].noise=0;
 			(*eqfm1)[f].tot_slip=0.0;
 			NP=(*eqfm1)[f].np_di*(*eqfm1)[f].np_st;

@@ -471,7 +471,7 @@ int main (int argc, char **argv) {
 
 	//todo should allow this to be set from outside
 	double *Cs, *ts;
-	int Nfun, L=(flags.afterslip)? 10000 : 2;
+	int Nfun, L=(flags.afterslip)? 10000 : 2;	//todo check: why need intermediate step (L=2, not L=1)?
 	double *times2, *tevol_afterslip=NULL;
 
 	Nfun=1;
@@ -480,7 +480,15 @@ int main (int argc, char **argv) {
 	Cs[0]=436.63;
 	ts[0]=14.2653;
 
+	//fixme: verify that this works for general case: afterslip may not start at t0, and not be related to first event in the sequence.
+	//what if tstartLL> time of first afterslip?
+
+	//todo allow for general stressing history here.
+
+	//todo check: times2[0] will always be before the first source of stress to be included. Correct? (used for calculation start time later, like t_firstmain used to be.)
+
 	if (flags.afterslip){
+						 //todo: all_slipmodels.tmain[0], all_slipmodels.tmain[0]+1e-4 should change.
 		err=setup_afterslip_evol(all_slipmodels.tmain[0], all_slipmodels.tmain[0]+1e-4, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft, all_aslipmodels.tmain,
 				all_aslipmodels.NSM, all_aslipmodels.Nfaults[0], flags.afterslip, &L, &times2, &tevol_afterslip, &seed);
 		if(err) return 1;
@@ -488,7 +496,7 @@ int main (int argc, char **argv) {
 
 	else {
 		times2=dvector(0,L);
-		times2[0]=fmin(tstartLL, 0.0)-1e-4;
+		times2[0]=fmin(tstartLL, 0.0)-1e-4;	//todo why this?
 		for (int i=1; i<=L; i++) times2[i]=times2[i-1]+(fmax(tendLL, Tend)+1e-4-times2[0])/(L-1);
 	}
 
@@ -500,7 +508,9 @@ int main (int argc, char **argv) {
 	//  				Setup variables needed for grid search 						//
 	//******************************************************************************//
 
-	if (LLinversion && forecast) {
+	// if (LLinversion && forecast &&  tendLL<=Tstart) the results from LLinversion will be saved and used for forecast calculation.
+	// gammas_new is overwritten for each (Asig, ta) value; the values for the optimal value are saved in gammas_maxLL.
+	if (LLinversion && forecast &&  tendLL<=Tstart) {
 		gammas_new=dmatrix(1,Nsur,1,NgridT);
 		gammas_maxLL=dmatrix(1,Nsur,1,NgridT);
 	}
@@ -513,13 +523,13 @@ int main (int argc, char **argv) {
 	dAsig=(nAsig==0)? 0.0 : (Asig_max-Asig_min)/nAsig;	//first case to avoid 0/0 later.
 	dta=(nta==0)? 0.0 : (ta_max-ta_min)/nta;
 
+	for (int p=1; p<=(1+nAsig)*(1+nta); p++) LLs[p]=0.0;
+
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
 	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm_co, flags,
 			tevol_afterslip, crst, AllCoeff, L, Nco, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat, times2,
 			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
 
-
-	for (int p=1; p<=(1+nAsig)*(1+nta); p++) LLs[p]=0.0;
 
 
 	//-----------------set up background rate:----------------------//
@@ -715,7 +725,10 @@ int main (int argc, char **argv) {
 							maxAsig[mod]=Asig;
 							maxta[mod]=ta;
 							maxr[mod]=r;
-							if (forecast) copy_matrix(gammas_new, &gammas_maxLL, Nsur, NgridT);
+							if (forecast &&  tendLL<=Tstart) {
+								//copy gamma values into gammas_maxLL; they will be used for forecast.
+								copy_matrix(gammas_new, &gammas_maxLL, Nsur, NgridT);
+							}
 						}
 						if(procId == 0) {
 							fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",
@@ -762,15 +775,17 @@ int main (int argc, char **argv) {
 				if(mod==1) {
 					print_logfile("Using starting rates results from LL inversion: ");
 				}
-				gammasfore=gammas_maxLL;
-				tstart_calc=tendLL;
-				multi_gammas=1;
+				gammasfore=gammas_maxLL;	//values from LLinversion.
+				tstart_calc=tendLL;		//calculations should start from tendLL (time to which gammasfore values refer).
+				multi_gammas=1;	//since gammasfore contains gamma values for each Monte Carlo iteration.
 			}
 			else {
-				print_logfile("Using steady state starting rates: ");
-				if (use_bg_rate_cat || use_bg_rate_grid) for (int i=1; i<=NgridT; i++) gammasfore[0][i]=(ta/Asig)*gamma_bgrate[i];
-				else gammasfore=NULL;
-				tstart_calc=Tstart;
+				if(mod==1) {
+					print_logfile("Using steady state starting rates: ");
+				}
+				if (use_bg_rate_cat || use_bg_rate_grid) for (int i=1; i<=NgridT; i++) gammasfore[0][i]=(ta/Asig)*gamma_bgrate[i];	//fixme seg fault (gammasfore not allocated!!)
+				else gammasfore=NULL;	// default values (will do full calculation, using uniform background rate)
+				tstart_calc=fmin(Tstart, times2[0]);	//start when forecast is required (Tstart) or when stress sources start (times2[0]).
 				multi_gammas=0;
 			}
 

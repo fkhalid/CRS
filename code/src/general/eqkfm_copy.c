@@ -63,7 +63,6 @@ void copy_eqkfm_noindex_notime(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 void copy_eqkfm_attributes(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 
 	//general properties:
-	(*eqkfm2).is_mainshock=eqkfm1.is_mainshock;
 	(*eqkfm2).is_slipmodel=eqkfm1.is_slipmodel;
     (*eqkfm2).index_cat=eqkfm1.index_cat;	//index of event in catalog (only for the catalog used for LL calculation).
 	(*eqkfm2).nsel=eqkfm1.nsel;

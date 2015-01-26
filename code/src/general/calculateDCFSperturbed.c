@@ -87,6 +87,11 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 //	FILE *fout;
 	time_in+=1;
 
+	//----------------------------------------------------------------------//
+	// 		 		This initial part will be executed only once			//
+	//----------------------------------------------------------------------//
+
+
 	if (time_in==1) {
 		print_logfile("\nSetting up variables for calculating perturbed Coulomb fields.\n");
 
@@ -133,7 +138,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 
 		//-----------------------------------------------------------------//
-		//							Afterslip							   //
+		//					Afterslip (initial setup)					   //
 		//-----------------------------------------------------------------//
 
 		if (afterslip!=0){
@@ -184,7 +189,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	}
 
 	//-----------------------------------------------------------------//
-	//							Mainshock							   //
+	//					Mainshock(initial setup)					   //
+	//(this part executed every time a new set of slip models is used) //
 	//-----------------------------------------------------------------//
 
 	if (time_in==1 || refresh){
@@ -205,6 +211,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					Coeffs_st=temp->Coeffs_st;
 					Coeffs_dip=temp->Coeffs_dip;
 					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS[temp->which_main], eqkfm0+NFsofar, crst, NULL, NULL, 1);
+
 					//resolve coefficients if receiver faults don't change between iterations:
 					switch (vary_recfault){
 						case 0:
@@ -260,9 +267,9 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	}
 
 
-	//----------------------------------------------//
-	//	 		Other things to check/setup			//
-	//----------------------------------------------//
+	//----------------------------------------------------------------------//
+	//	 		From here on will be executed at every iteration			//
+	//----------------------------------------------------------------------//
 
 
 	//At the moment afterslip and OOPs at the same time are not implemented.
@@ -362,7 +369,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					if (vary_recfault==1){	// In this case stress tensor has to be resolved on a different plane at each iteration:
 						resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1);
 					}
-
 					if (gridpoints_err==1) {
 						//if vary_recfault==0, the field hasn't changed and cmb0 should be used.
 						smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, seed, vary_recfault==0, nn);

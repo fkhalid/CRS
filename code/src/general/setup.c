@@ -223,8 +223,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 			eqkfm0[nf].t=tmain;
 			eqkfm0[nf].nsel=nsel;
 			eqkfm0[nf].selpoints=sel_pts;
-			//todo check: these 2 lines ok? (copied from CRSjuly)
-			eqkfm0[nf].is_mainshock=1;
+			//todo check: this line ok? (copied from CRSjuly)
 			eqkfm0[nf].is_slipmodel=1;
 			latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
 			setmodels.set_of_eqkfm[nftot+nf]=eqkfm0[nf];

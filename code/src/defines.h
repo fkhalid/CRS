@@ -141,7 +141,7 @@ struct crust{
 
 	//physical properties:
 	double *str0, *dip0, *rake0; // orientation of best oriented mechanism in regional stress field.
-								 // str0[0], dip0[0], rake0[0] contains regional mechanism.
+								 // str0[0], dip0[0], rake0[0] contains regional mechanism (if OOPs are used, these values are use to establish which OOPs should be selected).
 								 // str0[1...N_allP], dip0[1...N_allP] may contain spatially variable rec. fault (if FixedMecFile is provided).
 	double fric;		// coefficient of friction.
 	double skepton;		// skeption coefficient
@@ -212,7 +212,6 @@ struct slipmodels_list{
 
 //structure describing a single fault earthquake (arrays can be used to describe multiple fault events).
 struct eqkfm{	//for events on multiple faults, use a list of these.
-	int is_mainshock;	//mainshock with multiple patches (treated differently when calculating DCFS).
 	int is_slipmodel;	//if set to 0, focal mechanism is not available.
 	int np_st, np_di;	//no. of patches along strile, no. of patches along dip,
 	int whichfm;		//index of foc. mec. to use (0=both;1;2).

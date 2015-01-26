@@ -79,7 +79,6 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 	(*crst).depth_out=odeps;
 	(*crst).lat0=0.5*(lat1+lat0);
 	(*crst).lon0=0.5*(lon1+lon0);
-	//(*crst).NPout=(*crst).N_allP;
 
 	print_logfile( "Model domain: \n lat=[%.2lf, %.2lf], %d points; \n lon=[%.2lf, %.2lf], %d points; \n dep=[%.2lf, %.2lf], %d points; \n",
 					lat0, lat1, (*crst).nLat_out, lon0, lon1, (*crst).nLon_out, d0, d1, (*crst).nD_out);
@@ -257,9 +256,11 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 	 * 	fname: 	file name
 	 *
 	 * Output:
-	 *
-	 *
+	 *  crst.str0, dip0:	spatially variable receiver faults;
+	 *  crst.nofmzones, crst.fmzone:	indices of rec.fault zones (one per grid point; each contains one receiver fault).
 	 */
+
+
 	// Variables used for MPI
 	int procId = 0;
 	int fileError = 0;
@@ -268,7 +269,6 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	double strtmp, diptmp, raketmp;
 	double **data;
 	int err=0, NL,
 		NP= (*crst).uniform? (*crst).nLat_out*(*crst).nLon_out*(*crst).nD_out : (*crst).N_allP;	//expected no. of lines in file (no. of forecast points).
@@ -307,7 +307,6 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 	//NB zeroth element assigned because it will contain regional mechanism.
 	(*crst).str0=dvector(0,(*crst).N_allP);
 	(*crst).dip0=dvector(0,(*crst).N_allP);
-	//(*crst)->rake0=dvector(0,crst.N_allP);
 
 	for (int i=1; i<=crst->N_allP; i++){
 		(*crst).str0[i]=data[1][i];

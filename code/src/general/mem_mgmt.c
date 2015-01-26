@@ -128,7 +128,6 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 		v[i].selpoints= NULL;
 		v[i].distance= NULL;
 		v[i].is_slipmodel=0;
-		v[i].is_mainshock=0;
 		v[i].np_st=v[i].np_di=v[i].whichfm=v[i].nsel=v[i].noise=0;
 		v[i].t=0;
 		v[i].lat=0;
