@@ -82,9 +82,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	double Ldum_out, Nev;
 
 	char fname[120];
-	char print_forex_ref[120], print_cmb_ref[120], print_forex[120], print_cmb[120], print_cmbpost[120];
+	char print_forex[120], print_cmb[120], print_cmbpost[120];
 	static double **DCFSrand;
-	static double *dumrate, *gammas, *rate, *ev_x, *ev_x_new=0;
+	static double *dumrate, *gammas, *rate, *ev_x, *ev_x_new=NULL;
 	double sum, sum1, sum2, integral;
 	double Ldum;
 	double fin_rate;
@@ -110,6 +110,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	ev_x_avg=dvector(1,NgridT);
     ev_x_pre=dvector(1,NgridT);
 	ev_x_dum=dvector(1,NgridT);
+	ev_x_new=dvector(1,NgridT);
 	cmb=dvector(1,NgridT);
 	cmbpost=dvector(1,NgridT);
 	cmbpost_avg=dvector(1,NgridT);
@@ -148,14 +149,12 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			fLLev=fopen(fname,"w");
 		}
 		if (print_cmb) {
-			sprintf(print_cmb_ref,"%s_ref.dat", print_cmb0);
 			sprintf(print_cmb,"%s.dat", print_cmb0);
 
 			if (flags.afterslip) sprintf(print_cmbpost,"%s_post.dat", print_cmb0);
 
 		}
 		if (print_forex0) {
-			sprintf(print_forex_ref,"%s_ref.dat", print_forex0);
 			sprintf(print_forex,"%s.dat", print_forex0);
 		}
 		if (print_foret) {
@@ -289,7 +288,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				}
 			}
 			if(printall_cmb) {
-				convert_geometry(crst,cmb, &ev_x_new, 0, 0);
+				convert_geometry(crst,cmb, &ev_x_new, 0, 0);	//convert to output geometry
 				if(procId == 0) {
 					for (int n=1; n<=NgridT_out; n++) fprintf(fcmb, "%.6e\t", ev_x_new[n]);
 					if (nsur <Nsur) fprintf(fcmb, "\n");
@@ -299,7 +298,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 
 		if (printall_forex) {
-			convert_geometry(crst, ev_x, &ev_x_new, 1, 0);
+			convert_geometry(crst, ev_x, &ev_x_new, 1, 0);	//convert to output geometry
 			if(procId == 0) {
 				for (int n=1; n<=NgridT_out; n++) fprintf(fforex, "%.6e\t", ev_x_new[n]*r0/NgridT);
 				if (nsur <Nsur) fprintf(fforex, "\n");
@@ -371,19 +370,12 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			if(procId == 0) {
 				csep_forecast(print_forex, crst, ev_x_new, 0);
 			}
-			for(int n=1; n<=NgridT; n++) {
-				ev_x_avg[n]*=r0/NgridT;
-			}
-			if(procId == 0) {
-				csep_forecast(print_forex_ref, crst, ev_x_avg, 1);
-			}
 		}
 
 		if (print_cmb) {
 			convert_geometry(crst, cmb_avg, &ev_x_new, 0, 0);
 			if(procId == 0) {
 				csep_cmbmap(print_cmb, crst, ev_x_new, 0);
-				csep_cmbmap(print_cmb_ref, crst, cmb_avg, 1);
 				if (flags.afterslip) csep_cmbmap(print_cmbpost, crst, cmbpost_avg, 0);
 			}
 		}
@@ -435,6 +427,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	free_dvector(gammas, 1,NgridT);
 	free_dvector(ev_x,1,NgridT);
 	free_dvector(ev_x_avg,1,NgridT);
+	free_dvector(ev_x_new,1,NgridT);
 	free_dvector(cmb,1,NgridT);
 	free_dvector(cmbpost,1,NgridT);
 	free_dvector(cmb_avg,1,NgridT);
@@ -793,7 +786,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		Ntot= (Nev) ? N+*Nev : N;
 		Itot= (I)? integral/NgridT + *I : integral/NgridT;
 		LLdum0tot= (Ldum0_out) ? Ldum0+*Ldum0_out : Ldum0;
-		r = (fixr)? r0 : Ntot/Itot;
+		r = (fixr)? r0 : Ntot/Itot;	// Ntot/Itot can be derived analytically (gives maximum of LL wrt r).
 
 		if(r==0.0) {
 			print_screen("ERROR: ta=%lf  Asig=%lf r=%e\n",ta,Asig,r);

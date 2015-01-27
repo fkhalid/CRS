@@ -7,6 +7,11 @@
 
 #include "convert_geometry.h"
 
+#include "../defines.h"
+#include "../util/error.h"
+#include "../util/moreutil.h"
+#include "../util/nrutil.h"
+
 int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, int increase_resolution){
 /* Convert a vector (old_v) between large/small grid in crst.
  * old_v, new_v have size [1...NP], [1...NPn].
@@ -21,6 +26,10 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
  *
  * Output:
  *  new_v: new vector
+ *
+ * NB: if old_v, new_v are the same (i.e. the refined and output grid are the same), old_v will be copied if (*new_v!=NULL),
+ * in which case memory should have already been allocated for the correct size; if *new_v, will set *new_v=old_v (to save memory);
+ * in this case, one should be careful not to overwrite old_v later by writing into *new_v. To be save, allocate memory to *new_v before.
  *
  * points change along lat, then along lon, then along depth.
  * indices start from 1.
@@ -40,7 +49,13 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 	NP= (increase_resolution)? crst.nLat_out*crst.nLon_out*crst.nD_out : crst.N_allP;
 
 	if (!crst.uniform || NP==NPn){
-		*new_v=old_v;
+		if (!(*new_v)){
+			*new_v=old_v;
+		}
+		else{
+			//if memory has already been allocated for new_v, do not change it (since it may contain extra elements):
+			copy_vector(old_v, new_v, NP);
+		}
 		return 0;
 	}
 
@@ -70,7 +85,12 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 	if (crst.nLat%crst.nLat_out!=0 || crst.nLon%crst.nLon_out!=0 || crst.nD%crst.nD_out!=0) {
 		print_screen(" ** Error: calculation cells are not a multiple of forecast cells - can not recalculate geometry -> Using old geometry. (convert_geometry)\n");
 		print_logfile(" ** Error: calculation cells are not a multiple of forecast cells - can not recalculate geometry -> Using old geometry. (convert_geometry)\n");
-		*new_v=old_v;
+		if (!(*new_v)) {
+			*new_v=old_v;
+		}
+		else {
+			copy_vector(old_v, new_v, NP);
+		}
 		return(1);
 	}
 

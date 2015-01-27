@@ -2139,7 +2139,6 @@ void tests_eqkfm_addslipmodels(){
 		eq_in1[i].whichfm=1;
 		eq_in1[i].t=(double) i;
 		eq_in1[i].mag=4.0+0.2*(double)(i%5);		//[4.0, 4.2, 4.4, 4.6, 4.8, 4.0, ...];
-		eq_in1[i].is_mainshock= (eq_in1[i].mag>=4.3);
 	}
 
 	for (int i=0; i<all_slipmodels.NSM; i++){

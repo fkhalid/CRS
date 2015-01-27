@@ -5,10 +5,14 @@
  *      Author: camcat
  */
 
+#include "moreutil.h"
+
+#include <math.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "nrutil.h"
-#include "moreutil.h"
 
 #define SWAP(a,b) temp=(a);(a)=(b);(b)=temp;
 #define NSTACK 50
@@ -66,6 +70,22 @@ void copy_matrix( double **m1, double ***m2, int a, int b){
 	for (int ns=1; ns<=a; ns++){
 		for (int n=1; n<=b; n++) (*m2)[ns][n]=m1[ns][n];
 	}
+
+	return;
+}
+
+void copy_vector(double *m1, double **m2, int a){
+	/* m1: original vector; *m2: new vector. indices: [1...a]
+	 * if *m2==NULL, memory allocated. Otherwise, m2 must have correct no. of elements.
+	 */
+
+	if (!(*m2)) *m2=dvector(1,a);
+
+	for (int ns=1; ns<=a; ns++){
+		(*m2)[ns]=m1[ns];
+	}
+
+	//*m2=m1;
 
 	return;
 }

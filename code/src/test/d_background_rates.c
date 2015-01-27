@@ -38,7 +38,7 @@ void d_background_rates(){
 		t0=-t00+(t-1)*(t00/Nt);
 		err=background_rate2(cat_file, &crst, reftime, Mcut, Mmain, t0, 0.0, dR, dZ, smoothing, ord);
 		sprintf(fname,"test/bg_rate_100yrsS3%.0lf.dat",t0);
-		print_rate(fname, crst, NULL);
+		//print_rate(fname, crst, NULL);
 		fprintf(fout,"%.3lf\t%.3lf\n",t0,crst.r0);
 	}
 
@@ -79,7 +79,7 @@ void background_rates(){
 	for (int i=0; i<Nmcuts; i++){
 		sprintf(fname,"test/bgrate_toho2010_%.2f.dat",Mcuts[i]);
 		err=background_rate2(cat_file, &crst, reftime, Mcuts[i], Mmain, NULL, NULL, 0, dR, dZ, smoothing, ord);
-		print_rate(fname, crst, NULL);
+		//print_rate(fname, crst, NULL);
 	}
 
 	return;

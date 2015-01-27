@@ -101,48 +101,6 @@ int sum_DCFSrand(double **DCFSrand, double **cmb, int TS, int N){
 //	return 0;
 //}
 
-int print_rate(char *fname, struct crust crst, double Mmin, double *rate){
-/* line print_grid, but doesn't use struct pscmp.
- * if rate==NULL, will printout (crst.r0)*(crst.rate0)/Ntot.
- */
-
-		double Lon1, Lon2, Lat1, Lat2, D1, D2;
-		FILE *fout;
-		int i, Ntot= crst.N_allP;
-		double *r, r0;
-
-		if (rate) {
-			r=rate;
-			r0=1.0*Ntot;	//since will printout rate/Ntot (due to definition of crst.rate0).
-		}
-
-		else {
-			r=crst.rate0;
-			r0=crst.r0;
-		}
-
-
-		fout=fopen(fname,"w");
-		if (fout==NULL){
-			print_screen("Error: file %s could not be opened (print_cmb). \n",fname);
-			print_logfile("Error: file %s could not be opened (print_cmb). \n",fname);
-			return(1);
-		}
-		i=1;
-		for (int k=1; k<=Ntot; k++){		//todo check if this works with DCFS.nsel<Ntot.
-			Lon1=crst.lon[k]-crst.dlon/2.0;
-			Lon2=crst.lon[k]+crst.dlon/2.0;
-			Lat1=crst.lat[k]-crst.dlat/2.0;
-			Lat2=crst.lat[k]+crst.dlat/2.0;
-			D1=crst.depth[k]-crst.ddepth/2.0;
-			D2=crst.depth[k]+crst.ddepth/2.0;
-			fprintf(fout,"%.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \t %.5e \n", Lon1, Lon2, Lat1, Lat2, D1,D2, Mmin, 8.0, r0*r[k]/(1.0*Ntot));
-		}
-		fclose(fout);
-
-		return(0);
-}
-
 
 int print_grid(char *fname, struct pscmp DCFS, struct crust crst, double *rate){
 /* if rate is a null pointer, prints out the coulomb stress field (DCFS.cmb).

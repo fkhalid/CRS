@@ -128,9 +128,9 @@ int main (int argc, char **argv) {
 	int fixta, fixAsig, fixr;		//flags indicating if parameters should be fixed (not inverted for).
 	double Asig_min, Asig_max, Asig0;	//range of Asig for parameter search; value to be used if fixAsig=1 or LLinversion=0.
 	double ta_min, ta_max, ta0;		//range of ta for parameter search; value to be used if fixta=1 or LLinversion=0.
-	double r0;						//value of background rate to be used if fixta=1 or LLinversion=0.
+	double r0;						//value of background rate to be used if fixr0=1 or LLinversion=0.
 	int nAsig, nta;					//number of Asig, ta values to use in grid search.
-	double *maxAsig, *maxta, *maxr;	//optimal values from grid search.
+	double maxAsig, maxta, maxr;	//optimal values from grid search.
 	double Asig, ta, r,		// these are assigned during each grid search iteration.
 			dAsig, dta;		// interval between values in grid search.
 
@@ -560,13 +560,14 @@ int main (int argc, char **argv) {
 			}
 		}
 		else {
+			//fixme this is quite silly (should read background rate into crst.r0 directly); also 2 cases above.
 			crst.r0=r0;
 			r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
 			crst.rate0=NULL;	//by convention, this is equivalent to all 1s.
 		}
 	}
 
-	print_logfile("Values of background rate: \nMw>=%.2lf\t r=%.5lf\nMw>=%.2lf\t r=%.5lf\n", cat.Mc, r0, crst.mags[1]-0.5*crst.dmags, crst.r0);
+	print_logfile("Default values of background rate: \nMw>=%.2lf\t r=%.5lf\nMw>=%.2lf\t r=%.5lf\n", cat.Mc, r0, crst.mags[1]-0.5*crst.dmags, crst.r0);
 
 	//-----------------set up LL variables:----------------------//
 
@@ -624,10 +625,6 @@ int main (int argc, char **argv) {
 		dim[n]=MAX(eqkfm_co[nf].parent_set_of_models->Nmod, 1);
 		nf+=Nfaults_co[n];
 	}
-
-	maxAsig=dvector(1,slipmodel_combinations);
-	maxta=dvector(1,slipmodel_combinations);
-	maxr=dvector(1,slipmodel_combinations);
 
 	//loop over all slip models:
 	for (int mod=1; mod<=slipmodel_combinations; mod++) {
@@ -687,9 +684,10 @@ int main (int argc, char **argv) {
 		#endif
 
 		//set default values:
-		maxta[mod]=ta0;
-		maxAsig[mod]=Asig0;
-		maxr[mod]=crst.r0;
+		//fixme don't need to use arrays for these anymore (can overwrite values, right?)
+		maxta=ta0;
+		maxAsig=Asig0;
+		maxr=crst.r0;
 
 		if (LLinversion) {
 			print_screen("Performing grid search...\n");
@@ -722,9 +720,9 @@ int main (int argc, char **argv) {
 
 						if (LLs[p]>LLmax){
 							LLmax=LLs[p];
-							maxAsig[mod]=Asig;
-							maxta[mod]=ta;
-							maxr[mod]=r;
+							maxAsig=Asig;
+							maxta=ta;
+							maxr=r;
 							if (forecast &&  tendLL<=Tstart) {
 								//copy gamma values into gammas_maxLL; they will be used for forecast.
 								copy_matrix(gammas_new, &gammas_maxLL, Nsur, NgridT);
@@ -749,9 +747,12 @@ int main (int argc, char **argv) {
 		}
 		else {
 			if(procId == 0) {
-				fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig[mod],maxta[mod],maxr[mod],0.0,0.0, mod);
+				fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig,maxta,maxr,0.0,0.0, mod);
 			}
 		}
+
+		crst.r0=r0*pow(10,-cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
+		print_logfile("Final values of background rate: \nMw>=%.2lf\t r=%.5lf\nMw>=%.2lf\t r=%.5lf\n", cat.Mc, maxr, crst.mags[1]-0.5*crst.dmags, crst.r0);
 
 		//------------------------------------------//
 		//			 	Forecast					//
@@ -805,14 +806,14 @@ int main (int argc, char **argv) {
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
 			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, tevol_afterslip, crst, AllCoeff, L, Nco, NgridT, focmec, fmzonelimits, Nfocmec,
-					&seed, cat, times2,tstart_calc, tts, Ntts, maxAsig[mod], maxta[mod], maxr[mod], gammasfore, multi_gammas, 1,
+					&seed, cat, times2,tstart_calc, tts, Ntts, maxAsig, maxta, maxr, gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 
 			print_logfile("Output files written: %s, %s, %s, %s, %s, %s, %s.\n",
 								  print_cmb, print_forex, print_foret, printall_cmb, printall_forex,
 								  printall_foret, print_LL);
 			if(procId == 0) {
-				fprintf(foutfore, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",maxAsig[mod], maxta[mod], maxr[mod], LL, mod);
+				fprintf(foutfore, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",maxAsig, maxta, maxr, LL, mod);
 			}
 		}
 
@@ -847,7 +848,7 @@ int main (int argc, char **argv) {
 	print_logfile("\nFinal Rate-and-State parameters:\n");
 	for (int mod=1; mod<=slipmodel_combinations; mod++){
 		print_logfile("Slip model(s) no. %d:\t->\t", mod);
-		print_logfile("Asig=%.5lf \t ta=%.5lf \t r=%.5lf \n", maxAsig[mod], maxta[mod], maxr[mod]);
+		print_logfile("Asig=%.5lf \t ta=%.5lf \t r=%.5lf \n", maxAsig, maxta, maxr);
 	}
 
 	print_screen("Done.\n");
