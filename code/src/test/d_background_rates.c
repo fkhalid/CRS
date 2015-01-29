@@ -39,7 +39,7 @@ void d_background_rates(){
 		err=background_rate2(cat_file, &crst, reftime, Mcut, Mmain, t0, 0.0, dR, dZ, smoothing, ord);
 		sprintf(fname,"test/bg_rate_100yrsS3%.0lf.dat",t0);
 		//print_rate(fname, crst, NULL);
-		fprintf(fout,"%.3lf\t%.3lf\n",t0,crst.r0);
+		//fprintf(fout,"%.3lf\t%.3lf\n",t0,crst.r0);
 	}
 
 	return;

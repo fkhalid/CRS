@@ -65,11 +65,21 @@
 
 
 int *decluster_catalog(struct catalog cat, double Mmain, double **weights, int d3){
-/* Returns array containing flag (1/0) for selected/excluded events.
- * time_missing is a pointer to a 1d array whichweights==NULL, memory will be allocated.
- * d3: flag indicating if 3d distance (instead of horizontal distance) should be used.
- * events must be sorted chronologically.
+/* Declusters catalog using  Knopoff-Gardner 74 criterium.
+ *
+ * Input:
+ * 	cat:	catalog
+ * 	Mmain:	magnitude above which events are selected as mainshocks;
+ * 	d3: flag indicating if 3d distance (instead of horizontal distance) should be used.
+ *
+ * Output:
+ *   Returns array containing flag (1/0) for selected/excluded events.
+ *
+ *   if *weights==NULL, memory will be allocated.
+ *
+ * NB: events must be sorted chronologically.
  */
+
 	double D, T, d, *tnow, *time_missing, dt;
 	int *sel=ivector(1,cat.Z);
 	for (int i=1; i<=cat.Z; i++) sel[i]=1;
@@ -90,11 +100,11 @@ int *decluster_catalog(struct catalog cat, double Mmain, double **weights, int d
 
 	for (int i=1; i<=cat.Z; i++){
 		if (cat.mag[i]>=Mmain){
-			KG74(cat.mag[i], &D, &T);
+			KG74(cat.mag[i], &D, &T);	//calculate spatial and temporal window:
 			for (int j=1; j<=cat.Z; j++){
-				if (sel[j]==0) continue;
-				d= pow(cat.x0[j]-cat.x0[i],2)+pow(cat.y0[j]-cat.y0[i],2);
-				if (d3) d+=pow(cat.depths0[j]-cat.depths0[i],2);
+				if (sel[j]==0) continue;	//event has already been removed (aftershock of a previous mainshock).
+				d= pow(cat.x0[j]-cat.x0[i],2)+pow(cat.y0[j]-cat.y0[i],2);	//horizontal distance
+				if (d3) d+=pow(cat.depths0[j]-cat.depths0[i],2);			//3D distance
 				d=sqrt(d);
 				if (d<=D){	//decluster catalog:
 					if((cat.t[j]-cat.t[i])>0 && (cat.t[j]-cat.t[i])<=T && j!=i) sel[j]=0;
@@ -109,7 +119,8 @@ int *decluster_catalog(struct catalog cat, double Mmain, double **weights, int d
 	}
 
 	if (weights) {
-		for (int i=1; i<=cat.Z; i++) (*weights)[i]= (sel[i]==0)? 0.0 : fmin((cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]),1.0);
+		//for (int i=1; i<=cat.Z; i++) (*weights)[i]= (sel[i]==0)? 0.0 : fmin((cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]),1.0);
+		for (int i=1; i<=cat.Z; i++) (*weights)[i]= (sel[i]==0)? 0.0 : (cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]);
 		free_dvector(time_missing, 1, cat.Z);
 		free_dvector(tnow, 1, cat.Z);
 	}
@@ -120,7 +131,10 @@ void KG74(double M, double *D, double *T){
 /* calculation of Knopoff-Gardner 74 criterium for aftershock declustering
  * function modified from one written by Olga Zakharova.
  *
+ * Input:
  * M= magnitude.
+ *
+ * Output:
  * D= spatial window.
  * T= temporal window.
  */

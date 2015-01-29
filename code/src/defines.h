@@ -188,7 +188,7 @@ struct crust{
 	double *x;
 	double *y;
 	double *rate0;	//adds up to 1.
-	double r0;		//daily rate for entire region.
+	//double r0;		//daily rate for entire region.
 	double *mags, *GRmags;	//GRmags=Gutenberg-Richter coefficients corresponding to each magnitude bin.
 	int nofmzones;	//no of zones characterized by a different set of receiver faults.
 	int *fmzone;		//list of fm zones for each grid point.

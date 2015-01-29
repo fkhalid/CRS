@@ -19,7 +19,7 @@
 	#include "mpi.h"
 #endif
 
-int read_rate(struct crust crst, char *fname, double **bg_rate, double *minmag){
+int read_rate(struct crust crst, char *fname, double **bg_rate, double *r0, double *minmag){
 	/* Read 9th column of a forecast-like file (same structure as output grid file), and converts it to internal geometry.
 	 *
 	 * Input:
@@ -28,15 +28,24 @@ int read_rate(struct crust crst, char *fname, double **bg_rate, double *minmag){
 	 *
 	 * Ouput:
 	 * 	bg_rate: rate (col. 9 of file), reshaped with internal geometry.
+	 * 	r0:	backgroud rate (over entire volume).
 	 * 	minmag: min. mag bin found in file.
 	 */
 
 	double *dum_rate, dmag;
+	double r0int;
 	int err;
 
 	err=read_csep_template(fname, 0,0,0,0,0,0,0,0,&dmag,0,0,0,&dum_rate,0,0,0,0,0,0,minmag,0, NULL);
 	err+=convert_geometry(crst, dum_rate, bg_rate, 1, 1);
 	if (minmag) *minmag-=0.5*dmag;
+
+	r0int=0;
+	for (int i=1; i<=crst.N_allP; i++) r0int+= (*bg_rate)[i];	//calculate background rate from file;
+	for (int i=1; i<=crst.N_allP; i++) (*bg_rate)[i]*=crst.N_allP/r0int;	//by convention;
+
+	if (r0) *r0=r0int;
+
 	return err;
 }
 

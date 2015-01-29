@@ -407,7 +407,14 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 		if (!errP) {
 			if ((*cat).Mc>=20) (*cat).Mc=Mc_maxcurv((*cat).mag+1, (*cat).Z)+Mc_offset;
-			(*cat).b=calculatebvalue((*cat).mag+1, (*cat).Z, (*cat).Mc);
+			if ((*cat).Z<100){
+				print_logfile("Warning: catalog has fewer than 100 events -> will set b-value to 1.\n");
+				print_screen("Warning: catalog has fewer than 100 events -> will set b-value to 1.\n");
+				(*cat).b=1.0;
+			}
+			else{
+				(*cat).b=calculatebvalue((*cat).mag+1, (*cat).Z, (*cat).Mc);
+			}
 
 			print_screen("Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);
 			print_logfile("Estimated GR values for catalog: Mc=%.2lf, b=%.3lf\n", (*cat).Mc, (*cat).b);

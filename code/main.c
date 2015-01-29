@@ -538,36 +538,32 @@ int main (int argc, char **argv) {
 
 	if (use_bg_rate_grid) {
 		print_logfile("\nUsing background rate file %s.\n", background_rate_grid);
-		read_rate(crst, background_rate_grid,&crst.rate0, &minmag);
-		crst.r0=0;
-		for (int i=1; i<=NgridT; i++) crst.r0+= crst.rate0[i];
-		for (int i=1; i<=NgridT; i++) crst.rate0[i]*=crst.N_allP/crst.r0;
-		crst.r0*=pow(10,cat.b*(minmag-(crst.mags[1]-0.5*crst.dmags)));
-		r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
+		read_rate(crst, background_rate_grid, &crst.rate0, &r0, &minmag);
+		r0*=pow(10,cat.b*(minmag-cat.Mc));	//adjust rate to the catalog (since LL inversion is based on catalog).
 	}
 	else {
 		if (use_bg_rate_cat){
 			print_logfile("\nCalculating background rate using smoothed catalog from file %s.\n", background_rate_cat);
-			err=background_rate2(background_rate_cat, &crst, reftime, 20.0, Mag_main, &(cat.Mc), &r0, 1, xytoll, ztoll, smoothing, 2);
-			crst.r0=r0*pow(10,cat.b*(cat.Mc-crst.mags[1]+0.5*crst.dmags));
-			if (err){
+			err=background_rate2(background_rate_cat, &crst, reftime, Mag_main, &minmag, &r0, &crst.rate0, xytoll, ztoll, smoothing, 2);
+			if (!err) {
+				r0*=pow(10,cat.b*(minmag-cat.Mc));	//adjust rate to the catalog (since LL inversion is based on catalog).
+			}
+			else{
 				print_screen("Could not calculate background rate from smoothed catalog. will use uniform background rate.\n");
 				print_logfile("Could not calculate background rate from smoothed catalog. will use uniform background rate.\n");
-				crst.r0=r0;
-				r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
 				use_bg_rate_cat=0;
+				//settings for use_bg_rate_cat=0:
+				r0*=pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));	//adjust rate to the catalog (since LL inversion is based on catalog).
 				crst.rate0=NULL;	//by convention, this is equivalent to all 1s.
 			}
 		}
 		else {
-			//fixme this is quite silly (should read background rate into crst.r0 directly); also 2 cases above.
-			crst.r0=r0;
-			r0=crst.r0*pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
+			r0*=pow(10,cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));	//adjust rate to the catalog (since LL inversion is based on catalog).
 			crst.rate0=NULL;	//by convention, this is equivalent to all 1s.
 		}
 	}
 
-	print_logfile("Default values of background rate: \nMw>=%.2lf\t r=%.5lf\nMw>=%.2lf\t r=%.5lf\n", cat.Mc, r0, crst.mags[1]-0.5*crst.dmags, crst.r0);
+	print_logfile("Default values of background rate: \nMw>=%.2lf\t r=%.5lf\n", cat.Mc, r0);
 
 	//-----------------set up LL variables:----------------------//
 
@@ -687,7 +683,7 @@ int main (int argc, char **argv) {
 		//fixme don't need to use arrays for these anymore (can overwrite values, right?)
 		maxta=ta0;
 		maxAsig=Asig0;
-		maxr=crst.r0;
+		maxr=r0;
 
 		if (LLinversion) {
 			print_screen("Performing grid search...\n");
@@ -751,8 +747,10 @@ int main (int argc, char **argv) {
 			}
 		}
 
-		crst.r0=r0*pow(10,-cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));
-		print_logfile("Final values of background rate: \nMw>=%.2lf\t r=%.5lf\nMw>=%.2lf\t r=%.5lf\n", cat.Mc, maxr, crst.mags[1]-0.5*crst.dmags, crst.r0);
+		print_logfile("Final values of background rate: Mw>=%.2lf\t r=%.5lf\n", cat.Mc, maxr);
+		maxr*=pow(10,-cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));	//adjust rate to forecast magnitude range.
+		print_logfile("Background rate used for forecast: Mw>=%.2lf\t r=%.5lf\n", crst.mags[1]-0.5*crst.dmags, maxr);
+
 
 		//------------------------------------------//
 		//			 	Forecast					//
@@ -845,7 +843,7 @@ int main (int argc, char **argv) {
 		fclose(foutfore);
 	}
 
-	print_logfile("\nFinal Rate-and-State parameters:\n");
+	print_logfile("\nFinal Rate-and-State parameters (used for forecast):\n");
 	for (int mod=1; mod<=slipmodel_combinations; mod++){
 		print_logfile("Slip model(s) no. %d:\t->\t", mod);
 		print_logfile("Asig=%.5lf \t ta=%.5lf \t r=%.5lf \n", maxAsig, maxta, maxr);
