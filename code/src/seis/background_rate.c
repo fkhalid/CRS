@@ -11,19 +11,25 @@
 	#include "mpi.h"
 #endif
 
-int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime,
+int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 		double Mmain, double *minmag, double *rate, double **rate_grid, double dR, double dZ, double min_smoothing, int ord) {
 	/*
+	 * Calculates background based on a catalog. It will decluster it using the Knopoff-Gardner 74 criterium and calculate the smoothed rate using the
+	 * algorithm from Helmstetter et al (2007).
+	 *
+	 * Input:
+	 *  catfile: file containing catalog in ZMAP format.
+	 *  crst_in: crust structure containing calculation geometry.
+	 *  reftime: reference time (IssueTime)
+	 *  Mmain: minimum magnitude to be used for declustering
+	 *  dR, dZ: extra horizontal, vertical distance to be used when selecting earthquakes from catalog.
+	 *  ord: order for Helmstetter algorithm (e.g. if ord=2, 2nd nearest neighbour distance will be used as st. dev. for smoothing).
 	 *
 	 *
-	 *
-	 *
-	 *
-	 * by convention, if Mcut>=20 the cutoff magnitude will be calculated based on completeness.
-	 * target_mags= array containing magnitudes above which rates should be estimated (counting events above Mw, or using GR if there are too few). [0....Ntarget-1];
-	 * target_rates will contain the results. If NULL (or if target_mags=NULL), ignored.
-	 * ord=1,2 indicatest if closest or second closest event should be used for smoothing distance.
-	 * declusters catalog using KG window method, and scales remaining events to compensate for removing background seismicity.
+	 * Output:
+	 *  minmag: completeness magnitude (seismicity rate if for events Mw>=minmag)
+	 *  *rate: scalar value of seismicity rate (no. of events per day)
+	 *  **rate_grid: array containing the spatial distribution of seismicity (by convention adds up to crst.N_allP). size [1...crst.N_allP]
 	 */
 
 	int procId = 0;
@@ -50,15 +56,18 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime,
 		return 1;
 	}
 
-	//decluster catalog:
+	// Decluster catalog:
+	// sel contains flag (1,0) for selected/excluded events, weights is a weight accounting for the fact that declustering algorithm also removes some background events.
+	// (see comments in decluster_catalog).
 	sel=decluster_catalog(cat, Mmain, &weights, 0);
+	T=cat.tend-cat.tstart;
 
 	for (int i=1; i<=cat.Z; i++) {
 		cat.err[i]=fmax(cat.err[i], min_smoothing);	//values used later (in Helmstetter.c).
 		sel_no+=sel[i];
 	}
 
-	T=cat.tend-cat.tstart;
+	// If events are too few, background rate estimation is less reliable:
 	if (sel_no<=100){
 		if (sel_no<=1 || T<1.0)	{
 			print_screen("**Warning: to few events, or too short time period found in catalog [%ld events, %.3lf days]: can not estimate background rate.** \n", cat.Z, T);
@@ -74,33 +83,49 @@ int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime,
 		print_logfile("**Background seismicity rate calculated from catalog %s (%d events between t=[%.5lf, %.5lf]).** \n", catfile, sel_no, cat.tstart, cat.tend);
 	}
 
-	//find rate by counting events of required magnitude; is too few (<10), use GR instead.
-	if (rate) *rate= cat.Z/T;		//fixme this does not take clustering into account. Should instead use value from below?
+	// find minmag and background rate;
 	if (minmag) *minmag= cat.Mc;
+	if (rate) {
+		*rate=0;
+		for (int i=1; i<=cat.Z; i++) {
+			*rate+=weights[i];	//instead of adding 1, use weights[i] which accounts for removal of background events by declustering algorithm.
+		}
+		(*rate)*=1.0/T;
+	}
 
 
 	if (crst.uniform){
-
 		zlist=dvector(1,crst.nD);
 		for (int i=1; i<=crst.nD; i++) zlist[i]=crst.depth[1+(i-1)*NP];
 
+		// Depth-average rate on horizontal grid calculated from Helmstetter algorithm;
+		// depth distribution obtained separately.
 		rate_h=Helmstetter_cat(cat, crst, weights, ord);
 		rate_v=fit_depth(zlist, zlist[2]-zlist[1], crst.nD, cat.depths0, cat.verr, weights, cat.Z);
 
+		//normalize rate vectors:
 		normv(rate_h, NP);
 		normv(rate_v, crst.nD);
 
 		*rate_grid=dvector(1,crst.N_allP);
 		for (int p=1; p<=crst.N_allP; p++) {
+			//calculate linear index:
 			h_ind=(p-1)%NP+1;
 			v_ind=(p-1)/NP+1;
+			// by convention, (*rate_grid)[p] add up to crst.N_allP (since for simplicity they are all assumed to be 1 if *rate_grid==NULL)
 			(*rate_grid)[p]=rate_h[h_ind]*rate_v[v_ind]*crst.N_allP;
 		}
 	}
 
 	else{
 		// todo [coverage] this block is never tested
+		// Assume vertically homogeneous rate, since can not use depth info (non uniform grid does not necessarily have layers).
 		*rate_grid=Helmstetter_nonuni(crst.x, crst.y, crst.N_allP, cat.x0, cat.y0, cat.err, weights, cat.Z, ord);
+		normv(*rate_grid, crst.N_allP);
+		for (int p=1; p<=crst.N_allP; p++) {
+			// by convention, (*rate_grid)[p] add up to crst.N_allP (since for simplicity they are all assumed to be 1 if *rate_grid==NULL)
+			(*rate_grid)[p]=rate_h[h_ind]*rate_v[v_ind]*crst.N_allP;
+		}
 	}
 
 	free_cat(cat);

@@ -544,7 +544,7 @@ int main (int argc, char **argv) {
 	else {
 		if (use_bg_rate_cat){
 			print_logfile("\nCalculating background rate using smoothed catalog from file %s.\n", background_rate_cat);
-			err=background_rate2(background_rate_cat, &crst, reftime, Mag_main, &minmag, &r0, &crst.rate0, xytoll, ztoll, smoothing, 2);
+			err=background_rate(background_rate_cat, &crst, reftime, Mag_main, &minmag, &r0, &crst.rate0, xytoll, ztoll, smoothing, 2);
 			if (!err) {
 				r0*=pow(10,cat.b*(minmag-cat.Mc));	//adjust rate to the catalog (since LL inversion is based on catalog).
 			}
@@ -747,7 +747,7 @@ int main (int argc, char **argv) {
 			}
 		}
 
-		print_logfile("Final values of background rate: Mw>=%.2lf\t r=%.5lf\n", cat.Mc, maxr);
+		print_logfile("\nFinal values of background rate: Mw>=%.2lf\t r=%.5lf\n", cat.Mc, maxr);
 		maxr*=pow(10,-cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));	//adjust rate to forecast magnitude range.
 		print_logfile("Background rate used for forecast: Mw>=%.2lf\t r=%.5lf\n", crst.mags[1]-0.5*crst.dmags, maxr);
 

@@ -22,11 +22,7 @@
 #include "GR.h"
 #include "Helmstetter.h"
 
-//int background_rate(char *catfile, struct crust *crst, struct tm reftime, double Mcut, double Mmain, double t0, double t1, double dR, double dZ, int ord);
-int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime,
+int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 		double Mmain, double *minmag, double *rate, double **rate_grid, double dR, double dZ, double min_smoothing, int ord);
-//int background_rate2(char *catfile, struct crust *crst_in, struct tm reftime, double Mcut, double Mmain, double *target_mags, double *target_rates, int Ntarget,
-//			double dR, double dZ, double min_smoothing, int ord);
-//int background_rate3(char *catfile, struct crust *crst_in, struct tm reftime, double Mcut, double Mmain,  double t0, double t1, double dR, double dZ, int ord);
 
 #endif /* BACKGROUND_RATE_H_ */
