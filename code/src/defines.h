@@ -10,6 +10,10 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+//-------[Camilla] Added to test MPI version against serial one -----------
+#define SILLY_SEED
+
+
 // ----- [Fahad] Added for MPI -----
 //#define _CRS_MPI						// FIXME [Fahad]: Should be set depending on whether or not mpicc is used ...
 #ifdef _CRS_MPI
@@ -204,7 +208,8 @@ struct slipmodels_list{
 	int *Nfaults;
 	int *no_slipmodels;
 	int *cut_surf;	//flags indicating is free surface should be assumed at the top.
-	double *tmain;	//times.
+	double *tmain;	//times of mainshocks;
+	double *tsnap;	//times for afterslip snapshots
 	double *mmain;	//magnitudes.
 	double *disc;
 	char **slipmodels;

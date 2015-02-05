@@ -340,7 +340,8 @@ int main (int argc, char **argv) {
 	}
 	else eqkfm_aft=NULL;
 
-	flags.splines= (flags.afterslip)? (all_aslipmodels.NSM>1): 0;
+	//flags.splines= (flags.afterslip)? (all_aslipmodels.NSM>1): 0;	//FIXME need to do this for each afterslip
+	flags.splines= (flags.afterslip)? (all_aslipmodels.no_slipmodels[0]>1): 0;
 
 //----------------------------------------------------------//
 //--------------Setup aftershocks, mainshocks --------------//
@@ -422,7 +423,7 @@ int main (int argc, char **argv) {
 	#endif
 
 	if (flags.afterslip){
-		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, all_aslipmodels.tmain[-1], 1);
+		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, all_aslipmodels.tmain[0], 1);	//FIXME change 2nd last argument.
 	}
 	else{
 		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, 0.0, 0);
@@ -487,8 +488,8 @@ int main (int argc, char **argv) {
 
 	if (flags.afterslip){
 						 //todo: all_slipmodels.tmain[0], all_slipmodels.tmain[0]+1e-4 should change.
-		err=setup_afterslip_evol(all_slipmodels.tmain[0], all_slipmodels.tmain[0]+1e-4, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft, all_aslipmodels.tmain,
-				all_aslipmodels.NSM, all_aslipmodels.Nfaults[0], flags.afterslip, &L, &times2, &tevol_afterslip, &seed);
+		err=setup_afterslip_evol(all_slipmodels.tmain[0], all_slipmodels.tmain[0]+1e-4, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft, all_aslipmodels.tsnap,
+				all_aslipmodels.no_slipmodels[0], all_aslipmodels.Nfaults[0], flags.afterslip, &L, &times2, &tevol_afterslip, &seed);	//FIXME rewrite this function also check where Nfaults is set for all_aslipmodels.
 		if(err) return 1;
 	}
 

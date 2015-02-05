@@ -55,7 +55,7 @@ fm	iso
 # 2. grid_error (0/1): flag indicating if the error due to finite grid size should be calculated.
 # 3. Nsur: number of Monte Carlo iterations.
 fixed
-1
+0
 9
 #=============================================#
 #             Other parameters                #

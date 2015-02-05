@@ -241,7 +241,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
-		// 		   setting certain flags. catname is used in setup.c.
+		// 		   setting certain flags. catname is used insetup.c.
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD); //todo [askFahad]: do we need to broadcast this?
 		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
@@ -512,7 +512,6 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	char line[Nchar];
 	char time_str[50];
 	char comment[]="#", comm=comment[0];
-	double t0;
 	struct tm times;
 	int Nm0, nsm, no_slipmod;
 
@@ -550,12 +549,6 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			fgets(line,Nchar,fin);
 			if (is_afterslip) {
 				sscanf(line,"%s", &((*allslipmodels).cmb_format));
-				fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-				sscanf(line, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-				times.tm_year-=1900;
-				times.tm_mon-=1;
-				times.tm_isdst=0;
-				t0=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
 			}
 			else {
 				sscanf(line,"%s %d", &((*allslipmodels).cmb_format), &((*allslipmodels).constant_geometry)); //todo check this is the same as coseismic models.
@@ -566,73 +559,66 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			MPI_Bcast(&Nm0, 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&((*allslipmodels).constant_geometry), 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&((*allslipmodels).cmb_format), 120, MPI_CHAR, 0, MPI_COMM_WORLD);
-
-			if(is_afterslip) {
-				MPI_Bcast(&t0, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-			}
 		#endif
 
 		(*allslipmodels).NSM=Nm0;
 		(*allslipmodels).is_afterslip=is_afterslip;
-		(*allslipmodels).tmain= (is_afterslip)? dvector(-1,Nm0-1) : dvector(0,Nm0-1);	//-1 element to store mainshock time (when afterslip starts).
+		(*allslipmodels).tmain= dvector(0,Nm0-1);	//-1 element to store mainshock time (when afterslip starts).
 		(*allslipmodels).mmain= (is_afterslip)? NULL : dvector(0,Nm0-1);
 		(*allslipmodels).cut_surf=ivector(0,Nm0-1);
-		if (is_afterslip) (*allslipmodels).tmain[-1]=t0;
-		if (is_afterslip){
-			(*allslipmodels).disc=dvector(0,0);
-			(*allslipmodels).disc[0]=res;
-			(*allslipmodels).Nfaults=ivector(0,0);
-			(*allslipmodels).no_slipmodels=ivector(0,0);
-			(*allslipmodels).no_slipmodels[0]=1;
-		}
-		else {
-			(*allslipmodels).disc=dvector(0,Nm0-1);
-			(*allslipmodels).Nfaults=ivector(0,Nm0-1);
-			(*allslipmodels).no_slipmodels=ivector(0,Nm0-1);
-		}
+		(*allslipmodels).disc=dvector(0,Nm0-1);
+		(*allslipmodels).Nfaults=ivector(0,Nm0-1);
+		(*allslipmodels).no_slipmodels=ivector(0,Nm0-1);
 		(*allslipmodels).slipmodels = malloc(Nm0*sizeof(char*));
+		(*allslipmodels).tsnap= NULL;	// will allocate if needed later on.
 		nsm=0;
 		if(procId == 0) {
 			for (int nn=0; nn<Nm0; nn++) {
+				(*allslipmodels).disc[nn] = res;
+				fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 				if (is_afterslip){
-					(*allslipmodels).slipmodels[nn] = malloc(120 * sizeof(char));
-					(*allslipmodels).Nfaults[nn]=1;	//actual value found later.
-					fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-					sscanf(line,"%lf %d %s", (*allslipmodels).tmain+nn, (*allslipmodels).cut_surf+nn, (*allslipmodels).slipmodels[nn]);
-					(*allslipmodels).tmain[nn]+=t0;
-				}
+					sscanf(line,"%s %d", time_str, &no_slipmod);	//[Camilla] NB: no_slipmod changes at each nn iteration.
+				}	
 				else{
-					(*allslipmodels).disc[nn] = res;
+                                        sscanf(line,"%s %lf %d", time_str, (*allslipmodels).mmain+nn, &no_slipmod);     //[Camilla] NB: no_slipmod changes at each nn iteration.
+				}						
+				sscanf(time_str, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
+				times.tm_year-=1900;
+				times.tm_mon-=1;
+				times.tm_isdst=0;
+				(*allslipmodels).tmain[nn]=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
+
+		               	//check if catalog is chronological:
+	        	               if (nn>=1 && (*allslipmodels).tmain[nn]<(*allslipmodels).tmain[nn-1]){
+        	                        print_logfile("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
+                		        print_screen("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
+                               		fileError=1;
+                       	 	}
+
+
+				 (*allslipmodels).no_slipmodels[nn]=no_slipmod;
+				 if (is_afterslip) (*allslipmodels).tsnap= (double *) realloc((*allslipmodels).tsnap, (nsm+1+no_slipmod) * sizeof(double));
+				 if (nsm+1+no_slipmod>Nm0) {
+					 (*allslipmodels).slipmodels=realloc((*allslipmodels).slipmodels, (nsm+1+no_slipmod) * sizeof(char*));
+					 size_slipmodels = nsm+1+no_slipmod; // [Fahad] Used to bcast the final size
+				 }
+
+				 for (int n=1; n<=no_slipmod; n++){
+					(*allslipmodels).slipmodels[nsm] = malloc(120 * sizeof(char));
 					fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-					sscanf(line,"%s %lf %d", time_str, (*allslipmodels).mmain+nn, &no_slipmod);	//[Camilla] NB: no_slipmod changes at each nn iteration.
-					sscanf(time_str, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
-					times.tm_year-=1900;
-					times.tm_mon-=1;
-					times.tm_isdst=0;
-					 (*allslipmodels).tmain[nn]=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
-
-	                        	//check if catalog is chronological:
-	        	                if (nn>=1 && (*allslipmodels).tmain[nn]<(*allslipmodels).tmain[nn-1]){
-        	        	                print_logfile("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
-                	        	        print_screen("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
-                        	        	fileError=1;
-                       			 }
-
-
-					 (*allslipmodels).no_slipmodels[nn]=no_slipmod;
-					 if (nsm+1+no_slipmod>Nm0) {
-						 (*allslipmodels).slipmodels=realloc((*allslipmodels).slipmodels, (nsm+1+no_slipmod) * sizeof(char*));
-						 size_slipmodels = nsm+1+no_slipmod; // [Fahad] Used to bcast the final size
-					 }
-
-					 for (int n=1; n<=no_slipmod; n++){
-						(*allslipmodels).slipmodels[nsm] = malloc(120 * sizeof(char));
-						fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-						sscanf(line,"%d %s", (*allslipmodels).cut_surf+nsm, (*allslipmodels).slipmodels[nsm]);
-						nsm++;
-
+					if (is_afterslip){
+						(*allslipmodels).Nfaults[nsm]=1; //actual value found later.
+						sscanf(line,"%lf %d %s", (*allslipmodels).tsnap+nsm, (*allslipmodels).cut_surf+nsm, (*allslipmodels).slipmodels[nsm]);
+						(*allslipmodels).tsnap[nsm]+=(*allslipmodels).tmain[nn];
 					}
+			
+					else{
+						sscanf(line,"%d %s", (*allslipmodels).cut_surf+nsm, (*allslipmodels).slipmodels[nsm]);
+					}
+					nsm++;
+
 				}
+				
 			}
 			fclose(fin);
 		}
@@ -649,49 +635,44 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			MPI_Bcast((*allslipmodels).tmain, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 			MPI_Bcast((*allslipmodels).cut_surf, Nm0, MPI_INT, 0, MPI_COMM_WORLD);
 
-			if(is_afterslip) {
-				if(procId != 0) {
-					for(int nn = 0; nn < Nm0; ++nn) {
-						(*allslipmodels).slipmodels[nn] = malloc(120 * sizeof(char));
-						(*allslipmodels).Nfaults[nn] = 1;	//actual value found later.
-					}
+			nsm = 0;
+
+			if (!is_afterslip) MPI_Bcast((*allslipmodels).mmain, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			MPI_Bcast((*allslipmodels).no_slipmodels, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+//			MPI_Bcast(&no_slipmod, 1, MPI_INT, 0, MPI_COMM_WORLD);	//[Camilla] this value changes in each nn loop.
+			MPI_Bcast(&size_slipmodels, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+			if(procId != 0) {
+
+				if (is_afterslip) (*allslipmodels).tsnap= (double *) malloc(size_slipmodels * sizeof(duble));
+
+				// If root did reallocation
+				if(size_slipmodels > Nm0) { //[Camilla] I changed the condition to be in agreement with the one above.
+					(*allslipmodels).slipmodels = realloc((*allslipmodels).slipmodels, size_slipmodels * sizeof(char*));
 				}
 				for(int nn = 0; nn < Nm0; ++nn) {
-					MPI_Bcast((*allslipmodels).slipmodels[nn], 120, MPI_CHAR, 0, MPI_COMM_WORLD);
-				}
-			}
-			else {
-				nsm = 0;
+					no_slipmod=(*allslipmodels).no_slipmodels[nn]; //[Camilla] added this line
+					(*allslipmodels).disc[nn] = res;
 
-				MPI_Bcast((*allslipmodels).mmain, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-				MPI_Bcast((*allslipmodels).no_slipmodels, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//				MPI_Bcast(&no_slipmod, 1, MPI_INT, 0, MPI_COMM_WORLD);	//[Camilla] this value changes in each nn loop.
-				MPI_Bcast(&size_slipmodels, 1, MPI_INT, 0, MPI_COMM_WORLD);
-
-				if(procId != 0) {
-					// If root did reallocation
-					if(size_slipmodels > Nm0) { //[Camilla] I changed the condition to be in agreement with the one above.
-						(*allslipmodels).slipmodels = realloc((*allslipmodels).slipmodels, size_slipmodels * sizeof(char*));
-					}
-					for(int nn = 0; nn < Nm0; ++nn) {
-						no_slipmod=(*allslipmodels).no_slipmodels[nn]; //[Camilla] added this line
-						(*allslipmodels).disc[nn] = res;
-
-						for(int n = 1; n <= no_slipmod; ++n) {
-							(*allslipmodels).slipmodels[nsm] = malloc(120 * sizeof(char));
-							nsm++;
-						}
-					}
-				}
-
-				nsm = 0;
-
-				for(int nn = 0; nn < Nm0; ++nn) {
-					no_slipmod=(*allslipmodels).no_slipmodels[nn]; // [Camilla] added this line
 					for(int n = 1; n <= no_slipmod; ++n) {
-						MPI_Bcast((*allslipmodels).slipmodels[nsm], 120, MPI_CHAR, 0, MPI_COMM_WORLD);
+						if (is_afterslip){
+							(*allslipmodels).Nfaults[nsm] = 1;       //actual value found later.
+						}
+						(*allslipmodels).slipmodels[nsm] = malloc(120 * sizeof(char));
 						nsm++;
 					}
+				}
+			}
+
+			nsm = 0;
+
+			MPI_Bcast((*allslipmodels).tsnap, size_slipmodels, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+			for(int nn = 0; nn < Nm0; ++nn) {
+				no_slipmod=(*allslipmodels).no_slipmodels[nn]; // [Camilla] added this line
+				for(int n = 1; n <= no_slipmod; ++n) {
+					MPI_Bcast((*allslipmodels).slipmodels[nsm], 120, MPI_CHAR, 0, MPI_COMM_WORLD);
+					nsm++;
 				}
 			}
 		#endif
@@ -703,6 +684,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	print_logfile("%d %s slip models:\n", (*allslipmodels).NSM, is_afterslip? "after" : "");
 	for (int m=0; m<(*allslipmodels).NSM; m++){
 		if (is_afterslip){
+			//TODO loop over nsm here too.
 			if (m==0) print_logfile("\t time \t name\n");
 			print_logfile("\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).slipmodels[m]);
 		}
