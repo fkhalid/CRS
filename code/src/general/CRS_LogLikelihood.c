@@ -25,7 +25,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	//recfault= [0,1,2] means: don't vary rec. fault, vary (choose random one), vary and sample all catalog in order.
 	//tstart=starting time of entire period considered (may be <tt0). only used if fromstart==1;
 	//if multiple_input_gammas==1, expect allgammas0[1...Nsur][1...NgridT]; else, allgammas0is pointer to vector: [1...NgridT].
+	// this can be useful if non stationary values of gamma are used (...)
 	//same for multiple_input_gammas (if multiple_output_gammas, return gammas that would give average rate).
+	//all_gammas0[0] can be an array of starting values for gamma; they will be non steady-state values. Otherwise, ...
 
 	/*INPUT:-------------------------------------------------------------//
 	 *
@@ -453,6 +455,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	//tstart=starting time of entire period considered (may be <tt0). only used if fromstart==1;
 	//if multiple_input_gammas==1, expect allgammas0[1...Nsur][1...NgridT]; else, allgammas0is pointer to vector: [1...NgridT].
 	//same for multiple_input_gammas (if multiple_output_gammas, return gammas that would give average rate).
+	//gammas0 can be an array of starting values for gamma; they will be non steady-state values. Otherwise, ...
 
 	/*INPUT:-------------------------------------------------------------//
 	 *

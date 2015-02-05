@@ -104,6 +104,7 @@ struct catalog{
 	int *ngrid;			//no. of of cells associated with each earthquake
 	int **ngridpoints;	//indices of cells associated with each earthquake:	ngridpoints[eqk][cell_index].
 	double **weights;	//weight of cells associated with each earthquake:	weights[eqk][cell_weight].
+						//weights[0] indicates the fraction of the Gaussian ellipsoid outside the grid.
 	struct crust *pcrst;
 	//general catalog properties:
 	long Z;

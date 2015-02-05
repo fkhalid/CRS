@@ -186,6 +186,7 @@ int *combine_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2
 double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2, double dt, double dM, int ***ind, int *tot){
 	/*
 	 * Combines two earthquake catalogs based on time and magnitudes.
+	 * gives times and magnitude from both (also non common elements).
 	 *
 	 * Input:
 	 *  t1, m1: event times, magnitudes in catalog 1; range [0...N1-1]
@@ -194,14 +195,16 @@ double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int 
 	 *  dt, dM: tolerance
 	 *
 	 * Output:
-	 *  returns
-	//t1, mX have indices [0...NX-1].
-	//gives times and magnitude combined (also non common elements).
-	//value of -1 in ind[x][y] means that element y was not found in one [tx mx], otherwise index is given.
-	//results and ind have indices [0...tot-1].
-	 * */
-
-	//todo [attheend]: comment this function is still used.
+	 *  ind: contains original indices of the elements in the returned vector (res). range [1-2,0...tot-1].
+	 *  value of -1 in ind[x][y] means that element y was not found in one [tx mx], otherwise index is given.
+	 *  	 e.g. if (*ind)[1][n]=m, then res[1][m]=t1[n],res[2][m]=m1[n]
+	 *  	      if (*ind)[2][n]=m, then res[2][m]=t2[n],res[2][m]=m2[n]
+	 *  	      if (*ind)[X][n]=-1, then the element is not found in tX, mX.
+	 *
+	 *
+	 * Returns:
+	 *  res: time, magnitude of combined catalog. range [0...tot-1].
+	 */
 
 	int n1=0, n10=0, n12=0, n120; //indices of next and previous event, closest and closest to previous element.
 	int selected, count=0;

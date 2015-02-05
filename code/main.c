@@ -161,12 +161,10 @@ int main (int argc, char **argv) {
 									//LL=
 			LLmax, LL;	// maximum LL; dummy variable.
 
-	double *gamma_bgrate=NULL;	//spatially variable steady state gamma derived
-	double 	*gammas=NULL;	//fixme this is allocated but then just set to NULL...
-	double 	**gammas_new=NULL,
-			**gammas_maxLL=NULL, 	//If forecast==1, LLinversion==1 and  Tstart>=tendLL, the calculations from LL inversion will be used as starting values for forecast calculations.
-									//gammas_maxLL contains the values of gamma for all iterations, saved from LL inversion and used as starting values for forecast.
-			**gammasfore=NULL;
+	double 	**gammas_new=NULL,		// dummy variable to store gamma values at the end of LL inversion period; overwritten at each grid search loop.
+			**gammas_maxLL=NULL, 	// If forecast==1, LLinversion==1 and  Tstart>=tendLL, the calculations from LL inversion will be used as starting values for forecast calculations.
+									// gammas_maxLL contains the values of gamma for all iterations, saved from LL inversion and used as starting values for forecast.
+			**gammasfore=NULL;		// this will be set to gammas_maxLL if (forecast==1, LLinversion==1 and  Tstart>=tendLL), to NULL otherwise.
 
 	//to switch between slip models.
 	int slipmodel_combinations=1;	//number of slip model combinations (since each earthquake may have multiple alternative slip models).
@@ -532,7 +530,10 @@ int main (int argc, char **argv) {
 
 
 
-	//-----------------set up background rate:----------------------//
+	//******************************************************************************//
+	//  							Setup background rate 							//
+	//******************************************************************************//
+
 
 	print_logfile("\nUsing%s uniform background rate.\n", (use_bg_rate_cat || use_bg_rate_grid)? " non" : "");
 
@@ -564,15 +565,6 @@ int main (int argc, char **argv) {
 	}
 
 	print_logfile("Default values of background rate: \nMw>=%.2lf\t r=%.5lf\n", cat.Mc, r0);
-
-	//-----------------set up LL variables:----------------------//
-
-	if (use_bg_rate_cat || use_bg_rate_grid) {
-		gammas=dvector(1,NgridT);
-		gamma_bgrate=dvector(1,NgridT);
-		for (int n=1; n<=NgridT; n++) gamma_bgrate[n]=1.0/crst.rate0[n];
-	}
-
 
 	//-----------write out summary of grid search:------------//
 
@@ -704,12 +696,11 @@ int main (int argc, char **argv) {
 					err=0;
 					ta= (fixta)? ta0 : ta_min+tai*dta;
 					p+=1;
-					gammas=NULL;	//fixme check if this should be allowed to be set equal to gammas_bg_rate? (or is there a problem in doing it for the forecast?)
 
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, DCFS, eqkfm_aft,
 										  	eqkfm_co, flags, tevol_afterslip, crst, AllCoeff,
 										  	L, Nco, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat,
-										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, gammas,
+										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, NULL,
 										  	gammas_new, 0, 0, 0, !tai && !as);
 
 					if (!err){
@@ -782,8 +773,7 @@ int main (int argc, char **argv) {
 				if(mod==1) {
 					print_logfile("Using steady state starting rates: ");
 				}
-				if (use_bg_rate_cat || use_bg_rate_grid) for (int i=1; i<=NgridT; i++) gammasfore[0][i]=(ta/Asig)*gamma_bgrate[i];	//fixme seg fault (gammasfore not allocated!!)
-				else gammasfore=NULL;	// default values (will do full calculation, using uniform background rate)
+				gammasfore=NULL;	// default values (will do full calculation, using uniform background rate)
 				tstart_calc=fmin(Tstart, times2[0]);	//start when forecast is required (Tstart) or when stress sources start (times2[0]).
 				multi_gammas=0;
 			}
