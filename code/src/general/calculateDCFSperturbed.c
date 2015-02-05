@@ -177,6 +177,10 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 
 			for (int i=0; i<DCFS_Af_size; i++)	{
+				for (int nf=0; nf<DCFS_Af[0].NF; nf++){
+					eqkfmAf[nf].slip_str=eqkfmAf[nf].allslip_str[i];
+					eqkfmAf[nf].slip_dip=eqkfmAf[nf].allslip_dip[i];		
+				}
 				okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS_Af[i], eqkfmAf+i*DCFS_Af[0].NF, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
 				if (vary_recfault==0) {
 					resolve_DCFS(DCFS_Af[i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);

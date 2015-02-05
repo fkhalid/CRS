@@ -341,7 +341,7 @@ int main (int argc, char **argv) {
 	else eqkfm_aft=NULL;
 
 	//flags.splines= (flags.afterslip)? (all_aslipmodels.NSM>1): 0;	//FIXME need to do this for each afterslip
-	flags.splines= (flags.afterslip)? (all_aslipmodels.no_slipmodels[0]>1): 0;
+	flags.splines= (flags.afterslip)? (eqkfm_aft[0].nosnap>1): 0;
 
 //----------------------------------------------------------//
 //--------------Setup aftershocks, mainshocks --------------//

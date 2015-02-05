@@ -361,7 +361,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 			}
 			err+=find_gridpoints_d(crst.y, crst.x, crst.depth, (int *) 0, 0, crst.N_allP, (*eqkfm)[p0].y, (*eqkfm)[p0].x, (*eqkfm)[p0].depth,  (*eqkfm)[p0].mag, dDCFS,  &((*eqkfm)[p0].nsel), &((*eqkfm)[p0].selpoints));
 			WellsCoppersmith((*eqkfm)[p0].mag, (*eqkfm)[p0].rake1, &((*eqkfm)[p0].L), &((*eqkfm)[p0].W), &slip);
-			slip=(*eqkfm)[p0].tot_slip=pow(10,(1.5*((*eqkfm)[p0].mag+6)))*(1.0/(crst.mu*pow(10,12)*(*eqkfm)[p0].W*(*eqkfm)[p0].L));
+			slip=(*eqkfm)[p0].tot_slip[0]=pow(10,(1.5*((*eqkfm)[p0].mag+6)))*(1.0/(crst.mu*pow(10,12)*(*eqkfm)[p0].W*(*eqkfm)[p0].L));
 			//shift depth to make sure slip model is not outside domain:
 			if ((*eqkfm)[p0].depth<0.5*(*eqkfm)[p0].W*sin(DEG2RAD*(*eqkfm)[p0].dip1)) {
 				//(*eqkfm)[p0].depth=0.5*(*eqkfm)[p0].W*sin(DEG2RAD*(*eqkfm)[p0].dip1);

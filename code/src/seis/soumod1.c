@@ -230,7 +230,7 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 	}
 
 	scale_to_mag(eqkfm1, eqkfm2, REold, rakeold);		//final slip.
-	(*eqkfm2).tot_slip=tot_slip(*eqkfm2);
+	(*eqkfm2).tot_slip[0]=tot_slip(*eqkfm2);
 
 
   //--------------Print things out-------------------//
@@ -402,7 +402,7 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
 	}
 
 	scale_to_mag(eqkfm1, eqkfm2, slip, rakes);		//final slip.
-	(*eqkfm2).tot_slip=tot_slip(*eqkfm2);
+	(*eqkfm2).tot_slip[0]=tot_slip(*eqkfm2);
 
   //--------------Print things out-------------------//
 

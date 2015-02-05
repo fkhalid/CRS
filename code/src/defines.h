@@ -224,6 +224,7 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	int nsel;			//no. of cell points affected by this event.
 	int noise;			// flag (if set, tot_slip refers to model from which noise was generated):
 	int cuts_surf;	// boolean indicating if slip model should be assumed to cut through the surface.
+	int nosnap;	//no. of snapshots (afterslip)
 	double t;		//time of event.
 	double lat;		//0_lat in Wang input file;
 	double lon; 	//0_lat in Wang input file;
@@ -231,8 +232,8 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	double top;		//depth of the shallowest point of the entire slip model (also across multiple elements of eqkfm[]).
 	double x;		//eastwards coordinate in local system;
 	double y;		//northward coordinate in local system.
-	double mag;		//magnitude
-	double tot_slip;//tot. slip on the fault (sum of scalar value of slip for each patch).
+	double mag;		//magnitude (for afterslip, magnitude of last snapshot).
+	double *tot_slip;	//tot. slip on the fault (sum of scalar value of slip for each patch), at each time ts (not used for coseismic slip).
 	double L;		//fault length
 	double W;		//fault width
 	//focal mechanism parameters for both possible planes:
@@ -243,9 +244,12 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	double rake1;
 	double rake2;
 	//vector containing one element per patch:
-	//NB: by convention, slip_xxx[2] contains the slip for second foc mech (for single patch events only!).
+	//NB: by convention, slip_xxx[2] contains the slip for second foc mech (for single patch events only!)
+	double *ts;		//time steps (afterslip);
 	double *slip_str;	//slip along strike
 	double *slip_dip;	//slip along dip
+	double **allslip_str;	//for all time steps (afterslip)
+	double **allslip_dip;	//for all time steps (afterslip)
 //	double *strikes;	//strike of patch (not used)
 //	double *dips;		//dip of patch (not used)
     double *pos_s;		//along strike distance from point: lat,lon (0 for single patch events);
@@ -254,6 +258,7 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
     int *selpoints;		//indices of cell points affected by this event.
     int index_cat;		//index of event in catalog.
     struct set_of_models *parent_set_of_models;	//if multiple models are present, this is a pointer to corresponding set_of_models structure.
+						//this is also used for multiple afterslips (i.e. when more than one mainshock is followed by afterslip)
 };
 
 // [Fahad] A complete collection of scalar model parameters used in

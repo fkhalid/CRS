@@ -223,7 +223,7 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 
 	//TODO in theory, should find L and W for both mech. (rake differs).
 	WellsCoppersmith((*eqkfmP).mag, (*eqkfmP).rake1, &((*eqkfmP).L), &((*eqkfmP).W), &slip);
-	slip=(*eqkfmP).tot_slip=pow(10,(1.5*((*eqkfmP).mag+6)))*(1.0/(crst.mu*pow(10,12)*(*eqkfmP).W*(*eqkfmP).L));
+	slip=(*eqkfmP).tot_slip[0]=pow(10,(1.5*((*eqkfmP).mag+6)))*(1.0/(crst.mu*pow(10,12)*(*eqkfmP).W*(*eqkfmP).L));
 
 	// todo [coverage] shifting of fault depth is never tested
 	switch ((*eqkfmP).whichfm){
@@ -318,17 +318,17 @@ int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out,
 			(*eqfm1)[f].whichfm=1;
 			(*eqfm1)[f].is_slipmodel=1;
 			(*eqfm1)[f].noise=0;
-			(*eqfm1)[f].tot_slip=0.0;
+			(*eqfm1)[f].tot_slip[0]=0.0;
 			NP=(*eqfm1)[f].np_di*(*eqfm1)[f].np_st;
 			for (int p=1; p<=NP; p++) {
 				strike_slip+=(*eqfm1)[f].slip_str[p];
 				dip_slip+=(*eqfm1)[f].slip_dip[p];
 				slip=pow((*eqfm1)[f].slip_str[p]*(*eqfm1)[f].slip_str[p]+(*eqfm1)[f].slip_dip[p]*(*eqfm1)[f].slip_dip[p],0.5);
-				(*eqfm1)[f].tot_slip+=slip/NP;
+				(*eqfm1)[f].tot_slip[0]+=slip/NP;
 			}
 			(*eqfm1)[f].rake1=(*eqfm1)[f].rake2=(-RAD2DEG)*atan2(dip_slip, strike_slip);
-			if (Mw) M0+=mu*(*eqfm1)[f].tot_slip*(*eqfm1)[f].L*(*eqfm1)[f].W*1e12;
-			(*eqfm1)[f].mag=(2.0/3.0)*log10(mu*(*eqfm1)[f].tot_slip*(*eqfm1)[f].L*(*eqfm1)[f].W*1e12)-6.0;
+			if (Mw) M0+=mu*(*eqfm1)[f].tot_slip[0]*(*eqfm1)[f].L*(*eqfm1)[f].W*1e12;
+			(*eqfm1)[f].mag=(2.0/3.0)*log10(mu*(*eqfm1)[f].tot_slip[0]*(*eqfm1)[f].L*(*eqfm1)[f].W*1e12)-6.0;
 		}
 	}
 	if (Mw) {

@@ -76,6 +76,10 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 	for (int i=NR_END; i<=n2-n1+NR_END; i++){
 		v[i].slip_str= NULL;
 		v[i].slip_dip= NULL;
+                v[i].ts=NULL;
+		v[i].nosnap=0;
+		v[i].allslip_str= NULL;
+                v[i].allslip_dip= NULL;
 		v[i].pos_s= NULL;
 		v[i].pos_d= NULL;
 		v[i].selpoints= NULL;
@@ -87,7 +91,7 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 		v[i].lon=0;
 		v[i].depth=0;
 		v[i].mag=0;
-		v[i].tot_slip=0;
+		v[i].tot_slip=dvector(0,0);	//only need one element for earthquake sources, will reallocate for afterslip.
 		v[i].L=0;
 		v[i].W=0;
 		v[i].str1=0;
@@ -164,11 +168,15 @@ void free_eqkfmarray(struct eqkfm *v, long n1, long n2){
 void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 
 	for (int f=n1; f<=n2; f++){
-		if (v[f].distance) free(v[f].distance);
-		if (v[f].pos_s) free(v[f].pos_s);
-		if (v[f].pos_d) free(v[f].pos_d);
-		if (v[f].slip_str) free(v[f].slip_str);
-		if (v[f].slip_dip) free(v[f].slip_dip);
+		if (v[f].tot_slip) free_dvector(v[f].tot_slip,0,0);
+		if (v[f].distance) free_dvector(v[f].distance,1,0);
+		if (v[f].pos_s) free_dvector(v[f].pos_s,1,0);
+		if (v[f].pos_d) free_dvector(v[f].pos_d,1,0);
+		if (v[f].slip_str) free_dvector(v[f].slip_str,1,0);
+		if (v[f].slip_dip) free_dvector(v[f].slip_dip,1,0);
+		if (v[f].allslip_str) free_dmatrix(v[f].allslip_dip,0,0,1,0);
+		if (v[f].allslip_dip) free_dmatrix(v[f].allslip_str,0,0,1,0);
+
 	}
 }
 

@@ -11,7 +11,7 @@
 void empty_eqkfm(struct eqkfm *eqkfm0){
 	(*eqkfm0).np_st=(*eqkfm0).np_di=0;
 	(*eqkfm0).nsel=0;
-	(*eqkfm0).tot_slip=0;
+	(*eqkfm0).tot_slip=dvector(0,0);	//only need one element for earthquake slip models, will reallocate for afterslip.
 	(*eqkfm0).L=0;
 	(*eqkfm0).W=0;
 	(*eqkfm0).slip_str=NULL;
