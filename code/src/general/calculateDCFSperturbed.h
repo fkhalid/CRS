@@ -23,7 +23,7 @@
 
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,
 							struct eqkfm *eqkfm0, struct flags flag,
-							double *tevol, double *times, int Nmain, struct crust crst,
+							double *times, int Nmain, int NA, struct crust crst,
 							struct Coeff_LinkList *AllCoeff, int NTScont,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
 							double tdata0, double tdata1,

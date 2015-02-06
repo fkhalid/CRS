@@ -54,7 +54,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	print_logfile("\nBuilding mainshock slip models (eqkfm_addslipmodels).\n");
 
 	N2=all_slipmodels.NSM;
-	nf2=all_slipmodels.Nfaults;	//todo check this is calculated properly for multiple slip models.
+	nf2=all_slipmodels.Nfaults;
 	all_pts=ivector(1,crst.N_allP);
 	for (int i=1; i<=crst.N_allP; i++) all_pts[i]=i;
 

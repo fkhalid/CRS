@@ -13,7 +13,7 @@
 
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,
 							struct eqkfm *eqkfm0, struct flags flag,
-							double *tevol, double *times, int Nmain, struct crust crst,
+							double *times, int Nmain, int NA, struct crust crst,
 							struct Coeff_LinkList *AllCoeff, int NTScont,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
 							double tdata0, double tdata1, int refresh, int which_recfault) {
@@ -22,10 +22,10 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
  * 
  * eqkfmAf contains afterslip snapshots;
  * eqkfm0 contains seismic sources;
- * tevol: if continuous process is stationary (splines==0), tevol contains time dependence of the process;
  * times: times to which elements of tevol correspond: S(t=times[j])=S0*tevol[j], where S=slip, S0 is the slip contained in eqkfmAf.
  * NTScont is the total number of time steps for continuous process;
  * Nmain: length of eqkfm0;	//todo change variable name
+ * NA: length of eqkfmAf;
  * AllCoeff: okada coefficients for mainshocks (events in eqkfm0);
  * focmec contains sample of focal mechanisms, NFM is its length (1->NFM)
  * fmzoneslin: indices of focmec corresponding to limits of distinct foc. mec. areas;
@@ -43,7 +43,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
  * DCFS[k].cmp[j] contains the stress change due to kth event at gridpoint j (modeled as a step).
  *
  *
- * NB: not general, as it assumes mainshock is the first event. todo check/fix this.
  */
 
 	// [Fahad] Variables used for MPI.
@@ -67,7 +66,10 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	int rand;
 	int NgridT=crst.N_allP;
 	int NFsofar=0;
-	int last, first;
+	int last, first, i;
+	int a_ev=0;	//counter for DCFS_Af
+	int nfaults=0;	//counter for eqkfmAf
+	int NTSeff;
 	static int fm_offset=0;	//offset to be added to crst.str0 (dip0) if a fixed receiver fault is used (more details below).
 	static struct eqkfm *eqkfm2;
 	static struct eqkfm *eqkfm_noise;
@@ -82,7 +84,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	static int **nn;	//nearest neighbours points.
 	static double **interp_DCFS;
 	static double *mycmb=NULL;
-	static double *cmb_cumu;
+	static double **cmb_cumu;
 	int n_withslimodel, n_withoutslimodel;
 //	FILE *fout;
 	time_in+=1;
@@ -143,50 +145,66 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 		if (afterslip!=0){
 
-			//Find element of AllCoeff which should also be used for afterslip:
-			int i=0;
-			AllCoeffaft=AllCoeff;
-			while (i<Nmain && !(AllCoeffaft->hasafterslip)) {
-				i++;
-				AllCoeffaft=AllCoeffaft->next;
-			}
+			NTSeff=(splines)? NTScont : 1;
+			DCFS_Af_size= NTSeff*NA;
+			DCFS_Af= pscmp_array(0,DCFS_Af_size);
+
+			a_ev=0;	//counter for DCFS_Af
+			nfaults=0;	//counter for eqkfmAf
+
 			if (splines) {
-				cmb_cumu=dvector(1,NgridT);
-				for (int n=1; n<=NgridT; n++) cmb_cumu[n]=0.0;
-			}
-
-			DCFS_Af_size= (splines)? NTScont+1: 1;
-			DCFS_Af= pscmp_array(0,DCFS_Af_size-1);
-
-			DCFS_Af[0].NF=AllCoeffaft->NF;
-			DCFS_Af[0].cmb=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
-			DCFS_Af[0].S=d3tensor(1,NgridT,1,3,1,3);
-			DCFS_Af[0].nsel=eqkfmAf[0].nsel;
-			DCFS_Af[0].which_pts=eqkfmAf[0].selpoints;
-
-			for (int i=1; i<DCFS_Af_size; i++){
-				DCFS_Af[i].NF=DCFS_Af[0].NF;
-				DCFS_Af[i].cmb= dvector(1,NgridT);
-				DCFS_Af[i].S=d3tensor(1,NgridT,1,3,1,3);
-				DCFS_Af[i].nsel=eqkfmAf[0].nsel;
-				DCFS_Af[i].which_pts=eqkfmAf[0].selpoints;
-			}
-
-			Coeffs_st=AllCoeffaft->Coeffs_st;
-			Coeffs_dip=AllCoeffaft->Coeffs_dip;
-
-
-			for (int i=0; i<DCFS_Af_size; i++)	{
-				for (int nf=0; nf<DCFS_Af[0].NF; nf++){
-					eqkfmAf[nf].slip_str=eqkfmAf[nf].allslip_str[i];
-					eqkfmAf[nf].slip_dip=eqkfmAf[nf].allslip_dip[i];		
+				cmb_cumu=dmatrix(0,NA-1,1,NgridT);
+				for (int a=0; a<NA; a++){
+					for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]=0.0;
 				}
-				okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS_Af[i], eqkfmAf+i*DCFS_Af[0].NF, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
-				if (vary_recfault==0) {
-					resolve_DCFS(DCFS_Af[i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
-					if (splines && i<DCFS_Af_size-1){
-						for (int n=1; n<=NgridT; n++) cmb_cumu[n]+=DCFS_Af[i].cmb[n];
+			}
+
+			//Find element of AllCoeff which should also be used for afterslip:
+			AllCoeffaft=AllCoeff;
+			for (int i=0; i<Nmain; i++){
+				if (!AllCoeffaft->hasafterslip) {
+					AllCoeffaft=AllCoeffaft->next;
+					continue;
+				}
+
+				else{
+
+					DCFS_Af[a_ev].NF=AllCoeffaft->NF;
+					DCFS_Af[a_ev].cmb=dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
+					DCFS_Af[a_ev].S=d3tensor(1,NgridT,1,3,1,3);
+					DCFS_Af[a_ev].nsel=eqkfmAf[nfaults].nsel;
+					DCFS_Af[a_ev].which_pts=eqkfmAf[nfaults].selpoints;
+
+					for (int i=1; i<NTSeff; i++){
+						DCFS_Af[a_ev+i].NF=DCFS_Af[a_ev].NF;
+						DCFS_Af[a_ev+i].cmb= dvector(1,NgridT);
+						DCFS_Af[a_ev+i].S=d3tensor(1,NgridT,1,3,1,3);
+						DCFS_Af[a_ev+i].nsel=eqkfmAf[nfaults].nsel;
+						DCFS_Af[a_ev+i].which_pts=eqkfmAf[nfaults].selpoints;
 					}
+
+					Coeffs_st=AllCoeffaft->Coeffs_st;
+					Coeffs_dip=AllCoeffaft->Coeffs_dip;
+
+
+					for (int i=0; i<NTSeff; i++)	{
+						for (int nf=0; nf<DCFS_Af[a_ev].NF; nf++){
+							//copy slip values for each snapshot and fault into slip_X (this is needed because okadaCoeff2DCFS uses them):
+							eqkfmAf[nfaults+nf].slip_str=eqkfmAf[nfaults+nf].allslip_str[i];
+							eqkfmAf[nfaults+nf].slip_dip=eqkfmAf[nfaults+nf].allslip_dip[i];
+						}
+						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS_Af[a_ev+i], eqkfmAf+nfaults, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
+						if (vary_recfault==0) {
+							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
+							if (splines && i<NTSeff){
+								for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[i].cmb[n];
+							}
+						}
+					}
+					a_ev+=NTSeff;	//counter for DCFS_Af
+					nfaults+=DCFS_Af[a_ev].NF;	//counter for eqkfmAf
+					AllCoeffaft=AllCoeffaft->next;
+
 				}
 			}
 		}
@@ -319,30 +337,36 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 	}
 	else {
-		if (times[0]<tdata1 && times[NTScont-1]>=tdata0){
+		i=0;
+		for (int a=0; a<NA; a++){
 
 			if (splines==0){
-				if (vary_recfault==1) resolve_DCFS(DCFS_Af[0], crst, strike0, dip0, NULL, 1);
+
+				if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, NULL, 1);
 				for (int l=0; l<NTScont; l++) {
 					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
-					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=tevol[l]*DCFS_Af[0].cmb[n];
+
+					//loop over events with afterslip:
+					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=eqkfmAf[i].tevol[l]*DCFS_Af[a].cmb[n];	//FIXME not eqkfmAf[0].
 				}
+				i+=DCFS_Af[i].NF;
 			}
 
 			else{
 				if (vary_recfault==1){
 					// todo [coverage] this block is never tested
-					for (int n=1; n<=NgridT; n++) cmb_cumu[n]=0.0;
+					//fixme cmb_cumu[0];
+					for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]=0.0;
 					for (int l=0; l<NTScont; l++) {
-						resolve_DCFS(DCFS_Af[l], crst, strike0, dip0, NULL, 1);
-						if (l<NTScont-1) for (int n=1; n<=NgridT; n++) cmb_cumu[n]+=DCFS_Af[l].cmb[n];
+						resolve_DCFS(DCFS_Af[a*NTScont+l], crst, strike0, dip0, NULL, 1);
+						if (l<NTScont-1) for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]+=DCFS_Af[a*NTScont+l].cmb[n];
 					}
 				}
 
 				for (int l=0; l<NTScont; l++) {
 					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
 					for (int n=1; n<=NgridT; n++) {
-						DCFSrand[l][n]= (fabs(cmb_cumu[n])>DCFS_cap) ? (DCFS_cap/fabs(cmb_cumu[n]))*DCFS_Af[l].cmb[n] : DCFS_Af[l].cmb[n];
+						DCFSrand[l][n]= (fabs(cmb_cumu[a][n])>DCFS_cap) ? (DCFS_cap/fabs(cmb_cumu[a][n]))*DCFS_Af[a*NTScont+l].cmb[n] : DCFS_Af[a*NTScont+l].cmb[n];
 					}
 				}
 			}

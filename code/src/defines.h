@@ -246,6 +246,7 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	//vector containing one element per patch:
 	//NB: by convention, slip_xxx[2] contains the slip for second foc mech (for single patch events only!)
 	double *ts;		//time steps (afterslip);
+	double *tevol;	//time evolution of afterslip (if nosnap=1).
 	double *slip_str;	//slip along strike
 	double *slip_dip;	//slip along dip
 	double **allslip_str;	//for all time steps (afterslip)

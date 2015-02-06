@@ -76,10 +76,11 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 	for (int i=NR_END; i<=n2-n1+NR_END; i++){
 		v[i].slip_str= NULL;
 		v[i].slip_dip= NULL;
-                v[i].ts=NULL;
+		v[i].ts=NULL;
 		v[i].nosnap=0;
 		v[i].allslip_str= NULL;
-                v[i].allslip_dip= NULL;
+		v[i].allslip_dip= NULL;
+		v[i].tevol=NULL;
 		v[i].pos_s= NULL;
 		v[i].pos_d= NULL;
 		v[i].selpoints= NULL;
@@ -108,7 +109,7 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 }
 
 struct pscmp *pscmp_array(long n1, long n2){
-/* Allocate memory to array of eqkfm. */
+/* Allocate memory to array of pscmp. */
 	struct pscmp *v;
 	v= (struct pscmp *) malloc((size_t) ((n2-n1+1+NR_END)*sizeof(struct pscmp)));
 
@@ -133,7 +134,7 @@ struct pscmp *pscmp_array(long n1, long n2){
 }
 
 struct pscmp *pscmp_arrayinit(struct crust v0, long n1, long n2){
-/* Allocate memory to array of eqkfm, and initialize variables copied from v0. */
+/* Allocate memory to array of pscmp, and initialize variables copied from v0. */
 
 		struct pscmp *v;
 		v= (struct pscmp *) malloc((size_t) ((n2-n1+1+NR_END)*sizeof(struct pscmp)));
@@ -174,6 +175,8 @@ void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 		if (v[f].pos_d) free_dvector(v[f].pos_d,1,0);
 		if (v[f].slip_str) free_dvector(v[f].slip_str,1,0);
 		if (v[f].slip_dip) free_dvector(v[f].slip_dip,1,0);
+		if (v[f].ts) free_dvector(v[f].ts,0,0);
+		if (v[f].tevol) free_dvector(v[f].tevol,0,0);
 		if (v[f].allslip_str) free_dmatrix(v[f].allslip_dip,0,0,1,0);
 		if (v[f].allslip_dip) free_dmatrix(v[f].allslip_str,0,0,1,0);
 

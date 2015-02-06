@@ -580,7 +580,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 					sscanf(line,"%s %d", time_str, &no_slipmod);	//[Camilla] NB: no_slipmod changes at each nn iteration.
 				}	
 				else{
-                                        sscanf(line,"%s %lf %d", time_str, (*allslipmodels).mmain+nn, &no_slipmod);     //[Camilla] NB: no_slipmod changes at each nn iteration.
+                    sscanf(line,"%s %lf %d", time_str, (*allslipmodels).mmain+nn, &no_slipmod);     //[Camilla] NB: no_slipmod changes at each nn iteration.
 				}						
 				sscanf(time_str, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
 				times.tm_year-=1900;
@@ -588,12 +588,12 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				times.tm_isdst=0;
 				(*allslipmodels).tmain[nn]=difftime(mktime(&times),mktime(&reftime))*SEC2DAY;
 
-		               	//check if catalog is chronological:
-	        	               if (nn>=1 && (*allslipmodels).tmain[nn]<(*allslipmodels).tmain[nn-1]){
-        	                        print_logfile("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
-                		        print_screen("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
-                               		fileError=1;
-                       	 	}
+				//check if catalog is chronological:
+ 			    if (nn>=1 && (*allslipmodels).tmain[nn]<(*allslipmodels).tmain[nn-1]){
+					print_logfile("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
+					print_screen("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
+					fileError=1;
+				}
 
 
 				 (*allslipmodels).no_slipmodels[nn]=no_slipmod;

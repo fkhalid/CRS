@@ -137,26 +137,25 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	int Nm=list_slipmodels.no_slipmodels[0];	//FIXME for all afterslip models
+	int Nm;
 	double *tsnap=list_slipmodels.tsnap;
 	double *tmain=list_slipmodels.tmain;
 	char **slipmodels=list_slipmodels.slipmodels;
 //	int *no_slipmodels=list_slipmodels.no_slipmodels;
 	double *disc=list_slipmodels.disc;
 	int *Nfaults=list_slipmodels.Nfaults;
-    int NFtot=0;
     int err=0;
     int counter=0;
+    int nsm=0, totfaults=0;
     char *cmb_format=list_slipmodels.cmb_format;
 
+    //Find tot. no. of faults:
+    for (int N=0; N<list_slipmodels.NSM; N++){
 
-	
-	for (int N=0; N<list_slipmodels.NSM; N++){
+		Nm=list_slipmodels.no_slipmodels[N];	//number of snapshots for current afterslip event.
 
-	Nm=list_slipmodels.no_slipmodels[N];	//number of snapshots for current afterslip event.
-
-    	if (!(strcmp(cmb_format,"farfalle"))) err+=read_farfalle_eqkfm(slipmodels[counter], NULL, Nfaults+N);
-    	else {
+		if (!(strcmp(cmb_format,"farfalle"))) err+=read_farfalle_eqkfm(slipmodels[counter], NULL, Nfaults+N);
+		else {
 			if (!(strcmp(cmb_format,"pscmp"))) err+=read_pscmp_eqkfm(slipmodels[counter], NULL, Nfaults+N);
 			else {
 				if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(slipmodels[counter], NULL, Nfaults+N);
@@ -165,21 +164,18 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 					return 1;
 				}
 			}
-    	}
-    	NFtot=Nfaults[N]*Nm;	//tot. no. of faults (elements to be allocated).
+		}
+		counter+=Nm;
+		totfaults+=Nfaults[N];
+    }
 
-    *eqkfm0res=eqkfm_array(0, NFtot-1);		//TODO check this
-
-    //TODO: implement multiple slip models with non strike slip event.
-    //todo: make sure than cuts_surf is read independently for coseismic/afterslip when different structure is introduced.
-    NFtot=0;
-    for (int nn=0; nn<Nm; nn++){
-
-    	err+=setup_afterslip_element((*eqkfm0res)+NFtot, slipmodels+counter+nn, cmb_format, Nm, crst.mu, disc[N], tmain[N], tsnap+nn+counter, crst.N_allP, crst.list_allP, list_slipmodels.cut_surf[nn+counter], Nfaults+N, crst.lat0, crst.lon0);
-		NFtot+=Nfaults[N];
-	}
-
-    counter+=Nm;	
+    *eqkfm0res=eqkfm_array(0,totfaults-1);
+    counter=0;
+    totfaults=0;
+    for (int N=0; N<list_slipmodels.NSM; N++){
+    	err+=setup_afterslip_element(*eqkfm0res+totfaults, slipmodels+counter, cmb_format, Nm, crst.mu, disc[N], tmain[N], tsnap+counter, crst.N_allP, crst.list_allP, list_slipmodels.cut_surf[counter], Nfaults+N, crst.lat0, crst.lon0);
+		counter+=Nm;
+		totfaults+=Nfaults[N];
     }
 
     return(err);
@@ -198,57 +194,39 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	int err=0, NF, nftot=0, nfmax=0;
+	int err=0, NF, nfmax=0;
 	double 	toll=1e-10, discx, discy;
 	struct eqkfm *eqkfm0;
+	double ***allslip_str_temp,***allslip_dip_temp;
 
-        struct set_of_models setmodels;
+	struct set_of_models setmodels;
 
-        setmodels.NF_models=ivector(1,1/*no_slipmodels*/);
-        setmodels.Nmod=1/*no_slipmodels*/;
-        setmodels.current_model=1;
+	err=read_eqkfm(slipmodels[no_snap-1], cmb_format, &eqkfm0, &NF, NULL, mu);	//find NF and eqkfm0[x].np_x
+	if (err) return (err);
 
-	nftot=0;
+	//A single slip model is used for afterslip:
+	setmodels.NF_models=ivector(1,1);
+	setmodels.Nmod=1;
+	setmodels.current_model=1;
+	setmodels.NF_models[1]=NF;
+	setmodels.NFmax=NF;
+	setmodels.set_of_eqkfm=eqkfm_array(0, NF-1);
 
-	err=read_eqkfm(slipmodels[no_snap-1], cmb_format, &eqkfm0, &NF, NULL, mu);	//use last element since it has final magnitude.
-        if (err) return (err);
-
-        setmodels.NF_models[1]=NF;	//FIXME this line and the next 2.
-        setmodels.NFmax=NF/*nfmax*/;
-        setmodels.set_of_eqkfm=eqkfm_array(0,/*nftot*/ NF-1);
-
-
-        if (cuts_surf) {
-                top_of_slipmodel(eqkfm0, NF);
-                for (int i=0; i<NF; i++) eqkfm0[i].cuts_surf=1;
-        }
-
+	// allocate temporary storage (since eqkfm0 gets overwritten)
+	allslip_str_temp=malloc(NF*sizeof(double **));
+	allslip_dip_temp=malloc(NF*sizeof(double **));
 	for (int nf=0; nf<NF; nf++) {
-		eqkfm0[nf].tot_slip=dvector(0,no_snap-1);
-		eqkfm0[nf].ts=dvector(1,no_snap);	//shifted by one element because of indexing in copy_vector function.
-		copy_vector(tsnap-1, &(eqkfm0[nf].ts), no_snap);	//copy afterslip time steps into eqkfm0 structure.
-		eqkfm0[nf].ts+=1;	//since should start from 0th element (not 1st).
-                eqkfm0[nf].nosnap=no_snap;
-		eqkfm0res[nf].allslip_str=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);	//just using eqkfm0res as temporary storage (since eqkfm0 gets overwritten)
-		eqkfm0res[nf].allslip_dip=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
-		eqkfm0[nf].t=tmain;
-                eqkfm0[nf].nsel=nsel;
-                eqkfm0[nf].selpoints=sel_pts;
-                //todo check: this line ok? (copied from CRSjuly)
-                eqkfm0[nf].is_slipmodel=1;
-                latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
-	        setmodels.set_of_eqkfm[nftot+nf]=eqkfm0[nf];
+		allslip_str_temp[nf]=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+		allslip_dip_temp[nf]=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+	}
 
-        }
-        nftot+=NF;
-	
-
+	//read in values for slip:
 	for (int m=0; m<no_snap; m++){
 		err=read_eqkfm(slipmodels[m], cmb_format, &eqkfm0, &NF, NULL, mu);
 		for (int nf=0; nf<NF; nf++){
 			eqkfm0[nf].tot_slip[m]=eqkfm0[nf].tot_slip[0];
-			copy_vector(eqkfm0[nf].slip_str, &(eqkfm0res[nf].allslip_str[m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
-			copy_vector(eqkfm0[nf].slip_dip, &(eqkfm0res[nf].allslip_dip[m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			copy_vector(eqkfm0[nf].slip_str, &(allslip_str_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			copy_vector(eqkfm0[nf].slip_dip, &(allslip_dip_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			free_dvector(eqkfm0[nf].slip_str,1,0);
 			free_dvector(eqkfm0[nf].slip_dip,1,0);
 		}
@@ -256,23 +234,36 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		if (err) return (err);
 	}
 
-	
-	for (int nf=0; nf<NF; nf++){
-		eqkfm0[nf].allslip_str=eqkfm0res[nf].allslip_str;
-		eqkfm0[nf].allslip_dip=eqkfm0res[nf].allslip_dip;
+	if (cuts_surf) {
+			top_of_slipmodel(eqkfm0, NF);
+			for (int i=0; i<NF; i++) eqkfm0[i].cuts_surf=1;
 	}
 
+	for (int nf=0; nf<NF; nf++) {
+		eqkfm0[nf].tot_slip=dvector(0,no_snap-1);
+		eqkfm0[nf].ts=dvector(1,no_snap);	//shifted by one element because of indexing in copy_vector function.
+		copy_vector(tsnap-1, &(eqkfm0[nf].ts), no_snap);	//copy afterslip time steps into eqkfm0 structure.
+		eqkfm0[nf].ts+=1;	//since should start from 0th element (not 1st).
+		eqkfm0[nf].nosnap=no_snap;
+		eqkfm0[nf].t=tmain;
+		eqkfm0[nf].nsel=nsel;
+		eqkfm0[nf].selpoints=sel_pts;
+		//todo check: this line ok? (copied from CRSjuly)
+		eqkfm0[nf].is_slipmodel=1;
+		latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
+		eqkfm0[nf].allslip_str=allslip_str_temp[nf];
+		eqkfm0[nf].allslip_dip=allslip_dip_temp[nf];
+		setmodels.set_of_eqkfm[nf]=eqkfm0[nf];
+	}
 
 	//allocate memory and copy values from setmodels;
-         (*eqkfm0res).parent_set_of_models=(struct set_of_models *) malloc((size_t) (sizeof(struct set_of_models)));
-         memcpy((*eqkfm0res).parent_set_of_models, &setmodels, (size_t) sizeof(struct set_of_models));
- 
-         set_current_slip_model(eqkfm0res,1);
+	(*eqkfm0res).parent_set_of_models=(struct set_of_models *) malloc((size_t) (sizeof(struct set_of_models)));
+	memcpy((*eqkfm0res).parent_set_of_models, &setmodels, (size_t) sizeof(struct set_of_models));
+
+	set_current_slip_model(eqkfm0res,1);
 	
 	return err;
 }
-
-
 
 
 
@@ -537,101 +528,131 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
     return(0);
 }
 
-int setup_afterslip_evol(double Teq, double t0, double t1, double *Cs, double *ts,
-						 int Nfun, struct eqkfm **eqk_aft, double *t_afterslip,
-						 int Nas,int Nfaults, int afterslip, int *L, double **times2,
-						 double **tevol_afterslip, long *seed) {
+int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,
+						 int Nfun, struct eqkfm **eqk_aft,
+						 int NA, int *Nfaults, int *L, double **times2,
+						 long *seed) {
 
 //if splines are, eqk_aft is substituted with more densily discretized version (L steps instead of Nas).
 //Cs, ts, coefficients of temporal evolution functions (See Savage Parkfield paper). Nfun: no. of such funtions.
-//t_afterslip indices: [0,1,2,...Nas-1].
 // eq_aft has indices: [0...Nas*Nfaults-1].
 
 	int err=0;
-	int L0=0, NFL, i;
+	int L0=0, i;
 	int splines;
-	double TAU=200000, dtau=(afterslip==0)? 10000 : 7000;	//todo allow to set from outside.
+	double TAU=200000, dtau=7000;	//todo allow to set from outside.
 	double Kotau;
 	double M0,mu;
-	double smallstepstime=10;
+	double smallstepstime=12;
 	double now, prev, norm, curr;
-	double Tendaft=t_afterslip[Nas-1];	//Time to which cumulative afterslip snapshot refers.
-	struct eqkfm *eq_aft, *eqkfm_aftsplines;
+	double Tendaft;	//Time to which cumulative afterslip snapshot refers.
+	struct eqkfm *eq_aft;
+
+	double Teq;
+	double *t_afterslip;
+	int Nas=(*eqk_aft)[0].nosnap;
+	int Ltot=0, offset=1, nfaults;
 
 	eq_aft= *eqk_aft;
 
-	splines=(Nas>1)? 1 : 0;
+	splines=(Nas>1)? 1 : 0;	//fixme for each nev
 	//todo find L first, then setup vectors.
 	*times2=dvector(0,*L-1);
-	*tevol_afterslip=dvector(0,*L-1);
 
-	err+=findtimestepsomori(Teq, t0, fmin(smallstepstime,t1), 0, 183, TAU, 0.3*dtau, 0.6, 0.001, (*times2)+1, &Kotau, L);
-	if (smallstepstime<t1) err+=findtimestepsomori(Teq, smallstepstime, t1, 0, 183, TAU, dtau, 0.6, 0.001, (*times2)+*L+1, &Kotau, &L0);
-	*L+=L0+1;
-	(*times2)[0]=Teq-1e-4;
+	int nev=0;
+	double tend;
+
+	offset= (t0<(*eqk_aft)[0].t) ? 1 : 0;	//need an extra time step at the start if t0<Teq[0].
+	if (offset) (*times2)[0]=t0;
+
+	//fixme the warning in findtimestepsomori will not work (since L is overwritten, and L0 not even initialized).
+	nev=nfaults=0;
+	while(nev<NA && (*eqk_aft)[nfaults].t<t1){
+		Teq=(*eqk_aft)[nfaults].t;
+		tend= (nev<NA-1) ? fmin((*eqk_aft)[nfaults+Nfaults[nev]].t,t1) : t1;
+
+		err+=findtimestepsomori(Teq, Teq, fmin(smallstepstime+Teq,tend), 0, 183, TAU, 0.3*dtau, 0.6, 0.001, (*times2)+offset, &Kotau, L);
+		if (smallstepstime+Teq<tend) err+=findtimestepsomori(Teq, smallstepstime+Teq, tend, 0, 183, TAU, dtau, 0.6, 0.001, (*times2)+*L+offset, &Kotau, &L0);
+		Ltot=offset=*L+L0+offset;
+		nev++;
+		nfaults+=Nfaults[nev];
+	}
+
+	*L=Ltot;
 
 	// Temporal evolution of afterslip.//
-	M0=pow(10,1.5*(eq_aft[0].mag+6.0));	//magnitude refers to last snapshot (Nas-1).
-	mu=M0/(eq_aft[0].tot_slip[Nas-1]*eq_aft[0].L*eq_aft[0].W*1e12);
+	if (splines==0){
+		nfaults=0;
+		for (nev=0; nev<NA; nev++){
+			Tendaft=(*eqk_aft)[nfaults].ts[(*eqk_aft)[nfaults].nosnap-1];
+			Teq=(*eqk_aft)[nfaults].t;
 
-	if (afterslip!=0){
-		if (splines==0){
+			//allocate tevol vectors:
+			for (int f=0; f<Nfaults[nev]; f++) {
+				(*eqk_aft)[nfaults+f].tevol=dvector(0,*L-1);
+			}
+
 			norm=0.0;
 			for (int i=0; i<Nfun; i++) norm+=Cs[i]*log(1+(Tendaft-Teq)/ts[i]);
 			now=0.0;
 			curr=0.0;
 
 			for (int t=1; t<=*L; t++){
-				prev=curr;
-				now= (*times2)[t]-Teq;
-				curr=0.0;
-				for (int i=0; i<Nfun; i++) curr+=Cs[i]*log(1+now/ts[i]);
-				(*tevol_afterslip)[t-1]= (curr-prev)/norm;
+				if ((*times2)[t]<Teq){
+					for (int f=0; f<Nfaults[nev]; f++) {
+						(*eqk_aft)[nfaults+f].tevol[t-1]= 0.0;
+					}
+				}
+				else{
+					prev=curr;
+					now= (*times2)[t]-Teq;
+					curr=0.0;
+					for (int i=0; i<Nfun; i++) curr+=Cs[i]*log(1+now/ts[i]);
+					for (int f=0; f<Nfaults[nev]; f++) {
+						(*eqk_aft)[nfaults+f].tevol[t-1]= (curr-prev)/norm;
+					}
+				}
 			}
+			nfaults+=Nfaults[nev];
 		}
-		else{
-			//todo double check indexing of eqkfm_aftsplines (NB t_afterslip and afterslip_models has been changed, so indices are [0...Nas-1]).
-			//double *t_afterslip_dum=dvector(0,L);
+	}
+	else{
+		nfaults=0;
+		for (nev=0; nev<NA; nev++){
+			Teq=(*eqk_aft)[nfaults].t;
+			t_afterslip=(*eqk_aft)[nfaults].ts;
+			Nas=(*eqk_aft)[nfaults].nosnap;
 			for (int i=0; i<Nas; i++) t_afterslip[i]-=Teq;	//since functions below start from t=0;
 			for (int i=0; i<=*L; i++) (*times2)[i]-=Teq;	//since functions below start from t=0;
 
-			NFL=Nfaults*(*L);
-			eqkfm_aftsplines=eqkfm_array(0,Nfaults*(*L+1));
-			splines_eqkfm(eq_aft-1, Nas, Nfaults, t_afterslip-1, (*times2)-1, *L, eqkfm_aftsplines-1, seed);
+			splines_eqkfm(&eq_aft, Nas, Nfaults[nev], t_afterslip-1, (*times2)-1, *L, seed);
 
-			for (int f=0; f<Nfaults; f++) {
-///				for (int l=*L-1; l>=0; l--) eqkfm_aftsplines[Nfaults*l+f].tot_slip/=0.0;
-				copy_eqkfm_all(eqkfm_aftsplines[Nfaults*(*L-1)+f], eqkfm_aftsplines+NFL+f);
-				eqkfm_aftsplines[NFL+f].slip_str=dvector(1,eq_aft[f].np_di*eq_aft[f].np_st);
-				eqkfm_aftsplines[NFL+f].slip_dip=dvector(1,eq_aft[f].np_di*eq_aft[f].np_st);
+			for (int f=0; f<Nfaults[nev]; f++) {
+
 				for (int p=1; p<=eq_aft[f].np_di*eq_aft[f].np_st; p++) {
-					//copy cumulative value at the end of array (will be needed later to calculate random high freq. slip).
-					eqkfm_aftsplines[NFL+f].slip_str[p]=eqkfm_aftsplines[Nfaults*(*L-1)+f].slip_str[p];
-					eqkfm_aftsplines[NFL+f].slip_dip[p]=eqkfm_aftsplines[Nfaults*(*L-1)+f].slip_dip[p];
-//					eqkfm_aftsplines[NFL+f].tot_slip+=sqrt(pow(eqkfm_aftsplines[NFL+f].slip_str[p],2)+pow(eqkfm_aftsplines[NFL+f].slip_dip[p],2));
-					for (int l=*L; l>1; l--) {
-						i=Nfaults*(l-1)+f;
-						eqkfm_aftsplines[i].slip_str[p]-=eqkfm_aftsplines[i-Nfaults].slip_str[p];
-						eqkfm_aftsplines[i].slip_dip[p]-=eqkfm_aftsplines[i-Nfaults].slip_dip[p];
-//						eqkfm_aftsplines[i].tot_slip+=sqrt(pow(eqkfm_aftsplines[i].slip_str[p],2)+pow(eqkfm_aftsplines[i].slip_dip[p],2));
+					for (int l=*L-1; l>=0; l--) {
+						if ((*times2)[l]<Teq){
+							//no afterslip before its start time:
+							eq_aft[f].allslip_str[l][p]=0.0;
+							eq_aft[f].allslip_dip[l][p]=0.0;
+						}
+						else{
+							if (l>0 && (*times2)[l-1]>Teq){	//this is to avoid subtracting from element with t<Teq.
+								eq_aft[f].allslip_str[l][p]-=eq_aft[f].allslip_str[l-1][p];
+								eq_aft[f].allslip_dip[l][p]-=eq_aft[f].allslip_dip[l-1][p];
+							}
+						}
 					}
 				 }
-				for (int l=0; l<NFL+Nfaults; l++){
-//					eqkfm_aftsplines[l].tot_slip*=(1.0/(eqkfm_aftsplines[l].np_di*eqkfm_aftsplines[l].np_st));
-//					M0=mu*eqkfm_aftsplines[l].tot_slip*eqkfm_aftsplines[l].L*eqkfm_aftsplines[l].W*1e12;
-					eqkfm_aftsplines[l].mag=(2.0/3.0)*log10(M0)-6.0;
-				}
-
+				eq_aft[f].tevol=NULL;
 			}
-			*eqk_aft=eqkfm_aftsplines;
 			for (int i=0; i<Nas; i++) t_afterslip[i]+=Teq;	//revert shift from before;
 			for (int i=0; i<=*L; i++) (*times2)[i]+=Teq;	//revert shift from before;
+			nfaults+=Nfaults[nev];
+			eq_aft+=Nfaults[nev];	//gets shifted every time so 0th element is the one of the new nev.
 		}
-	}
 
-// todo [coverage] this block is never tested
-	else {
-		for (int t=1; t<=*L; t++) (*tevol_afterslip)[t-1]=0;
+		*eqk_aft=eq_aft-nfaults;	//shift it back.
 	}
 
 	return(err!=0);

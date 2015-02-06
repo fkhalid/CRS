@@ -101,7 +101,7 @@ int main (int argc, char **argv) {
 	double dt, dM, xytoll, ztoll, border;	//tolerance used to match earthquakes from catalog and from focal mechanism catalog.
 
 	int Ntemp,		//size of eqkfm_temp
-		Nco,		//number of seismic sources. size of Nfaults_co.
+		Nco, Naf,		//number of seismic sources. size of Nfaults_co; no. of afterslips.
 		*Nfaults_co=0;	//number of faults for each seismic source. size of eqkfm_co is the sum of its elements.
 
 	double res, 	//slip model resolution
@@ -337,8 +337,12 @@ int main (int argc, char **argv) {
 		err=read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1);
 		err+=setup_afterslip_eqkfm(all_aslipmodels, crst, &eqkfm_aft);
 		if (err!=0) error_quit("Error in setting up afterslip slip model. Exiting.\n");
+		Naf=all_aslipmodels.NSM;
 	}
-	else eqkfm_aft=NULL;
+	else {
+		eqkfm_aft=NULL;
+		Naf=0;
+	}
 
 	//flags.splines= (flags.afterslip)? (all_aslipmodels.NSM>1): 0;	//FIXME need to do this for each afterslip
 	flags.splines= (flags.afterslip)? (eqkfm_aft[0].nosnap>1): 0;
@@ -471,7 +475,7 @@ int main (int argc, char **argv) {
 	//todo should allow this to be set from outside
 	double *Cs, *ts;
 	int Nfun, L=(flags.afterslip)? 10000 : 2;	//todo check: why need intermediate step (L=2, not L=1)?
-	double *times2, *tevol_afterslip=NULL;
+	double *times2;
 
 	Nfun=1;
 	Cs=dvector(0,Nfun-1);
@@ -479,17 +483,13 @@ int main (int argc, char **argv) {
 	Cs[0]=436.63;
 	ts[0]=14.2653;
 
-	//fixme: verify that this works for general case: afterslip may not start at t0, and not be related to first event in the sequence.
-	//what if tstartLL> time of first afterslip?
-
 	//todo allow for general stressing history here.
-
 	//todo check: times2[0] will always be before the first source of stress to be included. Correct? (used for calculation start time later, like t_firstmain used to be.)
 
 	if (flags.afterslip){
 						 //todo: all_slipmodels.tmain[0], all_slipmodels.tmain[0]+1e-4 should change.
-		err=setup_afterslip_evol(all_slipmodels.tmain[0], all_slipmodels.tmain[0]+1e-4, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft, all_aslipmodels.tsnap,
-				all_aslipmodels.no_slipmodels[0], all_aslipmodels.Nfaults[0], flags.afterslip, &L, &times2, &tevol_afterslip, &seed);	//FIXME rewrite this function also check where Nfaults is set for all_aslipmodels.
+		err=setup_afterslip_evol(all_slipmodels.tmain[0]+1e-4, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
+				Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);	//FIXME change input arguments
 		if(err) return 1;
 	}
 
@@ -526,7 +526,7 @@ int main (int argc, char **argv) {
 
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
 	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm_co, flags,
-			tevol_afterslip, crst, AllCoeff, L, Nco, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat, times2,
+			crst, AllCoeff, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat, times2,
 			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
 
 
@@ -673,7 +673,6 @@ int main (int argc, char **argv) {
 		#endif
 
 		//set default values:
-		//fixme don't need to use arrays for these anymore (can overwrite values, right?)
 		maxta=ta0;
 		maxAsig=Asig0;
 		maxr=r0;
@@ -699,8 +698,8 @@ int main (int argc, char **argv) {
 					p+=1;
 
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, DCFS, eqkfm_aft,
-										  	eqkfm_co, flags, tevol_afterslip, crst, AllCoeff,
-										  	L, Nco, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat,
+										  	eqkfm_co, flags, crst, AllCoeff,
+										  	L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat,
 										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, NULL,
 										  	gammas_new, 0, 0, 0, !tai && !as);
 
@@ -794,7 +793,7 @@ int main (int argc, char **argv) {
 			sprintf(printall_foret,"%s_forecast_all", outnamemod);
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
-			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, tevol_afterslip, crst, AllCoeff, L, Nco, NgridT, focmec, fmzonelimits, Nfocmec,
+			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, crst, AllCoeff, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec,
 					&seed, cat, times2,tstart_calc, tts, Ntts, maxAsig, maxta, maxr, gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 

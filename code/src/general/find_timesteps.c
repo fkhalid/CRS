@@ -11,7 +11,7 @@
 	#include "mpi.h"
 #endif
 
-int findtimestepsomori(double te, double t0,double t1, double tstart, double tend,
+int findtimestepsomori(double te, double t0, double t1, double tstart, double tend,
 					   double tau0, double Dtau, double p, double c, double *t,
 					   double *K_over_tau0, int *L) {
 //te is earthquake time. tstart, tend are the start and end time of the measured value tau0. t0,t1 are the start and end time of the period for which time steps are calculated.

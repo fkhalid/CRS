@@ -11,11 +11,16 @@
 void empty_eqkfm(struct eqkfm *eqkfm0){
 	(*eqkfm0).np_st=(*eqkfm0).np_di=0;
 	(*eqkfm0).nsel=0;
+	(*eqkfm0).nosnap=0;
 	(*eqkfm0).tot_slip=dvector(0,0);	//only need one element for earthquake slip models, will reallocate for afterslip.
 	(*eqkfm0).L=0;
 	(*eqkfm0).W=0;
+	(*eqkfm0).ts=NULL;
+	(*eqkfm0).tevol=NULL;
 	(*eqkfm0).slip_str=NULL;
 	(*eqkfm0).slip_dip=NULL;
+	(*eqkfm0).allslip_str=NULL;
+	(*eqkfm0).allslip_dip=NULL;
 	(*eqkfm0).pos_s=NULL;
 	(*eqkfm0).pos_d=NULL;
 	(*eqkfm0).distance=NULL;
@@ -71,10 +76,13 @@ void copy_eqkfm_attributes(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 	(*eqkfm2).noise=eqkfm1.noise;
 	(*eqkfm2).cuts_surf=eqkfm1.cuts_surf;
 	(*eqkfm2).top=eqkfm1.top;
+	(*eqkfm2).nosnap=eqkfm1.nosnap;
 
 
-	//earthquake properties:
+	//earthquake/afterslip properties:
 	(*eqkfm2).t=eqkfm1.t;
+	(*eqkfm2).ts=eqkfm1.ts;
+	(*eqkfm2).tevol=eqkfm1.tevol;
 	(*eqkfm2).mag=eqkfm1.mag;
 	(*eqkfm2).lat=eqkfm1.lat;
 	(*eqkfm2).lon=eqkfm1.lon;
@@ -113,6 +121,8 @@ void copy_eqkfm_slipmodel(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 	(*eqkfm2).pos_d=eqkfm1.pos_d;
 	(*eqkfm2).slip_str=eqkfm1.slip_str;
 	(*eqkfm2).slip_dip=eqkfm1.slip_dip;
+	(*eqkfm2).allslip_str=eqkfm1.allslip_str;
+	(*eqkfm2).allslip_dip=eqkfm1.allslip_dip;
 
 	return;
 
