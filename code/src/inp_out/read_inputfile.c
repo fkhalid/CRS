@@ -590,7 +590,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 				//check if catalog is chronological:
  			    if (nn>=1 && (*allslipmodels).tmain[nn]<(*allslipmodels).tmain[nn-1]){
-					print_logfile("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
+					print_logfile("Error: slip model list in file %s no chronological. Exiting.\n", input_fname);
 					print_screen("Error: slip model list in file %s not chronological. Exiting.\n", input_fname);
 					fileError=1;
 				}

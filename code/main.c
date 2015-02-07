@@ -427,10 +427,10 @@ int main (int argc, char **argv) {
 	#endif
 
 	if (flags.afterslip){
-		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, all_aslipmodels.tmain[0], 1);	//FIXME change 2nd last argument.
+		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, all_aslipmodels.tmain, all_aslipmodels.NSM);	//FIXME change 2nd last argument.
 	}
 	else{
-		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, 0.0, 0);
+		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, NULL, 0);
 	}
 	if (err){
 		error_quit("Error in setting up okada coefficients structure or associating afterslip with a mainshock.\n");

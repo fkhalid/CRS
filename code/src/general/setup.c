@@ -363,7 +363,7 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 }
 
 int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out,
-		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults, double aftersliptime, int afterslip) {
+		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults, double *aftersliptime, int no_afterslip) {
 	/*
 	 *  aftersliptime: event time of the mainshock containing afterslip.
 	 *  int afterslip: flag indicating if afterslip should be used.
@@ -380,6 +380,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
     struct Coeff_LinkList *AllCoeff, *temp;
     int NFsofar=0, Nsel, Nsteps, NFtot, eq;
     int mainshock_withafterslip;
+    int afterslip= (aftersliptime==NULL) ? 0 : 1;
     double M0;
 
     //----------set up Coefficients----------------//
@@ -441,12 +442,13 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 		print_logfile("DCFS structure set up.\n");
     }
 
-    //--------------associates afterslip with one mainshock-------------------//
+    //--------------associates afterslip with mainshocks-------------------//
 	// uses a ~1 sec tolerance
 
     if (afterslip){
     	int i=0;
-		mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, aftersliptime, 0.000011575);
+	   for (int a=0; a<no_afterslip; a++){
+		mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, aftersliptime[a], 0.000011575);
 		if (mainshock_withafterslip==-1){
 			print_logfile("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
 			print_screen("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
@@ -459,6 +461,8 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			temp=temp->next;
 		}
 		temp->hasafterslip=1;
+		temp=temp->next;
+	}
     }
 
     return(0);
@@ -570,10 +574,15 @@ int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,
 	while(nev<NA && (*eqk_aft)[nfaults].t<t1){
 		Teq=(*eqk_aft)[nfaults].t;
 		tend= (nev<NA-1) ? fmin((*eqk_aft)[nfaults+Nfaults[nev]].t,t1) : t1;
-
+		*L=L0=10000;	//fixme see comment above.
 		err+=findtimestepsomori(Teq, Teq, fmin(smallstepstime+Teq,tend), 0, 183, TAU, 0.3*dtau, 0.6, 0.001, (*times2)+offset, &Kotau, L);
-		if (smallstepstime+Teq<tend) err+=findtimestepsomori(Teq, smallstepstime+Teq, tend, 0, 183, TAU, dtau, 0.6, 0.001, (*times2)+*L+offset, &Kotau, &L0);
-		Ltot=offset=*L+L0+offset;
+		if (smallstepstime+Teq<tend) {
+			err+=findtimestepsomori(Teq, smallstepstime+Teq, tend, 0, 183, TAU, dtau, 0.6, 0.001, (*times2)+*L+offset, &Kotau, &L0);
+			Ltot=offset=*L+L0+offset;
+		}
+		else{
+			Ltot=offset=*L+offset;
+		}
 		nev++;
 		nfaults+=Nfaults[nev];
 	}
