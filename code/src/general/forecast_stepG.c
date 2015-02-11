@@ -66,7 +66,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 		num_eqk=ivector(1,N);
 		cat_weights=matrix(1,N,0,Neq-1);
 		DCFS_whichpt=imatrix(1,N,0,Neq-1);
-		dt=dvector(0,NTS-1);
+		dt=dvector(0,NTS);
 		TS_eqk=ivector(0,Neq-1);
 
 		for (int n=1; n<=N; n++) num_eqk[n]=0;
@@ -93,7 +93,16 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			}
 		}
 
-		for (int g=0; g<NTS; g++) dt[g]=times[g+1]-times[g];	//should be <=NTS?
+//		FILE *fout=fopen("tevol2.dat","w");
+//		for (int g=0; g<NTS; g++){
+//			fprintf(fout,"%.5e\t%.5e\n",times[g],cmpdata[g][1]);
+//		}
+//		fclose(fout);
+
+
+
+
+		for (int g=0; g<=NTS; g++) dt[g]=times[g+1]-times[g];	//should be <=NTS?
 		for (int i=0; i<Neq; i++){
 			int k=0;
 			while(k<NTS && times[k]<events[1][i]) k++;
@@ -101,6 +110,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			TS_eqk[i]=k;
 			if(procId == 0) {
 				if (k<0 && events[1][i]>=tt0) {
+
 					print_screen("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
 					print_logfile("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
 				}
@@ -140,12 +150,13 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 
 //TS0= First time step after tt0.
   TS0=0;
-  while(TS0<NTS-1 && times[TS0]<=tt0) TS0++;
+  while(TS0<NTS && times[TS0]<=tt0) TS0++;
   if(procId == 0) {
 	  if(times[TS0]<=tt0 & !warning_printed) {
 		  warning_printed=1;
 		  print_screen("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
 		  print_logfile("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
+		  return 1;
 	  }
   }
 
@@ -182,9 +193,6 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
     counter_eqk=0;
     t_now=tt0;
     reach_end=0;
-
-    //err=0;
-    dtau_dt=Asig/ta;
 
     //new method (uses indices of earthquakes for specific gridpoint):
 

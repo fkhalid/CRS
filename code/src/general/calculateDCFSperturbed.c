@@ -201,8 +201,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							}
 						}
 					}
-					a_ev+=NTSeff;	//counter for DCFS_Af
 					nfaults+=DCFS_Af[a_ev].NF;	//counter for eqkfmAf
+					a_ev+=NTSeff;	//counter for DCFS_Af
 					AllCoeffaft=AllCoeffaft->next;
 
 				}
@@ -349,7 +349,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					//loop over events with afterslip:
 					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=eqkfmAf[i].tevol[l]*DCFS_Af[a].cmb[n];	//FIXME not eqkfmAf[0].
 				}
-				i+=DCFS_Af[i].NF;
+				i+=DCFS_Af[a].NF;
 			}
 
 			else{

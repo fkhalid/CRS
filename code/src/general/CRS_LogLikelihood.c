@@ -255,7 +255,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		tnow=tts[0];
 
 		for(int t=1; t<=Ntts; t++) {
-			//Calculate seismicity evolutionZzz:
+			//Calculate seismicity evolution:
 			tt0=tts[t-1];
 			tt1=tts[t];
 

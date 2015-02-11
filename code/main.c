@@ -488,7 +488,7 @@ int main (int argc, char **argv) {
 
 	if (flags.afterslip){
 						 //todo: all_slipmodels.tmain[0], all_slipmodels.tmain[0]+1e-4 should change.
-		err=setup_afterslip_evol(all_slipmodels.tmain[0]+1e-4, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
+		err=setup_afterslip_evol(all_slipmodels.tmain[0], fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
 				Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);	//FIXME change input arguments
 		if(err) return 1;
 	}

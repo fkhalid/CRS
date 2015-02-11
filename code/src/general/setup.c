@@ -566,8 +566,10 @@ int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,
 	int nev=0;
 	double tend;
 
-	offset= (t0<(*eqk_aft)[0].t) ? 1 : 0;	//need an extra time step at the start if t0<Teq[0].
-	if (offset) (*times2)[0]=t0;
+	//offset= (t0<(*eqk_aft)[0].t) ? 1 : 0;	//need an extra time step at the start if t0<Teq[0].
+	//if (offset) (*times2)[0]=t0-1e-4;
+	offset=1;
+	(*times2)[0]=fmin(t0,(*eqk_aft)[0].t)-1e-4;
 
 	//fixme the warning in findtimestepsomori will not work (since L is overwritten, and L0 not even initialized).
 	nev=nfaults=0;
@@ -583,8 +585,8 @@ int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,
 		else{
 			Ltot=offset=*L+offset;
 		}
-		nev++;
 		nfaults+=Nfaults[nev];
+		nev++;
 	}
 
 	*L=Ltot;
@@ -624,6 +626,22 @@ int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,
 			}
 			nfaults+=Nfaults[nev];
 		}
+
+		//todo delete:
+		FILE *fout=fopen("tevol.dat","w");
+		for (int t=1; t<=*L; t++){
+			fprintf(fout,"%.5e\t",(*times2)[t]-Teq);
+			nfaults=0;
+			for (nev=0; nev<NA; nev++){
+				for (int f=0; f<Nfaults[nev]; f++) {
+					fprintf(fout,"%.5e\t",(*eqk_aft)[nfaults+f].tevol[t-1]);
+				}
+				nfaults+=Nfaults[nev];
+			}
+			fprintf(fout,"\n");
+		}
+		fclose(fout);
+
 	}
 	else{
 		nfaults=0;
