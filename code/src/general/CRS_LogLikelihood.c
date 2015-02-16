@@ -563,9 +563,10 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			which_recfault= flags.sample_all? nsur : 0;
 
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
-								   times, Nm, crst, AllCoeff, NTScont, focmec,
+								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
 								   fmzonelim, NFM, seed, tstart, tt1,
 								   refresh && nsur==1, which_recfault);
+
 			refresh = 0;
 		}
 	#endif

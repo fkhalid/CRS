@@ -623,8 +623,9 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			fclose(fin);
 		}
 
-                #ifdef _CRS_MPI
-                        MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+		#ifdef _CRS_MPI
+				MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		#endif  
 
 		if (fileError){
@@ -644,7 +645,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 			if(procId != 0) {
 
-				if (is_afterslip) (*allslipmodels).tsnap= (double *) malloc(size_slipmodels * sizeof(duble));
+				if (is_afterslip) (*allslipmodels).tsnap= (double *) malloc(size_slipmodels * sizeof(double));
 
 				// If root did reallocation
 				if(size_slipmodels > Nm0) { //[Camilla] I changed the condition to be in agreement with the one above.
@@ -666,7 +667,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 			nsm = 0;
 
-			MPI_Bcast((*allslipmodels).tsnap, size_slipmodels, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			if (is_afterslip) MPI_Bcast((*allslipmodels).tsnap, size_slipmodels, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 			for(int nn = 0; nn < Nm0; ++nn) {
 				no_slipmod=(*allslipmodels).no_slipmodels[nn]; // [Camilla] added this line

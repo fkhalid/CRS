@@ -330,6 +330,7 @@ int main (int argc, char **argv) {
 	}
 	NgridT=crst.N_allP;
 
+
 //---------------------------------------------//
 //--------------Setup afterslip----------------//
 //---------------------------------------------//
@@ -452,7 +453,6 @@ int main (int argc, char **argv) {
 	//					Setup other things							//
 	//--------------------------------------------------------------//
 
-	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=1;	//since there are not sources of uncertainties.
 	if (flags.err_recfault && no_fm_cats==1 && Nsur>Nfocmec) {
 	    	Nsur=Nfocmec;		//it doesn't make sense to have more iterations than focal mechanisms.
 			flags.sample_all=1;	//all focal mechanisms can be sampled (one per iteration).
@@ -466,6 +466,7 @@ int main (int argc, char **argv) {
 		print_logfile("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
 		flags.err_gridpoints=0;
 	}
+	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=1;	//since there are not sources of uncertainties.
 
 	//--------------------------------------------------------------//
 	// 					Setup time steps;							//
