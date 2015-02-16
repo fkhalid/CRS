@@ -282,8 +282,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 	//------------------------------select events:-------------------------//
 
-	//by convention, Mc>20 means that Mc should be calculated y program (later).
-	if (!cat || (*cat).Mc>=20) Mc=-10;	//select all events.
+	//by convention, Mc>20 means that Mc should be calculated by program (later).
+	if (!cat || (*cat).Mc>=20) Mc=-100;	//select all events.
 	else Mc=(*cat).Mc;		//select events>=(*cat).Mc.
 
 	//define large boundaries (for sources):
@@ -333,8 +333,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		return 1;
 	}
 
-	print_logfile("%d events selected for LL inversion. \n", eq2);
-	print_logfile("%d events selected as sources. \n", eq1);
+	print_logfile("%d events selected for LL inversion (spatio-temporal selection). \n", eq2);
+	print_logfile("%d events selected as sources (spatio-temporal selection). \n", eq1);
 
 
 	//----------------------------find completeness magnitude and-------------------------//
@@ -343,28 +343,34 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 	if (!cat || (*cat).Mc>=20){
 
+		//extract vector with magnitude of selected events:
 		for (int i=1; i<=eq2; i++){
 			eq=seleq2[i-1];
 			mag2[i]=mag[eq];
 		}
+
+		//find completeness magnitude using maximum curvature method (Zhuang et al, 2011, Techniques for Analyzing Seismicity Basic models of seismicity: Temporal models");
 		(*cat).Mc=Mc_maxcurv(mag2+1, eq2)+Mc_offset;
 
+		//select events about completeness magnitude (for catalog):
 		k=0;
+		old2new[0]=0;	//events not in seleq2 before are of course still not there.
 		for (int i=0; i<eq2; i++){
 			if (mag2[i+1]>=(*cat).Mc){
-				old2new[i+1]=k+1;
+				old2new[i+1]=k+1;		//+1 since cat.XX[1...cat.Z].
 				seleq2[k]=seleq2[i];	//doesn't overwrite since k<=i.
 				k++;
 			}
 		}
 		eq2=k;
 
+		//select events about completeness magnitude (for eqkfm):
 		k=0;
 		for (int i=0; i<eq1; i++){
 			eq=seleq1[i];
 			if (mag[eq]>=(*cat).Mc){
 				seleq1[k]=seleq1[i];	//doesn't overwrite since k<=i.
-				catindex[k]=old2new[catindex[i]];
+				catindex[k]=old2new[catindex[i]];	//updated indices
 				k++;
 			}
 		}
@@ -378,7 +384,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	//------------------------------fill in catalog:-------------------------//
 
 	if (cat){
-		(*cat).pcrst=&crst;	//todo check: is this ever used?
 		init_cat1(cat, eq2);
 
 		#pragma omp parallel for private(eq, SD, SDd, x, y) reduction(+:errP)

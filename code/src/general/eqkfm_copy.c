@@ -73,7 +73,6 @@ void copy_eqkfm_attributes(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 	(*eqkfm2).nsel=eqkfm1.nsel;
 	(*eqkfm2).selpoints= eqkfm1.selpoints;
 	(*eqkfm2).distance= eqkfm1.distance;
-	(*eqkfm2).noise=eqkfm1.noise;
 	(*eqkfm2).cuts_surf=eqkfm1.cuts_surf;
 	(*eqkfm2).top=eqkfm1.top;
 	(*eqkfm2).nosnap=eqkfm1.nosnap;

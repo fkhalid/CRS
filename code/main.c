@@ -2,7 +2,7 @@
  * main.c
  *
  *  Created on: Aug 23, 2013
- *      Author: camcat
+ *      Author: camilla
  */
 
 #include <math.h>
@@ -65,6 +65,7 @@ int main (int argc, char **argv) {
 
 	if (run_tests){
 		extra_verbose=1;
+		//test_readZMAP_catindex();
 		//background_rates();
 		//test_forecast_stepG2_new();
 		//test_countcolheader();

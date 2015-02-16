@@ -19,7 +19,7 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 	/* Finds common elements of two eqkfm structures, where each member corresponds to an earthquake (i.e. no multifault events).
 	 *
 	 * Input:
-	 *  eqkfm2, eqkfm2:	structures to be combined. range [0,N1-1] and [0,N2-1].
+	 *  eqkfm1, eqkfm2:	structures to be combined. range [0,N1-1] and [0,N2-1].
 	 *  N1, N2: length of eqkfm1, eqkfm2
 	 *  dt, dM, dR: ranges within which earthquakes are considered to be the same.
 	 *  overwrite: flag indicating if elements of eqkfm1 should be overwritten with values from eqkfm2.
@@ -320,6 +320,104 @@ double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int 
 	}
 
 	*tot=count;
+	return res;
+}
+
+
+double **union_cats2(struct catalog cat, struct pscmp *DCFS, int N2, int ***ind, int *tot){
+	/*
+	 * Combines two strutures (cat, pscmp) based on the catalog indices contained in pscmp structure.
+	 * gives times and magnitude from both (also non common elements).
+	 *
+	 * Input:
+	 *  cat: cat.t, cat.m contain event times, magnitudes in catalog; range [1...cat.Z];
+	 *  DCFS: DCFS[x].t, DCFS[x].mag, range x=[0...N2-1]
+	 *  N2: size of DCFS.
+	 *
+	 * Output:
+	 *  ind: contains original indices of the elements in the returned vector (res). range [1...2,0...tot-1].
+	 *  value of -1 in ind[x][y] means that element y was not found in one [tx mx], otherwise index is given.
+	 *  	 e.g. if (*ind)[1][m]=n, then res[1][m]=cat.t[n],res[2][m]=cat.mag[n]
+	 *  	      if (*ind)[2][m]=n, then res[1][m]=DCFS[n].t,res[2][m]=DCFS[n].m
+	 *  	      if (*ind)[X][m]=-1, then the element is not found in cat, DCFS.
+	 *
+	 * Returns:
+	 *  res: time, magnitude of combined catalog. range [0...tot-1].
+	 */
+
+	double t2;
+	double **res;
+	int N1=cat.Z;
+	int c1, c2, k;
+
+	if (ind) *ind=imatrix(1,2,0,N1+N2);
+	res=dmatrix(1,2,0,N1+N2);
+
+	if (!N1){
+		if (tot) *tot=N2;
+		for (int i=0; i<N2; i++){
+			if (ind){
+				(*ind)[1][i]=-1;
+				(*ind)[2][i]=i;
+			}
+			res[1][i]=DCFS[i].t;
+			res[2][i]=DCFS[i].m;
+		}
+		return res;
+	}
+
+	if (!N2){
+		if (tot) *tot=N1;
+		for (int i=0; i<N1; i++){
+			if (ind){
+				(*ind)[1][i]=i;
+				(*ind)[2][i]=-1;
+			}
+			res[1][i]=cat.t[i];
+			res[2][i]=cat.mag[i];
+		}
+		return res;
+	}
+
+	c1=1;
+	c2=k=0;
+
+	while (c1<=cat.Z){
+		t2=cat.t[c1];
+		//loop over elements of DCFS preceding cat.t[c1]:
+		while (c2<N2 && DCFS[c2].t<t2 && DCFS[c2].index_cat<c1){
+			res[1][k]=DCFS[c2].t;
+			res[2][k]=DCFS[c2].m;
+			(*ind)[1][k]=-1;	//element is not in cat;
+			(*ind)[2][k]=c2;	//element is in DCFS;
+			c2++;
+			k++;
+		}
+
+		//add elements c1 (which may also be found in DCFS):
+		res[1][k]=cat.t[c1];
+		res[2][k]=cat.mag[c1];
+		(*ind)[1][k]=c1;
+		if (c2<N2 && DCFS[c2].index_cat==c1){	//current DCFS element corresponds to this cat element.
+			(*ind)[2][k]=c2;
+			c2++;
+		}
+		else (*ind)[2][k]=-1; //element not found in DCFS
+		c1++;
+		k++;
+	}
+
+	//add remaining elements from DCFS:
+	while (c2<N2){
+		res[1][k]=DCFS[c2].t;
+		res[2][k]=DCFS[c2].m;
+		(*ind)[1][k]=-1;	//element is not in cat;
+		(*ind)[2][k]=c2;	//element is in DCFS;
+		c2++;
+		k++;
+	}
+
+	*tot=k;
 	return res;
 }
 

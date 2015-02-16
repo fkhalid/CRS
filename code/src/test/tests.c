@@ -59,7 +59,56 @@ char *testfolder="test";
 
 //extern int xmlLoadExtDtdDefaultValue;
 extern int gridPMax;
+extern FILE *flog;
 double DCFS_cap=1e7;
+
+int test_readZMAP_catindex(){
+
+	struct catalog cat;
+	struct crust crst;
+	struct tm reftime;
+	struct eqkfm *eqkfm=NULL;
+	int NT;
+	char fname[120];
+	char *file="input/catalogs/jma_cat_2010_2013_update20130329_sel_3.0.dat";
+	char *fore_template="input/other/tohoku_template_sparse.dat";
+	double t0=0.0, t1=300, tw=1.0;
+	double Mmain=6.8;
+	double res=100;
+	FILE *fout;
+	int ci;
+
+	setenv("TZ", "UTC", 1);
+	reftime.tm_year=111;
+	reftime.tm_mon=2;
+	reftime.tm_isdst=0;
+	reftime.tm_mday=03;
+	reftime.tm_hour=14;
+	reftime.tm_min=46;
+	reftime.tm_sec=18;
+
+	flog=fopen("catindex_test.log", "w");
+
+	read_crust(fore_template, NULL , &crst, res, res, 0);
+	cat.Mc=20;
+	readZMAP (&cat, &eqkfm, &NT, file, crst, reftime, t0,t1, t0+10, t1, Mmain, 0.0, 10.0, 10.0, 1e5, 1);
+	fout=fopen("catindex_test.dat", "w");
+
+	for (int i=0; i<NT; i++){
+		ci=eqkfm[i].index_cat;
+		if (ci) fprintf(fout, "%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\n",
+				eqkfm[i].t, eqkfm[i].mag, eqkfm[i].lat, eqkfm[i].lon, eqkfm[i].depth,
+				cat.t[ci], cat.mag[ci], cat.lat0[ci], cat.lon0[ci], cat.depths0[ci]);
+		else fprintf(fout, "%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\n",
+				eqkfm[i].t, eqkfm[i].mag, eqkfm[i].lat, eqkfm[i].lon, eqkfm[i].depth,
+				0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+	}
+
+	fclose(fout);
+	fclose(flog);
+	return 0;
+}
+
 
 int quick_pointertest(){
 
@@ -829,7 +878,7 @@ int test_forecast_stepG2_new(){
 	for (int j=1; j<=NP; j++) gamma0[j]=ta/Asig;
 
 	//uses linear approx. between time steps:
-	for (int t=1; t<=n_samples; t++) forecast_stepG2_new(cat, times_aft, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, Nend+t, Rend+t, NP, NTS, Neq, gamma0, NULL, NULL, 1);
+	for (int t=1; t<=n_samples; t++) rate_state_evolution(cat, times_aft, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, Nend+t, Rend+t, NP, NTS, Neq, gamma0, NULL, NULL, 1);
 
 	//uses step approx. between time stpes:
 	//for (int t=1; t<=n_samples; t++) forecast_stepG2_old(cat, times_aft, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, NULL, Rend+t, NP, NTS, Neq, gamma0, NULL, NULL, 1);

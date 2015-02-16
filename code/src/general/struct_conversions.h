@@ -23,6 +23,7 @@ int * cat_filter(struct catalog *cat, double Mag, double);
 int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2, double dt, double dM, double dR, int overwrite);
 int *combine_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2, double dt, double dM);
 double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2, double dt, double dM, int***, int *);
+double **union_cats2(struct catalog cat, struct pscmp *DCFS, int N2, int ***ind, int *tot);
 double *timesfromeqkfm(struct eqkfm *eqkfm1, int N, int *);
 double *magssfromeqkfm(struct eqkfm *eqkfm1, int N, int *);
 double *timesfrompscmp(struct pscmp *DCFS, int N);

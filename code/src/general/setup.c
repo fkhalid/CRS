@@ -378,7 +378,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 
 	struct pscmp *DCFS;
     struct Coeff_LinkList *AllCoeff, *temp;
-    int NFsofar=0, Nsel, Nsteps, NFtot, eq;
+    int Nsel, Nsteps, NFtot;
     int mainshock_withafterslip;
     int afterslip= (aftersliptime==NULL) ? 0 : 1;
     double M0;

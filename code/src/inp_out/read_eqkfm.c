@@ -44,7 +44,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int N2, N3=0, c_evfound=0;
 	int *nf2, nsm, nfaults;
 	int c2=0, c3=0;	//counters.
-	int err=0, j;
+	int err=0, err0, j;
 	int *all_pts;
 	int no_synthetic_slipmodels=0;
 	static struct set_of_models dummy_parentsetofmodels;
@@ -101,6 +101,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 								 all_slipmodels.mmain, magssfromeqkfm(eqfm1, N1, (int *) 0 ),
 								 all_slipmodels.NSM, N1, dt, dmag);
 
+	//calculate tot. no. of faults needed:
 	for (int i=0; i<N1; i++){
 		N3= (which_slipmod[i]==-1)? N3+1 : N3+ nf2[which_slipmod[i]];
 	}
@@ -112,9 +113,9 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	for(int i=0; i<N1; i++) {
 		(*eqfm_comb)[c3].nsel=crst.N_allP;
 
-		if(which_slipmod[i]==-1) {
+		if(which_slipmod[i]==-1) {	//not associated with a complex slip model
 			if (flags.sources_without_focmec==0 && !eqfm1[i].is_slipmodel){
-				// flags.only_aftershocks_withfm indicates that only events with focal mechanisms should be used.
+				// flags.sources_without_focmec==0 indicates that only events with focal mechanisms should be used.
 				continue;
 			}
 			else {
@@ -122,12 +123,13 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				eqkfm2dist((*eqfm_comb)+c3, crst.lat, crst.lon, crst.depth, crst.N_allP, 1, 1);
 				(*eqfm_comb)[c3].parent_set_of_models=&dummy_parentsetofmodels;
 
-				//flags.full_field=0 indicates that an isotropic slip model should be used for all events (also those with foc mec):
+				//event has focal mechanis; flags.full_field=0 indicates that an isotropic slip model should be used for all events (also those with foc mec):
 				if (eqfm1[i].is_slipmodel && !flags.sources_all_iso) {
-					err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
-					if (err){
+					err0 = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
+					if (err0){
 						print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
 						print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+						err+=1;
 					}
 					else {
 						no_synthetic_slipmodels+=1;
@@ -136,15 +138,17 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 
 
 				else{
+					//event does not have foc. mech. but a fixed one should be used (flags.sources_without_focmec==2)
 					if (!eqfm1[i].is_slipmodel && flags.sources_without_focmec==2){
 						(*eqfm_comb)[c3].str1=crst.str0[0];	//fixme should use different regions.
 						(*eqfm_comb)[c3].dip1=crst.dip0[0];	//fixme should use different regions.
 						(*eqfm_comb)[c3].rake1=crst.rake0[0];
 						(*eqfm_comb)[c3].whichfm=1;
-						err = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
-						if (err){
+						err0 = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
+						if (err0){
 							print_screen("Error in creating slip model (function: eqkfm_addslipmodels)\n");
 							print_logfile("Error in creating slip model (function: eqkfm_addslipmodels)\n");
+							err+=1;
 						}
 					}
 
@@ -167,8 +171,8 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 			nsm=0;
 			for (int n=0; n<j; n++) nsm+=all_slipmodels.no_slipmodels[n];
 			c2=0;
-			print_screen("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
-			print_logfile("Using slip model %s from focal mechanism for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
+			print_screen("Using slip model %s for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
+			print_logfile("Using slip model %s for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
 
 			err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm, all_slipmodels.cmb_format,
 									   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
@@ -176,7 +180,10 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 									   all_slipmodels.mmain+j, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
 
 			if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
-			for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) (*eqfm_comb)[c3].distance=eqfm1[i].distance;
+			for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) {
+				(*eqfm_comb)[c3].distance=eqfm1[i].distance;
+				(*eqfm_comb)[c3].index_cat=eqfm1[i].index_cat;
+			}
 			c3+=nf2[which_slipmod[i]];
 			c_evfound+=1;
 			*Ncomb+=1;
@@ -317,7 +324,6 @@ int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out,
 			(*eqfm1)[f].dip2=(*eqfm1)[f].dip1;	//in this case there is no ambiguity (correct plane is known).
 			(*eqfm1)[f].whichfm=1;
 			(*eqfm1)[f].is_slipmodel=1;
-			(*eqfm1)[f].noise=0;
 			(*eqfm1)[f].tot_slip[0]=0.0;
 			NP=(*eqfm1)[f].np_di*(*eqfm1)[f].np_st;
 			for (int p=1; p<=NP; p++) {

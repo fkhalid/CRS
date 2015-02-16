@@ -669,6 +669,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 	for (int j=0; j<NF; j++) NP_tot+=eqkfm1[j].np_di*eqkfm1[j].np_st;
 
 	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
+	//fixme the mpi version uses depth0: why not here?
 
 	//---------initialize DCFS----------//
 

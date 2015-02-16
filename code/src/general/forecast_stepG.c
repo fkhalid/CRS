@@ -11,7 +11,7 @@
 	#include "mpi.h"
 #endif
 
-int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1, double Asig, double ta,
+int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1, double Asig, double ta,
 			int points[], double *out_NeX, double *NeT, double *Rate_end, int N, int NTS, int Neqks, double *gamma_init, double *back_rate, double *R, int last){
 //assumes stress grows linearly during each time step.
 //NB assumes that times, cat, DCFS, NTS are always the same (each time function is called).
@@ -29,8 +29,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 
   double  tau, dtau_dt, dtau_dt00=Asig/ta, ta1;
   int     TS0, TS1, n;
-  double  Tpre=0, dt1;
-  double  gamma, gamma0, back_rate_n;
+  double  gamma, back_rate_n;
   static double **events;	//will contain times, magnitudes of all earthquakes (both from catalog and from DCFS).
   int Neq, err=0, errtot=0;
   int is_incat, is_inDCFS;
@@ -46,63 +45,68 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   static float ** cat_weights;
   static int ** DCFS_whichpt;
   double t_pre, t_now, t_endstep;
-  static long old_DCFS_addr=0;
-  long new_DCFS_addr= (long) DCFS;
   double a,b;
   int reach_end;
   int nthreads, nthreadstot=omp_get_max_threads();
+  int counter1, counter2;
   static int **indices;	//contains indices of events referred to DCFS and cat(with offset of 1 - see below).
   int warning_printed=0;
 
   if (firsttimein==1){
 		firsttimein=0;
-		//todo: use previous information to match DCFS and cat.
-		events=union_cats(cat.t+1, timesfrompscmp(DCFS,Neqks), cat.mag+1, magsfrompscmp(DCFS,Neqks), cat.Z, Neqks, 0.001, 0.3, &indices, &Neq);	//todo parameters should not be hardwired.
-		NeXdum=dvector(1,N);
+
+		//allocate memory:
+		NeXdum=dvector(1,N);	//todo this and the one below are never deallocated.
 		ReX=dvector(1,N);
 
-		//list of all events, total no. of events affecting each point (Neq: from combining DCFS and cat).
-		which_eqk=imatrix(1,N,0,Neq-1);
-		num_eqk=ivector(1,N);
-		cat_weights=matrix(1,N,0,Neq-1);
-		DCFS_whichpt=imatrix(1,N,0,Neq-1);
-		dt=dvector(0,NTS);
-		TS_eqk=ivector(0,Neq-1);
+		//----------------------------------------------------------------------------------------------//
+		//					Set up list of earthquakes for each grid point								//
+		//----------------------------------------------------------------------------------------------//
+
+		//create a merged set of events from cat and DCFS; this is needed since the both define calculation time steps.
+		events=union_cats2(cat, DCFS, Neqks, &indices, &Neq);
+
+		which_eqk=imatrix(1,N,0,Neq-1);	//list of earthquakes in each grid point
+		num_eqk=ivector(1,N);	//number of earthquakes in each grid point
+		cat_weights=matrix(1,N,0,Neq-1);	//catalog weights
+		DCFS_whichpt=imatrix(1,N,0,Neq-1);	//grid point index in DCFS elements (since they contain stress field for a selection of pts only)
 
 		for (int n=1; n<=N; n++) num_eqk[n]=0;
 
 		for(int eq=0;eq<Neq;eq++){
-			int counter1, counter2;
 			counter1=counter2=1;
-			cat_i=indices[1][eq]+1;	//	NB:cat_i[i]==0 means no events selected.
+			cat_i=indices[1][eq];	//	NB:cat_i[i]==-1 means no events selected.
 			DCFS_i=indices[2][eq];  //	NB:DCFS_i[i]==-1 means no events selected.
 			for (int n=1; n<=N; n++){
 				if (counter2 > DCFS[DCFS_i].nsel && counter1 > cat.ngrid[cat_i]) break;	//all points have already been included
 				else{
-					if (cat_i!=0) while (counter1 <=cat.ngrid[cat_i] && cat.ngridpoints[cat_i][counter1]<n) counter1+=1;
+					//find index in cat and DCFS which may refer to this grid point:
+					if (cat_i!=-1) while (counter1 <=cat.ngrid[cat_i] && cat.ngridpoints[cat_i][counter1]<n) counter1+=1;
 					if (DCFS_i!=-1) while (counter2 <=DCFS[DCFS_i].nsel && DCFS[DCFS_i].which_pts[counter2]<n) counter2+=1;
-					is_incat= (cat_i!=0 && counter1 <= cat.ngrid[cat_i] && cat.ngridpoints[cat_i][counter1]==n) ? 1 : 0;
+					//check if index refers to this grid point:
+					is_incat= (cat_i!=-1 && counter1 <= cat.ngrid[cat_i] && cat.ngridpoints[cat_i][counter1]==n) ? 1 : 0;
 					is_inDCFS= (DCFS_i!=-1 && counter2 <= DCFS[DCFS_i].nsel && DCFS[DCFS_i].which_pts[counter2]==n) ? 1 : 0;
+					//add earthquake to list for this grid point, and fill in cat_weights, DCFS_whichpt accordingly
 					if (is_incat | is_inDCFS){
 						which_eqk[n][num_eqk[n]]=eq;
-						cat_weights[n][num_eqk[n]]= (is_incat)? cat.weights[cat_i][counter1] : 0.0;
-						DCFS_whichpt[n][num_eqk[n]]= (is_inDCFS)? counter2 : 0;
+						cat_weights[n][num_eqk[n]]= (is_incat)? cat.weights[cat_i][counter1] : 0.0;	//only in DCFS
+						DCFS_whichpt[n][num_eqk[n]]= (is_inDCFS)? counter2 : 0;	//only in cat: will not change gamma later.
 						num_eqk[n]+=1;
 					}
 				}
 			}
 		}
 
-//		FILE *fout=fopen("tevol2.dat","w");
-//		for (int g=0; g<NTS; g++){
-//			fprintf(fout,"%.5e\t%.5e\n",times[g],cmpdata[g][1]);
-//		}
-//		fclose(fout);
+		//----------------------------------------------------------------------------------------------//
+		//									Time steps initialization									//
+		//----------------------------------------------------------------------------------------------//
 
+		//calculate time step duration:
+		dt=dvector(0,NTS);
+		for (int g=0; g<=NTS; g++) dt[g]=times[g+1]-times[g];
 
-
-
-		for (int g=0; g<=NTS; g++) dt[g]=times[g+1]-times[g];	//should be <=NTS?
+		//find last time step before each earthquake:
+		TS_eqk=ivector(0,Neq-1);
 		for (int i=0; i<Neq; i++){
 			int k=0;
 			while(k<NTS && times[k]<events[1][i]) k++;
@@ -110,7 +114,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			TS_eqk[i]=k;
 			if(procId == 0) {
 				if (k<0 && events[1][i]>=tt0) {
-
+					//todo check that this never happens.
 					print_screen("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
 					print_logfile("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
 				}
@@ -120,16 +124,14 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 
   if (Asig==0 && ta==0.0) return(0);	//in this case, function has only been called to setup variables above.
 
-
-  //for (int z=1; z<=cat.Z; z++) if (cat.t[z]>=tt0 && cat.t[z]<tt1) R[z]=0.0;	//fixme check that vector is always initialized beforehand.
   NeX= (out_NeX)? out_NeX : NeXdum;
 
-  // find time steps before each contributing earthquake;
-  old_DCFS_addr=new_DCFS_addr;
+  // Initialize vector to 0;
   if (Rate_end) for(int m=1;m<=N;m++) ReX[m]=0.0;
   if (NeX) for(int m=1;m<=N;m++) NeX[m]=0.0;
 
   if(procId == 0) {
+	  //todo check this never happens
 	  if (tt1<tt0) {
 		  print_screen("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
 		  print_logfile("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
@@ -164,19 +166,20 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
   TS1=1;
   while(TS1<NTS-1 && times[TS1]<tt1) TS1++;
   if(times[TS1]>=tt1) TS1--;
-  dt1=tt1-times[TS1];
 
   if (NeT) *NeT=0;
   if (Rate_end) *Rate_end=0;
 
-
+  //Rprivate is used for parallelization (a barrier creates a bottleneck and poor performance):
   Rprivate=dmatrix(0,nthreadstot-1, 0, cat.Z);
   for (int t=0; t<omp_get_max_threads(); t++){
 	  for (int eq=0; eq<=cat.Z; eq++) Rprivate[t][eq]=0.0;
   }
 
   err=0;
-#pragma omp parallel for firstprivate(err) private(n, gamma,gamma0,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, counter_eqk, back_rate_n, ta1) reduction(+:errtot)
+
+//loop over grid points:
+  #pragma omp parallel for firstprivate(err) private(n, gamma,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, counter_eqk, back_rate_n, ta1) reduction(+:errtot)
   for(int m=1;m<=N;m++){
 
 	nthreads=omp_get_num_threads();
@@ -184,51 +187,52 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 	if (err!=0) continue;
 	n=(points==0)? m : points[m];
 
+	//set background rate and starting gamma given as arguments:
 	back_rate_n= (back_rate) ? back_rate[n] : 1.0;
-	if (NeX) NeX[m]=Tpre;
 	gamma=gamma_init[m];
+	if (NeX) NeX[m]=0.0;
 
-	gamma0=gamma;
-    j0=TS0;
+    j0=TS0;	//next time step (first time step after tt0)
     counter_eqk=0;
     t_now=tt0;
     reach_end=0;
 
-    //new method (uses indices of earthquakes for specific gridpoint):
-
+    //find first earthquake after or at tt0:
     while (counter_eqk<num_eqk[n] && events[1][which_eqk[n][counter_eqk]]<tt0) counter_eqk+=1;
 
+    //loop over time steps until reaching tt1:
     while (tol0<(tt1-t_now)){
 
     	if (err!=0) break;	//error in a previous loop;
-    	if (counter_eqk>=num_eqk[n]) reach_end=1;
+    	if (counter_eqk>=num_eqk[n]) reach_end=1;	//all earthquakes for this grid point have been included (counter_eqk is out of range).
     	else {
         	next_eqk=which_eqk[n][counter_eqk];
     		if (events[1][next_eqk]>=tt1) reach_end=1;
     	}
 
-    	next_TS= reach_end ? TS1 : TS_eqk[next_eqk];
-    	t_endstep= reach_end ? tt1 : events[1][next_eqk];
-    	cat_i= reach_end ? 0 : indices[1][next_eqk]+1;
-    	DCFS_i= reach_end ? 0 : indices[2][next_eqk];
+    	t_endstep= reach_end ? tt1 : events[1][next_eqk];	//end time of this while loop iteration;
+    	next_TS= reach_end ? TS1 : TS_eqk[next_eqk];		//last time step before t_endstep
+    	cat_i= reach_end ? 0 : indices[1][next_eqk];		//index of next event (occurring at time events[1][next_eqk])
+    	DCFS_i= reach_end ? 0 : indices[2][next_eqk];		//index of next event (occurring at time events[1][next_eqk])
 
-    	//find rates up to next barrier (which is the smallest between next earthquake, next time step or tt1).
-    	t_pre= fmin(t_endstep, times[j0]) - t_now;
+    	// evolve seismicity up to next barrier (which is the smallest between next earthquake (events[1][next_eqk]), next time step (times[j0]) or tt1)
+    	t_pre= fmin(t_endstep, times[j0]) - t_now;	//find time left to next barrier:
 
-    	dtau_dt=(cmpdata && j0-1>=0 )? (Asig/ta)+cmpdata[j0-1][n]/dt[j0-1] : (Asig/ta);
-
+    	dtau_dt=(cmpdata && j0-1>=0 )? (Asig/ta)+cmpdata[j0-1][n]/dt[j0-1] : (Asig/ta);//stressing rate during current time step (including stress step from cmpdata and background stressing rate):
     	if (t_pre>tol0){
-			tau=dtau_dt*t_pre;
-			ta1=Asig/dtau_dt;
+			tau=dtau_dt*t_pre;	//stress change during current time step
+			ta1=Asig/dtau_dt;	//dummy variable
 			if (NeX) {
-				a=gamma*dtau_dt-1;
-				b=a*exp(-t_pre/ta1)+1;
-
+				//find no. of earthquakes
+				a=gamma*dtau_dt-1;	//dummy variable
+				b=a*exp(-t_pre/ta1)+1;	//dummy variable
 				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
 			}
+			//update gamma:
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
     	}
 
+    	// evolve seismicity between time steps:
     	t_now+=t_pre;
 
 		for(int j=j0;j<next_TS;j++){
@@ -245,6 +249,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 			t_now+=dt[j];
 		}
 
+		// evolve seismicity till the end:
 		t_pre=t_endstep-t_now;
 
 		if (t_pre>tol0) {
@@ -262,8 +267,7 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 		t_now+=t_pre;
 
 		if (reach_end==0){
-			gamma0=gamma;
-			if (cat_i!=0) {
+			if (cat_i!=-1) {
 				Rprivate[omp_get_thread_num()][cat_i]+= back_rate_n*cat_weights[n][counter_eqk]*(ta/Asig)/gamma;
 			}
 			gamma= (DCFS_i==-1 | DCFS_whichpt[n][counter_eqk]==0)? gamma : gamma*exp(-DCFS[DCFS_i].cmb[DCFS_whichpt[n][counter_eqk]]/Asig);
@@ -278,14 +282,17 @@ int forecast_stepG2_new(struct catalog cat, double *times, double **cmpdata, str
 		counter_eqk+=1;
 	}
 
-	if (last) gamma_init[m]=gamma;
-	if (Rate_end) ReX[m]=back_rate_n*(ta/Asig)/gamma;
+	if (last) gamma_init[m]=gamma;	//update gamma_init with final value;
+	if (Rate_end) ReX[m]=back_rate_n*(ta/Asig)/gamma;	//instantaneous seismicity rate at the end of the time step;
 
   }
 
+  //collect values of R from threads:
   if (R) for (int t=0; t<nthreads; t++){
 	  for (int eq=0; eq<=cat.Z; eq++) R[eq]+=Rprivate[t][eq];
   }
+
+  //final rate and tot no. of events given by the sum over all grid points:
   if (Rate_end) *Rate_end=0.0;
   if (NeT) *NeT=0.0;
   for(int m=1;m<=N;m++){

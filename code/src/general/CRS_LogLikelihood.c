@@ -231,7 +231,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
 			}
 
-			err = forecast_stepG2_new(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
+			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
 									  (int *) 0, ev_x_dum, (double *) 0, (double *) 0,
 									  NgridT, NTScont, Nm, gammas, crst.rate0,
 									  dumrate, 1);
@@ -259,7 +259,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			tt0=tts[t-1];
 			tt1=tts[t];
 
-			err+=forecast_stepG2_new(cat, times, DCFSrand, DCFS, tt0, tt1,
+			err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1,
 									 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
 									 Nm, gammas, crst.rate0, dumrate, 1);
 
@@ -642,7 +642,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
 			}
 
-			err = forecast_stepG2_new(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
+			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
 									  (int *) 0, (double *) 0, (double *) 0, (double *) 0,
 									  NgridT, NTScont, Nm, gammas, (double *) 0,
 									  dumrate, 1);
@@ -666,13 +666,13 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		while (current_main<Nm && eqkfm0[current_main].t<tt1){
 			if (tnow<eqkfm0[current_main].t){
 				//evolve seismicity up to next large event:
-				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
+				err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
 										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, Nm, gammas,
 										   crst.rate0, dumrate, 1);
 				integral += (sum)/(1.0*Nsur);
 
 				//evolve seismicity during a time window tw:
-				err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
+				err += rate_state_evolution(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
 										eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
 									   NgridT, NTScont, Nm, gammas, crst.rate0,
 									   dumrate, 1);
@@ -682,7 +682,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				//the condition below will be true if the current large event is still within the tw of the previous one.
 				//(Actually, if tw has a fixed value this is always the case).
 				if (tnow<eqkfm0[current_main].t+tw){
-					err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
+					err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
 							Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, Nm, gammas, crst.rate0,
 							dumrate, 1);
 					tnow=eqkfm0[current_main].t+tw;
@@ -695,7 +695,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			if (err) break;
 		}
 		if (tnow<tt1){
-			err += forecast_stepG2_new(cat, times, DCFSrand, DCFS, tnow, tt1, Asig, ta, 0,
+			err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, tt1, Asig, ta, 0,
 									   ev_x, &sum, 0, NgridT, NTScont, Nm, gammas,
 									   crst.rate0, dumrate, 1);
 

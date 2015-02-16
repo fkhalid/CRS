@@ -72,12 +72,11 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	int NTSeff;
 	static int fm_offset=0;	//offset to be added to crst.str0 (dip0) if a fixed receiver fault is used (more details below).
 	static struct eqkfm *eqkfm2;
-	static struct eqkfm *eqkfm_noise;
 	static struct eqkfm *eqkfm2A;
 	struct Coeff_LinkList *temp, *AllCoeffaft;
 	float ***Coeffs_st, ***Coeffs_dip;	//coefficients for tensor;
 	static float **Coeff_ResS, **Coeff_ResD;	//coefficients for cmb (resolved).
-	static struct pscmp *DCFS_Af, DCFS_Af_noise;
+	static struct pscmp *DCFS_Af;
 	int DCFS_Af_size;
 	int NF_max=0, NP_max=0;
 	static int time_in=0;

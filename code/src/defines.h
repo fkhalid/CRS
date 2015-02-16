@@ -15,7 +15,7 @@
 
 
 // ----- [Fahad] Added for MPI -----
-#define _CRS_MPI						// FIXME [Fahad]: Should be set depending on whether or not mpicc is used ...
+//#define _CRS_MPI						// FIXME [Fahad]: Should be set depending on whether or not mpicc is used ...
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 8				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 31	// No. of scalar variables in 'struct BCast_Model_Parameters'
@@ -109,7 +109,6 @@ struct catalog{
 	int **ngridpoints;	//indices of cells associated with each earthquake:	ngridpoints[eqk][cell_index].
 	double **weights;	//weight of cells associated with each earthquake:	weights[eqk][cell_weight].
 						//weights[0] indicates the fraction of the Gaussian ellipsoid outside the grid.
-	struct crust *pcrst;
 	//general catalog properties:
 	long Z;
 	double tstart;
@@ -222,7 +221,6 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	int np_st, np_di;	//no. of patches along strile, no. of patches along dip,
 	int whichfm;		//index of foc. mec. to use (0=both;1;2).
 	int nsel;			//no. of cell points affected by this event.
-	int noise;			// flag (if set, tot_slip refers to model from which noise was generated):
 	int cuts_surf;	// boolean indicating if slip model should be assumed to cut through the surface.
 	int nosnap;	//no. of snapshots (afterslip)
 	double t;		//time of event.
