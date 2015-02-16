@@ -179,13 +179,13 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	}
 
 	#ifdef _CRS_MPI
-		if(numProcs > Nsur) {
-			if(procId == 0) {
-				printf("\n Number of processes: %d", numProcs);
-				printf("\n Number of iterations: %d", Nsur);
-			}
-			error_quit("\n **Nsur must be greater than or equal to the number of processes ** \n");
-		}
+//		if(numProcs > Nsur) {
+//			if(procId == 0) {
+//				printf("\n Number of processes: %d", numProcs);
+//				printf("\n Number of iterations: %d", Nsur);
+//			}
+//			error_quit("\n **Nsur must be greater than or equal to the number of processes ** \n");
+//		}
 
 		partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
 		start = (procId * partitionSize) + 1;
@@ -393,7 +393,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				ev_x_avg[n]*=r0/NgridT;
 			}
 			if(procId == 0) {
-				csep_forecast(print_forex_ref, crst, ev_x_avg, 1);
+//				csep_forecast(print_forex_ref, crst, ev_x_avg, 1);
 			}
 		}
 
@@ -401,7 +401,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			convert_geometry(crst, cmb_avg, &ev_x_new, 0, 0);
 			if(procId == 0) {
 				csep_cmbmap(print_cmb, crst, ev_x_new, 0);
-				csep_cmbmap(print_cmb_ref, crst, cmb_avg, 1);
+//				csep_cmbmap(print_cmb_ref, crst, cmb_avg, 1);
 				if (flags.afterslip) csep_cmbmap(print_cmbpost, crst, cmbpost_avg, 0);
 			}
 		}
@@ -603,14 +603,14 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 	#ifdef _CRS_MPI
 		if(first_timein != 1) {
-			// FIXME: Write a simple algorithm to fit lower Nsur values to numProcs ...
-			if(numProcs > Nsur) {
-				if(procId == 0) {
-					printf("\n Number of processes: %d", numProcs);
-					printf("\n Number of iterations: %d", Nsur);
-				}
-				error_quit("\n **Nsur must be greater than or equal to the number of processes ** \n");
-			}
+//			// FIXME: Write a simple algorithm to fit lower Nsur values to numProcs ...
+//			if(numProcs > Nsur) {
+//				if(procId == 0) {
+//					printf("\n Number of processes: %d", numProcs);
+//					printf("\n Number of iterations: %d", Nsur);
+//				}
+//				error_quit("\n **Nsur must be greater than or equal to the number of processes ** \n");
+//			}
 
 			partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
 			start = (procId * partitionSize) + 1;

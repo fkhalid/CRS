@@ -176,7 +176,7 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 	return(0);
 }
 
-// Same function as the one commented out above, just cleaned up a bit.
+#ifdef _CRS_MPI
 int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1,
 			   int NF, struct crust crst, double *lats, double *lons, double *depths) {
 	//lats, lons, depths contain complete list of grid points.
@@ -184,12 +184,10 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
-	int start, end, partitionSize;
+	int start, /*end,*/ partitionSize;
 
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-		MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
-	#endif
+	MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 
 	double north, east, eqnorth, eqeast;
 	double len, width, depth; //for individual patches.
@@ -215,12 +213,6 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 	*Coeffs_st  = f3tensor(1, NP_tot, 1, Nsel, 1, 6);	//TODO should deallocate at the end (in main.c).
 	*Coeffs_dip = f3tensor(1, NP_tot, 1, Nsel, 1, 6);
 
-	// [Fahad] - Create linearized full tensors for use in MPI communication
-	//			 routines
-	size_t fullTensorSize = ((NP_tot) * Nsel * 6);
-	float *coeffs_st  = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
-	float *coeffs_dip = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
-
 	//-----------------------------------------------------------------------------------------//
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
 	//-----------------------------------------------------------------------------------------//
@@ -228,30 +220,44 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 	print_screen("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
 	print_logfile("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
 
-	p1=0;	//count total number of patches (in all faults);
 	for (int j=0; j<NF; j++) {
+		// [Fahad]: MPI -- 	Flag to indicate if the current fault should be processed in serial.
+		int processFaultSerially = 0;
+
 		pure_thrustnorm=pure_strslip=0;
 
 		if ((err=choose_focmec(eqkfm1[j], &strike, &dip, &rake))!=0){
 			print_screen("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
 			print_logfile("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
+
 			return(1);
 		}
 
-		len=eqkfm1[j].L*(1.0/eqkfm1[j].np_st);
-		width=eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
+		len   = eqkfm1[j].L*(1.0/eqkfm1[j].np_st);
+		width = eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
 
-		int numPatches = eqkfm1[j].np_di*eqkfm1[j].np_st;
+		size_t numPatches = eqkfm1[j].np_di*eqkfm1[j].np_st;
 
-		#ifdef _CRS_MPI
-			if(numProcs > numPatches) {
-				if(procId == 0) {
-					printf("\n Number of processes: %d", numProcs);
-					printf("\n Number of iterations: %d", numPatches);
-				}
-				error_quit("\n **numPatches must be greater than or equal to the number of processes ** \n");
+		// [Fahad] - Create linearized full tensors for use in MPI communication
+		//			 routines
+		size_t fullTensorSize = ((numPatches) * Nsel * 6);
+		float *coeffs_st  = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
+		float *coeffs_dip = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
+
+		if(numProcs > numPatches) {
+			processFaultSerially = 1;
+
+			partitionSize = numPatches;
+
+			start = 0;
+
+			if(procId == 0) {
+				printf("\n Number of processes: %d", numProcs);
+				printf("\n Number of patches: %d", numPatches);
 			}
-
+			print_screen("*** No. of patches is less than the No. of processes. Processing fault in serial ... ***\n",j);
+		}
+		else {
 			partitionSize = numPatches / numProcs;
 
 			// If partionSize leaves one or more elements at the end
@@ -263,11 +269,7 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 			}
 
 			start = (procId * partitionSize);
-			end = start + partitionSize;
-		#else
-			start = 1;
-			end = numPatches + 1;
-		#endif
+		}
 
 		// [Fahad] - Create linearized partitioned tensors for use in MPI
 		//			 communication routines.
@@ -323,7 +325,15 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 			}
 		}
 
-		#ifdef _CRS_MPI
+		if(processFaultSerially) {
+			// [Fahad]: Manually concatenate the partition array into the
+			//			full linearized tensor array.
+			for(size_t k = 0; k < partitionedTensorSize; ++k) {
+				coeffs_st[k]  = coeffs_st_partitioned[k];
+				coeffs_dip[k] = coeffs_dip_partitioned[k];
+			}
+		}
+		else {
 			MPI_Allgather(coeffs_st_partitioned, partitionedTensorSize,
 						  MPI_FLOAT, coeffs_st, partitionedTensorSize,
 						  MPI_FLOAT, MPI_COMM_WORLD);
@@ -331,30 +341,37 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 			MPI_Allgather(coeffs_dip_partitioned, partitionedTensorSize,
 						  MPI_FLOAT, coeffs_dip, partitionedTensorSize,
 						  MPI_FLOAT, MPI_COMM_WORLD);
-		#endif
+		}
 
 		free(coeffs_st_partitioned);
 		free(coeffs_dip_partitioned);
-	}
 
-	// [Fahad] - Copy data from the linearized tensors to the f3tensors.
-	int index = 0;
-	for(int i = 0; i < NP_tot; ++i) {
-		for(int j = 0; j < Nsel; ++j) {
-			for(int k = 0; k < 6; ++k) {
-				index = (i * Nsel * 6) + (j * 6) + k;
+		// [Fahad] - Copy data from the linearized tensors to the f3tensors.
+		int patchIndex = 0, tensorIndex = 0;
 
-				(*Coeffs_st) [i+1][j+1][k+1] = coeffs_st [index];
-				(*Coeffs_dip)[i+1][j+1][k+1] = coeffs_dip[index];
+		// Calculate tensorIndex
+		for(size_t fault = 0; fault < j; ++fault) {
+			tensorIndex += eqkfm1[fault].np_di*eqkfm1[fault].np_st;
+		}
+
+		for(int i = 0; i < numPatches; ++i) {
+			for(int j = 0; j < Nsel; ++j) {
+				for(int k = 0; k < 6; ++k) {
+					patchIndex = (i * Nsel * 6) + (j * 6) + k;
+
+					(*Coeffs_st) [tensorIndex + i + 1][j+1][k+1] = coeffs_st [patchIndex];
+					(*Coeffs_dip)[tensorIndex + i + 1][j+1][k+1] = coeffs_dip[patchIndex];
+				}
 			}
 		}
-	}
 
-	free(coeffs_st);
-	free(coeffs_dip);
+		free(coeffs_st);
+		free(coeffs_dip);
+	}
 
 	return(0);
 }
+#endif
 
 // todo [coverage] this block is never tested
 int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF,
@@ -454,52 +471,6 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 				}
 			}
 		}
-
-		if(procId == 0) {
-//			printf("\n\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId, (*Coeffs_st)[1][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [81][1][1]: %f \n", procId, (*Coeffs_st)[81][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [82][1][1]: %f \n", procId, (*Coeffs_st)[82][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [83][1][1]: %f \n", procId, (*Coeffs_st)[83][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [161][1][1]: %f \n", procId, (*Coeffs_st)[161][1][1]);
-//
-//			printf("\n\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId, (*Coeffs_dip)[1][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [81][1][1]: %f \n", procId, (*Coeffs_dip)[81][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [82][1][1]: %f \n", procId, (*Coeffs_dip)[82][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [83][1][1]: %f \n", procId, (*Coeffs_dip)[83][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [161][1][1]: %f \n", procId, (*Coeffs_dip)[161][1][6]);
-
-//			printf("\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId, (*Coeffs_st)[1][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [94][1][1]: %f \n", procId, (*Coeffs_st)[94][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [95][1][1]: %f \n", procId, (*Coeffs_st)[95][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [96][1][1]: %f \n", procId, (*Coeffs_st)[96][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [188][1][1]: %f \n", procId, (*Coeffs_st)[188][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_dip)[1][1][1]:  %f \n", procId, (*Coeffs_dip)[1][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_dip)[94][1][1]: %f \n", procId, (*Coeffs_dip)[94][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_dip)[95][1][1]: %f \n", procId, (*Coeffs_dip)[95][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_dip)[96][1][1]: %f \n", procId, (*Coeffs_dip)[96][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [187][1][1]: %f \n", procId, (*Coeffs_st)[187][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [188][1][1]: %f \n", procId, (*Coeffs_st)[188][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [189][1][1]: %f \n", procId, (*Coeffs_st)[189][1][1]);
-
-
-//			printf("\n ProcId %d -- (*Coeffs_st) [1][1][1]:  %f \n", procId, (*Coeffs_st)[1][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [94][1][1]: %f \n", procId, (*Coeffs_st)[94][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [95][1][1]: %f \n", procId, (*Coeffs_st)[95][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_st) [189][1][1]: %f \n", procId, (*Coeffs_st)[188][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_dip)[1][1][1]:  %f \n", procId, (*Coeffs_dip)[1][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_dip)[94][1][1]: %f \n", procId, (*Coeffs_dip)[94][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_dip)[95][1][1]: %f \n", procId, (*Coeffs_dip)[95][1][1]);
-//			printf("\n ProcId %d -- (*Coeffs_dip)[189][1][1]: %f \n", procId, (*Coeffs_dip)[188][1][1]);
-		}
-
-//		printf("\n ProcId %d -- (*Coeffs_st)[1][1][1]: %f \n", procId, (*Coeffs_st)[1][1][1]);
-//		printf("\n ProcId %d -- (*Coeffs_st)[280][1][1]: %f \n", procId, (*Coeffs_st)[280][1][1]);
-//		printf("\n ProcId %d -- (*Coeffs_st)[281][1][1]: %f \n", procId, (*Coeffs_st)[281][1][1]);
-//		printf("\n ProcId %d -- (*Coeffs_st)[560][1][1]: %f \n", procId, (*Coeffs_st)[560][1][1]);
-//		printf("\n ProcId %d -- (*Coeffs_dip)[1][1][1]: %f \n", procId, (*Coeffs_dip)[1][1][1]);
-//		printf("\n ProcId %d -- (*Coeffs_dip)[280][1][1]: %f \n", procId, (*Coeffs_dip)[280][1][1]);
-//		printf("\n ProcId %d -- (*Coeffs_dip)[281][1][1]: %f \n", procId, (*Coeffs_dip)[281][1][1]);
-//		printf("\n ProcId %d -- (*Coeffs_dip)[560][1][1]: %f \n", procId, (*Coeffs_dip)[560][1][1]);
 	}
 
 	return(0);

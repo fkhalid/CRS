@@ -376,10 +376,11 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults) {
 
 	// [Fahad] Variables used for MPI
-	int procId = 0;
+	int procId = 0, numProcs = 1;
 
 	#ifdef _CRS_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+		MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 	#endif
 
     struct Coeff_LinkList *temp;
