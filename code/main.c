@@ -65,6 +65,7 @@ int main (int argc, char **argv) {
 
 	if (run_tests){
 		extra_verbose=1;
+		//background_rates();
 		//test_forecast_stepG2_new();
 		//test_countcolheader();
 		//test_allOkada();

@@ -176,8 +176,11 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 		if (fabs(data[3][n1]-data[3][1])>toll) closest_lat=fmin(closest_lat,fabs(data[3][n1]-data[3][1]));
 		if (fabs(data[1][n1]-data[1][1])>toll) closest_lon=fmin(closest_lon,fabs(data[1][n1]-data[1][1]));
 		if (fabs(data[5][n1]-data[5][1])>toll) closest_dep=fmin(closest_dep,fabs(data[5][n1]-data[5][1]));
-
 	}
+
+	if ((dep1-dep0-ddepi)<toll) closest_dep=dep1-dep0;	//there is only one depth layer;
+	if ((lat1-lat0-dlati)<toll) closest_lat=lat1-lat0;	//there is only one lat layer;
+	if ((lon1-lon0-dloni)<toll) closest_lon=lon1-lon0;	//there is only one lon layer;
 
 	//calculated for uniform grid: (toll since casting is same as floor).
 	//fixme testing for uniform grid gives false positives!
