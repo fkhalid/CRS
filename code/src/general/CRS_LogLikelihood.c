@@ -607,6 +607,17 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	double tnow;
 	FILE *fforex, *fcmb;
 
+	#ifdef _CRS_MPI
+		// [Fahad]: The dmatrix 'all_new_gammas' has to be linearized for the
+		//		  : MPI communication routine that consolidates values from
+		//		  : all ranks.
+		size_t allNewGammasSize;
+		size_t localNewGammasSize;
+
+		double* linearizedAllNewGammas;
+		double* linearizedLocalNewGammas;
+	#endif
+
 	if (LL) print_screen("Calculating LL for Asig=%lf, ta=%lf ...", Asig, ta);
 
 	if (first_timein==1){
@@ -674,14 +685,50 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	#endif
 
 	#ifdef _CRS_MPI
+		int rootPartitionSize = 0;
+
 		if(first_timein != 1) {
 			partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
-			start = (procId * partitionSize) + 1;
+
+			if((partitionSize * numProcs) > Nsur) {
+				--partitionSize;
+
+				rootPartitionSize = partitionSize + (Nsur % partitionSize);
+
+				if(procId == 0) {
+					partitionSize = rootPartitionSize;
+
+					start = 1;
+				}
+				else {
+					start = rootPartitionSize + ((procId-1) * partitionSize) + 1;
+				}
+
+//				printf("\n ProcId: %d -- Partition Size: %d \n", procId, partitionSize);
+			}
+			else {
+				start = (procId * partitionSize) + 1;
+			}
+
 			end = start + partitionSize;
 		}
 		else {
 			start = 1;
 			end = Nsur + 1;
+		}
+
+		if(all_new_gammas) {
+			if(rootPartitionSize) {
+				allNewGammasSize   = (rootPartitionSize * numProcs) * NgridT;
+				localNewGammasSize = rootPartitionSize * NgridT;
+			}
+			else {
+				allNewGammasSize   = Nsur * NgridT;
+				localNewGammasSize = (MIN(end, Nsur+1) - start) * NgridT;
+			}
+
+			linearizedAllNewGammas   = (double*) malloc(allNewGammasSize   * sizeof(double));
+			linearizedLocalNewGammas = (double*) malloc(localNewGammasSize * sizeof(double));
 		}
 
 		const long newSeed = *seed;
@@ -794,7 +841,16 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		if (err==1) break;
 
 		for(int i=1;i<=cat.Z;i++) if(cat.t[i]>=tt0 && cat.t[i]<tt1) rate[i]+=1.0*dumrate[i]/(1.0*Nsur);
-		if (all_new_gammas) for (int n=1; n<=NgridT; n++) all_new_gammas[nsur][n]=gammas[n];
+
+		if (all_new_gammas) {
+			for (int n=1; n<=NgridT; n++) {
+				#ifdef _CRS_MPI
+					linearizedLocalNewGammas[(nsur-start)*NgridT + (n-1)] = gammas[n];
+				#else
+					all_new_gammas[nsur][n]=gammas[n];
+				#endif
+			}
+		}
 
 		#ifdef _CRS_MPI
 			if (printall_cmb) {
@@ -834,7 +890,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	#ifdef _CRS_MPI
 		double temp_integral;
 		double *recv_rate, *recv_rates_x;
-	//	double **recv_allNewGammas;
 
 		recv_rate = dvector(1, cat.Z);
 
@@ -845,23 +900,46 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		free_dvector(rate, 1, cat.Z);
 		rate = recv_rate;
 
-	//
-	//	if(procId == 0) {
-	//		printf("\n Integral (final): %f \n", integral);
-	//	}
-	//
-	//	if (all_new_gammas!=0 && multiple_output_gammas==0) {
-	//		recv_rates_x = dvector(1, NgridT);
-	//		MPI_Allgather(rates_x, NgridT+1, MPI_DOUBLE, recv_rates_x, NgridT+1, MPI_DOUBLE, MPI_COMM_WORLD);
-	//		rates_x = recv_rates_x;
-	//
-	//		recv_allNewGammas = dmatrix(1, Nsur, 1, NgridT);
-	//		// [Fahad] dmatrix(1,Nsur,1,NgridT) is the allocation in main.
-	//		long nrl=1, nrh=Nsur, ncl=1, nch=NgridT;
-	//		long nrow=nrh-nrl+1, ncol=nch-ncl+1;
-	//		MPI_Allgather(all_new_gammas[nrl], nrow*ncol+1, MPI_DOUBLE, recv_allNewGammas[nrl], nrow*ncol+1, MPI_DOUBLE, MPI_COMM_WORLD);
-	//		all_new_gammas[nrl] = recv_allNewGammas[nrl];
-	//	}
+		if (all_new_gammas) {
+			MPI_Allgather(linearizedLocalNewGammas, localNewGammasSize, MPI_DOUBLE,
+						  linearizedAllNewGammas,   localNewGammasSize, MPI_DOUBLE,
+						  MPI_COMM_WORLD);
+
+			// Copy values from the linearized matrix to dmatrix
+			if(rootPartitionSize) {	// If root has a larger partition size than the other ranks
+				// We need to skip empty portions of NgridT size in the linearized array,
+				// for all non-root ranks.
+				for(int i = 0; i < numProcs; ++i) {
+					int numRows, rankIndex;
+
+					if(i == 0) {
+						numRows = rootPartitionSize;
+					}
+					else {
+						numRows = rootPartitionSize - (Nsur % rootPartitionSize);
+					}
+
+					rankIndex = i * rootPartitionSize * NgridT;
+
+					for(int j = 0; j < numRows; ++j) {
+						for(int k = 0; k < NgridT; ++k) {
+							all_new_gammas[i + j+1][k+1] = linearizedAllNewGammas[rankIndex + (j*NgridT) + k];
+						}
+					}
+				}
+			}
+			else {
+				for(int i = 0; i < Nsur; ++i) {
+					for(int j = 0; j < NgridT; ++j) {
+						all_new_gammas[i+1][j+1] = linearizedAllNewGammas[(i*NgridT) + j];
+					}
+
+				}
+			}
+
+			free(linearizedLocalNewGammas);
+			free(linearizedAllNewGammas);
+		}
 	#endif
 
 //	printf("\n ProcId: %d -- Integral: %f \n", procId, integral);
