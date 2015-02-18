@@ -242,7 +242,8 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags. catname is used in setup.c.
-		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD); //todo [askFahad]: do we need to broadcast this?
+		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	//todo [askFahad]: do we need to broadcast this?
+		MPI_Bcast(outname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	// [Fahad]: Since all processes now need to write to files.
 		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
