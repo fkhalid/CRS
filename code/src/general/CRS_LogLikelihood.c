@@ -103,6 +103,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 	if (all_gammas0==NULL)	uniform_bg_rate=1;
 
+	//fixme not print cmb stuff if it is not recalculated here!! (and think about whether this is a problem...).
 
 	DCFSrand= (flags.afterslip) ? dmatrix(0,NTScont,1,NgridT) : NULL;
 	dumrate=dvector(1,cat.Z);

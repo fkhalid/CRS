@@ -17,7 +17,6 @@
 #include "../general/eqkfm_copy.h"
 #include "../general/mem_mgmt.h"
 #include "../geom/coord_trafos.h"
-#include "../geom/dft2d.h"
 #include "../inp_out/print_output.h"
 #include "../util/nrutil.h"
 #include "../util/ran1.h"

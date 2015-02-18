@@ -1,16 +1,16 @@
 # no. of events
 # format
 # reference time for ev. 1		no. of snapshots models (lines to read) until next event
-# time cuts_surf path_to_file 
-# time cuts_surf path_to_file
+# time path_to_file 
+# time path_to_file
 # ...
 # reference time for ev. 2              no. of snapshots models (lines to read) until next event
 #
 2
 pscmp
 2004-09-28T17:05:20Z    2
-44.0	0	input_testcases/testD/Parkfield_Aft_44B.dat	
-274.0   0       input_testcases/testD/Parkfield_AftB.dat
+44.0	input_testcases/testD/Parkfield_Aft_44B.dat	
+274.0   input_testcases/testD/Parkfield_AftB.dat
 2005-09-28T17:15:24Z	2
-44.0    0       input_testcases/testD/Parkfield_Aft_44.dat
-274.0	0	input_testcases/testD/Parkfield_Aft.dat
+44.0    input_testcases/testD/Parkfield_Aft_44.dat
+274.0	input_testcases/testD/Parkfield_Aft.dat
