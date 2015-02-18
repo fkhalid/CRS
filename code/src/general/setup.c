@@ -8,11 +8,14 @@
 #include "setup.h"
 
 #include <math.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 #include "../defines.h"
+#include "../geom/check_same_geometry.h"
 #include "../geom/coord_trafos.h"
 #include "../geom/top_of_slipmodel.h"
 #include "../inp_out/read_eqkfm.h"
@@ -363,7 +366,7 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 }
 
 int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out,
-		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults, double *aftersliptime, int no_afterslip) {
+		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults, struct eqkfm *eqkfm_aft, int no_afterslip, int *Nfaults_aft) {
 	/*
 	 *  aftersliptime: event time of the mainshock containing afterslip.
 	 *  int afterslip: flag indicating if afterslip should be used.
@@ -378,9 +381,9 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 
 	struct pscmp *DCFS;
     struct Coeff_LinkList *AllCoeff, *temp;
-    int Nsel, Nsteps, NFtot;
+    int Nsel, Nsteps, NFtot, NFtotaft;
     int mainshock_withafterslip;
-    int afterslip= (aftersliptime==NULL) ? 0 : 1;
+    int afterslip= (eqkfm_aft==NULL) ? 0 : 1;
     double M0;
 
     //----------set up Coefficients----------------//
@@ -396,10 +399,12 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 				temp->hasafterslip=0;
 				temp->next= malloc(sizeof(struct Coeff_LinkList));
 				temp= temp->next;
+				temp->which_main=i;
 			}
 			else {
 				temp->hasafterslip=0;
 				temp->next=(struct Coeff_LinkList *) 0;
+				temp->which_main=i;
 			}
 		}
 
@@ -447,22 +452,35 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 
     if (afterslip){
     	int i=0;
-	   for (int a=0; a<no_afterslip; a++){
-		mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, aftersliptime[a], 0.000011575);
-		if (mainshock_withafterslip==-1){
-			print_logfile("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
-			print_screen("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
-			return(1);
-		}
-		struct Coeff_LinkList *temp;
-		temp=AllCoeff;
-		while (i<Nm && i!=mainshock_withafterslip) {
-			i++;
+		NFtot=NFtotaft=0;
+    	for (int a=0; a<no_afterslip; a++){
+			mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, eqkfm_aft[NFtotaft].t, 0.000011575);
+			if (mainshock_withafterslip==-1){
+				print_logfile("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
+				print_screen("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
+				return(1);	//fixme deactivate it instead?
+			}
+			struct Coeff_LinkList *temp;
+			temp=AllCoeff;
+			while (i<Nm && i!=mainshock_withafterslip) {
+				NFtot+=Nfaults[i];
+				i++;
+				temp=temp->next;
+			}
+
+			if (!check_same_geometry(eqkfm0+NFtot, Nfaults[i], eqkfm_aft+NFtotaft, Nfaults_aft[a])){
+				print_logfile("Error: Afterslip model and coseismic slip model have different geometry. Exiting.\n");
+				print_screen("Error: Afterslip model and coseismic slip model have different geometry. Exiting.\n");
+				return(1);
+			}
+
+			//cuts_surf must be the same for afterslip and coseismic model:
+			for (int f=0; f<Nfaults_aft[a]; f++) eqkfm_aft[NFtotaft+f].cuts_surf=eqkfm0[NFtot+f].cuts_surf;
+
+			temp->hasafterslip=1;
 			temp=temp->next;
+			NFtotaft+=Nfaults_aft[a];
 		}
-		temp->hasafterslip=1;
-		temp=temp->next;
-	}
     }
 
     return(0);

@@ -13,12 +13,34 @@
 
 int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1, double Asig, double ta,
 			int points[], double *out_NeX, double *NeT, double *Rate_end, int N, int NTS, int Neqks, double *gamma_init, double *back_rate, double *R, int last){
-//assumes stress grows linearly during each time step.
-//NB assumes that times, cat, DCFS, NTS are always the same (each time function is called).
-// if points==NULL, use sequence [1,2,3,...,N].
-// cmbdata can be NULL, and will be ignored.
-// if backrate==1, will assume it's 1 for all points. If not, it should be an array containing NgridT times the ratio between avg rate and rate at that point. (so that the sum of back_rate is NgridT).
-	//fixme check: indices of R[0...cat.Z-1] or {[1...cat.Z]
+
+	/* Calculates seismicity in space and time based on rate-and-state (Dieterich 1994) constitutive law.
+	 * Aseismic stresses in cmpdata are assumed to grow linearly between time steps.
+	 *
+	 * Input:
+	 *  cat: catalog containing earthquakes to be included in LogLikelihood calculation.
+	 *  times: timesteps corresponding to aseismic loading. [0...NTS]
+	 *  cmpdata: stresses due to aseismic loading. [0...NTS-1; 1...N], where cmpdata[x][m] is the stress change at grid point [m] between times[x+1] and times[x].
+	 *  		if NULL, it will be ignored.
+	 *  DCFS: structure containing seismic sources. [0...Neqks-1]
+	 *  tt0, tt1: start, end time of calculation
+	 *  Asig, ta: rate-state parameters
+	 *  points: list of indices of points to be included (referred to grid vectors in crst structure in main). if NULL, use sequence [1,2,3,...,N]
+	 *  N, NTS, Neqks: no. of grid points, time steps for aseismic sources, seismic sources.
+	 *  gamma_init: values of gammas at time tt0. NB: indices refer to *entire grid* (not just those elements of "points"): [1...NgridT]
+	 *  back_rate: spatially nonuniform background rate. array containing NgridT times the ratio between avg rate and rate at that point. (so that the sum of back_rate is NgridT).
+	 *   		if NULL, will assume it's 1 for all points (uniform rate). NB: indices refer to *entire grid* (not just those elements of "points"): [1...NgridT]
+	 *  last: flag indicating if the values of gamma_init should be overwritten at the end, with value at tt1.
+	 *
+	 * Output:
+	 *  out_NeX: number of events in each grid cell. [1...N] (i.e. it refers to the subset of points in "points").
+	 *  NeT: total no of events (i.e., sum of out_NeX)
+	 *  Rate_end: total seismicity rate at t=tt1.
+	 *  R: seismicity rate at the time of the earthquakes given in cat (used for first term of LogLikelihood).
+	 *
+	 *  NB: assumes that times, cat, DCFS, NTS, times are always the same (each time function is called), since many static internal structures are initialized in the first function call.
+	 */
+
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
@@ -30,27 +52,39 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   double  tau, dtau_dt, dtau_dt00=Asig/ta, ta1;
   int     TS0, TS1, n;
   double  gamma, back_rate_n;
-  static double **events;	//will contain times, magnitudes of all earthquakes (both from catalog and from DCFS).
-  int Neq, err=0, errtot=0;
-  int is_incat, is_inDCFS;
-  int j0, next_eqk, counter_eqk;
-  int next_TS, cat_i, DCFS_i;
-  double *NeX;
-  double **Rprivate;
-  static double *dt, *NeXdum, *ReX;
-  static int *TS_eqk;
-  static int firsttimein=1;
-  static int **which_eqk;	//contains list of eqk for each grid point, and index of the point within DCFS;
+
+  //events will contain times, magnitudes of all earthquakes (both from catalog and from DCFS):
+  static double **events;
+  static int **indices;	//contains indices of events referred to DCFS and cat.
+  int Neq;	//size of events[0...Neq];
+  int is_incat, is_inDCFS;	//flag for events in events
+  int cat_i, DCFS_i; //indices of elements in events referred to cat, DCFS.
+  static int *TS_eqk;	//time step before each earthquake in events.
+
+  // variables used to find earthquakes within each grid point (see below):
+  static int **which_eqk;
   static int *num_eqk;
   static float ** cat_weights;
   static int ** DCFS_whichpt;
+
+  //internal variables for seismicity calculation:
+  double *NeX;
+  double **Rprivate;	//private variable for each OMP thread, corresponds to global R.
+  static double *dt, *NeXdum, *ReX;
+
+
+  //dummy variables:
+  int err=0, errtot=0;
+  int j0, next_eqk, counter_eqk, next_TS;
+  int counter1, counter2, k;
   double t_pre, t_now, t_endstep;
   double a,b;
   int reach_end;
   int nthreads, nthreadstot=omp_get_max_threads();
-  int counter1, counter2;
-  static int **indices;	//contains indices of events referred to DCFS and cat(with offset of 1 - see below).
+
+  static int firsttimein=1;
   int warning_printed=0;
+
 
   if (firsttimein==1){
 		firsttimein=0;
@@ -102,21 +136,24 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 		//----------------------------------------------------------------------------------------------//
 
 		//calculate time step duration:
-		dt=dvector(0,NTS);
-		for (int g=0; g<=NTS; g++) dt[g]=times[g+1]-times[g];
+		if (NTS!=0){
+			dt=dvector(0,NTS-1);
+			for (int g=0; g<NTS; g++) dt[g]=times[g+1]-times[g];
+		}
 
 		//find last time step before each earthquake:
 		TS_eqk=ivector(0,Neq-1);
 		for (int i=0; i<Neq; i++){
-			int k=0;
-			while(k<NTS && times[k]<events[1][i]) k++;
-			if(times[k]>=events[1][i]) k--;
-			TS_eqk[i]=k;
-			if(procId == 0) {
+			if (NTS==0) TS_eqk[i]=1;	//this will make t_pre be correct later (j0<NTS condition).
+			else{
+				k=0;
+				while(k<NTS && times[k]<events[1][i]) k++;
+				if(times[k]>=events[1][i]) k--;
+				TS_eqk[i]=k;
 				if (k<0 && events[1][i]>=tt0) {
-					//todo check that this never happens.
 					print_screen("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
 					print_logfile("**Warning: no time steps available before earthquake no. %d ** (forecast_stepG2_new.c)\n",i);
+					return 1;
 				}
 			}
 		}
@@ -130,42 +167,38 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   if (Rate_end) for(int m=1;m<=N;m++) ReX[m]=0.0;
   if (NeX) for(int m=1;m<=N;m++) NeX[m]=0.0;
 
-  if(procId == 0) {
-	  //todo check this never happens
-	  if (tt1<tt0) {
-		  print_screen("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
-		  print_logfile("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
-	  }
-	  if (times[NTS]>tt0 && times[NTS]<tt1) {
-		  print_screen("\n** Warning: time steps in forecast_stepG don't cover entire forecast range!**\n");
-		  print_logfile("\n** Warning: time steps in forecast_stepG don't cover entire forecast range!**\n");
-	  }
+  if (tt1<tt0) {
+	  print_screen("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
+	  print_logfile("\n*** Warning: tt1<tt0 in forecast_stepG2_new.c  ***\n");
+	  return 1;
+  }
+  if (NTS>0 && times[0]>tt0 && times[NTS]<tt1) {
+	  print_screen("\n** Warning: time steps in forecast_stepG don't cover entire forecast range!**\n");
+	  print_logfile("\n** Warning: time steps in forecast_stepG don't cover entire forecast range!**\n");
+	  return 1;
   }
 
-// todo [coverage] this block is never tested
-  if (times[0]>=tt1){
-	  if (NeT!=(double *) 0) *NeT=N*(tt1-tt0);
-	  if (NeX) for(int m=1;m<=N;m++) NeX[m]=(tt1-tt0);
-
-	  return (0);
-  }
-
-//TS0= First time step after tt0.
+  //TS0= First time step after tt0.
   TS0=0;
-  while(TS0<NTS && times[TS0]<=tt0) TS0++;
-  if(procId == 0) {
-	  if(times[TS0]<=tt0 & !warning_printed) {
-		  warning_printed=1;
-		  print_screen("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
-		  print_logfile("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
-		  return 1;
+  if (NTS==0) TS0=1;	//this will make t_pre be correct later (j0<NTS condition).
+  else{
+	  while(TS0<NTS && times[TS0]<=tt0) TS0++;
+	  if(procId == 0) {
+		  if(times[TS0]<=tt0 & !warning_printed) {
+			  warning_printed=1;
+			  print_screen("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
+			  print_logfile("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
+			  return 1;
+		  }
 	  }
   }
 
-//TS1= Last time step before tt1.
-  TS1=1;
-  while(TS1<NTS-1 && times[TS1]<tt1) TS1++;
-  if(times[TS1]>=tt1) TS1--;
+  //TS1= Last time step before tt1.
+  TS1=1;	//this will make t_pre be correct later (j0<NTS condition).
+  if (NTS>0){
+	  while(TS1<NTS-1 && times[TS1]<tt1) TS1++;
+	  if(times[TS1]>=tt1) TS1--;
+  }
 
   if (NeT) *NeT=0;
   if (Rate_end) *Rate_end=0;
@@ -178,7 +211,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 
   err=0;
 
-//loop over grid points:
+  //loop over grid points:
   #pragma omp parallel for firstprivate(err) private(n, gamma,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, counter_eqk, back_rate_n, ta1) reduction(+:errtot)
   for(int m=1;m<=N;m++){
 
@@ -189,7 +222,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 
 	//set background rate and starting gamma given as arguments:
 	back_rate_n= (back_rate) ? back_rate[n] : 1.0;
-	gamma=gamma_init[m];
+	gamma=gamma_init[n];
 	if (NeX) NeX[m]=0.0;
 
     j0=TS0;	//next time step (first time step after tt0)
@@ -216,9 +249,9 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
     	DCFS_i= reach_end ? 0 : indices[2][next_eqk];		//index of next event (occurring at time events[1][next_eqk])
 
     	// evolve seismicity up to next barrier (which is the smallest between next earthquake (events[1][next_eqk]), next time step (times[j0]) or tt1)
-    	t_pre= fmin(t_endstep, times[j0]) - t_now;	//find time left to next barrier:
+    	t_pre= (j0<=NTS) ? fmin(t_endstep, times[j0]) - t_now : t_endstep - t_now;	//find time left to next barrier
 
-    	dtau_dt=(cmpdata && j0-1>=0 )? (Asig/ta)+cmpdata[j0-1][n]/dt[j0-1] : (Asig/ta);//stressing rate during current time step (including stress step from cmpdata and background stressing rate):
+    	dtau_dt=(cmpdata && j0-1>=0 && j0<=NTS)? (Asig/ta)+cmpdata[j0-1][n]/dt[j0-1] : (Asig/ta);//stressing rate during current time step (including stress step from cmpdata and background stressing rate):
     	if (t_pre>tol0){
 			tau=dtau_dt*t_pre;	//stress change during current time step
 			ta1=Asig/dtau_dt;	//dummy variable
@@ -232,7 +265,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
     	}
 
-    	// evolve seismicity between time steps:
+    	//evolve seismicity between time steps:
     	t_now+=t_pre;
 
 		for(int j=j0;j<next_TS;j++){
@@ -243,7 +276,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 				a=gamma*dtau_dt-1;
 				b=a*exp(-dt[j]/ta1)+1;
 
-				if (!isinf(fabs(b))) NeX[m]+=fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(dt[j]+ta1*log(b/(gamma*dtau_dt))));	//condition since for gamma -> inf, Nev-> 0 (can do algebra to confirm).
+				if (!isinf(fabs(b))) NeX[m]+=fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(dt[j]+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values for gamma->inf
 			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-dt[j]/(tau))*exp(-tau/Asig)+dt[j]/(tau) : gamma*(1-tau/Asig)+dt[j]/Asig;
 			t_now+=dt[j];
@@ -259,7 +292,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 			if (NeX) {
 				a=gamma*dtau_dt-1;
 				b=a*exp(-t_pre/ta1)+1;
-				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
+				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt)))); //due to numerical error it can give -ve values for gamma->inf
 			}
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
 		}
@@ -282,14 +315,14 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 		counter_eqk+=1;
 	}
 
-	if (last) gamma_init[m]=gamma;	//update gamma_init with final value;
+	if (last) gamma_init[n]=gamma;	//update gamma_init with final value;
 	if (Rate_end) ReX[m]=back_rate_n*(ta/Asig)/gamma;	//instantaneous seismicity rate at the end of the time step;
 
   }
 
   //collect values of R from threads:
   if (R) for (int t=0; t<nthreads; t++){
-	  for (int eq=0; eq<=cat.Z; eq++) R[eq]+=Rprivate[t][eq];
+	  for (int eq=1; eq<=cat.Z; eq++) R[eq]+=Rprivate[t][eq];
   }
 
   //final rate and tot no. of events given by the sum over all grid points:

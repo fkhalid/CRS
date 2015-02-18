@@ -143,7 +143,9 @@ int main (int argc, char **argv) {
 	double tstartLL, tendLL=0,	//start, end time of LL inversion. //todo read tendLL from file.
 			Tend, Tstart,	//start, end time of forecast.
 			tw,				//time window to skip after each event with Mw>=Mag_main in LL calculation (due to catalog incompleteness)
-			tstart_calc; 	//start of calculation time for forecast (to avoid recalculating stuff from inversion period).
+			tstart_calc, 	//start of calculation time for forecast (to avoid recalculating stuff from inversion period).
+			t_earliest_stress,	//time of the earliest stress change, used for forecast.
+			smallest_time;	//start time of time steps for aseismic stresses, times2 (needed in rate_state_evol).
 	double fore_dt;			//step between forecast output (temporal forecast).
 	double *tts;			//vector containing times of forecast output (temporal forecast).
 	int Ntts;				//size of tts.
@@ -429,12 +431,12 @@ int main (int argc, char **argv) {
 		coeffsStartTime = MPI_Wtime();
 	#endif
 
-	if (flags.afterslip){
-		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, all_aslipmodels.tmain, all_aslipmodels.NSM);	//FIXME change 2nd last argument.
-	}
-	else{
-		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, NULL, 0);
-	}
+//	if (flags.afterslip){
+	err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf, all_aslipmodels.Nfaults);	//FIXME change 2nd last argument.
+//	}
+//	else{
+//		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, NULL, 0);
+//	}
 	if (err){
 		error_quit("Error in setting up okada coefficients structure or associating afterslip with a mainshock.\n");
 	}
@@ -487,23 +489,28 @@ int main (int argc, char **argv) {
 	ts[0]=14.2653;
 
 	//todo allow for general stressing history here.
-	//todo check: times2[0] will always be before the first source of stress to be included. Correct? (used for calculation start time later, like t_firstmain used to be.)
+	//t_earliest_stress used later to calculate tstart_calc; 1e30 ensures value is ignored (see later).
+	t_earliest_stress= (Nco>0) ? eqkfm_co[0].t-1e-4 : 1e30;	//time of earliest source. fixme will change when general stressing history is allowed.
 
 	if (flags.afterslip){
-						 //todo: all_slipmodels.tmain[0], all_slipmodels.tmain[0]+1e-4 should change.
-		err=setup_afterslip_evol(all_slipmodels.tmain[0], fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
+
+		smallest_time=fmin(t_earliest_stress, fmin(tstartLL, Tstart));	//the first time step will be before this time; this is needed in rate_state_evol.
+
+		err=setup_afterslip_evol(smallest_time, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
 				Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);	//FIXME change input arguments
 		if(err) return 1;
+		print_logfile("\nSetting up time steps for calculations: %d time steps between times [%.2lf, %.2lf].\n", L, times2[0], times2[L]);
+
 	}
 
 	else {
-		times2=dvector(0,L);
-		times2[0]=fmin(tstartLL, 0.0)-1e-4;	//todo why this?
-		for (int i=1; i<=L; i++) times2[i]=times2[i-1]+(fmax(tendLL, Tend)+1e-4-times2[0])/(L-1);
+		L=0;
+		times2=NULL;
+		//times2[0]=fmin(tstartLL, 0.0)-1e-4;	//todo why this?
+		//for (int i=1; i<=L; i++) times2[i]=times2[i-1]+(fmax(tendLL, Tend)+1e-4-times2[0])/(L-1);
 	}
 
 	print_screen("done\n");
-	print_logfile("\nSetting up time steps for calculations: %d time steps between times [%.2lf, %.2lf].\n", L, times2[0], times2[L]);
 
 
 	//******************************************************************************//
@@ -777,7 +784,7 @@ int main (int argc, char **argv) {
 					print_logfile("Using steady state starting rates: ");
 				}
 				gammasfore=NULL;	// default values (will do full calculation, using uniform background rate)
-				tstart_calc=fmin(Tstart, times2[0]);	//start when forecast is required (Tstart) or when stress sources start (times2[0]).
+				tstart_calc= fmin(Tstart, t_earliest_stress);	//start when forecast is required (Tstart) or when stress sources start t_earliest_stress.
 				multi_gammas=0;
 			}
 
