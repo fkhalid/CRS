@@ -44,3 +44,5 @@ for makeFile in makeFiles :
         f.write(newdata)
         f.close()
         print 'Updated: ' + makeFile
+    else :
+        print 'Ignored: ' + makeFile
