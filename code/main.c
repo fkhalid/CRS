@@ -373,13 +373,6 @@ int main (int argc, char **argv) {
 	err=eqkfm_addslipmodels(eqkfm1, all_slipmodels, &eqkfm0res, Ntot, &Nm, &Nfaults_all, dt, dM, res, crst, flags);
 	if (err!=0) error_quit("**Error in setting up catalog or associating events with mainshocks. Exiting. **\n");
 
-//	// FIXME: Fahad - For debugging purposes only ...
-//	#ifdef _CRS_MPI
-//		MPI_Barrier(MPI_COMM_WORLD);
-//
-//		error_quit("main.c -- Exiting at line 401 \n");
-//	#endif
-
 	if(LLinversion){
 		print_logfile("Inversion time period: [%2.lf - %2.lf]days, ", tstartLL, tendLL);
 	}
