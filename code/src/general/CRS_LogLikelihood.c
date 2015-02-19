@@ -213,10 +213,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	}
 
 	#ifdef _CRS_MPI
-//		partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
-//		start = (procId * partitionSize) + 1;
-//		end = start + partitionSize;
-
 		int rootPartitionSize = 0;
 
 		partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
@@ -247,29 +243,16 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		end = Nsur + 1;
 	#endif
 
-//	// FIXME: [Fahad] For testing purposes only ...
-//	print_screen("\nNsur: %d\n", Nsur);
-//	//print_screen("\nSeed values: ");
-//	if(procId != 0) {
-//		printf("\nSeed values: ");
-//	}
-//
-//	long seeds[] = {-790681929, -579655516, -514965959, -822046922, -1573897304, -1841105815, -1637052556, -883886176, -1757295209};
-//	long seeds[] = {-21655240, -766672238, -636294961, -168794381, -1670425002, -2089834224, -1689152509, -928805812, -1579840860};
-	// For Test A2, first call.
+	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
+	// [Fahad]: FIXME - For Test A2, first call ...
 	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
 //		#ifdef _CRS_MPI
 //			*seed = newSeed * (long)nsur;
+			// [Fahad]: FIXME -- For testing only ...
 			*seed = seeds[nsur-1];
 //		#endif
-
-//		// FIXME: [Fahad] For testing purposes only ...
-//		if(procId != 0) {
-//			printf("%ld, ", *seed);
-//		}
-//		print_screen("%ld, ", *seed);
 
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
@@ -340,8 +323,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			}
 		}
 
-//		printf("\nProcId: %d -- nsur: %d -- rate[289]: %f\n", procId, nsur, rate[289]);
-
 		if(err==1) break;
 
 		for (int i=1; i<=NgridT; i++) {
@@ -407,8 +388,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 								  MPI_DOUBLE, &status);
 				MPI_File_write_at(fhw_foret2, offset, rev+1, Ntts,
 								  MPI_DOUBLE, &status);
-
-//				printf("\nProcId: %d -- nsur: %d -- rev[1]: %f\n", procId, nsur, rev[1]);
 			#else
 				for (int t=1; t<=Ntts; t++) {
 					fprintf(fforet1, "%lf\t",nev[t]*r0/NgridT);
@@ -421,9 +400,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			#endif
 		}
 	}
-
-//	// FIXME: [Fahad] For testing purposes only ...
-//	print_screen("\n");
 
 	#ifdef _CRS_MPI
 		double *recv_rate, *recv_nev_avg, *recv_rev_avg, *recv_cmb_avg, *recv_ev_x_avg;
@@ -450,9 +426,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		free_dvector(ev_x_avg, 1, NgridT);
 		ev_x_avg = recv_ev_x_avg;
 	#endif
-
-	// FIXME: For testing purposes only ...
-//	printf("\nProcId: %d -- rate[289]: %f\n", procId, rate[289]);
 
 	//calculate average rate and LL:
 	if(!err) {
@@ -748,31 +721,18 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		end = Nsur + 1;
 	#endif
 
-//	// FIXME: [Fahad] For testing purposes only ...
-//	print_screen("\nNsur: %d\n", Nsur);
-//	//print_screen("\nSeed values: ");
-//	if(procId != 0) {
-//		printf("\nSeed values: ");
-//	}
-//
-//	//long seeds[] = {-1564380170, -687176600, -1546470689, -725980954, -2027138524, -2085544457, -425835527, -292315045, -2126472361};
-//	long seeds[] = {-2141324670, -1131088987, -1302328973, -498457813, -1143054344, -1938613554, -149055727, -1505749609, -2075065137};
-	// For Test A2, first call.
+	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
+	// [Fahad]: FIXME - For Test A2, first call ...
 	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
+
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
 //		#ifdef _CRS_MPI
 //			*seed = newSeed * (long)nsur;
+			// [Fahad]: FIXME -- For testing only ...
 			if(first_timein != 1) {
 				*seed = seeds[nsur-1];
 			}
 //		#endif
-
-//		*seed = 17;
-//		// FIXME: [Fahad] For testing purposes only ...
-//		if(procId != 0) {
-//			printf("%ld, ", *seed);
-//		}
-//		print_screen("%ld, ", *seed);
 
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
 
@@ -857,7 +817,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				rate[i]+=1.0*dumrate[i]/(1.0*Nsur);
 			}
 		}
-//		printf("\nProcId: %d -- nsur: %d -- rate[1]: %f\n", procId, nsur, rate[1]);
 
 		if (all_new_gammas) {
 			for (int n=1; n<=NgridT; n++) {
@@ -878,13 +837,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			for (int n=1; n<=NgridT; n++) fprintf(fforex, "%lf\t", ev_x[n]);
 			if (nsur <Nsur) fprintf(fforex, "\n");
 		}
-
-//		// FIXME: [Fahad] For testing purposes only ...
-//		print_screen("%ld, ", *seed);
 	}
-
-//	// FIXME: [Fahad] For testing purposes only ...
-//	print_screen("\n");
 
 	#ifdef _CRS_MPI
 		double temp_integral;
@@ -894,11 +847,13 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 		MPI_Allreduce(&integral, &temp_integral, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		MPI_Allreduce(rate, recv_rate, cat.Z+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	//	// TODO: Deallocate the arrays before assignment ...
+
 		integral = temp_integral;
 		free_dvector(rate, 1, cat.Z);
 		rate = recv_rate;
 
+		// [Fahad]: TODO -- This is way too complicated. Try to come up with a more
+		//				 -- elegant algorithm. Add comments in the meanwhile ...
 		if (all_new_gammas) {
 			MPI_Allgather(linearizedLocalNewGammas, localNewGammasSize, MPI_DOUBLE,
 						  linearizedAllNewGammas,   localNewGammasSize, MPI_DOUBLE,
@@ -941,13 +896,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			free(linearizedAllNewGammas);
 		}
 	#endif
-
-//	// FIXME: For testing purposes only ...
-//	printf("\nProcId: %d -- rate[1]: %f\n", procId, rate[1]);
-//	if (all_new_gammas) {
-//		printf("\nProcId: %d -- all_new_gammas[1][1]: %f\n", procId, all_new_gammas[1][1]);
-//		printf("\nProcId: %d -- all_new_gammas[Nsur][1]: %f\n", procId, all_new_gammas[Nsur][1]);
-//	}
 
 	//calculate average rate and LL:
 	if (!err){
