@@ -11,7 +11,7 @@
 #define DEFINES_H
 
 // ----- [Fahad] Added for MPI -----
-//#define _CRS_MPI						// FIXME [Fahad]: Should be set depending on whether or not mpicc is used ...
+//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 8				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 31	// No. of scalar variables in 'struct BCast_Model_Parameters'
@@ -297,7 +297,7 @@ inline int roundUpFrac(double x) {
 	fractionalPart = modf(x, &integralPart);
 
 	if(integralPart != 0.0 && fractionalPart != 0.0) {
-		result = ceil(x + 0.5);
+		result = ceil(integralPart + 0.5);
 	}
 	else {
 		result = integralPart;
