@@ -466,10 +466,5 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		}
 	}
 
-	print_screen("\n --read_param.c-- Nsur: %d\n", *Nsur);
-//	*Nsur = 1;
-//	print_screen("\n --read_param.c-- Setting Nsur to: %d\n", *Nsur);
-
-
 	return 0;
 }
