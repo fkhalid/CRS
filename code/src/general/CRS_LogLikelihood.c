@@ -213,8 +213,32 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	}
 
 	#ifdef _CRS_MPI
+//		partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
+//		start = (procId * partitionSize) + 1;
+//		end = start + partitionSize;
+
+		int rootPartitionSize = 0;
+
 		partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
-		start = (procId * partitionSize) + 1;
+
+		if((partitionSize * numProcs) > Nsur) {
+			--partitionSize;
+
+			rootPartitionSize = partitionSize + (Nsur - (partitionSize * numProcs));
+
+			if(procId == 0) {
+				partitionSize = rootPartitionSize;
+
+				start = 1;
+			}
+			else {
+				start = rootPartitionSize + ((procId-1) * partitionSize) + 1;
+			}
+		}
+		else {
+			start = (procId * partitionSize) + 1;
+		}
+
 		end = start + partitionSize;
 
 		const long newSeed = *seed;
@@ -232,12 +256,14 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 //
 //	long seeds[] = {-790681929, -579655516, -514965959, -822046922, -1573897304, -1841105815, -1637052556, -883886176, -1757295209};
 //	long seeds[] = {-21655240, -766672238, -636294961, -168794381, -1670425002, -2089834224, -1689152509, -928805812, -1579840860};
+	// For Test A2, first call.
+	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-		#ifdef _CRS_MPI
-			*seed = newSeed * (long)nsur;
-//			*seed = seeds[nsur-1];
-		#endif
+//		#ifdef _CRS_MPI
+//			*seed = newSeed * (long)nsur;
+			*seed = seeds[nsur-1];
+//		#endif
 
 //		// FIXME: [Fahad] For testing purposes only ...
 //		if(procId != 0) {
@@ -314,6 +340,8 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			}
 		}
 
+//		printf("\nProcId: %d -- nsur: %d -- rate[289]: %f\n", procId, nsur, rate[289]);
+
 		if(err==1) break;
 
 		for (int i=1; i<=NgridT; i++) {
@@ -379,6 +407,8 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 								  MPI_DOUBLE, &status);
 				MPI_File_write_at(fhw_foret2, offset, rev+1, Ntts,
 								  MPI_DOUBLE, &status);
+
+//				printf("\nProcId: %d -- nsur: %d -- rev[1]: %f\n", procId, nsur, rev[1]);
 			#else
 				for (int t=1; t<=Ntts; t++) {
 					fprintf(fforet1, "%lf\t",nev[t]*r0/NgridT);
@@ -420,6 +450,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		free_dvector(ev_x_avg, 1, NgridT);
 		ev_x_avg = recv_ev_x_avg;
 	#endif
+
+	// FIXME: For testing purposes only ...
+//	printf("\nProcId: %d -- rate[289]: %f\n", procId, rate[289]);
 
 	//calculate average rate and LL:
 	if(!err) {
@@ -661,28 +694,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	sum=sum1=sum2=0;
 	err=0;
 
-	// [Fahad]: TODO -- Check with Camilla -- It appears as if 'printall_cmb' and 'printall_forex'
-	//				 -- are never set when calling this function. Why the following file writing
-	//				 -- then?
-	#ifdef _CRS_MPI
-		MPI_File fhw_forex, fhw_cmb;
-		MPI_Status status;
-
-		if (printall_cmb) {
-			MPI_File_open(MPI_COMM_WORLD, printall_cmb,
-						  MPI_MODE_CREATE|MPI_MODE_WRONLY,
-						  MPI_INFO_NULL, &fhw_cmb);
-		}
-
-		if (printall_forex) {
-			MPI_File_open(MPI_COMM_WORLD, printall_forex,
-						  MPI_MODE_CREATE|MPI_MODE_WRONLY,
-						  MPI_INFO_NULL, &fhw_forex);
-		}
-	#else
-		if (printall_cmb) fcmb=fopen(printall_cmb,"w");
-		if (printall_forex) fforex=fopen(printall_forex,"w");
-	#endif
+	if (printall_cmb) fcmb=fopen(printall_cmb,"w");
+	if (printall_forex) fforex=fopen(printall_forex,"w");
 
 	#ifdef _CRS_MPI
 		int rootPartitionSize = 0;
@@ -693,7 +706,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			if((partitionSize * numProcs) > Nsur) {
 				--partitionSize;
 
-				rootPartitionSize = partitionSize + (Nsur % partitionSize);
+				rootPartitionSize = partitionSize + (Nsur - (partitionSize * numProcs));
 
 				if(procId == 0) {
 					partitionSize = rootPartitionSize;
@@ -703,8 +716,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				else {
 					start = rootPartitionSize + ((procId-1) * partitionSize) + 1;
 				}
-
-//				printf("\n ProcId: %d -- Partition Size: %d \n", procId, partitionSize);
 			}
 			else {
 				start = (procId * partitionSize) + 1;
@@ -747,15 +758,16 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 //	//long seeds[] = {-1564380170, -687176600, -1546470689, -725980954, -2027138524, -2085544457, -425835527, -292315045, -2126472361};
 //	long seeds[] = {-2141324670, -1131088987, -1302328973, -498457813, -1143054344, -1938613554, -149055727, -1505749609, -2075065137};
 	// For Test A2, first call.
-//	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
+	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-		#ifdef _CRS_MPI
-			*seed = newSeed * (long)nsur;
+//		#ifdef _CRS_MPI
+//			*seed = newSeed * (long)nsur;
 			if(first_timein != 1) {
-//				*seed = seeds[nsur-1];
+				*seed = seeds[nsur-1];
 			}
-		#endif
+//		#endif
 
+//		*seed = 17;
 //		// FIXME: [Fahad] For testing purposes only ...
 //		if(procId != 0) {
 //			printf("%ld, ", *seed);
@@ -840,7 +852,12 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 		if (err==1) break;
 
-		for(int i=1;i<=cat.Z;i++) if(cat.t[i]>=tt0 && cat.t[i]<tt1) rate[i]+=1.0*dumrate[i]/(1.0*Nsur);
+		for(int i=1;i<=cat.Z;i++) {
+			if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
+				rate[i]+=1.0*dumrate[i]/(1.0*Nsur);
+			}
+		}
+//		printf("\nProcId: %d -- nsur: %d -- rate[1]: %f\n", procId, nsur, rate[1]);
 
 		if (all_new_gammas) {
 			for (int n=1; n<=NgridT; n++) {
@@ -852,32 +869,15 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			}
 		}
 
-		#ifdef _CRS_MPI
-			if (printall_cmb) {
-				int offset = ((nsur-1)*(NgridT)*sizeof(double));
-
-				// [Fahad]: Buffer indices have a '+1' because these are nrutils dvector types.
-				MPI_File_write_at(fhw_cmb, offset, (DCFS[0].cmb)+1, NgridT,
-								  MPI_DOUBLE, &status);
-			}
-			if (printall_forex) {
-				int offset = ((nsur-1)*(NgridT)*sizeof(double));
-
-				// [Fahad]: Buffer indices have a '+1' because these are nrutils dvector types.
-				MPI_File_write_at(fhw_forex, offset, ev_x+1, NgridT,
-								  MPI_DOUBLE, &status);
-			}
-		#else
 		// todo [coverage] this block (2x) is never tested
-			if (printall_cmb) {
-				for (int n=1; n<=NgridT; n++) fprintf(fcmb, "%lf\t", DCFS[0].cmb[n]);
-				if (nsur <Nsur) fprintf(fcmb, "\n");
-			}
-			if (printall_forex) {
-				for (int n=1; n<=NgridT; n++) fprintf(fforex, "%lf\t", ev_x[n]);
-				if (nsur <Nsur) fprintf(fforex, "\n");
-			}
-		#endif
+		if (printall_cmb) {
+			for (int n=1; n<=NgridT; n++) fprintf(fcmb, "%lf\t", DCFS[0].cmb[n]);
+			if (nsur <Nsur) fprintf(fcmb, "\n");
+		}
+		if (printall_forex) {
+			for (int n=1; n<=NgridT; n++) fprintf(fforex, "%lf\t", ev_x[n]);
+			if (nsur <Nsur) fprintf(fforex, "\n");
+		}
 
 //		// FIXME: [Fahad] For testing purposes only ...
 //		print_screen("%ld, ", *seed);
@@ -885,7 +885,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 //	// FIXME: [Fahad] For testing purposes only ...
 //	print_screen("\n");
-
 
 	#ifdef _CRS_MPI
 		double temp_integral;
@@ -910,20 +909,21 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				// We need to skip empty portions of NgridT size in the linearized array,
 				// for all non-root ranks.
 				for(int i = 0; i < numProcs; ++i) {
-					int numRows, rankIndex;
+					int numRows, rankIndexLinear, rankIndexMatrix;
 
 					if(i == 0) {
 						numRows = rootPartitionSize;
 					}
 					else {
-						numRows = rootPartitionSize - (Nsur % rootPartitionSize);
+						numRows = roundUpFrac((double)Nsur / (double)numProcs) - 1;
 					}
 
-					rankIndex = i * rootPartitionSize * NgridT;
+					rankIndexLinear = i * rootPartitionSize * NgridT;
+					rankIndexMatrix = rootPartitionSize + ((i-1) * numRows);
 
 					for(int j = 0; j < numRows; ++j) {
 						for(int k = 0; k < NgridT; ++k) {
-							all_new_gammas[i + j+1][k+1] = linearizedAllNewGammas[rankIndex + (j*NgridT) + k];
+							all_new_gammas[rankIndexMatrix + j+1][k+1] = linearizedAllNewGammas[rankIndexLinear + (j*NgridT) + k];
 						}
 					}
 				}
@@ -942,22 +942,17 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		}
 	#endif
 
-//	printf("\n ProcId: %d -- Integral: %f \n", procId, integral);
+//	// FIXME: For testing purposes only ...
+//	printf("\nProcId: %d -- rate[1]: %f\n", procId, rate[1]);
+//	if (all_new_gammas) {
+//		printf("\nProcId: %d -- all_new_gammas[1][1]: %f\n", procId, all_new_gammas[1][1]);
+//		printf("\nProcId: %d -- all_new_gammas[Nsur][1]: %f\n", procId, all_new_gammas[Nsur][1]);
+//	}
 
 	//calculate average rate and LL:
 	if (!err){
-		#ifdef _CRS_MPI
-			if (printall_cmb) {
-				MPI_File_close(&fhw_cmb);
-			}
-
-			if (printall_forex) {
-				MPI_File_close(&fhw_forex);
-			}
-		#else
-			if (printall_cmb) fclose(fcmb);
-			if (printall_forex) fclose(fforex);
-		#endif
+		if (printall_cmb) fclose(fcmb);
+		if (printall_forex) fclose(fforex);
 
 		Ldum0=0.0;
 		N=0;
