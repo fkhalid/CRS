@@ -177,14 +177,18 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 }
 
 #ifdef _CRS_MPI
-int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1,
-			   int NF, struct crust crst, double *lats, double *lons, double *depths) {
-	//lats, lons, depths contain complete list of grid points.
-	// Only the ones with indices eqkfm1.selpoints will be used.
+int okadaCoeff_mpi(float ****Coeffs_st,
+				   float ****Coeffs_dip,
+				   struct eqkfm *eqkfm1,
+				   int NF,
+				   struct crust crst,
+				   double *lats,
+				   double *lons,
+				   double *depths) {
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
-	int start, /*end,*/ partitionSize;
+	int start, partitionSize;
 
 	MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
@@ -221,7 +225,8 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 	print_logfile("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
 
 	for (int j=0; j<NF; j++) {
-		// [Fahad]: MPI -- 	Flag to indicate if the current fault should be processed in serial.
+		// [Fahad]: MPI -- 	Flag to indicate if the current
+		//				--  fault should be processed in serial.
 		int processFaultSerially = 0;
 
 		pure_thrustnorm=pure_strslip=0;
@@ -236,14 +241,18 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 		len   = eqkfm1[j].L*(1.0/eqkfm1[j].np_st);
 		width = eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
 
+		// [Fahad]: Since MPI parallelization is based on the
+		//		  : No. of patches.
 		size_t numPatches = eqkfm1[j].np_di*eqkfm1[j].np_st;
 
-		// [Fahad] - Create linearized full tensors for use in MPI communication
-		//			 routines
+		// [Fahad] - Create linearized tensors for all patches within the
+		//		   - current fault, for use in MPI communication routines.
 		size_t fullTensorSize = ((numPatches) * Nsel * 6);
 		float *coeffs_st  = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
 		float *coeffs_dip = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
 
+		// [Fahad]: If the No. of MPI ranks is greater than the number of patches,
+		//		  : serially process all patches in the current fault.
 		if(numProcs > numPatches) {
 			processFaultSerially = 1;
 
@@ -257,10 +266,11 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 			}
 			print_screen("*** No. of patches is less than the No. of processes. Processing fault in serial ... ***\n",j);
 		}
-		else {
+		else {	// [Fahad]: Partition the No. of patches for parallel processing by MPI ranks.
 			partitionSize = numPatches / numProcs;
 
-			// If partionSize leaves one or more elements at the end
+			// [Fahad]: If partionSize is not large enough to hold all patches, increase
+			//		  : the partition size and reallocate the linearized tensors.
 			if(partitionSize * numProcs != numPatches) {
 				partitionSize += 1;
 
@@ -271,8 +281,9 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 			start = (procId * partitionSize);
 		}
 
-		// [Fahad] - Create linearized partitioned tensors for use in MPI
-		//			 communication routines.
+		// [Fahad] - Create linearized tensors for the partition to be processed
+		//		   - by the current rank. Linearization is required for MPI
+		//		   - communication routines.
 		size_t partitionedTensorSize = partitionSize * Nsel * 6;
 		float *coeffs_st_partitioned  = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
 		float *coeffs_dip_partitioned = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
@@ -326,8 +337,9 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 		}
 
 		if(processFaultSerially) {
-			// [Fahad]: Manually concatenate the partition array into the
-			//			full linearized tensor array.
+			// [Fahad]: Concatenate the partition array into the full patch
+			//		  : linearized tensor array, since the fault has been
+			//		  : processed serially.
 			for(size_t k = 0; k < partitionedTensorSize; ++k) {
 				coeffs_st[k]  = coeffs_st_partitioned[k];
 				coeffs_dip[k] = coeffs_dip_partitioned[k];
@@ -347,20 +359,23 @@ int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkf
 		free(coeffs_dip_partitioned);
 
 		// [Fahad] - Copy data from the linearized tensors to the f3tensors.
-		int patchIndex = 0, tensorIndex = 0;
+
+		int linearIndex = 0, tensorIndex = 0;
 
 		// Calculate tensorIndex
 		for(size_t fault = 0; fault < j; ++fault) {
+			// [Fahad]: Index should start just after all the patches that
+			//		  : have already been processed for previous faults
 			tensorIndex += eqkfm1[fault].np_di*eqkfm1[fault].np_st;
 		}
 
 		for(int i = 0; i < numPatches; ++i) {
 			for(int j = 0; j < Nsel; ++j) {
 				for(int k = 0; k < 6; ++k) {
-					patchIndex = (i * Nsel * 6) + (j * 6) + k;
+					linearIndex = (i * Nsel * 6) + (j * 6) + k;
 
-					(*Coeffs_st) [tensorIndex + i + 1][j+1][k+1] = coeffs_st [patchIndex];
-					(*Coeffs_dip)[tensorIndex + i + 1][j+1][k+1] = coeffs_dip[patchIndex];
+					(*Coeffs_st) [tensorIndex + i + 1][j+1][k+1] = coeffs_st [linearIndex];
+					(*Coeffs_dip)[tensorIndex + i + 1][j+1][k+1] = coeffs_dip[linearIndex];
 				}
 			}
 		}
