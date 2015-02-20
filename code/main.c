@@ -832,6 +832,54 @@ int main (int argc, char **argv) {
 		fclose(flog);
 	}
 
+	#ifdef _CRS_MPI
+		print_screen("\nConverting output files from Binary to ASCII ... ");
+
+		if(procId == 0) {
+			// [Fahad]: Converting file written using MPI I/O routines
+			//		  : from binary to ASCII.
+			char binaryToAsciiCmd_cmb[500],
+				 binaryToAsciiCmd_forex[500],
+				 binaryToAsciiCmd_foret_cumu[500],
+				 binaryToAsciiCmd_foret_rates[500],
+				 rmCmd[500], mvCmd[500];
+
+			sprintf(binaryToAsciiCmd_cmb,
+					"%s '%d/8 \"%%.6e\\t\"' -e '\"\\n\"' %s.dat > %s.txt", "hexdump -v -e",
+					NgridT, printall_cmb, printall_cmb);
+
+			sprintf(binaryToAsciiCmd_forex,
+					"%s '%d/8 \"%%.6e\\t\"' -e '\"\\n\"' %s.dat > %s.txt", "hexdump -v -e",
+					NgridT, printall_forex, printall_forex);
+
+			sprintf(binaryToAsciiCmd_foret_cumu,
+					"%s '%d/8 \"%%f\\t\"' -e '\"\\n\"' %s_cumu.dat > %s_cumu.txt", "hexdump -v -e",
+					Ntts, printall_foret, printall_foret);
+
+			sprintf(binaryToAsciiCmd_foret_rates,
+					"%s '%d/8 \"%%f\\t\"' -e '\"\\n\"' %s_rates.dat > %s_rates.txt", "hexdump -v -e",
+					Ntts, printall_foret, printall_foret);
+
+			system(binaryToAsciiCmd_cmb);
+			system(binaryToAsciiCmd_forex);
+			system(binaryToAsciiCmd_foret_cumu);
+			system(binaryToAsciiCmd_foret_rates);
+
+			sprintf(mvCmd, "mv %s.txt %s.dat", printall_cmb, printall_cmb);
+			system(mvCmd);
+
+			sprintf(mvCmd, "mv %s.txt %s.dat", printall_forex, printall_forex);
+			system(mvCmd);
+
+			sprintf(mvCmd, "mv %s_cumu.txt %s_cumu.dat", printall_foret, printall_foret);
+			system(mvCmd);
+
+			sprintf(mvCmd, "mv %s_rates.txt %s_rates.dat", printall_foret, printall_foret);
+			system(mvCmd);
+		}
+
+		print_screen("Done.\n");
+	#endif
 
 	#ifdef _CRS_MPI
 		MPI_Finalize();
