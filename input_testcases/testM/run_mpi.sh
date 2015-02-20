@@ -1,20 +1,29 @@
 #!/bin/bash
 
-basefile="input_testcases/testC/input.txt"
-parafile="input_testcases/parameters_uncert.txt"
-temppara="input_testcases/testC/temp_par.txt"
+Build="mpirun -n 4 Release/"
 
-for i in $(seq 0 4)	#should be 0 4
+echo "***************************Build="$Build"********************************"
+basefile="input_testcases/testM/input.txt"
+parafile="input_testcases/parameters.txt"
+temppara="input_testcases/testM/temp_par.txt"
+
+for i in $(seq 1 2)
 do
-ln1="OutputForecastFile=output_testcases/testC$i"
-ln2="Logfile=output_testcases/testC$i.log"
+ln1="OutputForecastFile=output_testcases/testM$i"
+ln2="Logfile=output_testcases/testM$i.log"
 
-sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputC
-sed "49s+0+1+"  $parafile | sed "49s+X+$i+" > $temppara
-mpirun -np 2 Release/CRS_3.0 temp_inputC
+sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputM
+echo "ForecastTemplate=input_testcases/darf_temp_fake$i.txt" >> temp_inputM
+cp $parafile $temppara
 
-rm temp_inputC
-rm $temppara
+$Build/CRS_3.0 temp_inputM
+if [ $Build == "Coverage" ]
+then
+mkdir coverage/testM$i
+cp Coverage/code/src/*/*.gc* coverage/testM$i
+fi
 done
 
+rm temp_inputM
+rm $temppara
 
