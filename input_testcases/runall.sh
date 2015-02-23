@@ -34,7 +34,7 @@ then
 fi
 
 #Run code:
-for i in $(ls input_testcases --color=never | grep test); do input_testcases/$i/run.sh $Build $2; done
+for i in $(ls input_testcases --color=never | grep test | grep -v testA); do input_testcases/$i/run.sh $Build $2; done
 #for i in $(ls input_testcases --color=never | grep 'testF'); do input_testcases/$i/run.sh $Build; done
 
 #---------------------------------#

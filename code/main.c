@@ -411,17 +411,56 @@ int main (int argc, char **argv) {
 	err=eqkfm_addslipmodels(eqkfm_temp, all_slipmodels, &eqkfm_co, Ntemp, &Nco, &Nfaults_co, dt, dM, res, crst, flags);
 	if (err!=0) error_quit("Error in setting up catalog or associating events with mainshocks. Exiting.\n");
 
-//	// FIXME: Fahad - For debugging purposes only ...
-//	#ifdef _CRS_MPI
-//		MPI_Barrier(MPI_COMM_WORLD);
-//
-//		error_quit("main.c -- Exiting at line 401 \n");
-//	#endif
+
 
 	if(LLinversion){
 		print_logfile("Inversion time period: [%2.lf - %2.lf]days, ", tstartLL, tendLL);
 	}
 
+	//--------------------------------------------------------------//
+	//					Setup other things							//
+	//--------------------------------------------------------------//
+
+	if (flags.err_recfault && no_fm_cats==1 && Nsur>Nfocmec) {
+	    	Nsur=Nfocmec;		//it doesn't make sense to have more iterations than focal mechanisms.
+			flags.sample_all=1;	//all focal mechanisms can be sampled (one per iteration).
+	    }
+	else flags.sample_all=0;
+
+	if (!flags.err_recfault && flags.OOPs) flags.err_recfault=2;	//by convention, this value means OOPs when passed to calculateDCFSrandomized.
+	//if (!flags.err_recfault) {
+	//	if (crst.variable_fixmec){
+	//		crst.nofmzones=crst.N_allP;
+	//		crst.fmzone=ivector(1,crst.N_allP);
+	//		for (int i=1; i<=crst.N_allP; i++) crst.fmzone[i]=i-1;
+	//	}
+	//	else{
+	//		crst.nofmzones=1;
+	//		crst.fmzone=NULL;
+	//	}
+	//}
+
+	if (!crst.uniform && flags.err_gridpoints) {
+			print_screen("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
+			print_logfile("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
+		flags.err_gridpoints=0;
+	}
+
+	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=1;	//since there are not sources of uncertainties.
+
+	// [Fahad] 	- We need to make sure that the number of iterations is not less
+	//		   	- than the number of MPI processes; so that all processes can
+	//			- contribute to the computations.
+	// TODO: Rewrite the error message so that it is more helpful to the user ...
+	#ifdef _CRS_MPI
+		if(numProcs > Nsur) {
+			if(procId == 0) {
+				printf("\n Number of MPI processes: %d", numProcs);
+				printf("\n Number of iterations: %d", Nsur);
+			}
+			error_quit("\n ** Nsur must be greater than or equal to the number of MPI processes ** \n\n");
+		}
+	#endif
 	//--------------Setup Coefficients and DCFS struct--------------//
 
 	#ifdef _CRS_MPI
@@ -451,25 +490,6 @@ int main (int argc, char **argv) {
 			printf("\nTime - setup_CoeffsDCFS(): %f seconds\n\n", (coeffsEndTime - coeffsStartTime));
 		}
 	#endif
-
-	//--------------------------------------------------------------//
-	//					Setup other things							//
-	//--------------------------------------------------------------//
-
-	if (flags.err_recfault && no_fm_cats==1 && Nsur>Nfocmec) {
-	    	Nsur=Nfocmec;		//it doesn't make sense to have more iterations than focal mechanisms.
-			flags.sample_all=1;	//all focal mechanisms can be sampled (one per iteration).
-	    }
-	else flags.sample_all=0;
-
-	if (!flags.err_recfault && flags.OOPs) flags.err_recfault=2;	//by convention, this value means OOPs when passed to calculateDCFSrandomized.
-
-	if (!crst.uniform && flags.err_gridpoints) {
-		print_screen("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
-		print_logfile("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
-		flags.err_gridpoints=0;
-	}
-	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=1;	//since there are not sources of uncertainties.
 
 	//--------------------------------------------------------------//
 	// 					Setup time steps;							//
@@ -857,6 +877,54 @@ int main (int argc, char **argv) {
 		fclose(flog);
 	}
 
+	#ifdef _CRS_MPI
+		print_screen("\nConverting output files from Binary to ASCII ... ");
+
+		if(procId == 0) {
+			// [Fahad]: Converting file written using MPI I/O routines
+			//		  : from binary to ASCII.
+			char binaryToAsciiCmd_cmb[500],
+				 binaryToAsciiCmd_forex[500],
+				 binaryToAsciiCmd_foret_cumu[500],
+				 binaryToAsciiCmd_foret_rates[500],
+				 rmCmd[500], mvCmd[500];
+
+			sprintf(binaryToAsciiCmd_cmb,
+					"%s '%d/8 \"%%.6e\\t\"' -e '\"\\n\"' %s.dat > %s.txt", "hexdump -v -e",
+					NgridT, printall_cmb, printall_cmb);
+
+			sprintf(binaryToAsciiCmd_forex,
+					"%s '%d/8 \"%%.6e\\t\"' -e '\"\\n\"' %s.dat > %s.txt", "hexdump -v -e",
+					NgridT, printall_forex, printall_forex);
+
+			sprintf(binaryToAsciiCmd_foret_cumu,
+					"%s '%d/8 \"%%f\\t\"' -e '\"\\n\"' %s_cumu.dat > %s_cumu.txt", "hexdump -v -e",
+					Ntts, printall_foret, printall_foret);
+
+			sprintf(binaryToAsciiCmd_foret_rates,
+					"%s '%d/8 \"%%f\\t\"' -e '\"\\n\"' %s_rates.dat > %s_rates.txt", "hexdump -v -e",
+					Ntts, printall_foret, printall_foret);
+
+			system(binaryToAsciiCmd_cmb);
+			system(binaryToAsciiCmd_forex);
+			system(binaryToAsciiCmd_foret_cumu);
+			system(binaryToAsciiCmd_foret_rates);
+
+			sprintf(mvCmd, "mv %s.txt %s.dat", printall_cmb, printall_cmb);
+			system(mvCmd);
+
+			sprintf(mvCmd, "mv %s.txt %s.dat", printall_forex, printall_forex);
+			system(mvCmd);
+
+			sprintf(mvCmd, "mv %s_cumu.txt %s_cumu.dat", printall_foret, printall_foret);
+			system(mvCmd);
+
+			sprintf(mvCmd, "mv %s_rates.txt %s_rates.dat", printall_foret, printall_foret);
+			system(mvCmd);
+		}
+
+		print_screen("Done.\n");
+	#endif
 
 	#ifdef _CRS_MPI
 		MPI_Finalize();

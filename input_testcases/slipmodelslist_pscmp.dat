@@ -1,0 +1,17 @@
+# no. of events
+# format (can be pscmp, farfalle or fsp)	flag indicating if all models have the same geometry.
+# time(1st event)    magnitude(1st event) no.of slip models(1st event)
+# cuts_surf	 path to first slip model
+# cuts_surf	 path to second slip model
+# ...
+# time(2nd event)    magnitude(2nd event)    no.of slip models(2nd event)
+# path to first slip model
+# path to second slip model
+# ...
+# ...
+2
+pscmp	0	
+2004-09-28T17:15:24Z	6.0	1
+0 input/slipmodels/pscmp/s2004PARKFI01CUST.pscmp
+2004-09-29T17:15:24Z    6.0     1
+0 input/slipmodels/pscmp/s2004PARKFI01DREG.pscmp

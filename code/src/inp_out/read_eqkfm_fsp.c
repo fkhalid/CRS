@@ -60,8 +60,8 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 		error_quit(errmsg);
 	}
 
+	//Read parameters in first block ("FINITE-SOURCE RUPTURE MODEL"):
 	if(procId == 0) {
-//		if (!(ff=next_separator(fin,"FINITE-SOURCE RUPTURE MODEL"))) error_quit(errmsg);
 		find_key(fin, "LAT", &lat0);
 		find_key(fin, "LON", &lon0);
 		find_key(fin, "DEP", &dep0);
@@ -71,9 +71,9 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 		find_key(fin, "DIP", &dip0);
 		find_key(fin, "RAKE", &rake0);
 		find_key(fin, "Mw", &Mw);
-//		if (!(ff=next_separator(fin,"inversion-related parameters"))) error_quit(errmsg);
-//		find_key(fin, "Nsg", &value);
 	}
+
+	//Read parameters in second block ("inversion-related parameters"):
 	if(procId == 0) {
 		if(!(ff=next_separator(fin,"inversion-related parameters"))) {
 			fileError = 1;
@@ -133,6 +133,8 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				print_logfile("Error: geometry of slip model %s not understood. Exit.\n", fname);
 				return 1;
 			}
+
+			//Initialize structures that will contain slip model:
 			(*eqfm_out)[0].whichfm=1;
 			(*eqfm_out)[0].str1=str0;
 			(*eqfm_out)[0].dip1=dip0;
@@ -150,6 +152,7 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 
 			// [Fahad] The following function does not implement any data structure bcast.
 			//		   bcast is used only to implement error conditions.
+			//Read slip model:
 			err += read_slipvalues(fin, *eqfm_out);
 
 			#ifdef _CRS_MPI
@@ -270,21 +273,36 @@ int next_separator(FILE *fin, char *string){
 }
 
 int find_key(FILE *fin, char *string, double *value){
+	/* Search for key string with a block of fps file;
+	 * A block is defined as the lines between comments (%---).
+	 *
+	 * Input:
+	 *  file *fin: input file
+	 *  string:	key to be searched
+	 *
+	 * Output: value assigned to the key (string=value).
+	 * Returns: flag indicating if string was found.
+	 */
 
+	//allow for 2 types of comments:
 	char comment1[]="% -";
 	char comment2[]="%--";
 	int Nchar_long=500;
 	int nchar=strlen(string), off;
-	int found=0;
+	int found=0;	//flag
 	long int pos0=ftell(fin);
 	char line[Nchar_long];
 
+	//scan down coment lines:
 	strncpy(line, comment1, 3);
 	while (!feof(fin) && (!strncmp(line,comment1,3) || !strncmp(line,comment2,3) || line[0]!=comment1[0])) fgets(line,Nchar_long,fin);
 
 	while (!feof(fin) && !found){
+		//break if a new comment line is reached (end of block)
 		if (!strncmp(line,comment1,3) || !strncmp(line,comment2,3) || line[0]!=comment1[0]) break;
-		off=0;
+
+		//scan along input string (line) and compare with key:
+		off=0;	//offset
 		while(off+nchar<strlen(line)){
 			if (!strncmp(line+off,string,nchar)) {
 				found=1;
@@ -296,6 +314,7 @@ int find_key(FILE *fin, char *string, double *value){
 		fgets(line,Nchar_long,fin);
 	}
 
+	//rewind to starting position:
 	fseek (fin, pos0, SEEK_SET);
 	return found;
 }

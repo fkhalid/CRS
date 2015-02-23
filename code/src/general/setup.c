@@ -490,10 +490,11 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults) {
 
 	// [Fahad] Variables used for MPI
-	int procId = 0;
+	int procId = 0, numProcs = 1;
 
 	#ifdef _CRS_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+		MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 	#endif
 
     struct Coeff_LinkList *temp;
@@ -513,10 +514,13 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 					if (temp->Coeffs_st) free_f3tensor(temp->Coeffs_st, 1,0,1,0,1,0);
 					if (temp->Coeffs_dip) free_f3tensor(temp->Coeffs_dip, 1,0,1,0,1,0);
 				}
+				#ifdef _CRS_MPI
+					okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+				#else
 				okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
 					   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
-//				okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
-//					   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+				#endif
 				temp->NgridT=eqkfm0[0].nsel;
 				temp->NF=Nfaults[i];
 				temp->NP=0;
