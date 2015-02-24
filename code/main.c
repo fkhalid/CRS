@@ -408,7 +408,6 @@ int main (int argc, char **argv) {
 	if (err!=0) error_quit("Error in setting up catalog or associating events with mainshocks. Exiting.\n");
 
 
-
 	if(LLinversion){
 		print_logfile("Inversion time period: [%2.lf - %2.lf]days, ", tstartLL, tendLL);
 	}
@@ -424,17 +423,7 @@ int main (int argc, char **argv) {
 	else flags.sample_all=0;
 
 	if (!flags.err_recfault && flags.OOPs) flags.err_recfault=2;	//by convention, this value means OOPs when passed to calculateDCFSrandomized.
-	//if (!flags.err_recfault) {
-	//	if (crst.variable_fixmec){
-	//		crst.nofmzones=crst.N_allP;
-	//		crst.fmzone=ivector(1,crst.N_allP);
-	//		for (int i=1; i<=crst.N_allP; i++) crst.fmzone[i]=i-1;
-	//	}
-	//	else{
-	//		crst.nofmzones=1;
-	//		crst.fmzone=NULL;
-	//	}
-	//}
+
 
 	if (!crst.uniform && flags.err_gridpoints) {
 			print_screen("** Warning: grid is not uniform -> grid error will not be implemented. **\n");
@@ -443,7 +432,6 @@ int main (int argc, char **argv) {
 	}
 
 	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=1;	//since there are not sources of uncertainties.
-
 	// [Fahad] 	- We need to make sure that the number of iterations is not less
 	//		   	- than the number of MPI processes; so that all processes can
 	//			- contribute to the computations.
@@ -457,6 +445,7 @@ int main (int argc, char **argv) {
 			error_quit("\n ** Nsur must be greater than or equal to the number of MPI processes ** \n\n");
 		}
 	#endif
+
 	//--------------Setup Coefficients and DCFS struct--------------//
 
 	#ifdef _CRS_MPI
@@ -925,6 +914,7 @@ int main (int argc, char **argv) {
 		system(syscopy);
 		fclose(flog);
 	}
+
 
 	#ifdef _CRS_MPI
 		MPI_Finalize();

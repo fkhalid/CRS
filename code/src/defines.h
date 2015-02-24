@@ -314,4 +314,5 @@ inline int roundUpFrac(double x) {
 	return result;
 }
 
+
 #endif //DEFINES_H

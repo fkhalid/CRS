@@ -8,3 +8,6 @@ gmon.out
 output_testcases*
 output/*
 /Coverage
+LLs.dat
+temp_input*
+temp_par*

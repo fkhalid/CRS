@@ -453,24 +453,6 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		MPI_Bcast(&(crst->rake0[0]), 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(regstress_mode, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 
-//		// FIXME: Fahad - For debugging purposes only ...
-//		printf("\nProcId: %d -- (*crst).lambda: %f",  procId, (*crst).lambda);
-//		printf("\nProcId: %d -- (*crst).mu: %f", 	  procId, (*crst).mu);
-//		printf("\nProcId: %d -- (*crst).fric: %f", 	  procId, (*crst).fric);
-//		printf("\nProcId: %d -- (*crst).skepton: %f", procId, (*crst).skepton);
-//		printf("\nProcId: %d -- (*crst).str0[0]: %f", procId, (*crst).str0[0]);
-//		printf("\nProcId: %d -- (*crst).dip0[0]: %f", procId, (*crst).dip0[0]);
-//		printf("\nProcId: %d -- (*crst).rake0[0]: %f", procId, (*crst).rake0[0]);
-//		for(int i = 0; i < 3; ++i) {
-//			printf("\nProcId: %d -- s[%d]: %f",  procId, i, s[0]);
-//			printf("\nProcId: %d -- st[%d]: %f", procId, i, st[0]);
-//			printf("\nProcId: %d -- di[%d]: %f", procId, i, di[0]);
-//		}
-//		printf("\nProcId: %d -- regstress_mode: %s", procId, regstress_mode);
-//
-//		MPI_Barrier(MPI_COMM_WORLD);
-//		error_quit("\n\nread_param.c -- Exiting at line 465 \n");
-
 	#endif
 
 	//calculate regional stress field:

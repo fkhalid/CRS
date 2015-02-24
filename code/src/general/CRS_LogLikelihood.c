@@ -204,6 +204,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			}
 		}
 	#endif
+
 	if(procId == 0) {
 		if (print_LL) {
 			sprintf(fname, "%s.dat",print_LL);
@@ -235,6 +236,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 			if(procId == 0) {
 				partitionSize = rootPartitionSize;
+
 				start = 1;
 			}
 			else {
@@ -264,8 +266,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			// [Fahad]: FIXME -- For testing only ...
 			*seed = seeds[nsur-1];
 //		#endif
-
-
 
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
@@ -352,6 +352,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 					if (flags.afterslip) cmbpost_avg[i]+=cmbpost[i]*(1.0/Nsur);
 				}
 			}
+
 			if(printall_cmb) {
 				convert_geometry(crst,cmb, &ev_x_new, 0, 0);	//convert to output geometry
 				#ifdef _CRS_MPI
@@ -457,7 +458,8 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				fclose(fforex);
 			#endif
 		}
-			if (printall_foret) {
+
+		if (printall_foret) {
 			#ifdef _CRS_MPI
 				MPI_File_close(&fhw_foret1);
 				MPI_File_close(&fhw_foret2);
@@ -465,7 +467,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				fclose(fforet1);
 				fclose(fforet2);
 			#endif
-			}
+		}
 
 		if(procId == 0) {
 			if (print_foret) {
@@ -514,7 +516,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			}
 		}
 	}
-
 
 	if (flags.afterslip) free_dmatrix(DCFSrand, 0,NTScont,1,NgridT);
 	free_dvector(dumrate,1,cat.Z);
@@ -631,6 +632,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		double* linearizedAllNewGammas;
 		double* linearizedLocalNewGammas;
 	#endif
+
 	if (LL) print_screen("Calculating LL for Asig=%lf, ta=%lf ...", Asig, ta);
 
 	if (first_timein==1){
@@ -680,6 +682,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 	#ifdef _CRS_MPI
 		int rootPartitionSize = 0;
+
 		if(first_timein != 1) {
 			partitionSize = roundUpFrac((double)Nsur / (double)numProcs);
 
@@ -688,9 +691,10 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 				rootPartitionSize = partitionSize + (Nsur - (partitionSize * numProcs));
 
-			if(procId == 0) {
+				if(procId == 0) {
 					partitionSize = rootPartitionSize;
-				start = 1;
+
+					start = 1;
 				}
 				else {
 					start = rootPartitionSize + ((procId-1) * partitionSize) + 1;
@@ -701,7 +705,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			}
 
 			end = start + partitionSize;
-
 		}
 		else {
 			start = 1;
@@ -721,8 +724,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			linearizedAllNewGammas   = (double*) malloc(allNewGammasSize   * sizeof(double));
 			linearizedLocalNewGammas = (double*) malloc(localNewGammasSize * sizeof(double));
 		}
-		const long newSeed = *seed;
 
+		const long newSeed = *seed;
 	#else
 		start = 1;
 		end = Nsur + 1;
@@ -836,14 +839,15 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				#endif
 			}
 		}
+
 		// todo [coverage] this block (2x) is never tested
-			if (printall_cmb) {
-				for (int n=1; n<=NgridT; n++) fprintf(fcmb, "%lf\t", DCFS[0].cmb[n]);
-				if (nsur <Nsur) fprintf(fcmb, "\n");
-			}
-			if (printall_forex) {
-				for (int n=1; n<=NgridT; n++) fprintf(fforex, "%lf\t", ev_x[n]);
-				if (nsur <Nsur) fprintf(fforex, "\n");
+		if (printall_cmb) {
+			for (int n=1; n<=NgridT; n++) fprintf(fcmb, "%lf\t", DCFS[0].cmb[n]);
+			if (nsur <Nsur) fprintf(fcmb, "\n");
+		}
+		if (printall_forex) {
+			for (int n=1; n<=NgridT; n++) fprintf(fforex, "%lf\t", ev_x[n]);
+			if (nsur <Nsur) fprintf(fforex, "\n");
 		}
 	}
 
@@ -855,7 +859,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 		MPI_Allreduce(&integral, &temp_integral, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		MPI_Allreduce(rate, recv_rate, cat.Z+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	//	// TODO: Deallocate the arrays before assignment ...
+
 		integral = temp_integral;
 		free_dvector(rate, 1, cat.Z);
 		rate = recv_rate;
@@ -904,7 +908,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			free(linearizedAllNewGammas);
 		}
 	#endif
-
 
 	//calculate average rate and LL:
 	if (!err){
@@ -981,7 +984,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	#ifdef _CRS_MPI
 		first_timein = 0;
 	#endif
-
 
 	return(err);
 }

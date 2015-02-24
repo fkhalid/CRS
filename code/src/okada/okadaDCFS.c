@@ -102,6 +102,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	return(0);
 }
 
+
 #ifdef _CRS_MPI
 int okadaCoeff_mpi(float ****Coeffs_st,
 				   float ****Coeffs_dip,
@@ -116,8 +117,8 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	int procId = 0, numProcs = 1;
 	int start, partitionSize;
 
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-		MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
+	MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 
 	double north, east, eqnorth, eqeast;
 	double len, width, depth; //for individual patches.
@@ -144,7 +145,6 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	*Coeffs_st  = f3tensor(1, NP_tot, 1, Nsel, 1, 6);	//TODO should deallocate at the end (in main.c).
 	*Coeffs_dip = f3tensor(1, NP_tot, 1, Nsel, 1, 6);
 
-
 	//-----------------------------------------------------------------------------------------//
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
 	//-----------------------------------------------------------------------------------------//
@@ -156,16 +156,18 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 		// [Fahad]: MPI -- 	Flag to indicate if the current
 		//				--  fault should be processed in serial.
 		int processFaultSerially = 0;
+
 		pure_thrustnorm=pure_strslip=0;
 
 		if ((err=choose_focmec(eqkfm1[j], &strike, &dip, &rake))!=0){
 			print_screen("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
 			print_logfile("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
+
 			return(1);
 		}
 
-		len=eqkfm1[j].L*(1.0/eqkfm1[j].np_st);
-		width=eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
+		len   = eqkfm1[j].L*(1.0/eqkfm1[j].np_st);
+		width = eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
 
 		// [Fahad]: Since MPI parallelization is based on the
 		//		  : No. of patches.
@@ -179,19 +181,19 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 
 		// [Fahad]: If the No. of MPI ranks is greater than the number of patches,
 		//		  : serially process all patches in the current fault.
-			if(numProcs > numPatches) {
+		if(numProcs > numPatches) {
 			processFaultSerially = 1;
 
 			partitionSize = numPatches;
 
 			start = 0;
-				if(procId == 0) {
-					printf("\n Number of processes: %d", numProcs);
-				printf("\n Number of patches: %d", numPatches);
-				}
-			print_screen("*** No. of patches is less than the No. of processes. Processing fault in serial ... ***\n",j);
-			}
 
+			if(procId == 0) {
+				printf("\n Number of processes: %d", numProcs);
+				printf("\n Number of patches: %d", numPatches);
+			}
+			print_screen("*** No. of patches is less than the No. of processes. Processing fault in serial ... ***\n",j);
+		}
 		else {	// [Fahad]: Partition the No. of patches for parallel processing by MPI ranks.
 			partitionSize = numPatches / numProcs;
 
@@ -283,6 +285,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 
 		free(coeffs_st_partitioned);
 		free(coeffs_dip_partitioned);
+
 		// [Fahad] - Copy data from the linearized tensors to the f3tensors.
 
 		int linearIndex = 0, tensorIndex = 0;
@@ -292,21 +295,21 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			// [Fahad]: Index should start just after all the patches that
 			//		  : have already been processed for previous faults
 			tensorIndex += eqkfm1[fault].np_di*eqkfm1[fault].np_st;
-	}
+		}
 
 		for(int i = 0; i < numPatches; ++i) {
-		for(int j = 0; j < Nsel; ++j) {
-			for(int k = 0; k < 6; ++k) {
+			for(int j = 0; j < Nsel; ++j) {
+				for(int k = 0; k < 6; ++k) {
 					linearIndex = (i * Nsel * 6) + (j * 6) + k;
 
 					(*Coeffs_st) [tensorIndex + i + 1][j+1][k+1] = coeffs_st [linearIndex];
 					(*Coeffs_dip)[tensorIndex + i + 1][j+1][k+1] = coeffs_dip[linearIndex];
+				}
 			}
 		}
-	}
 
-	free(coeffs_st);
-	free(coeffs_dip);
+		free(coeffs_st);
+		free(coeffs_dip);
 	}
 
 	return(0);
@@ -414,7 +417,6 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 				}
 			}
 		}
-
 	}
 
 	return(0);

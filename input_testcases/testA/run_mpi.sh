@@ -1,6 +1,6 @@
 #!/bin/bash
 
-Build="mpirun -n 2 MPI/"
+Build="mpirun -n 4 Release/"
 
 echo "***************************build="$Build"********************************"
 basefile="input_testcases/testA/input.txt"
