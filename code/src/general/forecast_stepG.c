@@ -259,7 +259,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 				//find no. of earthquakes
 				a=gamma*dtau_dt-1;	//dummy variable
 				b=a*exp(-t_pre/ta1)+1;	//dummy variable
-				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values. todo find taylor exp and use it.
+				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values.
 			}
 			//update gamma:
 			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;

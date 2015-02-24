@@ -57,7 +57,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
  * dt, dM, xytoll, ztoll: max. expected difference (tolerance) between events from catalog and focmec catalog;
  * dR: extra distance to be considered for sources.
  * tw:	time window to be ignored for event selection after each mainshock (NB only ignored in cat, still included as sources in eqkfm).
- * tstart: start time for including sources and catalog events //todo they should be different to include foreshocks?
+ * tstart: start time for including sources and catalog events
  * tend: end time for forecast (sourced only included up to IssueTime, i.e. t=0)
  *
  * Output:
@@ -389,8 +389,6 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
     //----------set up Coefficients----------------//
 
     if (Coefficients!=NULL) {
-    	//todo make sure that coefficients are only recalculated when needed (i.e. only for events for which several slip model are available).
-
     	//Create elements of structure (allocate memory):
     	AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
 		temp= AllCoeff;
@@ -458,7 +456,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			if (mainshock_withafterslip==-1){
 				print_logfile("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
 				print_screen("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
-				return(1);	//fixme deactivate it instead?
+				return(1);
 			}
 			struct Coeff_LinkList *temp;
 			temp=AllCoeff;
@@ -648,21 +646,6 @@ int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,
 			}
 			nfaults+=Nfaults[nev];
 		}
-
-		//todo delete:
-		FILE *fout=fopen("tevol.dat","w");
-		for (int t=1; t<=*L; t++){
-			fprintf(fout,"%.5e\t",(*times2)[t]-Teq);
-			nfaults=0;
-			for (nev=0; nev<NA; nev++){
-				for (int f=0; f<Nfaults[nev]; f++) {
-					fprintf(fout,"%.5e\t",(*eqk_aft)[nfaults+f].tevol[t-1]);
-				}
-				nfaults+=Nfaults[nev];
-			}
-			fprintf(fout,"\n");
-		}
-		fclose(fout);
 
 	}
 	else{

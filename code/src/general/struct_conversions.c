@@ -84,8 +84,8 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 				if (outfile) fprintf(fout,"%lf\t%lf\t%lf\t%lf\t%lf\t%d\t%lf\t%lf\t%lf\t%lf\t%lf\t%lf\n",eqkfm2[n2].t, eqkfm2[n2].lat, eqkfm2[n2].lon, eqkfm2[n2].depth, eqkfm2[n2].mag, 1, eqkfm1[n12].t, eqkfm1[n12].lat, eqkfm1[n12].lon, eqkfm1[n12].depth, eqkfm1[n12].mag,r);
 			}
 			if (overwrite==1){
-				//copy_eqkfm_nolocation_noindex_notime(eqkfm2[n2], eqkfm1+n12);	//todo decide which one is better (temporary change for iquique).
-				copy_eqkfm_noindex_notime(eqkfm2[n2], eqkfm1+n12);
+				//copy_eqkfm_nolocation_noindex_notime(eqkfm2[n2], eqkfm1+n12);	//in this case the location is taken from eqkfm2
+				copy_eqkfm_noindex_notime(eqkfm2[n2], eqkfm1+n12);	//in this case the location is taken from eqkfm1
 			}
 			selected+=1;
 			sel[n2]=n12;

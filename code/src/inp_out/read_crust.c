@@ -11,8 +11,6 @@
 	#include "mpi.h"
 #endif
 
-//TODO: if more slip models are contained, make sure they have consistent geometry (they must cover all sampling points).
-
 int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, double resxy, double resz, int vary_focmec){
 /*
  * Read crust master file into crst structure.

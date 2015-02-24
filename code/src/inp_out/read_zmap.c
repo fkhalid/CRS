@@ -407,8 +407,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 				errP+=find_gridpoints(ygrid, xgrid, dAgrid, depgrid, N, y, x, SD, dep[eq], SDd, cut_sd, (*cat).ngrid + i, &((*cat).ngridpoints[i]), &((*cat).weights[i]), 1, 1);
 			}
 		}
-		(*cat).tstart=fmax(t0c, (*cat).t[1]);	//fixme: this is not valid if cat.Z=0.
-		(*cat).tend=fmin(t1c, (*cat).t[(*cat).Z]);
+		(*cat).tstart= ((*cat).Z==0)? t0c : fmax(t0c, (*cat).t[1]);
+		(*cat).tend= ((*cat).Z==0)? t1c : fmin(t1c, (*cat).t[(*cat).Z]);
 
 		if (!errP) {
 			if ((*cat).Mc>=20) (*cat).Mc=Mc_maxcurv((*cat).mag+1, (*cat).Z)+Mc_offset;

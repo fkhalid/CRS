@@ -103,9 +103,19 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 	if (all_gammas0==NULL)	uniform_bg_rate=1;
 
-	//fixme not print cmb stuff if it is not recalculated here!! (and think about whether this is a problem...).
-
+	//Initialize stress fields:
 	DCFSrand= (flags.afterslip) ? dmatrix(0,NTScont,1,NgridT) : NULL;
+	if (flags.afterslip){
+		DCFSrand= dmatrix(0,NTScont,1,NgridT);
+		for (int i=0; i<NTScont; i++){
+			for (int j=1; j<=NgridT; j++){
+				DCFSrand[i][j]=0;
+			}
+		}
+	}
+
+	else DCFSrand=NULL;
+
 	dumrate=dvector(1,cat.Z);
 	rate=dvector(1,cat.Z);
 	gammas=dvector(1,NgridT);
@@ -126,6 +136,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		ev_x_avg[n]=0.0;
 		ev_x_pre[n]=0.0;
 		cmb_avg[n]=0.0;
+		cmbpost_avg[n]=0.0;
 	}
 	for (int t=1; t<=Ntts; t++) {
 		nev_avg[t]=0.0;
@@ -200,7 +211,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 		if (print_cmb) {
 			sprintf(print_cmb,"%s.dat", print_cmb0);
-
 			if (flags.afterslip) sprintf(print_cmbpost,"%s_post.dat", print_cmb0);
 
 		}
@@ -249,11 +259,11 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-//		#ifdef _CRS_MPI
+		#ifdef _CRS_MPI
 //			*seed = newSeed * (long)nsur;
 			// [Fahad]: FIXME -- For testing only ...
 			*seed = seeds[nsur-1];
-//		#endif
+		#endif
 
 		#ifdef SILLY_SEED
 			*seed = -174927649  + 1000*nsur;
@@ -667,7 +677,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	sum=sum1=sum2=0;
 	err=0;
 
-	//fixme check if these should be printed out:
 	if (printall_cmb) fcmb=fopen(printall_cmb,"w");
 	if (printall_forex) fforex=fopen(printall_forex,"w");
 
@@ -726,13 +735,13 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-//		#ifdef _CRS_MPI
+		#ifdef _CRS_MPI
 //			*seed = newSeed * (long)nsur;
 			// [Fahad]: FIXME -- For testing only ...
 			if(first_timein != 1) {
 				*seed = seeds[nsur-1];
 			}
-//		#endif
+		#endif
 
         #ifdef SILLY_SEED
                 *seed = -174927649  + 1000*nsur;

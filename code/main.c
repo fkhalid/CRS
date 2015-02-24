@@ -29,7 +29,6 @@
 	#include "mpi.h"
 #endif
 
-//todo make program work for non uniform grid (set griderr=0 in that case).
 //todo check that lat=(-180, 180) are interpreted correctly throughout the program.
 
 double DCFS_cap;
@@ -97,7 +96,7 @@ int main (int argc, char **argv) {
 			*eqkfm_co=0, 			//contains all slip models for seismic sources (including synthetic ones from focal mechanisms).
 			*eqkfm_aft=0;			//contains all aseismic slip models.
 	double Mag_main, Mc_source;	//Mag_main used to skip tw for LL calculations (todo: should not do this for forecasts).
-								//Mag_main also used for declustering in case background rate; todoshould put it somewhere else in input file.
+								//Mag_main also used for declustering in case background rate; todo should put it somewhere else in input file.
 								//Mc_sources is the minimum magnitude of earthquakes to be used as stress sources.
 
 	double dt, dM, xytoll, ztoll, border;	//tolerance used to match earthquakes from catalog and from focal mechanism catalog.
@@ -140,7 +139,7 @@ int main (int argc, char **argv) {
 	int Nsur;	//no. of Monte Carlo iterations.
 
 	struct tm reftime;	//reference time (IssueTime)
-	double tstartLL, tendLL=0,	//start, end time of LL inversion. //todo read tendLL from file.
+	double tstartLL, tendLL=0,	//start, end time of LL inversion.
 			Tend, Tstart,	//start, end time of forecast.
 			tw,				//time window to skip after each event with Mw>=Mag_main in LL calculation (due to catalog incompleteness)
 			tstart_calc, 	//start of calculation time for forecast (to avoid recalculating stuff from inversion period).
@@ -175,7 +174,6 @@ int main (int argc, char **argv) {
 	int *dim;	//number of slip models available for each earthquake
 	int *Nsm, 	//contains the index of the slip model that should be used for each earthquake;
 		nf=0;	//dummy variable to count no. of faults for each earthquake.
-				//TODO: document how eqkfm_co looks like for multiple slip models, and explain the mess with slipmodel_combinations loop.
 
 	//temporary variables.
 	double minmag;	//minimum magnitude in background_rate_grid file.
@@ -244,8 +242,6 @@ int main (int argc, char **argv) {
 		error_quit("Error reading input file %s.\n", infile);
 	}
 
-	//todo [askFahad]: why does this have to be repeated? (also in read_inputfile).
-						//(and why is focmecfile not repeated?)
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags.
@@ -253,7 +249,7 @@ int main (int argc, char **argv) {
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	//todo [askFahad]: do we need to broadcast this?
+		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 	#endif
 
 //-----------------------read model parameters-------------------//
@@ -361,7 +357,7 @@ int main (int argc, char **argv) {
 	if (err) error_quit("Error in reading slip model file. Exiting.\n");
 
 	if (flags.err_recfault) {
-		// catalog should be filled up to Tend (forecast end time) since it will be used to calculate LLevents for future events too //todo remove if decide to remove LLevents.
+		// catalog should be filled up to Tend (forecast end time) since it will be used to calculate LLevents for future events too
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mc_source, Mag_main, crst, &cat, &eqkfm_temp, &focmec, &fmzonelimits,
 							   flags, &Nfocmec, &Ntemp, dt, dM,  xytoll, ztoll, border, tw,
@@ -470,12 +466,8 @@ int main (int argc, char **argv) {
 		coeffsStartTime = MPI_Wtime();
 	#endif
 
-//	if (flags.afterslip){
 	err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf, all_aslipmodels.Nfaults);	//FIXME change 2nd last argument.
-//	}
-//	else{
-//		err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, NULL, 0);
-//	}
+
 	if (err){
 		error_quit("Error in setting up okada coefficients structure or associating afterslip with a mainshock.\n");
 	}
@@ -499,7 +491,7 @@ int main (int argc, char **argv) {
 
 	//todo should allow this to be set from outside
 	double *Cs, *ts;
-	int Nfun, L=(flags.afterslip)? 10000 : 2;	//todo check: why need intermediate step (L=2, not L=1)?
+	int Nfun, L=10000;	//large number needed if afterslip==1. todo check if this is the case after fixing setup_afterslip_evol.
 	double *times2;
 
 	Nfun=1;
@@ -526,8 +518,6 @@ int main (int argc, char **argv) {
 	else {
 		L=0;
 		times2=NULL;
-		//times2[0]=fmin(tstartLL, 0.0)-1e-4;	//todo why this?
-		//for (int i=1; i<=L; i++) times2[i]=times2[i-1]+(fmax(tendLL, Tend)+1e-4-times2[0])/(L-1);
 	}
 
 	print_screen("done\n");
@@ -539,6 +529,8 @@ int main (int argc, char **argv) {
 
 	// if (LLinversion && forecast &&  tendLL<=Tstart) the results from LLinversion will be saved and used for forecast calculation.
 	// gammas_new is overwritten for each (Asig, ta) value; the values for the optimal value are saved in gammas_maxLL.
+	// TODO: these variables may be too large to be stored in memory (for large Nsur). In this case, they should not be used (and the starting rates results from LL inversion should
+	// never be used in the forecast: see if condition below).
 	if (LLinversion && forecast &&  tendLL<=Tstart) {
 		gammas_new=dmatrix(1,Nsur,1,NgridT);
 		gammas_maxLL=dmatrix(1,Nsur,1,NgridT);
@@ -798,6 +790,16 @@ int main (int argc, char **argv) {
 				gammasfore=gammas_maxLL;	//values from LLinversion.
 				tstart_calc=tendLL;		//calculations should start from tendLL (time to which gammasfore values refer).
 				multi_gammas=1;	//since gammasfore contains gamma values for each Monte Carlo iteration.
+
+				// Set all stress fields to 0, since they will not be used anymore (but they are printed out)
+				// This is done since DCFS.cmb contains the stress field from the last iteration, which will not be recalculated.
+				for (int eq=0; eq<Nco; eq++){
+					if (DCFS[eq].t<tstart_calc){
+						for (int i=1; i<=DCFS[eq].nsel; i++){
+							DCFS[eq].cmb[i]=0.0;
+						}
+					}
+				}
 			}
 			else {
 				if(mod==1) {

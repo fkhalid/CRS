@@ -146,7 +146,6 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 
 	 maxoy=maxoy+odiscy;
 	 //resampling of slipmap
-	 //todo should use oxdim or oxdim_tot?
 
 	  nns=(int)(ceil(oxdim/disc)*ceil(oydim/disc));
 	  nsx=(int)ceil(oxdim/disc);

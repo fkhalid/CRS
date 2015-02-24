@@ -390,6 +390,8 @@ int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
+	for (int i=0; i<=3; i++) pos[i]=0;
+
 	strike*=DEG2RAD;
 	dip*=DEG2RAD;
 

@@ -40,8 +40,6 @@ int sum_DCFSrand(double **DCFSrand, double **cmb, int TS, int N){
 	return 0;
 }
 
-//todo move unused functions below to a different file?
-
 //void printmatrix(double **S){
 //	//printout 3x3 matrix
 //

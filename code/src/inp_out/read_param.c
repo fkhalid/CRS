@@ -217,7 +217,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf %lf", &((*crst).fric), &((*crst).skepton));
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%lf %lf %lf", (*crst).str0, (*crst).dip0, (*crst).rake0);	//todo explain somewhere the 2 ways this variables can be used.
+		sscanf(line,"%lf %lf %lf", (*crst).str0, (*crst).dip0, (*crst).rake0);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%s", regstress_mode);
 

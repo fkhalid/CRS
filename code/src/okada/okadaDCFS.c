@@ -114,12 +114,18 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 
 	double north, east, eqnorth, eqeast;
 	double len, width, depth; //for individual patches.
+	double depth0; //to differentiate between blind fault (depth0=0) or fault cutting through surface.
 	double strike, dip, rake;
 	double alpha;
 	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
 	int i2, Nsel, err=0;
 
 	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
+	depth0=eqkfm1[0].cuts_surf ? eqkfm1[0].top : 0.0;
+
+	//todo decide whether this should be printed out:
+	print_logfile("Depth of surface: %.3lf km.\n", depth0);
+	print_screen("Depth of surface: %.3lf km.\n", depth0);
 
 	if (DCFS.nsel!=(*eqkfm1).nsel){
 		print_screen("**Warning: DCFS.nsel!=eqkfm.nsel in okadaDCFSc.**\n");
@@ -161,14 +167,12 @@ int okadaDCFS(struct pscmp DCFS, struct eqkfm *eqkfm1, int NF, struct crust crst
 			patch_pos(eqkfm1[j], p, &eqeast, &eqnorth, &depth);
 
 			// calculate DCFS from patches:
-			//#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i2)
+			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i2)
 			for (int i=1; i<=Nsel; i++){
 				i2=DCFS.which_pts[i];
 				north=crst.y[i2];
 				east=crst.x[i2];
-				pscokada(eqnorth, eqeast, depth, strike, dip, len, width, eqkfm1[j].slip_str[p],
-						 -1.0*eqkfm1[j].slip_dip[p], north, east, crst.depth[i2], &Sxx, &Syy,
-						 &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+				pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width,  eqkfm1[j].slip_str[p],  -1.0*eqkfm1[j].slip_dip[p], north, east, crst.depth[i2]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 				DCFS.S[i][1][1]+=1e6*Sxx;
 				DCFS.S[i][2][2]+=1e6*Syy;
 				DCFS.S[i][3][3]+=1e6*Szz;
@@ -227,10 +231,10 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	}
 
 	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
-	//depth0=eqkfm1[0].cuts_surf ? eqkfm1[0].top : 0.0;
-	depth=0;	//fixme maybe previous line is correct.
+	depth0=eqkfm1[0].cuts_surf ? eqkfm1[0].top : 0.0;
 
 	print_logfile("Depth of surface: %.3lf km.\n", depth0);
+	print_screen("Depth of surface: %.3lf km.\n", depth0);
 
 	//---------initialize DCFS----------//
 	*Coeffs_st  = f3tensor(1, NP_tot, 1, Nsel, 1, 6);	//TODO should deallocate at the end (in main.c).
@@ -418,6 +422,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 
 	double north, east, eqnorth, eqeast;
 	double len, width, depth; //for individual patches.
+	double depth0; //to differentiate between blind fault (depth0=0) or fault cutting through surface.
 	double strike, dip, rake;
 	double alpha;
 	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
@@ -428,8 +433,13 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 
 	for (int j=0; j<NF; j++) NP_tot+=eqkfm1[j].np_di*eqkfm1[j].np_st;
 
+
 	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
-	//fixme the mpi version used depth0: why not here?
+	depth0=eqkfm1[0].cuts_surf ? eqkfm1[0].top : 0.0;
+
+	print_logfile("Depth of surface: %.3lf km.\n", depth0);
+	print_screen("Depth of surface: %.3lf km.\n", depth0);
+	
 
 	//---------initialize DCFS----------//
 
@@ -469,7 +479,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 		width=eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
 
 		for (int p=1; p<=eqkfm1[j].np_di*eqkfm1[j].np_st; p++){
-			p1+=1;	//fixme check why not done in mpi version?
+			p1+=1;
 			patch_pos(eqkfm1[j], p, &eqeast, &eqnorth, &depth);
 
 			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i)
@@ -478,9 +488,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 				north=crst.y[i];
 				east=crst.x[i];
 				if (pure_thrustnorm!=1) {
-					pscokada(eqnorth, eqeast, depth,  strike,  dip, len, width, 1, 0,
-							 north, east, depths[i], &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
-							 alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1, 0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_st)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_st)[p1][i0][2]+=1e6*Syy;
@@ -491,9 +499,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 				}
 
 				if (pure_strslip!=1){
-					pscokada(eqnorth, eqeast, depth,  strike, dip, len, width, 0, -1,
-							 north, east, depths[i], &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
-							 alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0, -1, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_dip)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_dip)[p1][i0][2]+=1e6*Syy;
@@ -627,7 +633,7 @@ int okadaCoeff_resolve(struct Coeff_LinkList Coeffs, float ***Coeffs_st2, float 
 	for (int i=1; i<=Coeffs.NgridT; i++){
 		fm = (no_fm_zones==1) ? 0 :  fm_zones_indices[i];
 		NT=omp_get_thread_num();
-		S=S3[NT];		//todo test this;
+		S=S3[NT];
 
 		for (int p1=1; p1<= Coeffs.NP; p1++){
 

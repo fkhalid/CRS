@@ -500,7 +500,7 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 	int i, j, k;
 	double ALP1, ALP2, ALP3, ALP4, ALP5, SD, CD, SDSD, CDCD, SDCD, S2D, C2D;
 	double XI2, ET2, Q2, R, R2, R3, R5, D, TT, ALX, ALE, X11, Y11, X32, Y32, EY, EZ, FY, FZ, GY, GZ, HY, HZ;
-	int warning_notprintedyet=1;
+	static int warning_notprintedyet=1;
 
 	// [Camilla] Variables used for MPI
 	int procId = 0;
