@@ -14,7 +14,7 @@
 # 5. res_xy, res_z: internal horizontal/vertical model resolution [Fahad: make these larger to reduce memory consumption. "Internal resolution" in the log file gives you the total no. of points produced].
 4.00	0.0
 fm fix
-20
+3
 80      1e6
 5.0	1.0
 #=============================================#

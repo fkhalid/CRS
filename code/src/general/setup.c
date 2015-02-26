@@ -114,8 +114,8 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	eqkfm2dist((*eqkfm1), crst.lat, crst.lon, crst.depth, NgridT, *Ntot, 1);
 
 
-	print_screen("%d events used for catalog, %d events used as sources.\n", (int) (*cat).Z, *Ntot);
-	print_logfile("%d events used for catalog, %d events used as sources.\n", (int) (*cat).Z, *Ntot);
+	print_screen("%d events used for LL calculation, %d events used as sources.\n", (int) (*cat).Z, *Ntot);
+	print_logfile("%d events used for LL calculation, %d events used as sources.\n", (int) (*cat).Z, *Ntot);
 
 	//todo warning if no events are selected as sources.
 

@@ -7,6 +7,6 @@ IssueDate=2004-09-30T17:15:24Z
 InputCatalogFile=input_testcases/catalog.dat
 InputListSlipModels=input_testcases/slipmodelslist.dat
 ForecastTemplate=input_testcases/template.dat
-RandomSeedValue=-37284630
+RandomSeedValue=-87203630
 InversionStartDate=2004-09-28T17:15:24Z
 InputListCatalogFocMecFile=input_testcases/listfocmecfiles.txt
