@@ -1,0 +1,413 @@
+#===============================================================================
+# This is input file of FORTRAN77 program "pscmp08" for modeling post-seismic
+# deformation induced by earthquakes in multi-layered viscoelastic media using
+# the Green's function approach. The earthquke source is represented by an
+# arbitrary number of rectangular dislocation planes. For more details, please
+# read the accompanying READ.ME file.
+#
+# written by Rongjiang Wang
+# GeoForschungsZentrum Potsdam
+# e-mail: wang@gfz-potsdam.de
+# phone +49 331 2881209
+# fax +49 331 2881204
+#
+# Last modified: Potsdam, July, 2008
+#
+#################################################################
+##                                                             ##
+## Green's functions should have been prepared with the        ##
+## program "psgrn08" before the program "pscmp08" is started.  ##
+##                                                             ##
+## For local Cartesian coordinate system, the Aki's convention ##
+## is used, that is, x is northward, y is eastward, and z is   ##
+## downward.                                                   ##
+##                                                             ##
+## If not specified otherwise, SI Unit System is used overall! ##
+##                                                             ##
+#################################################################
+#===============================================================================
+# OBSERVATION ARRAY
+# =================
+# 1. selection for irregular observation positions (= 0) or a 1D observation
+#    profile (= 1) or a rectangular 2D observation array (= 2): iposrec
+#
+#    IF (iposrec = 0 for irregular observation positions) THEN
+#
+# 2. number of positions: nrec
+#
+# 3. coordinates of the observations: (lat(i),lon(i)), i=1,nrec
+#
+#    ELSE IF (iposrec = 1 for regular 1D observation array) THEN
+#
+# 2. number of position samples of the profile: nrec
+#
+# 3. the start and end positions: (lat1,lon1), (lat2,lon2)
+#
+#    ELSE IF (iposrec = 2 for rectanglular 2D observation array) THEN
+#
+# 2. number of x samples, start and end values: nxrec, xrec1, xrec2
+#
+# 3. number of y samples, start and end values: nyrec, yrec1, yrec2
+#
+#    sequence of the positions in output data: lat(1),lon(1); ...; lat(nx),lon(1);
+#    lat(1),lon(2); ...; lat(nx),lon(2); ...; lat(1),lon(ny); ...; lat(nx),lon(ny).
+#
+#    Note that the total number of observation positions (nrec or nxrec*nyrec)
+#    should be <= NRECMAX (see pecglob.h)!
+#===============================================================================
+  2
+  46   33.250000  35.500000 
+  41   -117.500000  -115.500000 
+#===============================================================================
+# OUTPUTS
+# =======
+#
+# 1. select (1/0) output for los displacement (only for snapshots, see below),
+#    x, y, and z-cosines to the INSAR orbit: insar, xlos, ylos, zlos
+#
+#    if this option is selected, the snapshots will include additional data:
+#    LOS_Dsp = los displacement to the given satellite orbit.
+#
+# 2. select (1/0) output for Coulomb stress changes (only for snapshots, see
+#    below): icmb, friction, Skempton ratio, strike, dip, and rake angles [deg]
+#    describing the uniform regional master fault mechanism, the uniform regional
+#    principal stresses: sigma1, sigma2 and sigma3 [Pa] in arbitrary order (the
+#    orietation of the pre-stress field will be derived by assuming that the
+#    master fault is optimally oriented according to Coulomb failure criterion)
+#
+#    if this option is selected (icmb = 1), the snapshots will include additional
+#    data:
+#    CMB_Fix, Sig_Fix = Coulomb and normal stress changes on master fault;
+#    CMB_Op1/2, Sig_Op1/2 = Coulomb and normal stress changes on the two optimally
+#                       oriented faults;
+#    Str_Op1/2, Dip_Op1/2, Slp_Op1/2 = strike, dip and rake angles of the two
+#                       optimally oriented faults.
+#
+#    Note: the 1. optimally orieted fault is the one closest to the master fault.
+#
+# 3. output directory in char format: outdir
+#
+# 4. select outputs for displacement components (1/0 = yes/no): itout(i), i=1,3
+#
+# 5. the file names in char format for the x, y, and z components:
+#    toutfile(i), i=1,3
+#
+# 6. select outputs for stress components (1/0 = yes/no): itout(i), i=4,9
+#
+# 7. the file names in char format for the xx, yy, zz, xy, yz, and zx components:
+#    toutfile(i), i=4,9
+#
+# 8. select outputs for vertical NS and EW tilt components, block rotation, geoid
+#    and gravity changes (1/0 = yes/no): itout(i), i=10,14
+#
+# 9. the file names in char format for the NS tilt (positive if borehole top
+#    tilts to north), EW tilt (positive if borehole top tilts to east), block
+#    rotation (clockwise positive), geoid and gravity changes: toutfile(i), i=10,14
+#
+#    Note that all above outputs are time series with the time window as same
+#    as used for the Green's functions
+#
+#10. number of scenario outputs ("snapshots": spatial distribution of all above
+#    observables at given time points; <= NSCENMAX (see pscglob.h): nsc
+#
+#11. the time [day], and file name (in char format) for the 1. snapshot;
+#12. the time [day], and file name (in char format) for the 2. snapshot;
+#13. ...
+#
+#    Note that all file or directory names should not be longer than 80
+#    characters. Directories must be ended by / (unix) or \ (dos)!
+#===============================================================================
+ 0  0.000000  0.000000  0.000000
+ 1  0.300  0.000  330.000  89.000  180.000  5.000E+06  -5.000E+06  0.000E+00
+'/home/des/camcat/Data/Wang/cmbJoshua/'
+  0                 0                0
+  'displ_x.dat'    'displ_y.dat'    'displ_z.dat'
+  0                  0                  0                 0                  0                 0
+  'stress_xx.dat'   'stress_yy.dat'   'stress_zz.dat'   'stress_xy.dat'    'stress_yz.dat'   'stress_zx.dat'
+  0               0              0            0            0
+  'tiltx.dat'    'tilty.dat'    'rot.dat'   'gd.dat'    'gr.dat'
+  1
+     0.00  'snapshot_0.00_days_1.00.dat'
+#===============================================================================
+#
+# GREEN'S FUNCTION DATABASE
+# =========================
+# 1. directory where the Green's functions are stored: grndir
+#
+# 2. file names (without extensions!) for the 13 Green's functions:
+#    3 displacement komponents (uz, ur, ut): green(i), i=1,3
+#    6 stress components (szz, srr, stt, szr, srt, stz): green(i), i=4,9
+#    radial and tangential components measured by a borehole tiltmeter,
+#    rigid rotation around z-axis, geoid and gravity changes (tr, tt, rot, gd, gr):
+#    green(i), i=10,14
+#
+#    Note that all file or directory names should not be longer than 80
+#    characters. Directories must be ended by / (unix) or \ (dos)! The
+#    extensions of the file names will be automatically considered. They
+#    are ".ep", ".ss", ".ds" and ".cl" denoting the explosion (inflation)
+#    strike-slip, the dip-slip and the compensated linear vector dipole
+#    sources, respectively.
+#
+#===============================================================================
+ '/home/des/camcat/Data/Wang/grn/1/'
+ 'uz'  'ur'  'ut'
+ 'szz' 'srr' 'stt' 'szr' 'srt' 'stz'
+ 'tr'  'tt'  'rot' 'gd'  'gr'
+#===============================================================================
+# RECTANGULAR SUBFAULTS
+# =====================
+# 1. number of subfaults (<= NSMAX in pscglob.h), latitude [deg] and east
+#    longitude [deg] of the regional reference point as  origin of the Cartesian
+#    coordinate system: ns, lat0, lon0
+#
+# 2. parameters for the 1. rectangular subfault: geographic coordinates
+#    (O_lat, O_lon) [deg] and O_depth [km] of the local reference point on
+#    the present fault plane, length (along strike) [km] and width (along down
+#    dip) [km], strike [deg], dip [deg], number of equi-size fault
+#    patches along the strike (np_st) and along the dip (np_di) (total number of
+#    fault patches = np_st x np_di), and the start time of the rupture; the
+#    following data lines describe the slip distribution on the present sub-
+#    fault:
+#
+#    pos_s[km]  pos_d[km]  slip_along_strike[m]  slip_along_dip[m]  opening[m]
+#
+#    where (pos_s,pos_d) defines the position of the center of each patch in
+#    the local coordinate system with the origin at the reference point:
+#    pos_s = distance along the length (positive in the strike direction)
+#    pos_d = distance along the width (positive in the down-dip direction)
+#
+#
+# 3. ... for the 2. subfault ...
+# ...
+#                   N
+#                  /
+#                 /| strike
+#                +------------------------
+#                |\        p .            \ W
+#                :-\      i .              \ i
+#                |  \    l .                \ d
+#                :90 \  S .                  \ t
+#                |-dip\  .                    \ h
+#                :     \. | rake               \
+#                Z      -------------------------
+#                              L e n g t h
+#
+#    Note that a point inflation can be simulated by three point openning
+#    faults (each causes a third part of the volume of the point inflation)
+#    with orientation orthogonal to each other. the results obtained should
+#    be multiplied by a scaling factor 3(1-nu)/(1+nu), where nu is the Poisson
+#    ratio at the source. The scaling factor is the ratio of the seismic
+#    moment (energy) of an inflation source to that of a tensile source inducing
+#    a plate openning with the same volume change.
+#===============================================================================
+# n_faults (Slip model by Ji Chen, USGS)
+#-------------------------------------------------------------------------------
+ 1
+#-------------------------------------------------------------------------------
+# n   O_lat   O_lon    O_depth length  width strike dip   np_st np_di start_time
+# [-] [deg]   [deg]    [km]    [km]     [km] [deg]  [deg] [-]   [-]   [day]
+#     pos_s   pos_d    slp_stk slp_dip open
+#     [km]    [km]     [m]     [m]     [m]
+#-------------------------------------------------------------------------------
+ 1   35.81850   -120.3706   5.00   40.00   14.50   137.00   83.00   20   10   0.000000
+    -32.9092       0.7304       0.0434       0.0000       0.0000
+    -30.9092       0.7304       0.0458       0.0000       0.0000
+    -28.9092       0.7304       0.0220       0.0000       0.0000
+    -26.9092       0.7304       0.0000       0.0000       0.0000
+    -24.9092       0.7304       0.0000       0.0000       0.0000
+    -22.9092       0.7304       0.0545       0.0000       0.0000
+    -20.9092       0.7304       0.0678       0.0000       0.0000
+    -18.9092       0.7304       0.1829       0.0000       0.0000
+    -16.9092       0.7304       0.0592       0.0000       0.0000
+    -14.9092       0.7304       0.1358       0.0000       0.0000
+    -12.9092       0.7304       0.2762       0.0000       0.0000
+    -10.9092       0.7304       0.0000       0.0000       0.0000
+     -8.9092       0.7304       0.2374       0.0000       0.0000
+     -6.9092       0.7304       0.1928       0.0000       0.0000
+     -4.9092       0.7304       0.3096       0.0000       0.0000
+     -2.9092       0.7304       0.2079       0.0000       0.0000
+     -0.9092       0.7304       0.0611       0.0000       0.0000
+      1.0908       0.7304       0.0036       0.0000       0.0000
+      3.0908       0.7304       0.0000       0.0000       0.0000
+      5.0908       0.7304       0.0022       0.0000       0.0000
+    -32.7444       2.1804       0.0415       0.0000       0.0000
+    -30.7444       2.1804       0.0307       0.0000       0.0000
+    -28.7444       2.1804       0.0097       0.0000       0.0000
+    -26.7444       2.1804       0.0000       0.0000       0.0000
+    -24.7444       2.1804       0.0090       0.0000       0.0000
+    -22.7444       2.1804       0.0816       0.0000       0.0000
+    -20.7444       2.1804       0.0992       0.0000       0.0000
+    -18.7444       2.1804       0.1467       0.0000       0.0000
+    -16.7444       2.1804       0.0996       0.0000       0.0000
+    -14.7444       2.1804       0.0233       0.0000       0.0000
+    -12.7444       2.1804       0.0454       0.0000       0.0000
+    -10.7444       2.1804       0.0000       0.0000       0.0000
+     -8.7444       2.1804       0.0081       0.0000       0.0000
+     -6.7444       2.1804       0.0411       0.0000       0.0000
+     -4.7444       2.1804       0.1976       0.0000       0.0000
+     -2.7444       2.1804       0.1399       0.0000       0.0000
+     -0.7444       2.1804       0.0281       0.0000       0.0000
+      1.2556       2.1804       0.0000       0.0000       0.0000
+      3.2556       2.1804       0.0000       0.0000       0.0000
+      5.2556       2.1804       0.0000       0.0000       0.0000
+    -32.5796       3.6304       0.0207       0.0000       0.0000
+    -30.5796       3.6304       0.0110       0.0000       0.0000
+    -28.5796       3.6304       0.0000       0.0000       0.0000
+    -26.5796       3.6304       0.0000       0.0000       0.0000
+    -24.5796       3.6304       0.0340       0.0000       0.0000
+    -22.5796       3.6304       0.1011       0.0000       0.0000
+    -20.5796       3.6304       0.1003       0.0000       0.0000
+    -18.5796       3.6304       0.0614       0.0000       0.0000
+    -16.5796       3.6304       0.0003       0.0000       0.0000
+    -14.5796       3.6304       0.0000       0.0000       0.0000
+    -12.5796       3.6304       0.0000       0.0000       0.0000
+    -10.5796       3.6304       0.0000       0.0000       0.0000
+     -8.5796       3.6304       0.0000       0.0000       0.0000
+     -6.5796       3.6304       0.0257       0.0000       0.0000
+     -4.5796       3.6304       0.1355       0.0000       0.0000
+     -2.5796       3.6304       0.0931       0.0000       0.0000
+     -0.5796       3.6304       0.0091       0.0000       0.0000
+      1.4204       3.6304       0.0000       0.0000       0.0000
+      3.4204       3.6304       0.0000       0.0000       0.0000
+      5.4204       3.6304       0.0000       0.0000       0.0000
+    -32.4148       5.0804       0.0037       0.0000       0.0000
+    -30.4148       5.0804       0.0000       0.0000       0.0000
+    -28.4148       5.0804       0.0000       0.0000       0.0000
+    -26.4148       5.0804       0.0185       0.0000       0.0000
+    -24.4148       5.0804       0.0643       0.0000       0.0000
+    -22.4148       5.0804       0.1108       0.0000       0.0000
+    -20.4148       5.0804       0.0907       0.0000       0.0000
+    -18.4148       5.0804       0.0286       0.0000       0.0000
+    -16.4148       5.0804       0.0000       0.0000       0.0000
+    -14.4148       5.0804       0.0000       0.0000       0.0000
+    -12.4148       5.0804       0.0000       0.0000       0.0000
+    -10.4148       5.0804       0.0135       0.0000       0.0000
+     -8.4148       5.0804       0.0337       0.0000       0.0000
+     -6.4148       5.0804       0.0903       0.0000       0.0000
+     -4.4148       5.0804       0.1525       0.0000       0.0000
+     -2.4148       5.0804       0.1010       0.0000       0.0000
+     -0.4148       5.0804       0.0187       0.0000       0.0000
+      1.5852       5.0804       0.0000       0.0000       0.0000
+      3.5852       5.0804       0.0000       0.0000       0.0000
+      5.5852       5.0804       0.0000       0.0000       0.0000
+    -32.2500       6.5304       0.0000       0.0000       0.0000
+    -30.2500       6.5304       0.0026       0.0000       0.0000
+    -28.2500       6.5304       0.0173       0.0000       0.0000
+    -26.2500       6.5304       0.0503       0.0000       0.0000
+    -24.2500       6.5304       0.0954       0.0000       0.0000
+    -22.2500       6.5304       0.1204       0.0000       0.0000
+    -20.2500       6.5304       0.0863       0.0000       0.0000
+    -18.2500       6.5304       0.0211       0.0000       0.0000
+    -16.2500       6.5304       0.0000       0.0000       0.0000
+    -14.2500       6.5304       0.0000       0.0000       0.0000
+    -12.2500       6.5304       0.0116       0.0000       0.0000
+    -10.2500       6.5304       0.0711       0.0000       0.0000
+     -8.2500       6.5304       0.1373       0.0000       0.0000
+     -6.2500       6.5304       0.2024       0.0000       0.0000
+     -4.2500       6.5304       0.2222       0.0000       0.0000
+     -2.2500       6.5304       0.1485       0.0000       0.0000
+     -0.2500       6.5304       0.0489       0.0000       0.0000
+      1.7500       6.5304       0.0010       0.0000       0.0000
+      3.7500       6.5304       0.0000       0.0000       0.0000
+      5.7500       6.5304       0.0000       0.0000       0.0000
+    -32.0852       7.9804       0.0069       0.0000       0.0000
+    -30.0852       7.9804       0.0193       0.0000       0.0000
+    -28.0852       7.9804       0.0475       0.0000       0.0000
+    -26.0852       7.9804       0.0895       0.0000       0.0000
+    -24.0852       7.9804       0.1303       0.0000       0.0000
+    -22.0852       7.9804       0.1406       0.0000       0.0000
+    -20.0852       7.9804       0.0994       0.0000       0.0000
+    -18.0852       7.9804       0.0331       0.0000       0.0000
+    -16.0852       7.9804       0.0000       0.0000       0.0000
+    -14.0852       7.9804       0.0000       0.0000       0.0000
+    -12.0852       7.9804       0.0550       0.0000       0.0000
+    -10.0852       7.9804       0.1576       0.0000       0.0000
+     -8.0852       7.9804       0.2560       0.0000       0.0000
+     -6.0852       7.9804       0.3167       0.0000       0.0000
+     -4.0852       7.9804       0.3043       0.0000       0.0000
+     -2.0852       7.9804       0.2093       0.0000       0.0000
+     -0.0852       7.9804       0.0911       0.0000       0.0000
+      1.9148       7.9804       0.0167       0.0000       0.0000
+      3.9148       7.9804       0.0000       0.0000       0.0000
+      5.9148       7.9804       0.0000       0.0000       0.0000
+    -31.9204       9.4304       0.0261       0.0000       0.0000
+    -29.9204       9.4304       0.0464       0.0000       0.0000
+    -27.9204       9.4304       0.0848       0.0000       0.0000
+    -25.9204       9.4304       0.1325       0.0000       0.0000
+    -23.9204       9.4304       0.1710       0.0000       0.0000
+    -21.9204       9.4304       0.1767       0.0000       0.0000
+    -19.9204       9.4304       0.1384       0.0000       0.0000
+    -17.9204       9.4304       0.0791       0.0000       0.0000
+    -15.9204       9.4304       0.0444       0.0000       0.0000
+    -13.9204       9.4304       0.0602       0.0000       0.0000
+    -11.9204       9.4304       0.1403       0.0000       0.0000
+     -9.9204       9.4304       0.2591       0.0000       0.0000
+     -7.9204       9.4304       0.3631       0.0000       0.0000
+     -5.9204       9.4304       0.4098       0.0000       0.0000
+     -3.9204       9.4304       0.3737       0.0000       0.0000
+     -1.9204       9.4304       0.2633       0.0000       0.0000
+      0.0796       9.4304       0.1314       0.0000       0.0000
+      2.0796       9.4304       0.0363       0.0000       0.0000
+      4.0796       9.4304       0.0000       0.0000       0.0000
+      6.0796       9.4304       0.0000       0.0000       0.0000
+    -31.7557      10.8804       0.0492       0.0000       0.0000
+    -29.7557      10.8804       0.0760       0.0000       0.0000
+    -27.7557      10.8804       0.1220       0.0000       0.0000
+    -25.7557      10.8804       0.1743       0.0000       0.0000
+    -23.7557      10.8804       0.2145       0.0000       0.0000
+    -21.7557      10.8804       0.2238       0.0000       0.0000
+    -19.7557      10.8804       0.1972       0.0000       0.0000
+    -17.7557      10.8804       0.1544       0.0000       0.0000
+    -15.7557      10.8804       0.1327       0.0000       0.0000
+    -13.7557      10.8804       0.1611       0.0000       0.0000
+    -11.7557      10.8804       0.2460       0.0000       0.0000
+     -9.7557      10.8804       0.3584       0.0000       0.0000
+     -7.7557      10.8804       0.4490       0.0000       0.0000
+     -5.7557      10.8804       0.4764       0.0000       0.0000
+     -3.7557      10.8804       0.4223       0.0000       0.0000
+     -1.7557      10.8804       0.3021       0.0000       0.0000
+      0.2443      10.8804       0.1628       0.0000       0.0000
+      2.2443      10.8804       0.0552       0.0000       0.0000
+      4.2443      10.8804       0.0047       0.0000       0.0000
+      6.2443      10.8804       0.0000       0.0000       0.0000
+    -31.5909      12.3304       0.0641       0.0000       0.0000
+    -29.5909      12.3304       0.0987       0.0000       0.0000
+    -27.5909      12.3304       0.1514       0.0000       0.0000
+    -25.5909      12.3304       0.2082       0.0000       0.0000
+    -23.5909      12.3304       0.2521       0.0000       0.0000
+    -21.5909      12.3304       0.2685       0.0000       0.0000
+    -19.5909      12.3304       0.2555       0.0000       0.0000
+    -17.5909      12.3304       0.2304       0.0000       0.0000
+    -15.5909      12.3304       0.2235       0.0000       0.0000
+    -13.5909      12.3304       0.2592       0.0000       0.0000
+    -11.5909      12.3304       0.3396       0.0000       0.0000
+     -9.5909      12.3304       0.4373       0.0000       0.0000
+     -7.5909      12.3304       0.5090       0.0000       0.0000
+     -5.5909      12.3304       0.5181       0.0000       0.0000
+     -3.5909      12.3304       0.4512       0.0000       0.0000
+     -1.5909      12.3304       0.3255       0.0000       0.0000
+      0.4091      12.3304       0.1831       0.0000       0.0000
+      2.4091      12.3304       0.0695       0.0000       0.0000
+      4.4091      12.3304       0.0105       0.0000       0.0000
+      6.4091      12.3304       0.0000       0.0000       0.0000
+    -31.4261      13.7804       0.0556       0.0000       0.0000
+    -29.4261      13.7804       0.1075       0.0000       0.0000
+    -27.4261      13.7804       0.1670       0.0000       0.0000
+    -25.4261      13.7804       0.2273       0.0000       0.0000
+    -23.4261      13.7804       0.2741       0.0000       0.0000
+    -21.4261      13.7804       0.2957       0.0000       0.0000
+    -19.4261      13.7804       0.2915       0.0000       0.0000
+    -17.4261      13.7804       0.2774       0.0000       0.0000
+    -15.4261      13.7804       0.2795       0.0000       0.0000
+    -13.4261      13.7804       0.3184       0.0000       0.0000
+    -11.4261      13.7804       0.3940       0.0000       0.0000
+     -9.4261      13.7804       0.4808       0.0000       0.0000
+     -7.4261      13.7804       0.5397       0.0000       0.0000
+     -5.4261      13.7804       0.5378       0.0000       0.0000
+     -3.4261      13.7804       0.4640       0.0000       0.0000
+     -1.4261      13.7804       0.3360       0.0000       0.0000
+      0.5739      13.7804       0.1929       0.0000       0.0000
+      2.5739      13.7804       0.0772       0.0000       0.0000
+      4.5739      13.7804       0.0142       0.0000       0.0000
+      6.5739      13.7804       0.0000       0.0000       0.0000
+#================================end of input===================================

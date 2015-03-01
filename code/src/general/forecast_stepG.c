@@ -213,7 +213,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   }
 
   //Similar to above, but for individual time steps: //fixme move allocation up.
-  nts=(dt_step<tol0) ? 0 : (tt1-tt0)/dt_step;	//number of output time steps;
+  nts=(dt_step<tol0) ? 0 : ceil((tt1-tt0)/dt_step);	//number of output time steps;
   NeTprivate=dmatrix(0,nthreadstot-1, 0, nts-1);
   ReTprivate=dmatrix(0,nthreadstot-1, 0, nts-1);
   for (int t=0; t<omp_get_max_threads(); t++){
@@ -224,17 +224,16 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   err=0;
 
   //loop over grid points:
-  #pragma omp parallel for firstprivate(err) private(n, gamma,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, counter_eqk, back_rate_n, ta1, tt0step, tt1step, step) reduction(+:errtot)
+  #pragma omp parallel for firstprivate(err) private(n, gamma,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, counter_eqk, back_rate_n, ta1, tt0step, tt1step, step, TS0, TS1) reduction(+:errtot)
   for(int m=1;m<=N;m++){
 
 	nthreads=omp_get_num_threads();
 
     tt0step=tt0;
-    tt1step=tt1;	//to make sure it enters at least once (floating point error may give problem otherwise).
+    tt1step= (nts==1)? tt1 : tt0step+dt_step;	//to make sure it enters at least once (floating point error may give problem otherwise).
    
-    j0=TS0;     //next time step (first time step after tt0)
-    counter_eqk=0;
- 
+	t_now=tt0;
+
 	if (err!=0) continue;
 	n=(points==0)? m : points[m];
 
@@ -243,17 +242,39 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	gamma=gamma_init[n];
 	if (NeX) NeX[m]=0.0;
 
-	//find first earthquake after or at tt0:
-	while (counter_eqk<num_eqk[n] && events[1][which_eqk[n][counter_eqk]]<tt0) counter_eqk+=1;
-
 	step=0;
 
 	while (tt1step<=tt1){	//overall time span
 
-		if (dt_step<tol0) break;
+		if (dt_step<tol0) break;	//to avoid infinite loop if tt0=tt1 and dt_step=0;
 
-		t_now=tt0step;
+		//TS0= First time step after tt0.
+		TS0=0;
+		if (NTS==0) TS0=1;	//this will make t_pre be correct later (j0<NTS condition).
+		else{
+		  while(TS0<NTS && times[TS0]<=tt0step) TS0++;
+		  if(procId == 0) {
+			  if(times[TS0]<=tt0 & !warning_printed) {
+				  warning_printed=1;
+				  print_screen("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
+				  print_logfile("\n*** Warning: times[TS0]<=tt0 in forecast_stepG2_new.c  ***\n");
+			  }
+		  }
+		}
+
+		//TS1= Last time step before tt1.
+		TS1=1;	//this will make t_pre be correct later (j0<NTS condition).
+		if (NTS>0){
+		  while(TS1<NTS-1 && times[TS1]<tt1step) TS1++;
+		  if(times[TS1]>=tt1step) TS1--;
+		}
+
+		j0=TS0;     //next time step (first time step after tt0)
+	    counter_eqk=0;
 		reach_end=0;
+
+		//find first earthquake after or at tt0:
+		while (counter_eqk<num_eqk[n] && events[1][which_eqk[n][counter_eqk]]<tt0step) counter_eqk+=1;
 
 		//loop over time steps until reaching tt1step:
 		while (tol0<(tt1step-t_now)){
@@ -341,9 +362,9 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 		if (ReT) ReTprivate[omp_get_thread_num()][step]+=back_rate_n*(ta/Asig)/gamma;
 
 		step+=1;
-		tt0step+=dt_step;
+		tt0step=tt1step;
 		tt1step+=dt_step;
-	//	if (n==1) printf("%f, %f...\n", tt0step, tt1step);//fixme delete
+		if (fabs(tt1step-tt1)<tol0) tt1step=tt1;	//to avoid floating point error.
 
 	}
 
@@ -353,23 +374,20 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   }
 
   //collect values of R, NeT, ReT from threads:
-  if (ReT) *ReT=0.0;
-  if (NeT) *NeT=0.0;
+  //final rate and tot no. of events given by the sum over all grid points:
+  for (int i=0; i<nts; i++){
+    if (ReT) ReT[i]=0.0;
+    if (NeT) NeT[i]=0.0;
+  }
   for (int t=0; t<nthreads; t++){
 	  if (R) for (int eq=1; eq<=cat.Z; eq++) R[eq]+=Rprivate[t][eq];
-	  //fixme make NeT, ReT vectors.
-	  if (NeT) for (int i=0; i<nts; i++) *NeT+=NeTprivate[t][i];
-	  if (ReT) for (int i=0; i<nts; i++) *ReT+=ReTprivate[t][i];
+	  if (NeT) for (int i=0; i<nts; i++) {
+		if (NeT) NeT[i]+= (i==0) ? NeTprivate[t][i] : NeTprivate[t][i]-NeTprivate[t][i-1];
+		if (ReT) ReT[i]+= ReTprivate[t][i];
+	  }
   }
 
-//  //final rate and tot no. of events given by the sum over all grid points:
-//  if (ReT) *ReT=0.0;
-//  if (NeT) *NeT=0.0;
-//  for(int m=1;m<=N;m++){
-//	  if (NeT) *NeT+=NeX[m];
-//	  if (ReT) *ReT+=ReX[m];
-//  }
-
+  //fixme do this once at the end.
   free_dmatrix(Rprivate,0,nthreadstot-1, 0, cat.Z);
   free_dmatrix(NeTprivate,0,nthreadstot-1, 0, nts-1);
   free_dmatrix(ReTprivate,0,nthreadstot-1, 0, nts-1);

@@ -8,9 +8,12 @@
 #
 2
 pscmp
-2004-09-28T17:05:20Z    2
-44.0	input_testcases/testD/Parkfield_Aft_44B.dat	
-274.0   input_testcases/testD/Parkfield_AftB.dat
+2004-09-28T17:05:20Z    5
+1.0     input_testcases/slipmodels/poslp_lambda7_T0_T1.inp
+5.0     input_testcases/slipmodels/poslp_lambda7_T0_T5.inp
+16.0    input_testcases/slipmodels/poslp_lambda7_T0_T16.inp
+44.0    input_testcases/slipmodels/poslp_lambda7_T0_T44.inp
+274.0   input_testcases/slipmodels/poslp_lambda7_T0_T274.inp
 2005-09-28T17:15:24Z	2
-44.0    input_testcases/testD/Parkfield_Aft_44.dat
-274.0	input_testcases/testD/Parkfield_Aft.dat
+44.0    input_testcases/testD/Parkfield_Aft_44B.dat
+274.0	input_testcases/testD/Parkfield_AftB.dat

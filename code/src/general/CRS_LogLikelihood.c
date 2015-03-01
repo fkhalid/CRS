@@ -15,8 +15,8 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				struct eqkfm *eqkfm0, struct flags flags,
 				struct crust crst, struct Coeff_LinkList *AllCoeff,
 				int NTScont, int Nm, int Na, int NgridT, double **focmec, int *fmzonelim,
-				int NFM, long *seed, struct catalog cat, double *times, double tstart, double *tts,
-				int Ntts, double Asig, double ta, double r0, double **all_gammas0,
+				int NFM, long *seed, struct catalog cat, double *times, double tstart, double tt0, double tt1,
+				double dtstep, double Asig, double ta, double r0, double **all_gammas0,
 				int multiple_input_gammas, int fromstart, char * print_cmb0,
 				char *print_forex0, char *print_foret, char * printall_cmb, char *printall_forex,
 				char *printall_foret, char *print_LL) {
@@ -89,7 +89,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	static double *dumrate, *gammas, *rate, *ev_x, *ev_x_new=NULL;
 	double sum, sum1, sum2, integral;
 	double Ldum;
-	double fin_rate;
 	double *gammas0;
 	double *nev, *rev, *nev_avg, *rev_avg, *ev_x_avg, *ev_x_pre, *ev_x_dum;
 	double *cmb, *cmb_avg, *cmbpost, *cmbpost_avg;
@@ -97,7 +96,8 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	int err;
 	int uniform_bg_rate=0;
 	int current_main, which_recfault;
-	double tnow, tt0, tt1;
+	int Ntts=ceil((tt1-tt0)/dtstep);
+	double tnow;
 	FILE *fforex, *fcmb, *fforet1, *fforet2, *fLLev;
 	FILE *fforet_avg;
 
@@ -121,7 +121,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	gammas=dvector(1,NgridT);
 	ev_x=dvector(1,NgridT);
 	ev_x_avg=dvector(1,NgridT);
-    ev_x_pre=dvector(1,NgridT);
+ 	ev_x_pre=dvector(1,NgridT);
 	ev_x_dum=dvector(1,NgridT);
 	ev_x_new=dvector(1,NgridT);
 	cmb=dvector(1,NgridT);
@@ -146,8 +146,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	}
 	N=0;
 
-	tt0=tts[0];
-	tt1=tts[Ntts];
 	for(int i=1;i<=cat.Z;i++) if(cat.t[i]>=tt0 && cat.t[i]<=tt1) N+=1;
 
 	sum=sum1=sum2=0.0;
@@ -276,8 +274,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		//if (flags.sample_all), each iteration corresponds to a focal mechanism. Otherwise, which_recfault=0 means: choose random one.
 		which_recfault= flags.sample_all? nsur : 0;
 
-		tt0=tts[0];
-		tt1=tts[Ntts];
 		//Set starting rates:
 		if(fromstart) {
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
@@ -310,52 +306,50 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 
 		current_main=0;
-		tnow=tts[0];
+		tnow=tt0;
 
-//		tt0=tts[0];
-//		tt1=tts[Ntts];
-//		double dts=(tt1-tt0)/Ntts;	//fixme pass to function
-//		err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1, dts,
-//								 Asig, ta, 0, ev_x_dum, nev+1, rev+1, NgridT, NTScont,
-//								 Nm, gammas, crst.rate0, dumrate, 1);
-//		for(int t=1; t<=Ntts; t++) {
-//			nev_avg[t]+=(sum)/(1.0*Nsur);
-//			rev_avg[t]+=(fin_rate)/(1.0*Nsur);
-//		}
-//		for(int i=1; i<=NgridT; i++) {
-//			ev_x[i]+=ev_x_dum[i];
-//		}
-//		for(int i=1;i<=cat.Z;i++) {
-//			if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
-//				rate[i]+=dumrate[i]/(1.0*Nsur);
-//			}
-//		}
-
-
+		err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1, dtstep,
+								 Asig, ta, 0, ev_x, nev+1, rev+1, NgridT, NTScont,
+								 Nm, gammas, crst.rate0, dumrate, 1);
 		for(int t=1; t<=Ntts; t++) {
-			//Calculate seismicity evolution:
-			tt0=tts[t-1];
-			tt1=tts[t];
-
-			err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1, tt1-tt0,
-									 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
-									 Nm, gammas, crst.rate0, dumrate, 1);
-
-			for(int i=1; i<=NgridT; i++) {
-				ev_x[i]+=ev_x_dum[i];
-			}
-
-			nev[t]=sum;
-			rev[t]=fin_rate;
-			nev_avg[t]+=(sum)/(1.0*Nsur);
-			rev_avg[t]+=(fin_rate)/(1.0*Nsur);
-
-			for(int i=1;i<=cat.Z;i++) {
-				if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
-					rate[i]+=dumrate[i]/(1.0*Nsur);
-				}
+			nev_avg[t]+=nev[t]/(1.0*Nsur);
+			rev_avg[t]+=rev[t]/(1.0*Nsur);
+		}
+//		for(int i=1; i<=NgridT; i++) {
+//			ev_x[i]=ev_x_dum[i];
+//		}
+		for(int i=1;i<=cat.Z;i++) {
+			if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
+				rate[i]+=dumrate[i]/(1.0*Nsur);
 			}
 		}
+
+
+		//for(int t=1; t<=Ntts; t++) {
+//		for(int t=1; t<=0; t++) {
+//			//Calculate seismicity evolution:
+//			tt0=tts[t-1];
+//			tt1=tts[t];
+//
+//			err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1, tt1-tt0,
+//									 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
+//									 Nm, gammas, crst.rate0, dumrate, 1);
+//
+//			for(int i=1; i<=NgridT; i++) {
+//				ev_x[i]+=ev_x_dum[i];
+//			}
+//
+//			nev[t]=sum;
+//			rev[t]=fin_rate;
+//			nev_avg[t]+=(sum)/(1.0*Nsur);
+//			rev_avg[t]+=(fin_rate)/(1.0*Nsur);
+//
+//			for(int i=1;i<=cat.Z;i++) {
+//				if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
+//					rate[i]+=dumrate[i]/(1.0*Nsur);
+//				}
+//			}
+//		}
 
 		if(err==1) break;
 
@@ -491,7 +485,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 		if(procId == 0) {
 			if (print_foret) {
-				for (int t=1; t<=Ntts; t++) fprintf(fforet_avg, "%lf\t%lf\t%lf\n",tts[t],nev_avg[t]*r0/(1.0*NgridT),rev_avg[t]*r0/(1.0*NgridT));
+				for (int t=1; t<=Ntts; t++) fprintf(fforet_avg, "%lf\t%lf\t%lf\n",tt0+dtstep*t,nev_avg[t]*r0/(1.0*NgridT),rev_avg[t]*r0/(1.0*NgridT));
 				fclose(fforet_avg);
 			}
 		}
@@ -514,8 +508,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			}
 		}
 		if (print_LL || LL){
-			tt0=tts[0];
-			tt1=tts[Ntts];
 			Ldum=0.0;
 
 			for(int j=1;j<=cat.Z;j++) if(cat.t[j]>=tt0 && cat.t[j]<tt1) {

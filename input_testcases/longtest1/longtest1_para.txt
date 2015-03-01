@@ -12,7 +12,7 @@
 #    DCFS_min is the smallest Coulomb stress change which should be computed (used to select a subset of grid points for each source and reduce calculations).
 #    DCFS_cap: values of Coulomb stress change with absolute exceeding DCFS_cap will be capped to DCFS_cap (to avoid singularities in Okada solutions).
 # 5. res_xy, res_z: internal horizontal/vertical model resolution [Fahad: make these larger to reduce memory consumption. "Internal resolution" in the log file gives you the total no. of points produced].
-4.00	0.0
+5.5	0.0
 fm fix
 3
 80      1e6

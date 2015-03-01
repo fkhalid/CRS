@@ -547,6 +547,7 @@ int main (int argc, char **argv) {
 	// gammas_new is overwritten for each (Asig, ta) value; the values for the optimal value are saved in gammas_maxLL.
 	// TODO: these variables may be too large to be stored in memory (for large Nsur). In this case, they should not be used (and the starting rates results from LL inversion should
 	// never be used in the forecast: see if condition below).
+
 	if (LLinversion && forecast &&  tendLL<=Tstart) {
 		gammas_new=dmatrix(1,Nsur,1,NgridT);
 		gammas_maxLL=dmatrix(1,Nsur,1,NgridT);
@@ -867,7 +868,7 @@ int main (int argc, char **argv) {
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
 			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, crst, AllCoeff, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec,
-					&seed, cat, times2,tstart_calc, tts, Ntts, maxAsig, maxta, maxr, gammasfore, multi_gammas, 1,
+					&seed, cat, times2,tstart_calc, Tstart, Tend, fore_dt, maxAsig, maxta, maxr, gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
 
 			print_logfile("Output files written: %s, %s, %s, %s, %s, %s, %s.\n",

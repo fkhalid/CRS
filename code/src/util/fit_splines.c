@@ -187,7 +187,6 @@ for (int h=1; h<=N; h++){
 			for (int ts=1;ts<=TS; ts++) fprintf(fout4,"%lf\t",sp[ts]);
 			fprintf(fout4,"\n");
 		}
-		if (h==200) printf("\n");	//todo delete
 	}
 
 	//todo delete

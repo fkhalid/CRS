@@ -113,7 +113,7 @@ fi
 ln1="OutputForecastFile=output_testcases/testD6"
 ln2="Logfile=output_testcases/testD6.log"
 
-sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist2*" | sed "13s+.*+$ln13+" | sed "7s+.*+$ln7+"  | sed "6s+.*+$ln6+" | sed "4s+.*+$ln4+" > temp_inputD
+sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist6*" | sed "13s+.*+$ln13+" | sed "7s+.*+$ln7+"  | sed "6s+.*+$ln6+" | sed "4s+.*+$ln4+" > temp_inputD
 echo "InputListAfterslipModels=input_testcases/testD/aslipmodels6.dat" >> temp_inputD
 cp  $parafile $temppara
 $Build/CRS_3.0 temp_inputD

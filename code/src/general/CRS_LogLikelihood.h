@@ -21,7 +21,7 @@
 
 int CRSforecast (double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_aft, struct eqkfm *eqkfm0, struct flags flags,
 		struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont, int Nm, int Na, int NgridT, double **focmec, int *fmzonelim, int NFM,
-		long *seed, struct catalog cat, double *times, double tstart, double *tts, int Ntts, double Asig, double ta, double r0,
+		long *seed, struct catalog cat, double *times, double tstart, double t0, double t1, double dtstep, double Asig, double ta, double r0,
 		double **all_gammas0, int multiple_input_gammas, int fromstart,
 		char * print_cmb, char *print_forex, char *print_foret, char * printall_cmb, char *printall_forex, char *printall_foret, char *print_LL);
 
