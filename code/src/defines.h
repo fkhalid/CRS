@@ -10,6 +10,9 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+//A file with execution times will br produced.
+#define _MEASURE_TIME
+
 // ----- [Fahad] Added for MPI -----
 //#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI

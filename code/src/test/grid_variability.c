@@ -195,7 +195,7 @@ int grid_variability(){
 		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
 		dcfs.cmb=dvector(1,dcfs.nsel);
 
-		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 0);
+//		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 0);
 		cmb0=dcfs.cmb;
 		interp_nn(NP, Nlat, Nlon, Ndep,dcfs.cmb, interp_DCFS, 0, NULL);
 
@@ -207,7 +207,7 @@ int grid_variability(){
 		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
 		dcfs.cmb=dvector(1,dcfs.nsel);
 
-		okadaDCFS(dcfs, &eqfm, 1, crst2, &eqfm.str1, &eqfm.dip1, 0);
+//		okadaDCFS(dcfs, &eqfm, 1, crst2, &eqfm.str1, &eqfm.dip1, 0);
 		sprintf(fname, "%s/cmb_%d_highres.dat",testfolder, n);
 		print_grid(fname, dcfs, crst2, NULL);
 

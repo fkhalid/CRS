@@ -41,6 +41,10 @@ int main (int argc, char **argv) {
 	int numProcs = 1;	// [Fahad] Total number of MPI processes
 	double startTime, endTime;
 
+	//Variables for timing:
+	clock_t tic, toc;
+	FILE * file_time;
+
 	#ifdef _CRS_MPI
 		omp_set_num_threads(2);
 
@@ -64,6 +68,8 @@ int main (int argc, char **argv) {
 
 	if (run_tests){
 		extra_verbose=1;
+		//refine_slipmodels();
+		//log_afterslip();
 		//test_readZMAP_catindex();
 		//background_rates();
 		//test_forecast_stepG2_new();
@@ -297,6 +303,14 @@ int main (int argc, char **argv) {
 //----------- Copy input and parameters file to log file -------//
 
 	if(procId == 0) {
+
+                #ifndef _CRS_MPI
+                        #ifdef _MEASURE_TIME
+                                sprintf(fname,"%s.time",outname);
+                                file_time=fopen(fname,"w");
+                        #endif
+                #endif
+
 		if (strcmp(logfile,"")!=0){
 			sprintf(syscopy,"date > %s", logfile);
 			system(syscopy);
@@ -400,9 +414,9 @@ int main (int argc, char **argv) {
 		}
 	}
 
-//----------------------------------------------------------//
-//----------------------Add slip models --------------------//
-//----------------------------------------------------------//
+	//----------------------------------------------------------//
+	//						Add slip models 					//
+	//----------------------------------------------------------//
 
 	err=eqkfm_addslipmodels(eqkfm_temp, all_slipmodels, &eqkfm_co, Ntemp, &Nco, &Nfaults_co, dt, dM, res, crst, flags);
 	if (err!=0) error_quit("Error in setting up catalog or associating events with mainshocks. Exiting.\n");
@@ -453,7 +467,13 @@ int main (int argc, char **argv) {
 
 		MPI_Barrier(MPI_COMM_WORLD);
 		coeffsStartTime = MPI_Wtime();
-	#endif
+	#else
+
+	        #ifdef _MEASURE_TIME
+        	        tic=clock();
+		#endif
+        #endif
+
 
 	err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf, all_aslipmodels.Nfaults);	//FIXME change 2nd last argument.
 
@@ -470,7 +490,15 @@ int main (int argc, char **argv) {
 		if(procId == 0) {
 			printf("\nTime - setup_CoeffsDCFS(): %f seconds\n\n", (coeffsEndTime - coeffsStartTime));
 		}
-	#endif
+	#else
+
+	        #ifdef _MEASURE_TIME
+        	        toc=clock();
+                	fprintf(file_time, "setup_Coeff:\t%f\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+                	tic=toc;
+		#endif
+        #endif
+
 
 	//--------------------------------------------------------------//
 	// 					Setup time steps;							//
@@ -581,6 +609,7 @@ int main (int argc, char **argv) {
 	//-----------write out summary of grid search:------------//
 
 	if(procId == 0) {
+
 		sprintf(fname,"%s_ParamSearch.dat", outname);
 		fout=fopen(fname,"w");
 		sprintf(fname,"%s_LogLikelihood.dat", outname);
@@ -631,7 +660,12 @@ int main (int argc, char **argv) {
 		// FIXME: [Fahad] For testing purposes only ...
 		#ifdef _CRS_MPI
 			dcfsStartTime = MPI_Wtime();
+		#else
+	                #ifdef _MEASURE_TIME
+	                        tic=clock();
+	                #endif
 		#endif
+
 
 		print_screen("Slip model(s) no. %d\n", mod);
 		Nsm=nth_index(mod, Nco, dim);
@@ -672,6 +706,13 @@ int main (int argc, char **argv) {
 
 			dcfsEndTime = MPI_Wtime();
 			dcfsTotalTime += dcfsEndTime - dcfsStartTime;
+		#else
+
+	                #ifdef _MEASURE_TIME
+        	                toc=clock();
+                	        fprintf(file_time, "DCFS (Okada):\t%f\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+                        	tic=toc;
+	                #endif
 		#endif
 
 		//------------------------------------------//
@@ -681,6 +722,10 @@ int main (int argc, char **argv) {
 		// FIXME: [Fahad] For testing purposes only ...
 		#ifdef _CRS_MPI
 			gridStartTime = MPI_Wtime();
+		#else
+			#ifdef _MEASURE_TIME
+				tic=clock();
+			#endif
 		#endif
 
 		//set default values:
@@ -766,7 +811,15 @@ int main (int argc, char **argv) {
 			gridTotalTime += gridEndTime - gridStartTime;
 
 			forecastStartTime = MPI_Wtime();
+		#else
+
+	                #ifdef _MEASURE_TIME
+        	                toc=clock();
+                	        fprintf(file_time, "Grid Search:\t%f\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+				tic=toc;
+	                #endif
 		#endif
+
 
 		if (forecast) {
 			print_screen("Calculating forecast...\n");
@@ -824,6 +877,12 @@ int main (int argc, char **argv) {
 			if(procId == 0) {
 				fprintf(foutfore, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",maxAsig, maxta, maxr, LL, mod);
 			}
+	
+        	        #ifdef _MEASURE_TIME
+                	        toc=clock();
+                        	fprintf(file_time, "Forecast:\t%f\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+	                #endif
+
 		}
 
 		#ifdef _CRS_MPI
@@ -894,7 +953,8 @@ int main (int argc, char **argv) {
 			printf("\nTime - Forecast: %f seconds", forecastTotalTime);
 			printf("\nTime - DCFS + Grid Search + Forecast: %f seconds\n\n", (endTime - startTime));
 		}
-	#endif
+        #endif
+
 
 	if(procId == 0) {
 		fclose(fout);

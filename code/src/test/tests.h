@@ -23,7 +23,6 @@
 #include "../general/setup.h"
 #include "../geom/convert_geometry.h"
 #include "../geom/coord_trafos.h"
-#include "../geom/dist2fault.h"
 #include "../geom/find_gridpoints.h"
 #include "../inp_out/print_output.h"
 #include "../inp_out/read_crust.h"

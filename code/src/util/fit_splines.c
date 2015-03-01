@@ -23,13 +23,14 @@ void fit_splines(double *t, double *t2, int TS, int TS2, int N, double **slip_be
 // slip_before_err: error associated with each patch. if not given, assumed 1m.
 
 int NIT=500;
-double *e, *et, **s2;
-double f=0.08, sumas;	//error is fraction of maximum value: e(t)=f*max(t);
+double *e, *et;
+double f=0.01, sumas;	//error is fraction of maximum value: e(t)=f*max(t);
 float yp1,ypn;
 double sign, sum=0;
-int normalize=0, mc=0, ok, cumu=1, no_oscillations=0;	//mc (=monte carlo) controls if errors (e) are included. space_error controls if they are space dependent (only available for Parkfield).
-double grenz0=5, grenz, dum;
+int normalize=0, mc=1, no_oscillations=1;	//mc (=monte carlo) controls if errors (e) are included. space_error controls if they are space dependent (only available for Parkfield).
+double grenz0=1.5, grenz, dum;
 float *tf, *t2f, *sp, *sp2, **s2f, **ds2dt2, sp_value, sp_value2; //same as t, but floats(needed by spline function).
+int h_pt=101;//todo delete (point to be printed out).
 
 if ((*slip_after)==(double **) 0) (*slip_after)=dmatrix(1,N,1,TS2);
 
@@ -44,7 +45,6 @@ ypn=1e30;
 
 e = dvector(1,N);
 et = dvector(1,TS);
-s2 = dmatrix(1, N, 1, TS2);
 tf=vector(0,TS);
 sp = vector(0,TS);
 sp2 = vector(1,TS2);
@@ -57,7 +57,6 @@ for (int tt=1; tt<=TS2; tt++) t2f[tt]=(float) t2[tt];
 
 //calculate largest value at each point in time (error is set to be a fraction of this: e(t)=f*max_slip(t)).
 
-// todo [coverage] this block is never tested
 if (mc==1){
 	for (int tt=1; tt<=TS; tt++){
 		et[tt]=0.0;
@@ -88,6 +87,29 @@ for (int h=1; h<=N; h++) sum+=slip_before[h][TS];
 sign=sum/fabs(sum);
 
 tf[0]=sp[0]=0.0;		//no errors on the requirement y(0)=0; (this is not used in finding splines, for stability).
+
+
+//todo delete
+// Note on output files: fout1, fout2 contain splines of all points , averaged over iterations (for all pts and node pts respectively).
+// Note on output files: fout3, fout4 contain splines of first point for all iterations (for all pts and node pts respectively).
+char outfile[200];
+FILE *fout1, *fout2, *fout3, *fout4;
+
+if (mc) sprintf(outfile,"Time_evolmcb.dat");
+else sprintf(outfile,"Time_evol.dat");
+fout1=fopen(outfile,"w");
+
+sprintf(outfile,"Time_evol_nodes.dat");
+fout2=fopen(outfile,"w");
+if (mc==1){
+	sprintf(outfile,"Time_evol_p1.dat");
+	fout3=fopen(outfile,"w");
+	sprintf(outfile,"Time_evol_p1_nodes.dat");
+	fout4=fopen(outfile,"w");
+}
+
+
+
 for (int h=1; h<=N; h++){
 
 	sumas=0.0;
@@ -99,35 +121,21 @@ for (int h=1; h<=N; h++){
 
 	for (int iter=1; iter<=NIT; iter++){
 		for (int t0=1; t0<=TS; t0++){
-			ok=0;
-			while (ok==0){
-				ok=1;
-				grenz=grenz0;
-				dum=100*grenz;
-				while(fabs(dum)>grenz) {
-					dum=gasdev(seed);
-					(*seed)=-1.0*fabs(*seed);
+			grenz=grenz0;
+			dum=100*grenz;
+			while(fabs(dum)>grenz) {
+				dum=2.0*gasdev(seed)-1.0;	//-1 to 1.
+				(*seed)=-1.0*fabs(*seed);
+			}
+			// fill them backwards so that later value is kept if sp[t]>sp[t-1].
+			sp[TS+1-t0]= mc ? (float)(slip_before[h][TS+1-t0]+dum*e[h]*et[TS+1-t0]) : slip_before[h][TS+1-t0];		// fill them backwards so that later value is kept if sp[t]>sp[t-1].
+			//rules to avoid oscillations (different for last point to avoid overestimating the curve).
+			if (no_oscillations){
+				if (t0>2 && sign*sp[TS+1-t0]>sign*sp[TS+2-t0] && mc==1){
+					if (iter % 2 == 0) sp[TS+1-t0]=sp[TS+2-t0];
+					else sp[TS+2-t0]=sp[TS+1-t0];
 				}
-				if (cumu==1) {
-					// fill them backwards so that later value is kept if sp[t]>sp[t-1].
-					sp[TS+1-t0]= mc ? (float)(slip_before[h][TS+1-t0]+dum*e[h]*et[TS+1-t0]) : slip_before[h][TS+1-t0];		// fill them backwards so that later value is kept if sp[t]>sp[t-1].
-					//rules to avoid oscillations (different for last point to avoid overestimating the curve).
-					if (no_oscillations){
-						//if (t0>2 && sp[TS+1-t0]<sp[TS+2-t0] && mc==1) sp[TS+1-t0]=sp[TS+2-t0];
-						//if (t0==2 && sp[TS+1-t0]<2*sp[TS+2-t0] && mc==1){
-						// todo [coverage] this block is never tested
-						if (t0>2 && sign*sp[TS+1-t0]>sign*sp[TS+2-t0] && mc==1){	//todo check this works with both signs of sp.
-							if (iter % 2 == 0) sp[TS+1-t0]=sp[TS+2-t0];
-							else sp[TS+2-t0]=sp[TS+1-t0];
-						}
-						if (sign*sp[TS+1-t0]<0  && mc==1) sp[TS+1-t0]=0;
-					}
-				}
-				// todo [coverage] this block is never tested
-				else {
-					sp[t0]=(float)(sp[t0-1]+slip_before[h][t0]+dum*e[h]*et[t0]);
-					if (sp[t0]>sp[t0-1]  && mc==1) ok=0;
-				}
+				if (sign*sp[TS+1-t0]<0  && mc==1) sp[TS+1-t0]=0;
 			}
 		 }
 
@@ -160,31 +168,72 @@ for (int h=1; h<=N; h++){
 				break;
 		}
 
+		//todo delete
+		if (h==h_pt && mc==1){
+			for (int ts=1;ts<=early_fit; ts++)  fprintf(fout3,"%lf\t",sp_values[ts]);
+		}
+
 		for (int ts=early_fit+1;ts<=TS2; ts++) {
 			splint(tf,sp,ds2dt2[h],TS,t2f[ts],&sp_value);
 			(*slip_after)[h][ts]+=(double) (sp_value*(1.0/NIT));
+
+			//todo delete
+			if (h==h_pt && mc==1) fprintf(fout3,"%lf\t",sp_value);
 		}
+
+		//todo delete
+		if (h==h_pt && mc==1){
+			fprintf(fout3,"\n");
+			for (int ts=1;ts<=TS; ts++) fprintf(fout4,"%lf\t",sp[ts]);
+			fprintf(fout4,"\n");
+		}
+		if (h==200) printf("\n");	//todo delete
 	}
+
+	//todo delete
+	for (int ts=1;ts<=TS2; ts++) fprintf(fout1,"%lf\t",(*slip_after)[h][ts]);
+	fprintf(fout1,"\n");
+	for (int ts=1;ts<=TS; ts++) fprintf(fout2,"%lf\t%lf\t",slip_before[h][ts], et[ts]*e[h]);
+	fprintf(fout2,"\n");
+
+}
+
+fclose(fout1);
+fclose(fout2);
+
+fout1=fopen("Time_evol_ts.dat","w");
+for (int ts=1;ts<=TS2; ts++) fprintf(fout1,"%lf\t", t2[ts]);
+fprintf(fout1,"\n");
+fclose(fout1);
+
+fout1=fopen("Time_evol_nodes_ts.dat","w");
+for (int ts=1;ts<=TS; ts++) fprintf(fout1,"%lf\t", t[ts]);
+fprintf(fout1,"\n");
+fclose(fout1);
+
+if (mc){
+	fclose(fout3);
+	fclose(fout4);
 }
 
 // todo [coverage] this block is never tested
-if (normalize){
-	int t0=TS, t1=0;
-	double final_cumslip0=0.0, final_cumslip1=0.0, dslip;
+	if (normalize){
+		int t0=TS, t1=0;
+		double final_cumslip0=0.0, final_cumslip1=0.0, dslip;
 
-	while (t0>0 && t[t0]>t2[TS2]) t0--;	//find last input time step within output time span.
-	for (int n=1; n<=N; n++) final_cumslip0+= slip_before[n][t0];
-	while(t1<TS2 && t2[t1+1]<t[t0]) t1++; //find last input time step before selected output time.
-	for (int h=1; h<=N; h++) {
-		if (t2[t1+1]==t[t0]) {
-			final_cumslip1+= (*slip_after)[h][t1+1];
+		while (t0>0 && t[t0]>t2[TS2]) t0--;	//find last input time step within output time span.
+		for (int n=1; n<=N; n++) final_cumslip0+= slip_before[n][t0];
+		while(t1<TS2 && t2[t1+1]<t[t0]) t1++; //find last input time step before selected output time.
+		for (int h=1; h<=N; h++) {
+			if (t2[t1+1]==t[t0]) {
+				final_cumslip1+= (*slip_after)[h][t1+1];
+			}
+			else {
+				dslip=((*slip_after)[h][t1+1]-(*slip_after)[h][t1+1])*(t[t0]-t2[t1])/((t2[t1+1]-t2[t1]));	//linear interpolation.
+				final_cumslip1+= (*slip_after)[h][t1]+dslip;
+			}
 		}
-		else {
-			dslip=((*slip_after)[h][t1+1]-(*slip_after)[h][t1+1])*(t[t0]-t2[t1])/((t2[t1+1]-t2[t1]));	//linear interpolation.
-			final_cumslip1+= (*slip_after)[h][t1]+dslip;
-		}
+
+		for (int h=1; h<=N; h++) for (int ts=1; ts<=TS2; ts++) (*slip_after)[h][ts]*=final_cumslip0/final_cumslip1;	//normalize to keep final total slip constant.
 	}
-
-	for (int h=1; h<=N; h++) for (int ts=1; ts<=TS2; ts++) (*slip_after)[h][ts]*=final_cumslip0/final_cumslip1;	//normalize to keep final total slip constant.
-}
 }

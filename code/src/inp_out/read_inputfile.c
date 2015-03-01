@@ -89,7 +89,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	/*14*/	"Logfile",\
 	/*15*/	"FixedMecFile", \
 	/*16*/	"InputBackgroundRateCatalog", \
-	/*18*/	"InversionStartDate"
+	/*17*/	"InversionStartDate"
 	};
 
 	// NB: arguments 5,6,17 are alternative (different ways to treat receiver faults)
@@ -147,7 +147,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 					if (reftime) *reftime=times0;
 					if (Tstart && value_found[1]) *Tstart=difftime(mktime(&times1),mktime(&times0))*SEC2DAY;
 					if (Tend && value_found[2]) *Tend=difftime(mktime(&times2),mktime(&times0))*SEC2DAY;
-					if (tstartLL && value_found[18]) *tstartLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
+					if (tstartLL && value_found[17]) *tstartLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
 					break;
 				case 1:
 					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times1.tm_year), &(times1.tm_mon), &(times1.tm_mday), &(times1.tm_hour), &(times1.tm_min), &(times1.tm_sec));
@@ -296,10 +296,10 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 				switch (n){
 				case 3:
 					if (extra_verbose) {
-						print_screen("Warning: parameter %s not given in %s -> will use output/forecast.\n", keys[n], input_fname);
-						print_logfile("Warning: parameter %s not given in %s -> will use output/forecast.\n", keys[n], input_fname);
+						print_screen("Warning: parameter %s not given in %s -> will use default value 'output'.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s -> will use default value 'output'.\n", keys[n], input_fname);
 					}
-					if (outname) strcpy(outname,"output/forecast");
+					if (outname) strcpy(outname,"output");
 					break;
 				case 5:
 					if (nofm){

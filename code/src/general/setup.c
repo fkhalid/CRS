@@ -176,6 +176,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     counter=0;
     totfaults=0;
     for (int N=0; N<list_slipmodels.NSM; N++){
+		Nm=list_slipmodels.no_slipmodels[N];	//number of snapshots for current afterslip event.
     	err+=setup_afterslip_element(*eqkfm0res+totfaults, slipmodels+counter, cmb_format, Nm, crst.mu, disc[N], tmain[N], tsnap+counter, crst.N_allP, crst.list_allP, list_slipmodels.cut_surf[counter], Nfaults+N, crst.lat0, crst.lon0);
 		counter+=Nm;
 		totfaults+=Nfaults[N];
@@ -199,6 +200,7 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 
 	int err=0, NF, nfmax=0;
 	double 	toll=1e-10, discx, discy;
+	double **sliptots;
 	struct eqkfm *eqkfm0;
 	double ***allslip_str_temp,***allslip_dip_temp;
 
@@ -223,11 +225,15 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		allslip_dip_temp[nf]=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 	}
 
+
+	//allocate tot_slip vectors
+	sliptots= dmatrix(0, no_snap-1, 0, NF-1);
+
 	//read in values for slip:
 	for (int m=0; m<no_snap; m++){
 		err=read_eqkfm(slipmodels[m], cmb_format, &eqkfm0, &NF, NULL, mu);
 		for (int nf=0; nf<NF; nf++){
-			eqkfm0[nf].tot_slip[m]=eqkfm0[nf].tot_slip[0];
+			sliptots[m][nf]=eqkfm0[nf].tot_slip[0];
 			copy_vector(eqkfm0[nf].slip_str, &(allslip_str_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			copy_vector(eqkfm0[nf].slip_dip, &(allslip_dip_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			free_dvector(eqkfm0[nf].slip_str,1,0);
@@ -235,6 +241,15 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		}
 
 		if (err) return (err);
+	}
+
+	//Needs to do it this way since eqkfm0[nf].tot_slip is overwritten at each read_eqkfm call.
+	for (int nf=0; nf<NF; nf++){
+		free_dvector(eqkfm0[nf].tot_slip,0,0);
+		eqkfm0[nf].tot_slip=dvector(0,no_snap-1);
+		for (int m=0; m<no_snap; m++){
+			eqkfm0[nf].tot_slip[m]=eqkfm0[nf].tot_slip[0];
+		}
 	}
 
 	if (cuts_surf) {
@@ -467,8 +482,8 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			}
 
 			if (!check_same_geometry(eqkfm0+NFtot, Nfaults[i], eqkfm_aft+NFtotaft, Nfaults_aft[a])){
-				print_logfile("Error: Afterslip model and coseismic slip model have different geometry. Exiting.\n");
-				print_screen("Error: Afterslip model and coseismic slip model have different geometry. Exiting.\n");
+				print_logfile("Error: Afterslip model no %d and coseismic slip model have different geometry. Exiting.\n", a+1);
+				print_screen("Error: Afterslip model no %d and coseismic slip model have different geometry. Exiting.\n", a+1);
 				return(1);
 			}
 
@@ -567,7 +582,6 @@ int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,
 	int L0=0, i;
 	int splines;
 	double TAU=200000, dtau=7000;	//todo allow to set from outside.
-	double Kotau;
 	double M0,mu;
 	double smallstepstime=12;
 	double now, prev, norm, curr;
@@ -599,9 +613,9 @@ int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,
 		Teq=(*eqk_aft)[nfaults].t;
 		tend= (nev<NA-1) ? fmin((*eqk_aft)[nfaults+Nfaults[nev]].t,t1) : t1;
 		*L=L0=10000;	//fixme see comment above.
-		err+=findtimestepsomori(Teq, Teq, fmin(smallstepstime+Teq,tend), 0, 183, TAU, 0.3*dtau, 0.6, 0.001, (*times2)+offset, &Kotau, L);
+		err+=findtimestepsomori(Teq, Teq, fmin(smallstepstime+Teq,tend), 0, 183, TAU, 0.3*dtau, 0.6, 0.001, (*times2)+offset, NULL, L);
 		if (smallstepstime+Teq<tend) {
-			err+=findtimestepsomori(Teq, smallstepstime+Teq, tend, 0, 183, TAU, dtau, 0.6, 0.001, (*times2)+*L+offset, &Kotau, &L0);
+			err+=findtimestepsomori(Teq, smallstepstime+Teq, tend, 0, 183, TAU, dtau, 0.6, 0.001, (*times2)+*L+offset, NULL, &L0);
 			Ltot=offset=*L+L0+offset;
 		}
 		else{
@@ -665,13 +679,13 @@ int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,
 
 				for (int p=1; p<=eq_aft[f].np_di*eq_aft[f].np_st; p++) {
 					for (int l=*L-1; l>=0; l--) {
-						if ((*times2)[l]<Teq){
+						if ((*times2)[l]<0.0){
 							//no afterslip before its start time:
 							eq_aft[f].allslip_str[l][p]=0.0;
 							eq_aft[f].allslip_dip[l][p]=0.0;
 						}
 						else{
-							if (l>0 && (*times2)[l-1]>Teq){	//this is to avoid subtracting from element with t<Teq.
+							if (l>0 && (*times2)[l-1]>0.0){	//this is to avoid subtracting from element with t<Teq.
 								eq_aft[f].allslip_str[l][p]-=eq_aft[f].allslip_str[l-1][p];
 								eq_aft[f].allslip_dip[l][p]-=eq_aft[f].allslip_dip[l-1][p];
 							}

@@ -13,7 +13,7 @@
 
 int findtimestepsomori(double te, double t0, double t1, double tstart, double tend,
 					   double tau0, double Dtau, double p, double c, double *t,
-					   double *K_over_tau0, int *L) {
+					   double *K, int *L) {
 //te is earthquake time. tstart, tend are the start and end time of the measured value tau0. t0,t1 are the start and end time of the period for which time steps are calculated.
 	// [Fahad] Variables used for MPI
 	int procId = 0;
@@ -49,53 +49,7 @@ int findtimestepsomori(double te, double t0, double t1, double tstart, double te
 	if (j>1000) print_screen("\n ** Warning: findtimesteps.m produced %d time steps! **\n",j);
 
 	*L=j;
-	if (K_over_tau0) *K_over_tau0=K_over_tau;
+	if (K) *K= Dtau/((1.0-p)*K_over_tau*tau0);	//so that t_{i}=t_{i-1}+K(t+c-teq)^p
 
 	return err;
 }
-
-//void findtimestepslog(double t0,double t1, double tau0, double Dtau, double w, double **times, int *L){
-//
-//	double dfdt, dt;
-//	double *t;
-//	int N, j=0;
-//
-////	*K_over_tau=1/(pow(c+tend,1.0-p)-pow(c+tstart,1.0-p));
-//
-//	dfdt=tau0*w/(w*t0+1);
-//	dt=Dtau*(1.0/dfdt);
-//	N=(int) (t1-t0)*(1.0/dt);			//N is always > than the needed number of elements since the first derivative is monotonically decreasing.
-//
-//	t=dvector(0,N-1);
-//	t[0]=t0;
-//
-//	while (t[j]<=t1){
-//		dfdt=tau0*w/(w*t[j]+1);
-//		dt=Dtau*(1.0/dfdt);
-//		t[j+1]=t[j]+dt;
-//		j+=1;
-//	}
-//
-//	if (j>10000) print_screen("\n ** Warning: findtimesteps.m produced more than 10000 time steps! **\n");
-//
-//	*times=t;
-//	*L=j-1;
-//}
-
-//void tevolomori(double te, double *times, double Kotau, double p, double c, double *tevol, int L){
-////te = earthquake time
-//
-//	double dum1, dum2;
-//	FILE *fout;
-//
-//	fout =fopen("/home/des/camcat/temp/times.dat","w");
-//	dum2=pow(times[0]+c-te,1.0-p);
-//	for (int y=0; y<=L; y++){
-//		dum1=dum2;
-//		dum2=pow(times[y+1]+c-te,1.0-p);
-//		tevol[y]=Kotau*(dum2-dum1);
-//		fprintf(fout, "%lf\t%lf\n",times[y],tevol[y]);
-//	}
-//
-//	fclose(fout);
-//}

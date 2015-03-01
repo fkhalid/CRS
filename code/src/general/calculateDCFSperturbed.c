@@ -196,7 +196,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 						if (vary_recfault==0) {
 							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
 							if (splines && i<NTSeff){
-								for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[i].cmb[n];
+								for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[a_ev+i].cmb[n];
 							}
 						}
 					}

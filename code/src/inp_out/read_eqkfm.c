@@ -282,8 +282,8 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 		if (taper) err+=suomod1_taper((*eqfm1), eqfm1, 1, 1, 1, 1);
 	}
 
-	print_screen("Created slip model with %d patches for event [t, mag, lat, lon, dep]=[%.5e, %.2lf, %.3lf, %.3lf, %.3lf]\n", (*eqfm1).t, (*eqfm1).mag, (*eqfm1).lat, (*eqfm1).lon, (*eqfm1).depth);
-	print_logfile("Created slip model with %d patches for event [t, mag, lat, lon, dep]=[%.5e, %.2lf, %.3lf, %.3lf, %.3lf]\n", (*eqfm1).t, (*eqfm1).mag, (*eqfm1).lat, (*eqfm1).lon, (*eqfm1).depth);
+	print_screen("Created slip model with %d patches for event [t, mag, lat, lon, dep]=[%.5e, %.2lf, %.3lf, %.3lf, %.3lf]\n", (*eqfm1).np_di*(*eqfm1).np_st, (*eqfm1).t, (*eqfm1).mag, (*eqfm1).lat, (*eqfm1).lon, (*eqfm1).depth);
+	print_logfile("Created slip model with %d patches for event [t, mag, lat, lon, dep]=[%.5e, %.2lf, %.3lf, %.3lf, %.3lf]\n", (*eqfm1).np_di*(*eqfm1).np_st, (*eqfm1).t, (*eqfm1).mag, (*eqfm1).lat, (*eqfm1).lon, (*eqfm1).depth);
 
 	return err;
 }

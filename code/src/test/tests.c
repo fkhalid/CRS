@@ -19,7 +19,6 @@
 #include "../general/mem_mgmt.h"
 #include "../geom/convert_geometry.h"
 #include "../geom/coord_trafos.h"
-#include "../geom/dist2fault.h"
 #include "../geom/find_gridpoints.h"
 #include "../inp_out/print_output.h"
 //#include "../inp_out/read_crust.h"
@@ -61,6 +60,32 @@ char *testfolder="test";
 extern int gridPMax;
 extern FILE *flog;
 double DCFS_cap=1e7;
+
+void refine_slipmodels(){
+/* This function produces refined slip models -> used to test MPI performance in okadaCoeff with an increasing number of patches.
+*/
+
+	struct eqkfm *eqfm1, eqfm2;
+	char fname[200]="/home/des/camcat/Data/slipmodels/Tohoku/srcmod/fsp/s2011HONSHU01SHAO.fsp";	
+	double res[16]={20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5};
+	int Nres=16;
+	int err=0;
+
+	read_fsp_eqkfm(fname, &eqfm1, NULL);
+	
+	for (int i=0; i<Nres; i++){
+		err+=suomod1_resample(eqfm1[0], &eqfm2, res[i], 0.0);
+		printf("Res=%f\tNP=%d\n",res[i], eqfm2.np_di*eqfm2.np_st);
+
+		sprintf(fname,"s2011HONSHU01SHAO_%d",eqfm2.np_di*eqfm2.np_st);
+		print_slipmodel(fname, &eqfm2, 1);
+	}
+
+	return 0;
+}
+
+
+
 
 int test_readZMAP_catindex(){
 
@@ -1063,14 +1088,14 @@ int test_allOkada_simple_multiplerec(){
 		// 1) using okadaDCFS:
 
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
-		okadaDCFS(dcfs, &eqfm, 1, crst, strikes, dips, 1);
+//		okadaDCFS(dcfs, &eqfm, 1, crst, strikes, dips, 1);
 		resolve_DCFS(dcfs, crst, strikes, dips, rakes, 0);
 		sprintf(fname, "%s/okada3/okadaDCFSfixA%d.dat",testfolder, n);	//all wrong
 		//sprintf(fname, "%s/okadaCoeff4%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-		okadaDCFS(dcfs, &eqfm, 1, crst, NULL, NULL, 1);
+//		okadaDCFS(dcfs, &eqfm, 1, crst, NULL, NULL, 1);
 		resolve_DCFS(dcfs, crst, strikes, dips, NULL, 1);
 		sprintf(fname, "%s/okada3/okadaDCFSfix_optrakeB%d.dat",testfolder, n);	//0,2,3 wrong
 		//sprintf(fname, "%s/okadaCoeff5%d.dat",testfolder, n);
@@ -1109,8 +1134,8 @@ int test_allOkada_simple_multiplerec(){
 		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-		okadaCoeff_resolve(coeffs, &resCoeff_st, &resCoeff_di, crst, strikes, dips, rakes);
-		resolvedCoeff2DCFS(resCoeff_st, resCoeff_di, dcfs, &eqfm, crst);
+//		okadaCoeff_resolve(coeffs, &resCoeff_st, &resCoeff_di, crst, strikes, dips, rakes);
+//		resolvedCoeff2DCFS(resCoeff_st, resCoeff_di, dcfs, &eqfm, crst);
 		sprintf(fname, "%s/okada3/okadaCoeff_fix_B%d.dat",testfolder, n);	//all wrong
 		//sprintf(fname, "%s/okadaCoeff4%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
@@ -1234,14 +1259,14 @@ int test_allOkada_simple(){
 		// 1) using okadaDCFS:
 
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
-		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 1);
+//		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1), 0);
 		sprintf(fname, "%s/okada2/okadaDCFSfixA%d.dat",testfolder, n);
 		//sprintf(fname, "%s/okadaCoeff4%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-		okadaDCFS(dcfs, &eqfm, 1, crst, NULL, NULL, 1);
+//		okadaDCFS(dcfs, &eqfm, 1, crst, NULL, NULL, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, NULL, 1);
 		sprintf(fname, "%s/okada2/okadaDCFSfix_optrakeB%d.dat",testfolder, n);
 		//sprintf(fname, "%s/okadaCoeff5%d.dat",testfolder, n);
@@ -1280,8 +1305,8 @@ int test_allOkada_simple(){
 		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-		okadaCoeff_resolve(coeffs, &resCoeff_st, &resCoeff_di, crst, &eqfm.str1, &eqfm.dip1, &eqfm.rake1);
-		resolvedCoeff2DCFS(resCoeff_st, resCoeff_di, dcfs, &eqfm, crst);
+//		okadaCoeff_resolve(coeffs, &resCoeff_st, &resCoeff_di, crst, &eqfm.str1, &eqfm.dip1, &eqfm.rake1);
+//		resolvedCoeff2DCFS(resCoeff_st, resCoeff_di, dcfs, &eqfm, crst);
 		sprintf(fname, "%s/okada2/okadaCoeff_fix_B%d.dat",testfolder, n);
 		//sprintf(fname, "%s/okadaCoeff4%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
@@ -1413,7 +1438,7 @@ int test_allOkada(){
 		// 1) using okadaDCFS:
 
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
-		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 1);
+//		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1), 0);
 		sprintf(fname, "%s/okada/okadaDCFSfixA%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
@@ -1457,8 +1482,8 @@ int test_allOkada(){
 		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-		okadaCoeff_resolve(coeffs, &resCoeff_st, &resCoeff_di, crst, &eqfm.str1, &eqfm.dip1, &eqfm.rake1);
-		resolvedCoeff2DCFS(resCoeff_st, resCoeff_di, dcfs, &eqfm, crst);
+//		okadaCoeff_resolve(coeffs, &resCoeff_st, &resCoeff_di, crst, &eqfm.str1, &eqfm.dip1, &eqfm.rake1);
+//		resolvedCoeff2DCFS(resCoeff_st, resCoeff_di, dcfs, &eqfm, crst);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_B%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
 
