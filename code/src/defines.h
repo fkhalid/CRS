@@ -10,7 +10,7 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-//A file with execution times will br produced.
+//An file with be produced with execution times.
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----

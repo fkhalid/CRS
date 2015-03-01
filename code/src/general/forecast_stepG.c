@@ -11,8 +11,8 @@
 	#include "mpi.h"
 #endif
 
-int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1, double Asig, double ta,
-			int points[], double *out_NeX, double *NeT, double *Rate_end, int N, int NTS, int Neqks, double *gamma_init, double *back_rate, double *R, int last){
+int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1, double dt_step, double Asig, double ta,
+			int points[], double *out_NeX, double *NeT, double *ReT, int N, int NTS, int Neqks, double *gamma_init, double *back_rate, double *R, int last){
 
 	/* Calculates seismicity in space and time based on rate-and-state (Dieterich 1994) constitutive law.
 	 * Aseismic stresses in cmpdata are assumed to grow linearly between time steps.
@@ -35,7 +35,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	 * Output:
 	 *  out_NeX: number of events in each grid cell. [1...N] (i.e. it refers to the subset of points in "points").
 	 *  NeT: total no of events (i.e., sum of out_NeX)
-	 *  Rate_end: total seismicity rate at t=tt1.
+	 *  ReT: total seismicity rate at t=tt1.
 	 *  R: seismicity rate at the time of the earthquakes given in cat (used for first term of LogLikelihood).
 	 *
 	 *  NB: assumes that times, cat, DCFS, NTS, times are always the same (each time function is called), since many static internal structures are initialized in the first function call.
@@ -52,6 +52,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   double  tau, dtau_dt, dtau_dt00=Asig/ta, ta1;
   int     TS0, TS1, n;
   double  gamma, back_rate_n;
+  double  tt0step, tt1step;
 
   //events will contain times, magnitudes of all earthquakes (both from catalog and from DCFS):
   static double **events;
@@ -70,6 +71,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   //internal variables for seismicity calculation:
   double *NeX;
   double **Rprivate;	//private variable for each OMP thread, corresponds to global R.
+  double **NeTprivate, **ReTprivate;
   static double *dt, *NeXdum, *ReX;
 
 
@@ -80,6 +82,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   double t_pre, t_now, t_endstep;
   double a,b;
   int reach_end;
+  int step, nts;
   int nthreads, nthreadstot=omp_get_max_threads();
 
   static int firsttimein=1;
@@ -164,7 +167,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   NeX= (out_NeX)? out_NeX : NeXdum;
 
   // Initialize vector to 0;
-  if (Rate_end) for(int m=1;m<=N;m++) ReX[m]=0.0;
+  if (ReT) for(int m=1;m<=N;m++) ReX[m]=0.0;
   if (NeX) for(int m=1;m<=N;m++) NeX[m]=0.0;
 
   if (tt1<tt0) {
@@ -201,7 +204,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   }
 
   if (NeT) *NeT=0;
-  if (Rate_end) *Rate_end=0;
+  if (ReT) *ReT=0;
 
   //Rprivate is used for parallelization (a barrier creates a bottleneck and poor performance):
   Rprivate=dmatrix(0,nthreadstot-1, 0, cat.Z);
@@ -209,14 +212,29 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	  for (int eq=0; eq<=cat.Z; eq++) Rprivate[t][eq]=0.0;
   }
 
+  //Similar to above, but for individual time steps: //fixme move allocation up.
+  nts=(dt_step<tol0) ? 0 : (tt1-tt0)/dt_step;	//number of output time steps;
+  NeTprivate=dmatrix(0,nthreadstot-1, 0, nts-1);
+  ReTprivate=dmatrix(0,nthreadstot-1, 0, nts-1);
+  for (int t=0; t<omp_get_max_threads(); t++){
+	  if (NeT) for (int i=0; i<nts; i++) NeTprivate[t][i]=0.0;
+	  if (ReT) for (int i=0; i<nts; i++) ReTprivate[t][i]=0.0;
+  }
+
   err=0;
 
   //loop over grid points:
-  #pragma omp parallel for firstprivate(err) private(n, gamma,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, counter_eqk, back_rate_n, ta1) reduction(+:errtot)
+  #pragma omp parallel for firstprivate(err) private(n, gamma,tau,j0, next_eqk, next_TS, t_now, t_pre, reach_end, t_endstep, cat_i, DCFS_i, a, b, dtau_dt, counter_eqk, back_rate_n, ta1, tt0step, tt1step, step) reduction(+:errtot)
   for(int m=1;m<=N;m++){
 
 	nthreads=omp_get_num_threads();
 
+    tt0step=tt0;
+    tt1step=tt1;	//to make sure it enters at least once (floating point error may give problem otherwise).
+   
+    j0=TS0;     //next time step (first time step after tt0)
+    counter_eqk=0;
+ 
 	if (err!=0) continue;
 	n=(points==0)? m : points[m];
 
@@ -225,115 +243,136 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	gamma=gamma_init[n];
 	if (NeX) NeX[m]=0.0;
 
-    j0=TS0;	//next time step (first time step after tt0)
-    counter_eqk=0;
-    t_now=tt0;
-    reach_end=0;
+	//find first earthquake after or at tt0:
+	while (counter_eqk<num_eqk[n] && events[1][which_eqk[n][counter_eqk]]<tt0) counter_eqk+=1;
 
-    //find first earthquake after or at tt0:
-    while (counter_eqk<num_eqk[n] && events[1][which_eqk[n][counter_eqk]]<tt0) counter_eqk+=1;
+	step=0;
 
-    //loop over time steps until reaching tt1:
-    while (tol0<(tt1-t_now)){
+	while (tt1step<=tt1){	//overall time span
 
-    	if (err!=0) break;	//error in a previous loop;
-    	if (counter_eqk>=num_eqk[n]) reach_end=1;	//all earthquakes for this grid point have been included (counter_eqk is out of range).
-    	else {
-        	next_eqk=which_eqk[n][counter_eqk];
-    		if (events[1][next_eqk]>=tt1) reach_end=1;
-    	}
+		if (dt_step<tol0) break;
 
-    	t_endstep= reach_end ? tt1 : events[1][next_eqk];	//end time of this while loop iteration;
-    	next_TS= reach_end ? TS1 : TS_eqk[next_eqk];		//last time step before t_endstep
-    	cat_i= reach_end ? 0 : indices[1][next_eqk];		//index of next event (occurring at time events[1][next_eqk])
-    	DCFS_i= reach_end ? 0 : indices[2][next_eqk];		//index of next event (occurring at time events[1][next_eqk])
+		t_now=tt0step;
+		reach_end=0;
 
-    	// evolve seismicity up to next barrier (which is the smallest between next earthquake (events[1][next_eqk]), next time step (times[j0]) or tt1)
-    	t_pre= (j0<=NTS) ? fmin(t_endstep, times[j0]) - t_now : t_endstep - t_now;	//find time left to next barrier
+		//loop over time steps until reaching tt1step:
+		while (tol0<(tt1step-t_now)){
 
-    	dtau_dt=(cmpdata && j0-1>=0 && j0<=NTS)? (Asig/ta)+cmpdata[j0-1][n]/dt[j0-1] : (Asig/ta);//stressing rate during current time step (including stress step from cmpdata and background stressing rate):
-    	if (t_pre>tol0){
-			tau=dtau_dt*t_pre;	//stress change during current time step
-			ta1=Asig/dtau_dt;	//dummy variable
-			if (NeX) {
-				//find no. of earthquakes
-				a=gamma*dtau_dt-1;	//dummy variable
-				b=a*exp(-t_pre/ta1)+1;	//dummy variable
-				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values.
+			if (err!=0) break;	//error in a previous loop;
+			if (counter_eqk>=num_eqk[n]) reach_end=1;	//all earthquakes for this grid point have been included (counter_eqk is out of range).
+			else {
+				next_eqk=which_eqk[n][counter_eqk];
+				if (events[1][next_eqk]>=tt1step) reach_end=1;
 			}
-			//update gamma:
-			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
-    	}
 
-    	//evolve seismicity between time steps:
-    	t_now+=t_pre;
+			t_endstep= reach_end ? tt1step : events[1][next_eqk];	//end time of this while loop iteration;
+			next_TS= reach_end ? TS1 : TS_eqk[next_eqk];		//last time step before t_endstep
+			cat_i= reach_end ? 0 : indices[1][next_eqk];		//index of next event (occurring at time events[1][next_eqk])
+			DCFS_i= reach_end ? 0 : indices[2][next_eqk];		//index of next event (occurring at time events[1][next_eqk])
 
-		for(int j=j0;j<next_TS;j++){
-			dtau_dt=(cmpdata)? (Asig/ta)+cmpdata[j][n]/dt[j] : (Asig/ta);
-			tau=dtau_dt*dt[j];
-			ta1=Asig/dtau_dt;
-			if (NeX) {
-				a=gamma*dtau_dt-1;
-				b=a*exp(-dt[j]/ta1)+1;
+			// evolve seismicity up to next barrier (which is the smallest between next earthquake (events[1][next_eqk]), next time step (times[j0]) or tt1step)
+			t_pre= (j0<=NTS) ? fmin(t_endstep, times[j0]) - t_now : t_endstep - t_now;	//find time left to next barrier
 
-				if (!isinf(fabs(b))) NeX[m]+=fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(dt[j]+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values for gamma->inf
+			dtau_dt=(cmpdata && j0-1>=0 && j0<=NTS)? (Asig/ta)+cmpdata[j0-1][n]/dt[j0-1] : (Asig/ta);//stressing rate during current time step (including stress step from cmpdata and background stressing rate):
+			if (t_pre>tol0){
+				tau=dtau_dt*t_pre;	//stress change during current time step
+				ta1=Asig/dtau_dt;	//dummy variable
+				if (NeX) {
+					//find no. of earthquakes
+					a=gamma*dtau_dt-1;	//dummy variable
+					b=a*exp(-t_pre/ta1)+1;	//dummy variable
+					if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values.
+				}
+				//update gamma:
+				gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
 			}
-			gamma=(fabs(tau/Asig)>1e-10)? (gamma-dt[j]/(tau))*exp(-tau/Asig)+dt[j]/(tau) : gamma*(1-tau/Asig)+dt[j]/Asig;
-			t_now+=dt[j];
-		}
 
-		// evolve seismicity till the end:
-		t_pre=t_endstep-t_now;
+			//evolve seismicity between time steps:
+			t_now+=t_pre;
 
-		if (t_pre>tol0) {
-			dtau_dt=(cmpdata)? (Asig/ta)+(1.0/dt[next_TS])*cmpdata[next_TS][n] : (Asig/ta);
-			tau=dtau_dt*t_pre;
-			ta1=Asig/dtau_dt;
-			if (NeX) {
-				a=gamma*dtau_dt-1;
-				b=a*exp(-t_pre/ta1)+1;
-				if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt)))); //due to numerical error it can give -ve values for gamma->inf
+			for(int j=j0;j<next_TS;j++){
+				dtau_dt=(cmpdata)? (Asig/ta)+cmpdata[j][n]/dt[j] : (Asig/ta);
+				tau=dtau_dt*dt[j];
+				ta1=Asig/dtau_dt;
+				if (NeX) {
+					a=gamma*dtau_dt-1;
+					b=a*exp(-dt[j]/ta1)+1;
+
+					if (!isinf(fabs(b))) NeX[m]+=fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(dt[j]+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values for gamma->inf
+				}
+				gamma=(fabs(tau/Asig)>1e-10)? (gamma-dt[j]/(tau))*exp(-tau/Asig)+dt[j]/(tau) : gamma*(1-tau/Asig)+dt[j]/Asig;
+				t_now+=dt[j];
 			}
-			gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
-		}
 
-		t_now+=t_pre;
+			// evolve seismicity till the end:
+			t_pre=t_endstep-t_now;
 
-		if (reach_end==0){
-			if (cat_i!=-1) {
-				Rprivate[omp_get_thread_num()][cat_i]+= back_rate_n*cat_weights[n][counter_eqk]*(ta/Asig)/gamma;
+			if (t_pre>tol0) {
+				dtau_dt=(cmpdata)? (Asig/ta)+(1.0/dt[next_TS])*cmpdata[next_TS][n] : (Asig/ta);
+				tau=dtau_dt*t_pre;
+				ta1=Asig/dtau_dt;
+				if (NeX) {
+					a=gamma*dtau_dt-1;
+					b=a*exp(-t_pre/ta1)+1;
+					if (!isinf(fabs(b))) NeX[m]+= fmax(0.0, back_rate_n*(dtau_dt/dtau_dt00)*(t_pre+ta1*log(b/(gamma*dtau_dt)))); //due to numerical error it can give -ve values for gamma->inf
+				}
+				gamma=(fabs(tau/Asig)>1e-10)? (gamma-t_pre/(tau))*exp(-tau/Asig)+t_pre/(tau) : gamma*(1-tau/Asig)+t_pre/Asig;
 			}
-			gamma= (DCFS_i==-1 | DCFS_whichpt[n][counter_eqk]==0)? gamma : gamma*exp(-DCFS[DCFS_i].cmb[DCFS_whichpt[n][counter_eqk]]/Asig);
-			if (isinf(gamma)){
-				print_screen("*Warning: gamma==Inf, must choose larger Asig!*\n");
-				print_logfile("*Warning: gamma==Inf, must choose larger Asig!*\n");
-				err=1;
-				errtot+=1;
+
+			t_now+=t_pre;
+
+			if (reach_end==0){
+				if (cat_i!=-1) {
+					Rprivate[omp_get_thread_num()][cat_i]+= back_rate_n*cat_weights[n][counter_eqk]*(ta/Asig)/gamma;
+				}
+				gamma= (DCFS_i==-1 | DCFS_whichpt[n][counter_eqk]==0)? gamma : gamma*exp(-DCFS[DCFS_i].cmb[DCFS_whichpt[n][counter_eqk]]/Asig);
+				//if (n==1) printf("[%.5e:%.5e][%.5e:%.5e]: gamma=%f\n",tt0,tt1, tt0step, tt1step,gamma);
+				if (isinf(gamma)){
+					print_screen("*Warning: gamma==Inf, must choose larger Asig!*\n");
+					print_logfile("*Warning: gamma==Inf, must choose larger Asig!*\n");
+					err=1;
+					errtot+=1;
+				}
 			}
-		}
-		j0=next_TS+1;
-		counter_eqk+=1;
+			j0=next_TS+1;
+			counter_eqk+=1;
+		  }
+		if (NeT) NeTprivate[omp_get_thread_num()][step]+=NeX[m];
+		if (ReT) ReTprivate[omp_get_thread_num()][step]+=back_rate_n*(ta/Asig)/gamma;
+
+		step+=1;
+		tt0step+=dt_step;
+		tt1step+=dt_step;
+	//	if (n==1) printf("%f, %f...\n", tt0step, tt1step);//fixme delete
+
 	}
 
 	if (last) gamma_init[n]=gamma;	//update gamma_init with final value;
-	if (Rate_end) ReX[m]=back_rate_n*(ta/Asig)/gamma;	//instantaneous seismicity rate at the end of the time step;
+	if (ReT) ReX[m]=back_rate_n*(ta/Asig)/gamma;	//instantaneous seismicity rate at the end of the time step;
 
   }
 
-  //collect values of R from threads:
-  if (R) for (int t=0; t<nthreads; t++){
-	  for (int eq=1; eq<=cat.Z; eq++) R[eq]+=Rprivate[t][eq];
-  }
-
-  //final rate and tot no. of events given by the sum over all grid points:
-  if (Rate_end) *Rate_end=0.0;
+  //collect values of R, NeT, ReT from threads:
+  if (ReT) *ReT=0.0;
   if (NeT) *NeT=0.0;
-  for(int m=1;m<=N;m++){
-	  if (NeT) *NeT+=NeX[m];
-	  if (Rate_end) *Rate_end+=ReX[m];
+  for (int t=0; t<nthreads; t++){
+	  if (R) for (int eq=1; eq<=cat.Z; eq++) R[eq]+=Rprivate[t][eq];
+	  //fixme make NeT, ReT vectors.
+	  if (NeT) for (int i=0; i<nts; i++) *NeT+=NeTprivate[t][i];
+	  if (ReT) for (int i=0; i<nts; i++) *ReT+=ReTprivate[t][i];
   }
+
+//  //final rate and tot no. of events given by the sum over all grid points:
+//  if (ReT) *ReT=0.0;
+//  if (NeT) *NeT=0.0;
+//  for(int m=1;m<=N;m++){
+//	  if (NeT) *NeT+=NeX[m];
+//	  if (ReT) *ReT+=ReX[m];
+//  }
 
   free_dmatrix(Rprivate,0,nthreadstot-1, 0, cat.Z);
+  free_dmatrix(NeTprivate,0,nthreadstot-1, 0, nts-1);
+  free_dmatrix(ReTprivate,0,nthreadstot-1, 0, nts-1);
   return(errtot);
 
 }

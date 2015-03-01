@@ -289,7 +289,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				gammas[n]= (uniform_bg_rate)? ta/Asig : gammas0[n];
 			}
 
-			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
+			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, tt0-tstart, Asig, ta,
 									  (int *) 0, ev_x_dum, (double *) 0, (double *) 0,
 									  NgridT, NTScont, Nm, gammas, crst.rate0,
 									  dumrate, 1);
@@ -312,12 +312,32 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		current_main=0;
 		tnow=tts[0];
 
+//		tt0=tts[0];
+//		tt1=tts[Ntts];
+//		double dts=(tt1-tt0)/Ntts;	//fixme pass to function
+//		err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1, dts,
+//								 Asig, ta, 0, ev_x_dum, nev+1, rev+1, NgridT, NTScont,
+//								 Nm, gammas, crst.rate0, dumrate, 1);
+//		for(int t=1; t<=Ntts; t++) {
+//			nev_avg[t]+=(sum)/(1.0*Nsur);
+//			rev_avg[t]+=(fin_rate)/(1.0*Nsur);
+//		}
+//		for(int i=1; i<=NgridT; i++) {
+//			ev_x[i]+=ev_x_dum[i];
+//		}
+//		for(int i=1;i<=cat.Z;i++) {
+//			if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
+//				rate[i]+=dumrate[i]/(1.0*Nsur);
+//			}
+//		}
+
+
 		for(int t=1; t<=Ntts; t++) {
 			//Calculate seismicity evolution:
 			tt0=tts[t-1];
 			tt1=tts[t];
 
-			err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1,
+			err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1, tt1-tt0,
 									 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
 									 Nm, gammas, crst.rate0, dumrate, 1);
 
@@ -762,7 +782,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
 			}
 
-			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, Asig, ta,
+			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, tt0-start, Asig, ta,
 									  (int *) 0, (double *) 0, (double *) 0, (double *) 0,
 									  NgridT, NTScont, Nm, gammas, (double *) 0,
 									  dumrate, 1);
@@ -786,14 +806,14 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		while (current_main<Nm && eqkfm0[current_main].t<tt1){
 			if (tnow<eqkfm0[current_main].t){
 				//evolve seismicity up to next large event:
-				err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t,
+				err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t, eqkfm0[current_main].t-tnow,
 										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, Nm, gammas,
 										   crst.rate0, dumrate, 1);
 				integral += (sum)/(1.0*Nsur);
 
 				//evolve seismicity during a time window tw:
-				err += rate_state_evolution(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t,
-										eqkfm0[current_main].t+tw, Asig, ta, 0, 0, &sum, 0,
+				err += rate_state_evolution(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t, eqkfm0[current_main].t+tw,
+										tw, Asig, ta, 0, 0, &sum, 0,
 									   NgridT, NTScont, Nm, gammas, crst.rate0,
 									   dumrate, 1);
 				tnow=eqkfm0[current_main].t+tw;
@@ -802,7 +822,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				//the condition below will be true if the current large event is still within the tw of the previous one.
 				//(Actually, if tw has a fixed value this is always the case).
 				if (tnow<eqkfm0[current_main].t+tw){
-					err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw,
+					err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw, eqkfm0[current_main].t+tw-tnow,
 							Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, Nm, gammas, crst.rate0,
 							dumrate, 1);
 					tnow=eqkfm0[current_main].t+tw;
@@ -815,7 +835,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			if (err) break;
 		}
 		if (tnow<tt1){
-			err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, tt1, Asig, ta, 0,
+			err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, tt1, tt1-tnow, Asig, ta, 0,
 									   ev_x, &sum, 0, NgridT, NTScont, Nm, gammas,
 									   crst.rate0, dumrate, 1);
 

@@ -42,7 +42,7 @@ int main (int argc, char **argv) {
 	double startTime, endTime;
 
 	//Variables for timing:
-	clock_t tic, toc;
+	double tic, toc;
 	FILE * file_time;
 
 	#ifdef _CRS_MPI
@@ -68,7 +68,6 @@ int main (int argc, char **argv) {
 
 	if (run_tests){
 		extra_verbose=1;
-		//refine_slipmodels();
 		//log_afterslip();
 		//test_readZMAP_catindex();
 		//background_rates();
@@ -470,7 +469,7 @@ int main (int argc, char **argv) {
 	#else
 
 	        #ifdef _MEASURE_TIME
-        	        tic=clock();
+        	        tic=omp_get_wtime();
 		#endif
         #endif
 
@@ -493,8 +492,8 @@ int main (int argc, char **argv) {
 	#else
 
 	        #ifdef _MEASURE_TIME
-        	        toc=clock();
-                	fprintf(file_time, "setup_Coeff:\t%f\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+        	        toc=omp_get_wtime();
+                	fprintf(file_time, "setup_Coeff:\t%f\n", (double)(toc - tic));
                 	tic=toc;
 		#endif
         #endif
@@ -662,7 +661,7 @@ int main (int argc, char **argv) {
 			dcfsStartTime = MPI_Wtime();
 		#else
 	                #ifdef _MEASURE_TIME
-	                        tic=clock();
+	                        tic=omp_get_wtime();
 	                #endif
 		#endif
 
@@ -709,8 +708,8 @@ int main (int argc, char **argv) {
 		#else
 
 	                #ifdef _MEASURE_TIME
-        	                toc=clock();
-                	        fprintf(file_time, "DCFS (Okada):\t%f\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+        	                toc=omp_get_wtime();
+                	        fprintf(file_time, "DCFS (Okada):\t%f\n", (double)(toc - tic));
                         	tic=toc;
 	                #endif
 		#endif
@@ -724,7 +723,7 @@ int main (int argc, char **argv) {
 			gridStartTime = MPI_Wtime();
 		#else
 			#ifdef _MEASURE_TIME
-				tic=clock();
+				tic=omp_get_wtime();
 			#endif
 		#endif
 
@@ -814,8 +813,8 @@ int main (int argc, char **argv) {
 		#else
 
 	                #ifdef _MEASURE_TIME
-        	                toc=clock();
-                	        fprintf(file_time, "Grid Search:\t%f\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+        	                toc=omp_get_wtime();
+                	        fprintf(file_time, "Grid Search:\t%f\n", (double)(toc - tic));
 				tic=toc;
 	                #endif
 		#endif
@@ -879,8 +878,8 @@ int main (int argc, char **argv) {
 			}
 	
         	        #ifdef _MEASURE_TIME
-                	        toc=clock();
-                        	fprintf(file_time, "Forecast:\t%f\n", (double)(toc - tic) / CLOCKS_PER_SEC);
+                	        toc=omp_get_wtime();
+                        	fprintf(file_time, "Forecast:\t%f\n", (double)(toc - tic));
 	                #endif
 
 		}

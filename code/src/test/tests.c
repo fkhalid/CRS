@@ -61,32 +61,6 @@ extern int gridPMax;
 extern FILE *flog;
 double DCFS_cap=1e7;
 
-void refine_slipmodels(){
-/* This function produces refined slip models -> used to test MPI performance in okadaCoeff with an increasing number of patches.
-*/
-
-	struct eqkfm *eqfm1, eqfm2;
-	char fname[200]="/home/des/camcat/Data/slipmodels/Tohoku/srcmod/fsp/s2011HONSHU01SHAO.fsp";	
-	double res[16]={20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5};
-	int Nres=16;
-	int err=0;
-
-	read_fsp_eqkfm(fname, &eqfm1, NULL);
-	
-	for (int i=0; i<Nres; i++){
-		err+=suomod1_resample(eqfm1[0], &eqfm2, res[i], 0.0);
-		printf("Res=%f\tNP=%d\n",res[i], eqfm2.np_di*eqfm2.np_st);
-
-		sprintf(fname,"s2011HONSHU01SHAO_%d",eqfm2.np_di*eqfm2.np_st);
-		print_slipmodel(fname, &eqfm2, 1);
-	}
-
-	return 0;
-}
-
-
-
-
 int test_readZMAP_catindex(){
 
 	struct catalog cat;
@@ -903,7 +877,7 @@ int test_forecast_stepG2_new(){
 	for (int j=1; j<=NP; j++) gamma0[j]=ta/Asig;
 
 	//uses linear approx. between time steps:
-	for (int t=1; t<=n_samples; t++) rate_state_evolution(cat, times_aft, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, Nend+t, Rend+t, NP, NTS, Neq, gamma0, NULL, NULL, 1);
+//	for (int t=1; t<=n_samples; t++) rate_state_evolution(cat, times_aft, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, Nend+t, Rend+t, NP, NTS, Neq, gamma0, NULL, NULL, 1);
 
 	//uses step approx. between time stpes:
 	//for (int t=1; t<=n_samples; t++) forecast_stepG2_old(cat, times_aft, cmpdata, DCFS, t0+dt*(t-1), t0+dt*t, Asig, ta, points, NULL, NULL, Rend+t, NP, NTS, Neq, gamma0, NULL, NULL, 1);
