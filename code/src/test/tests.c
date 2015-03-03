@@ -226,7 +226,7 @@ int test_read_inputfiles(){
 	int nfm;
 
 	read_inputfile(file, outname, reftime_str, fore_template, catname, focmeccat, background_rate_grid, NULL, NULL,
-			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, &nfm);
+			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
 
 	printf("outname=%s\n", outname);
 	printf("reftime_str=%s\n", reftime_str);

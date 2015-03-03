@@ -70,6 +70,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	char comment[]="#", comm=comment[0];
 
 	for (int n=0; n<NP; n++) value_found[n]=0;
+	if (tendLL) *tendLL=0.0;	//Default value: use time span up to IssueTime.
 
 	char *keys[]={
 	/*0*/	"IssueDate",
@@ -377,9 +378,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 					if (background_rate_cat) strcpy(background_rate_cat,"");
 					print_logfile("InversionEndDate not given in %s, will use IssueTime as end of LL inversion period.\n", input_fname);
 					break;
-
 				case 18:
-					if (tendLL) *tendLL=0.0;	//Use time span up to IssueTime.
 					break;
 
 				default:

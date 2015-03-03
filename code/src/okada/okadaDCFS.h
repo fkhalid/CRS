@@ -18,7 +18,6 @@
 #include "pscokada.h"
 
 //----------------top level functions----------------//
-//todo give better names
 int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double *dipRs, double *rake, int optrake);
 int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths);
 int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths);

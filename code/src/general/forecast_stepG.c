@@ -203,9 +203,6 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	  if(times[TS1]>=tt1) TS1--;
   }
 
-  if (NeT) *NeT=0;
-  if (ReT) *ReT=0;
-
   //Rprivate is used for parallelization (a barrier creates a bottleneck and poor performance):
   Rprivate=dmatrix(0,nthreadstot-1, 0, cat.Z);
   for (int t=0; t<omp_get_max_threads(); t++){
@@ -214,6 +211,11 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 
   //Similar to above, but for individual time steps: //fixme move allocation up.
   nts=(dt_step<tol0) ? 0 : ceil((tt1-tt0)/dt_step);	//number of output time steps;
+  for (int i=0; i<nts; i++){
+    if (ReT) ReT[i]=0.0;
+    if (NeT) NeT[i]=0.0;
+  }
+
   NeTprivate=dmatrix(0,nthreadstot-1, 0, nts-1);
   ReTprivate=dmatrix(0,nthreadstot-1, 0, nts-1);
   for (int t=0; t<omp_get_max_threads(); t++){

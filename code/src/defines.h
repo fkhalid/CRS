@@ -14,7 +14,7 @@
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
-//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
+#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 8				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 31	// No. of scalar variables in 'struct BCast_Model_Parameters'

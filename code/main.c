@@ -42,7 +42,7 @@ int main (int argc, char **argv) {
 	double startTime, endTime;
 
 	//Variables for timing:
-	double tic, toc;
+	double tic, toc, tic2, toc2;
 	FILE * file_time;
 
 	#ifdef _CRS_MPI
@@ -188,6 +188,10 @@ int main (int argc, char **argv) {
 	// FIXME: [Fahad] For testing purposes only ...
 	#ifdef _CRS_MPI
 		startTime = MPI_Wtime();
+	#else
+		#ifdef _MEASURE_TIME
+			tic=omp_get_wtime();
+		#endif
 	#endif
 
 
@@ -304,10 +308,10 @@ int main (int argc, char **argv) {
 	if(procId == 0) {
 
                 #ifndef _CRS_MPI
-                        #ifdef _MEASURE_TIME
-                                sprintf(fname,"%s.time",outname);
-                                file_time=fopen(fname,"w");
-                        #endif
+					#ifdef _MEASURE_TIME
+						sprintf(fname,"%s.time",outname);
+						file_time=fopen(fname,"w");
+					#endif
                 #endif
 
 		if (strcmp(logfile,"")!=0){
@@ -397,9 +401,9 @@ int main (int argc, char **argv) {
 		}
 	}
 
-//----------------------------------------------------------//
-//-----------------Setup LL inversion period ---------------//
-//----------------------------------------------------------//
+	//----------------------------------------------------------//
+	//					Setup LL inversion period				//
+	//----------------------------------------------------------//
 
 	if (flags.err_recfault){
 		//only use focal mechanisms before start of LL period (Tstart).
@@ -450,7 +454,7 @@ int main (int argc, char **argv) {
 	//			- contribute to the computations.
 	// TODO: Rewrite the error message so that it is more helpful to the user ...
 	#ifdef _CRS_MPI
-		if(numProcs > Nsur) {
+		if((LLinversion || forecast) && (numProcs > Nsur)) {
 			if(procId == 0) {
 				printf("\n Number of MPI processes: %d", numProcs);
 				printf("\n Number of iterations: %d", Nsur);
@@ -468,10 +472,10 @@ int main (int argc, char **argv) {
 		coeffsStartTime = MPI_Wtime();
 	#else
 
-	        #ifdef _MEASURE_TIME
-        	        tic=omp_get_wtime();
+        #ifdef _MEASURE_TIME
+			tic2=omp_get_wtime();
 		#endif
-        #endif
+    #endif
 
 
 	err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf, all_aslipmodels.Nfaults);	//FIXME change 2nd last argument.
@@ -491,13 +495,13 @@ int main (int argc, char **argv) {
 		}
 	#else
 
-	        #ifdef _MEASURE_TIME
-        	        toc=omp_get_wtime();
-                	fprintf(file_time, "setup_Coeff:\t%f\n", (double)(toc - tic));
+        #ifdef _MEASURE_TIME
+			toc2=omp_get_wtime();
+			fprintf(file_time, "setup_Coeff:\t%f\n", (double)(toc2 - tic2));
                 	fflush(file_time);
-                	tic=toc;
+			tic2=toc2;
 		#endif
-        #endif
+    #endif
 
 
 	//--------------------------------------------------------------//
@@ -647,6 +651,12 @@ int main (int argc, char **argv) {
 		double dcfsStartTime, dcfsEndTime, dcfsTotalTime = 0.0;
 		double gridStartTime, gridEndTime, gridTotalTime = 0.0;
 		double forecastStartTime, forecastEndTime, forecastTotalTime = 0.0;
+	#else
+		#ifdef _MEASURE_TIME
+			toc=omp_get_wtime();
+			fprintf(file_time, "I/O + broadcast:\t%f\n", (double)(toc - tic));
+			fflush(file_time);
+		#endif
 	#endif
 
 	dim=ivector(0,Nco-1);
@@ -662,9 +672,9 @@ int main (int argc, char **argv) {
 		#ifdef _CRS_MPI
 			dcfsStartTime = MPI_Wtime();
 		#else
-	                #ifdef _MEASURE_TIME
-	                        tic=omp_get_wtime();
-	                #endif
+			#ifdef _MEASURE_TIME
+				tic=omp_get_wtime();
+			#endif
 		#endif
 
 
@@ -708,13 +718,12 @@ int main (int argc, char **argv) {
 			dcfsEndTime = MPI_Wtime();
 			dcfsTotalTime += dcfsEndTime - dcfsStartTime;
 		#else
-
-	                #ifdef _MEASURE_TIME
-        	                toc=omp_get_wtime();
-                	        fprintf(file_time, "DCFS (Okada):\t%f\n", (double)(toc - tic));
-                	        fflush(file_time);
-                        	tic=toc;
-	                #endif
+            #ifdef _MEASURE_TIME
+				toc=omp_get_wtime();
+				fprintf(file_time, "DCFS (Okada):\t%f\n", (double)(toc - tic));
+				fflush(file_time);
+				tic=toc;
+            #endif
 		#endif
 
 		//------------------------------------------//
@@ -817,12 +826,12 @@ int main (int argc, char **argv) {
 			forecastStartTime = MPI_Wtime();
 		#else
 
-	                #ifdef _MEASURE_TIME
-        	                toc=omp_get_wtime();
-                	        fprintf(file_time, "Grid Search:\t%f\n", (double)(toc - tic));
-                	        fflush(file_time);
-                	        tic=toc;
-	                #endif
+			#ifdef _MEASURE_TIME
+				toc=omp_get_wtime();
+				fprintf(file_time, "Grid Search:\t%f\n", (double)(toc - tic));
+				fflush(file_time);
+				tic=toc;
+			#endif
 		#endif
 
 
@@ -884,11 +893,6 @@ int main (int argc, char **argv) {
 				fflush(foutfore);
 			}
 	
-        	        #ifdef _MEASURE_TIME
-                	        toc=omp_get_wtime();
-                        	fprintf(file_time, "Forecast:\t%f\n", (double)(toc - tic));
-                        	fflush(file_time);
-	                #endif
 
 		}
 
@@ -945,6 +949,14 @@ int main (int argc, char **argv) {
 			}
 
 			print_screen("Done.\n");
+		#else
+			#ifndef _CRS_MPI
+				#ifdef _MEASURE_TIME
+					toc=omp_get_wtime();
+					fprintf(file_time, "Forecast:\t%f\n", (double)(toc - tic));
+					fflush(file_time);
+				#endif
+			#endif
 		#endif
 	}
 

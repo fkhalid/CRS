@@ -30,7 +30,6 @@ double sign, sum=0;
 int normalize=0, mc=1, no_oscillations=1;	//mc (=monte carlo) controls if errors (e) are included. space_error controls if they are space dependent (only available for Parkfield).
 double grenz0=1.5, grenz, dum;
 float *tf, *t2f, *sp, *sp2, **s2f, **ds2dt2, sp_value, sp_value2; //same as t, but floats(needed by spline function).
-int h_pt=101;//todo delete (point to be printed out).
 
 if ((*slip_after)==(double **) 0) (*slip_after)=dmatrix(1,N,1,TS2);
 
@@ -89,24 +88,6 @@ sign=sum/fabs(sum);
 tf[0]=sp[0]=0.0;		//no errors on the requirement y(0)=0; (this is not used in finding splines, for stability).
 
 
-//todo delete
-// Note on output files: fout1, fout2 contain splines of all points , averaged over iterations (for all pts and node pts respectively).
-// Note on output files: fout3, fout4 contain splines of first point for all iterations (for all pts and node pts respectively).
-char outfile[200];
-FILE *fout1, *fout2, *fout3, *fout4;
-
-if (mc) sprintf(outfile,"Time_evolmcb.dat");
-else sprintf(outfile,"Time_evol.dat");
-fout1=fopen(outfile,"w");
-
-sprintf(outfile,"Time_evol_nodes.dat");
-fout2=fopen(outfile,"w");
-if (mc==1){
-	sprintf(outfile,"Time_evol_p1.dat");
-	fout3=fopen(outfile,"w");
-	sprintf(outfile,"Time_evol_p1_nodes.dat");
-	fout4=fopen(outfile,"w");
-}
 
 
 
@@ -168,51 +149,14 @@ for (int h=1; h<=N; h++){
 				break;
 		}
 
-		//todo delete
-		if (h==h_pt && mc==1){
-			for (int ts=1;ts<=early_fit; ts++)  fprintf(fout3,"%lf\t",sp_values[ts]);
-		}
 
 		for (int ts=early_fit+1;ts<=TS2; ts++) {
 			splint(tf,sp,ds2dt2[h],TS,t2f[ts],&sp_value);
 			(*slip_after)[h][ts]+=(double) (sp_value*(1.0/NIT));
 
-			//todo delete
-			if (h==h_pt && mc==1) fprintf(fout3,"%lf\t",sp_value);
 		}
 
-		//todo delete
-		if (h==h_pt && mc==1){
-			fprintf(fout3,"\n");
-			for (int ts=1;ts<=TS; ts++) fprintf(fout4,"%lf\t",sp[ts]);
-			fprintf(fout4,"\n");
 		}
-	}
-
-	//todo delete
-	for (int ts=1;ts<=TS2; ts++) fprintf(fout1,"%lf\t",(*slip_after)[h][ts]);
-	fprintf(fout1,"\n");
-	for (int ts=1;ts<=TS; ts++) fprintf(fout2,"%lf\t%lf\t",slip_before[h][ts], et[ts]*e[h]);
-	fprintf(fout2,"\n");
-
-}
-
-fclose(fout1);
-fclose(fout2);
-
-fout1=fopen("Time_evol_ts.dat","w");
-for (int ts=1;ts<=TS2; ts++) fprintf(fout1,"%lf\t", t2[ts]);
-fprintf(fout1,"\n");
-fclose(fout1);
-
-fout1=fopen("Time_evol_nodes_ts.dat","w");
-for (int ts=1;ts<=TS; ts++) fprintf(fout1,"%lf\t", t[ts]);
-fprintf(fout1,"\n");
-fclose(fout1);
-
-if (mc){
-	fclose(fout3);
-	fclose(fout4);
 }
 
 // todo [coverage] this block is never tested

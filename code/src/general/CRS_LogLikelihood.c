@@ -72,6 +72,8 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	 *
 	 */
 
+	//fixme: v important. if LLinversion=0 and multiple slip models are given, something equivalent to "refresh" should be done here (see CRSLoglikelihood).
+
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
 	int start, end, partitionSize;
@@ -87,7 +89,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	char print_forex[120], print_cmb[120], print_cmbpost[120];
 	static double **DCFSrand;
 	static double *dumrate, *gammas, *rate, *ev_x, *ev_x_new=NULL;
-	double sum, sum1, sum2, integral;
+	double integral;
 	double Ldum;
 	double *gammas0;
 	double *nev, *rev, *nev_avg, *rev_avg, *ev_x_avg, *ev_x_pre, *ev_x_dum;
@@ -148,11 +150,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 	for(int i=1;i<=cat.Z;i++) if(cat.t[i]>=tt0 && cat.t[i]<=tt1) N+=1;
 
-	sum=sum1=sum2=0.0;
 	integral=0.0;
 	for(int i=1;i<=cat.Z;i++) dumrate[i]=rate[i]=0.0;
 
-	sum=sum1=sum2=0;
 	err=0;
 
 	#ifdef _CRS_MPI
@@ -256,13 +256,13 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
 	// [Fahad]: FIXME - For Test A2, first call ...
-	//long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
+//	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
 		#ifdef _CRS_MPI
 			*seed = newSeed * (long)nsur;
 			// [Fahad]: FIXME -- For testing only ...
-			//*seed = seeds[nsur-1];
+//			*seed = seeds[nsur-1];
 		#endif
 
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
@@ -323,33 +323,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				rate[i]+=dumrate[i]/(1.0*Nsur);
 			}
 		}
-
-
-		//for(int t=1; t<=Ntts; t++) {
-//		for(int t=1; t<=0; t++) {
-//			//Calculate seismicity evolution:
-//			tt0=tts[t-1];
-//			tt1=tts[t];
-//
-//			err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1, tt1-tt0,
-//									 Asig, ta, 0, ev_x_dum, &sum, &fin_rate, NgridT, NTScont,
-//									 Nm, gammas, crst.rate0, dumrate, 1);
-//
-//			for(int i=1; i<=NgridT; i++) {
-//				ev_x[i]+=ev_x_dum[i];
-//			}
-//
-//			nev[t]=sum;
-//			rev[t]=fin_rate;
-//			nev_avg[t]+=(sum)/(1.0*Nsur);
-//			rev_avg[t]+=(fin_rate)/(1.0*Nsur);
-//
-//			for(int i=1;i<=cat.Z;i++) {
-//				if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
-//					rate[i]+=dumrate[i]/(1.0*Nsur);
-//				}
-//			}
-//		}
 
 		if(err==1) break;
 
@@ -666,26 +639,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		rate[i]=0.0;
 	}
 
-	// TODO: [Fahad] Check with Camilla -- in which cases is the following block used, if
-	//									   at all ...
-//	#ifdef _CRS_MPI
-//		// FIXME: [Fahad] Addition of this block changes the LL value even if all the other
-//		// parameters are the same ...
-//		if(first_timein != 1) {
-//			int nsur = 1;
-//		//if (flags.sample_all), each iteration corresponds to a focal mechanism. Otherwise, which_recfault=0 means: choose random one.
-//			which_recfault= flags.sample_all? nsur : 0;
-//
-//			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags, tevol,
-//								   times, Nm, crst, AllCoeff, NTScont, focmec,
-//								   fmzonelim, NFM, seed, tstart, tt1,
-//								   refresh && nsur==1, which_recfault);
-//			refresh = 0;
-//		}
-//	#endif
-
-	//for (int ndt=1; ndt<=NDT; ndt++) net[ndt]=0.0;
-
 	sum=sum1=sum2=0;
 	err=0;
 
@@ -745,7 +698,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
 	// [Fahad]: FIXME - For Test A2, first call ...
-	//long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
+//	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
 		#ifdef _CRS_MPI
@@ -768,13 +721,15 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
 								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
 								   fmzonelim, NFM, seed, tstart, tt1,
-								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
+								   refresh && nsur==start /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
 				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
 			}
 
-			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, tt0-start, Asig, ta,
+			// the time step passed to rate_state_evolution (dt_step) must be larger than tt1-tt0 to avoid having 2 time steps;
+			// tt0-start may not be enough due to floating point error --> use tt0-start+1.0. Also done below.
+			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, tt0-start+1.0, Asig, ta,
 									  (int *) 0, (double *) 0, (double *) 0, (double *) 0,
 									  NgridT, NTScont, Nm, gammas, (double *) 0,
 									  dumrate, 1);
@@ -783,7 +738,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
 								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
 								   fmzonelim, NFM, seed, tt0, tt1,
-								   refresh && nsur==1 /*&& first_timein*/, which_recfault);
+								   refresh && nsur==start /*&& first_timein*/, which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
 				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
@@ -798,14 +753,14 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		while (current_main<Nm && eqkfm0[current_main].t<tt1){
 			if (tnow<eqkfm0[current_main].t){
 				//evolve seismicity up to next large event:
-				err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t, eqkfm0[current_main].t-tnow,
+				err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t, eqkfm0[current_main].t-tnow+1.0,
 										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, Nm, gammas,
 										   crst.rate0, dumrate, 1);
 				integral += (sum)/(1.0*Nsur);
 
 				//evolve seismicity during a time window tw:
 				err += rate_state_evolution(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t, eqkfm0[current_main].t+tw,
-										tw, Asig, ta, 0, 0, &sum, 0,
+										tw+1.0, Asig, ta, 0, 0, &sum, 0,
 									   NgridT, NTScont, Nm, gammas, crst.rate0,
 									   dumrate, 1);
 				tnow=eqkfm0[current_main].t+tw;
@@ -814,7 +769,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				//the condition below will be true if the current large event is still within the tw of the previous one.
 				//(Actually, if tw has a fixed value this is always the case).
 				if (tnow<eqkfm0[current_main].t+tw){
-					err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw, eqkfm0[current_main].t+tw-tnow,
+					err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw, eqkfm0[current_main].t+tw-tnow+1.0,
 							Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, Nm, gammas, crst.rate0,
 							dumrate, 1);
 					tnow=eqkfm0[current_main].t+tw;
@@ -827,7 +782,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			if (err) break;
 		}
 		if (tnow<tt1){
-			err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, tt1, tt1-tnow, Asig, ta, 0,
+			err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, tt1, tt1-tnow+1.0, Asig, ta, 0,
 									   ev_x, &sum, 0, NgridT, NTScont, Nm, gammas,
 									   crst.rate0, dumrate, 1);
 
