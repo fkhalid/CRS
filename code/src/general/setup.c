@@ -89,8 +89,8 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 
 	print_screen("Setting up catalog...\n");
 
-	tendS=0;		//this is the "IssueDate", up to which data is available.
-	tendCat=tend;	//this is (presumably) the "ForecastDate", up to which data is available. Events after t=0 used to calculate LL of forecast.
+	tendS=0;		//this is the "IssueDate", up to which data can be used for sources.
+	tendCat=tend;	//this is the largest between "ForecastEndDate" and "tendLL", up to which data is available. Events after t=0 used to calculate LL of forecast.
 
 	//select events within some tolerance level, since they will have to be matched with focal mechanisms.
 	err += readZMAP(cat, eqkfm1, Ntot, catname, crst, reftime, tstart, tendS, tstart, tendCat,
@@ -99,7 +99,6 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	if (err) return (err);
 
 	// read catalog of focal mechanisms and merge it with eqkfm structure from catalog:
-
 	if (focmeccat && (!flag.sources_all_iso || focmec)){
 		err+=readmultiplefocmec(focmeccat, nofmcat, crst,fmax(xytoll, dR), fmax(ztoll, dR), dDCFS,
 				reftime, tstart, tendS, tendS, (*cat).Mc, focmec, firstelements, NFM, &Nfm,  &eqkfm1fm, 1, 1);

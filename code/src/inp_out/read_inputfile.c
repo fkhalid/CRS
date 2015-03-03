@@ -23,7 +23,7 @@
 int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		char *catname, char ***focmeccat, char *background_rate_grid, char *background_rate_cat, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
 		char *model_parameters_file, char *Logfile, struct tm *reftime,
-		double *Tstart, double *Tend, double *tstartLL, long *seed, int *num_fm){
+		double *Tstart, double *Tend, double *tstartLL, double *tendLL, long *seed, int *num_fm){
 
 	//todo check string length is enough?
 	/* Read master input file.
@@ -63,7 +63,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	int Nchar=1000;
 	char line[Nchar], listfocmeccat[Nchar];
 	char *key, *value;
-	int NP=18, i, err=0;
+	int NP=19, i, err=0;
 	struct tm times0, times1, times2, times3;
 	int value_found[NP];
 	int listfm=0, nofm=0;	//listfm is a flag indicating whether multiple focal mechanism catalogs are given. nofm is the number of such catalogs.
@@ -89,8 +89,10 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	/*14*/	"Logfile",\
 	/*15*/	"FixedMecFile", \
 	/*16*/	"InputBackgroundRateCatalog", \
-	/*17*/	"InversionStartDate"
+	/*17*/	"InversionStartDate", \
+	/*18*/	"InversionEndDate"
 	};
+
 
 	// NB: arguments 5,6,17 are alternative (different ways to treat receiver faults)
 
@@ -148,7 +150,9 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 					if (Tstart && value_found[1]) *Tstart=difftime(mktime(&times1),mktime(&times0))*SEC2DAY;
 					if (Tend && value_found[2]) *Tend=difftime(mktime(&times2),mktime(&times0))*SEC2DAY;
 					if (tstartLL && value_found[17]) *tstartLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
+					if (tendLL && value_found[18]) *tendLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
 					break;
+
 				case 1:
 					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times1.tm_year), &(times1.tm_mon), &(times1.tm_mday), &(times1.tm_hour), &(times1.tm_min), &(times1.tm_sec));
 					times1.tm_year-=1900;
@@ -224,6 +228,13 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 					times3.tm_isdst=0;
 					if (tstartLL && value_found[0]) *tstartLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
 					break;
+				case 18:
+					sscanf(value, "%d-%d-%dT%d:%d:%dZ", &(times3.tm_year), &(times3.tm_mon), &(times3.tm_mday), &(times3.tm_hour), &(times3.tm_min), &(times3.tm_sec));
+					times3.tm_year-=1900;
+					times3.tm_mon-=1;
+					times3.tm_isdst=0;
+					if (tendLL && value_found[0]) *tendLL=difftime(mktime(&times3),mktime(&times0))*SEC2DAY;
+					break;
 			}
 		}
 
@@ -251,6 +262,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		MPI_Bcast(Tstart, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(Tend, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(tstartLL, 			 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		MPI_Bcast(tendLL, 			 	 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(seed, 				 1,   MPI_LONG,   0, MPI_COMM_WORLD);
 		MPI_Bcast(num_fm, 				 1,   MPI_INT, 	  0, MPI_COMM_WORLD);
 
@@ -363,6 +375,11 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 					break;
 				case 16:
 					if (background_rate_cat) strcpy(background_rate_cat,"");
+					print_logfile("InversionEndDate not given in %s, will use IssueTime as end of LL inversion period.\n", input_fname);
+					break;
+
+				case 18:
+					if (tendLL) *tendLL=0.0;	//Use time span up to IssueTime.
 					break;
 
 				default:

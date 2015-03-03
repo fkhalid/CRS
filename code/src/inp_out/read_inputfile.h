@@ -20,7 +20,7 @@
 int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		char *catname, char ***focmeccat, char *background_rate_file, char *background_rate_cat, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
 		char *model_parameters_file, char *Logfile, struct tm *reftime,
-		double *Tstart, double *Tend, double *tstartLL, long *seed, int *num_fm);
+		double *Tstart, double *Tend, double *tstartLL, double *tendLL, long *seed, int *num_fm);
 
 int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles);
 int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels, double res, int is_afterslip);

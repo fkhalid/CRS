@@ -144,7 +144,7 @@ int main (int argc, char **argv) {
 	int Nsur;	//no. of Monte Carlo iterations.
 
 	struct tm reftime;	//reference time (IssueTime)
-	double tstartLL, tendLL=0,	//start, end time of LL inversion.
+	double tstartLL, tendLL,	//start, end time of LL inversion.
 			Tend, Tstart,	//start, end time of forecast.
 			tw,				//time window to skip after each event with Mw>=Mag_main in LL calculation (due to catalog incompleteness)
 			tstart_calc, 	//start of calculation time for forecast (to avoid recalculating stuff from inversion period).
@@ -240,7 +240,7 @@ int main (int argc, char **argv) {
 	//-----------------------read input file -------------------//
 
 	err=read_inputfile(infile, outname, fore_template, catname, &focmeccats, background_rate_grid, background_rate_cat,
-			fixedmecfile, slipmodelfile, afterslipmodelfile, modelparametersfile, logfile, &reftime, &Tstart, &Tend, &tstartLL, &seed,
+			fixedmecfile, slipmodelfile, afterslipmodelfile, modelparametersfile, logfile, &reftime, &Tstart, &Tend, &tstartLL, &tendLL, &seed,
 			&no_fm_cats);
 
 	if (err) {
@@ -374,13 +374,13 @@ int main (int argc, char **argv) {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mc_source, Mag_main, crst, &cat, &eqkfm_temp, &focmec, &fmzonelimits,
 							   flags, &Nfocmec, &Ntemp, dt, dM,  xytoll, ztoll, border, tw,
-							   tstartLL, Tend);
+							   tstartLL, fmax(tendLL, Tend));
 	}
 	else {
 		err = setup_catalogetc(catname, focmeccats, no_fm_cats, reftime,
 							   dDCFS, Mc_source, Mag_main, crst, &cat, &eqkfm_temp,   NULL , NULL, flags,
 							   NULL, &Ntemp, dt, dM,  xytoll, ztoll, border, tw,
-							   tstartLL, Tend);
+							   tstartLL, fmax(tendLL,Tend));
 	}
 
 	if (err!=0) error_quit("Error in setting up catalog. Exiting.\n");
@@ -494,6 +494,7 @@ int main (int argc, char **argv) {
 	        #ifdef _MEASURE_TIME
         	        toc=omp_get_wtime();
                 	fprintf(file_time, "setup_Coeff:\t%f\n", (double)(toc - tic));
+                	fflush(file_time);
                 	tic=toc;
 		#endif
         #endif
@@ -711,6 +712,7 @@ int main (int argc, char **argv) {
 	                #ifdef _MEASURE_TIME
         	                toc=omp_get_wtime();
                 	        fprintf(file_time, "DCFS (Okada):\t%f\n", (double)(toc - tic));
+                	        fflush(file_time);
                         	tic=toc;
 	                #endif
 		#endif
@@ -774,15 +776,16 @@ int main (int argc, char **argv) {
 						if(procId == 0) {
 							fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",
 									Asig,ta,r,Ldums0[p],Nev[p],I[p],LLs[p], mod);
-							if (flog) fprintf(flog, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n", Asig, ta, r, LLs[p], mod);
-							fflush(flog);
+							fflush(fout);
+							print_logfile("%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n", Asig, ta, r, LLs[p], mod);
+
 						}
 					}
 					else{
 						if(procId == 0) {
 							fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t NaN \t NaN \t NaN \t NaN \t%d\n",Asig,ta,r,mod);
-							if (flog) fprintf(flog, "%.5lf \t %.5lf \t %.5lf \t NaN \t%d\n", Asig, ta, r, mod);
-							fflush(flog);
+							fflush(fout);
+							print_logfile("%.5lf \t %.5lf \t %.5lf \t NaN \t%d\n", Asig, ta, r, mod);
 						}
 					}
 				}
@@ -791,6 +794,7 @@ int main (int argc, char **argv) {
 		else {
 			if(procId == 0) {
 				fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig,maxta,maxr,0.0,0.0, mod);
+				fflush(fout);
 			}
 		}
 
@@ -816,7 +820,8 @@ int main (int argc, char **argv) {
 	                #ifdef _MEASURE_TIME
         	                toc=omp_get_wtime();
                 	        fprintf(file_time, "Grid Search:\t%f\n", (double)(toc - tic));
-				tic=toc;
+                	        fflush(file_time);
+                	        tic=toc;
 	                #endif
 		#endif
 
@@ -876,11 +881,13 @@ int main (int argc, char **argv) {
 								  printall_foret, print_LL);
 			if(procId == 0) {
 				fprintf(foutfore, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",maxAsig, maxta, maxr, LL, mod);
+				fflush(foutfore);
 			}
 	
         	        #ifdef _MEASURE_TIME
                 	        toc=omp_get_wtime();
                         	fprintf(file_time, "Forecast:\t%f\n", (double)(toc - tic));
+                        	fflush(file_time);
 	                #endif
 
 		}

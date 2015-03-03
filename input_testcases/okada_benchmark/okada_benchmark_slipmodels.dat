@@ -12,19 +12,19 @@
 1
 pscmp	0	
 2011-03-11T14:46:18Z	9.0	16
-0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_1000.pscmp
-0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_1288.pscmp
-0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_1575.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_200.pscmp
-0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_2088.pscmp
-0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_2856.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_297.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_336.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_360.pscmp
-0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_4000.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_416.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_476.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_540.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_624.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_714.pscmp
 0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_874.pscmp
+0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_1000.pscmp
+0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_1288.pscmp
+0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_1575.pscmp
+0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_2088.pscmp
+0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_2856.pscmp
+0 input_testcases/okada_benchmark/s2011HONSHU01SHAO_4000.pscmp
