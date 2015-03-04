@@ -1,0 +1,13 @@
+OutputForecastFile=nsur_benchmark
+Logfile=nsur_benchmark.log
+InputModelParametersFile=input_testcases/nsur_benchmark/nsur_benchmark_para.txt
+IssueDate=2012-03-11T14:46:18Z
+ForecastStartDate=2011-03-11T14:46:18Z
+ForecastEndDate=2012-03-11T14:46:18Z
+InputCatalogFile=input_testcases/nsur_benchmark/jma_cat_2010_2013_update20130329_sel_3.0.dat
+InputListSlipModels=input_testcases/nsur_benchmark/tohoku.dat
+InputCatalogFocMecFile=input_testcases/nsur_benchmark/NIED_GMTformat.dat
+ForecastTemplate=input_testcases/nsur_benchmark/tohoku_template_uniform.dat
+RandomSeedValue=-37284630
+InversionStartDate=2011-03-11T14:46:18Z
+InversionEndDate=2011-03-21T14:46:18Z

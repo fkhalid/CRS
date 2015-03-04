@@ -1,0 +1,14 @@
+OutputForecastFile=mpi_benchmark
+Logfile=mpi_benchmark.log
+InputModelParametersFile=input_testcases/mpi_benchmark/mpi_benchmark_para.txt
+IssueDate=2012-03-11T14:46:18Z
+ForecastStartDate=2011-03-11T14:46:18Z
+ForecastEndDate=2011-09-11T14:46:18Z
+InputCatalogFile=input_testcases/mpi_benchmark/jma_cat_2010_2013_update20130329_sel_3.0.dat
+InputListSlipModels=input_testcases/mpi_benchmark/tohoku_ide.dat
+InputCatalogFocMecFile=input_testcases/mpi_benchmark/NIED_GMTformat.dat
+ForecastTemplate=input_testcases/mpi_benchmark/tohoku_unigrid0.05B.dat
+RandomSeedValue=-37284630
+InputListAfterslipModels=input_testcases/mpi_benchmark/aslipmodels_ide.dat
+InversionStartDate=2011-03-11T14:46:18Z
+InversionEndDate=2011-03-21T14:46:18Z
