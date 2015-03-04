@@ -247,23 +247,22 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 		end = start + partitionSize;
 
-		const long newSeed = *seed;
-
+		*seed = (*seed) * (procId+numProcs);
 	#else
 		start = 1;
 		end = Nsur + 1;
 	#endif
 
-	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
-	// [Fahad]: FIXME - For Test A2, first call ...
+//	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
+//	// [Fahad]: FIXME - For Test A2, first call ...
 //	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-		#ifdef _CRS_MPI
-			*seed = newSeed * (long)nsur;
-			// [Fahad]: FIXME -- For testing only ...
+//		#ifdef _CRS_MPI
+//			*seed = newSeed * (long)nsur;
+//			// [Fahad]: FIXME -- For testing only ...
 //			*seed = seeds[nsur-1];
-		#endif
+//		#endif
 
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
@@ -690,24 +689,23 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			linearizedLocalNewGammas = (double*) malloc(localNewGammasSize * sizeof(double));
 		}
 
-		const long newSeed = *seed;
+		*seed = (*seed) * (procId+numProcs);
 	#else
 		start = 1;
 		end = Nsur + 1;
 	#endif
 
-	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
-	// [Fahad]: FIXME - For Test A2, first call ...
+//	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
+//	// [Fahad]: FIXME - For Test A2, first call ...
 //	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-		#ifdef _CRS_MPI
-			*seed = newSeed * (long)nsur;
-			// [Fahad]: FIXME -- For testing only ...
+//		#ifdef _CRS_MPI
+//			// [Fahad]: FIXME -- For testing only ...
 //			if(first_timein != 1) {
 //				*seed = seeds[nsur-1];
 //			}
-		#endif
+//		#endif
 
 
 		//if (flags.sample_all), each iteration corresponds to a focal mechanism. Otherwise, which_recfault=0 means: choose random one.
