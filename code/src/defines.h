@@ -14,7 +14,7 @@
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
-#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
+//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 8				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 31	// No. of scalar variables in 'struct BCast_Model_Parameters'
@@ -300,22 +300,6 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 
 	};
 #endif // _CRS_MPI
-// [Fahad] -- Added for use in partition size calculation when using
-//			  MPI enabled code.
-inline int roundUpFrac(double x) {
-	double integralPart, fractionalPart, result;
-
-	fractionalPart = modf(x, &integralPart);
-
-	if(integralPart != 0.0 && fractionalPart != 0.0) {
-		result = ceil(integralPart + 0.5);
-	}
-	else {
-		result = integralPart;
-	}
-
-	return result;
-}
 
 
 #endif //DEFINES_H
