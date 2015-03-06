@@ -433,7 +433,7 @@ int main (int argc, char **argv) {
 	//					Setup other things							//
 	//--------------------------------------------------------------//
 
-	if (flags.err_recfault && no_fm_cats==1 && Nsur>Nfocmec) {
+	if (flags.err_recfault && !flags.err_gridpoints && no_fm_cats==1 && Nsur>Nfocmec) {
 	    	Nsur=Nfocmec;		//it doesn't make sense to have more iterations than focal mechanisms.
 			flags.sample_all=1;	//all focal mechanisms can be sampled (one per iteration).
 	    }
@@ -462,6 +462,9 @@ int main (int argc, char **argv) {
 			error_quit("\n ** Nsur must be greater than or equal to the number of MPI processes ** \n\n");
 		}
 	#endif
+
+	print_screen("Using %d iterations.\n", Nsur);
+	print_logfile("Using %d iterations.\n", Nsur);
 
 	//--------------Setup Coefficients and DCFS struct--------------//
 
