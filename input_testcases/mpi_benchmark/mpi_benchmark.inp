@@ -5,16 +5,14 @@ IssueDate=2012-03-11T14:46:18Z
 ForecastStartDate=2011-03-11T14:46:18Z
 ForecastEndDate=2011-09-11T14:46:18Z
 InputCatalogFile=input_testcases/mpi_benchmark/jma_cat_2010_2013_update20130329_sel_3.0.dat
-#Use tohoku_ide.da for 4360 patches, tohoku_ext.dat for 1400 patches, tohoku.dat for 1000 patches
+#Use tohoku_ide.da for 4360 patches, tohoku_shao.dat for 1000 patches
 #InputListSlipModels=input_testcases/mpi_benchmark/tohoku_ide.dat
-InputListSlipModels=input_testcases/mpi_benchmark/tohoku.dat
-#InputListSlipModels=input_testcases/mpi_benchmark/tohoku_ext.dat
+InputListSlipModels=input_testcases/mpi_benchmark/tohoku_shao.dat
 InputCatalogFocMecFile=input_testcases/mpi_benchmark/NIED_GMTformat.dat
 ForecastTemplate=input_testcases/mpi_benchmark/tohoku_unigrid0.05B.dat
 RandomSeedValue=-37284630
-#Use aslipmodels_ide.da for 4360 patches, aslipmodels1.dat for 1400 patches, aslipmodels2.dat for 1000 patches.
+#Use aslipmodels_ide.da for 4360 patches, aslipmodels3.dat for 1000 patches.
 #InputListAfterslipModels=input_testcases/mpi_benchmark/aslipmodels_ide.dat
-#InputListAfterslipModels=input_testcases/mpi_benchmark/aslipmodels1.dat
-InputListAfterslipModels=input_testcases/mpi_benchmark/aslipmodels2.dat
+InputListAfterslipModels=input_testcases/mpi_benchmark/aslipmodels3.dat
 InversionStartDate=2011-03-11T14:46:18Z
 InversionEndDate=2011-03-21T14:46:18Z
