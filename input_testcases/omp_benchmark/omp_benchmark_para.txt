@@ -70,7 +70,7 @@ focmec
 # 5. dz: vertical distance tolerance (km)
 #
 # 6. smoothing: smoothing distance used for calculating background rate from a catalog (if parameter InputBackgroundRateCatalog is used).
-1	1.0
+1	0.1
 0.0005  #about 1min (since seconds not reported in GMT catalog...)
 0.9
 50

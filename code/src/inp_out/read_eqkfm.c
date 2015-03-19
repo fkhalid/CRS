@@ -456,14 +456,6 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 						if(procId == 0) {
 							fscanf(fin, "%lf", slips+(w-1)*eqfm[f].np_st+l);
 						}
-											//if points refer to center of the faut:
-					//eqfm[f].pos_s[(w-1)*eqfm[f].np_st+l]=-0.5*eqfm[f].L+(l-0.5)*dlen;
-					//eqfm[f].pos_d[(w-1)*eqfm[f].np_st+l]=-0.5*eqfm[f].W+(w-0.5)*dwid;
-
-					//if points refer to top left corner of the fault:
-					//eqfm[f].pos_s[(w-1)*eqfm[f].np_st+l]=(l-0.5)*dlen;
-					//eqfm[f].pos_d[(w-1)*eqfm[f].np_st+l]=(w-0.5)*dwid;
-
 					/* Abi's email "The hypocenter is the reference point. Then, you draw a line in the strike direction,
 					 * and the distance between the hypocenter and the end of the fault is the partial length.
 					 * The partial width is the distance to the top of the fault.

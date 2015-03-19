@@ -307,12 +307,13 @@ int main (int argc, char **argv) {
 
 	if(procId == 0) {
 
-                #ifndef _CRS_MPI
-					#ifdef _MEASURE_TIME
-						sprintf(fname,"%s.time",outname);
-						file_time=fopen(fname,"w");
-					#endif
-                #endif
+		#ifndef _CRS_MPI
+			#ifdef _MEASURE_TIME
+				sprintf(fname,"%s.time",outname);
+				//file_time=fopen(fname,"w");
+				file_time=stdout;
+			#endif
+		#endif
 
 		if (strcmp(logfile,"")!=0){
 			sprintf(syscopy,"date > %s", logfile);

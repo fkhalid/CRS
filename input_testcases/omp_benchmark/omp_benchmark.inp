@@ -9,5 +9,5 @@ InputListSlipModels=input_testcases/omp_benchmark/tohoku_ext.dat
 InputCatalogFocMecFile=input_testcases/omp_benchmark/NIED_GMTformat.dat
 ForecastTemplate=input_testcases/omp_benchmark/tohoku_template_uniform.dat
 RandomSeedValue=-37284630
-InversionStartDate=2011-03-11T14:46:18Z
-InversionEndDate=2011-03-21T14:46:18Z
+InversionStartDate=2011-03-10T14:46:18Z
+InversionEndDate=2012-03-10T14:46:18Z
