@@ -354,10 +354,12 @@ int readfocmec(char *focmecfile, struct crust crst,
 			if ((*eqkfm)[p0].whichfm){
 				(*eqkfm)[p0].slip_str=dvector(1,1);
 				(*eqkfm)[p0].slip_dip=dvector(1,1);
+				(*eqkfm)[p0].open=NULL;
 			}
 			else {
 				(*eqkfm)[p0].slip_str=dvector(1,2);
 				(*eqkfm)[p0].slip_dip=dvector(1,2);
+				(*eqkfm)[p0].open=NULL;
 			}
 			err+=find_gridpoints_d(crst.y, crst.x, crst.depth, (int *) 0, 0, crst.N_allP, (*eqkfm)[p0].y, (*eqkfm)[p0].x, (*eqkfm)[p0].depth,  (*eqkfm)[p0].mag, dDCFS,  &((*eqkfm)[p0].nsel), &((*eqkfm)[p0].selpoints));
 			WellsCoppersmith((*eqkfm)[p0].mag, (*eqkfm)[p0].rake1, &((*eqkfm)[p0].L), &((*eqkfm)[p0].W), &slip);

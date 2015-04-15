@@ -1089,7 +1089,7 @@ int test_allOkada_simple_multiplerec(){
 //
 		coeffs.NgridT=dcfs.nsel;
 		coeffs.NP=eqfm.np_di*eqfm.np_st;
-		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), &eqfm, 1, crst, latgrid, longrid, depgrid);
+		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), NULL,  &eqfm, 1, crst, latgrid, longrid, depgrid);
 
 		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst,  strikes, dips, 0);
 		sprintf(fname, "%s/okada3/CRS_2.01%d.dat",testfolder, n);	//0,2,3 wrong
@@ -1260,7 +1260,7 @@ int test_allOkada_simple(){
 //
 		coeffs.NgridT=dcfs.nsel;
 		coeffs.NP=eqfm.np_di*eqfm.np_st;
-		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), &eqfm, 1, crst, latgrid, longrid, depgrid);
+		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), NULL, &eqfm, 1, crst, latgrid, longrid, depgrid);
 
 		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst,  &eqfm.str1, &eqfm.dip1, 0);
 		sprintf(fname, "%s/okada2/CRS_2.01%d.dat",testfolder, n);
@@ -1437,7 +1437,7 @@ int test_allOkada(){
 
 		coeffs.NgridT=dcfs.nsel;
 		coeffs.NP=eqfm.np_di*eqfm.np_st;
-		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), &eqfm, 1, crst, latgrid, longrid, depgrid);
+		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), NULL, &eqfm, 1, crst, latgrid, longrid, depgrid);
 
 		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst,  &eqfm.str1, &eqfm.dip1, 0);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_optrakeA%d.dat",testfolder, n);
@@ -1979,7 +1979,7 @@ int testspeed_coeff(){
 	}
 
 	time(&extime0);
-   	okadaCoeff(&(AllCoeff.Coeffs_st), &(AllCoeff.Coeffs_dip), &eqkfm0, 1, crst, lats, lons, deps);
+   	okadaCoeff(&(AllCoeff.Coeffs_st), &(AllCoeff.Coeffs_dip), NULL, &eqkfm0, 1, crst, lats, lons, deps);
 	time(&extime1);
 	printf("Time to calculate coefficients: %f sec\n", difftime(extime1,extime0));
 

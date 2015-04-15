@@ -531,7 +531,7 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 					okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
 						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
 				#else
-					okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+					okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), NULL, eqkfm0+NFsofar,
 						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
 				#endif
 

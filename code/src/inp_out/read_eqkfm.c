@@ -223,6 +223,7 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 	(*eqkfmP).np_di=1;
 	(*eqkfmP).slip_str=dvector(1,1);
 	(*eqkfmP).slip_dip=dvector(1,1);
+	(*eqkfmP).open=NULL;
 	(*eqkfmP).pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
 	(*eqkfmP).pos_d=dvector(1,1);
 	(*eqkfmP).pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
@@ -354,6 +355,7 @@ int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out,
 // todo [coverage] this block is never tested
 int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 	// [Fahad] Variables used for MPI.
+	//todo check if opening can also be included in farfalle format.
 	int fileError = 0;
 	int procId = 0;
 
@@ -437,6 +439,7 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				eqfm[f].pos_d=dvector(1,NP);
 				eqfm[f].slip_str=dvector(1,NP);
 				eqfm[f].slip_dip=dvector(1,NP);
+				eqfm[f].open=NULL;
 				if ((f==0) | (NP>eqfm[f-1].np_st*eqfm[f-1].np_di)){
 					if (f!=0){
 						free_dvector(slips, 1,1);
@@ -516,11 +519,9 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 	#endif
 
 	FILE *fin;
-	int dumerror;
 	double junk;
 	int NP, NF, djunk;
 	int nchar=500;
-	char cjunk[100];
 	struct eqkfm *eqfm1;
 	char comm[]="#";
 	char line[nchar];
@@ -592,12 +593,13 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 			eqfm1[f].pos_d=dvector(1,NP);
 			eqfm1[f].slip_str=dvector(1,NP);
 			eqfm1[f].slip_dip=dvector(1,NP);
+			eqfm1[f].open=dvector(1,NP);	//fixme delete later if necessary. Do this across code, and also for slip_str, slip_dip. Use flags.
 			if(procId == 0) {
 				for (int p=1; p<=NP; p++) {
 						sscanf(line, "%lf   %lf    %lf   %lf   %lf",
 								&(eqfm1[f].pos_s[p]), &(eqfm1[f].pos_d[p]),
 								&(eqfm1[f].slip_str[p]), &(eqfm1[f].slip_dip[p]),
-								&junk);
+								&(eqfm1[f].open[p]));
 						if (!feof(fin)) fgets(line, nchar, fin);
 				}
 			}
@@ -607,6 +609,7 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 				MPI_Bcast(eqfm1[f].pos_d, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 				MPI_Bcast(eqfm1[f].slip_str, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 				MPI_Bcast(eqfm1[f].slip_dip, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+				MPI_Bcast(eqfm1[f].open, NP+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 			#endif
 		}
 	}

@@ -149,6 +149,7 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 			(*eqfm_out)[0].pos_s=dvector(1,ndi_nst);
 			(*eqfm_out)[0].slip_str=dvector(1,ndi_nst);
 			(*eqfm_out)[0].slip_dip=dvector(1,ndi_nst);
+			(*eqfm_out)[0].open=NULL;
 
 			// [Fahad] The following function does not implement any data structure bcast.
 			//		   bcast is used only to implement error conditions.
@@ -208,6 +209,7 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				(*eqfm_out)[f].pos_s=dvector(1,ndi_nst);
 				(*eqfm_out)[f].slip_str=dvector(1,ndi_nst);
 				(*eqfm_out)[f].slip_dip=dvector(1,ndi_nst);
+				(*eqfm_out)[f].open=NULL;	//fixme check if opening can be given in fsp format, if so make sure to broadcast.
 
 				if ((*eqfm_out)[f].np_st*(*eqfm_out)[f].np_di!=ndi_nst){
 					print_screen("Error: geometry of slip model %s not understood. Exit.\n", fname);

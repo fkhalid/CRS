@@ -246,6 +246,7 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	double *tevol;	//time evolution of afterslip (if nosnap=1).
 	double *slip_str;	//slip along strike
 	double *slip_dip;	//slip along dip
+	double *open;		//opening
 	double **allslip_str;	//for all time steps (afterslip)
 	double **allslip_dip;	//for all time steps (afterslip)
 //	double *strikes;	//strike of patch (not used)

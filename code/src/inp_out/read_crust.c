@@ -302,6 +302,7 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 	}
 
 	(*crst).variable_fixmec=1;
+
 	//NB zeroth element assigned because it will contain regional mechanism.
 	(*crst).str0=dvector(0,(*crst).N_allP);
 	(*crst).dip0=dvector(0,(*crst).N_allP);

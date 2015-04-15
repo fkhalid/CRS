@@ -103,6 +103,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 }
 
 
+//fixme allow for opening.
 #ifdef _CRS_MPI
 int okadaCoeff_mpi(float ****Coeffs_st,
 				   float ****Coeffs_dip,
@@ -233,7 +234,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 				east=crst.x[i];
 
 				if(pure_thrustnorm!=1) {
-					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1, 0,
+					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0,
 							north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							alpha, crst.lambda, crst.mu, crst.fric);
 
@@ -248,7 +249,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 				}
 
 				if(pure_strslip!=1) {
-					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0, -1,
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0,
 							 north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							 alpha, crst.lambda, crst.mu, crst.fric);
 
@@ -317,9 +318,10 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 #endif
 
 // todo [coverage] this block is never tested
-int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF,
-			   struct crust crst, double *lats, double *lons, double *depths) {
+int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
+		struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths) {
 	//lats, lons, depths contain complete list of grid points. Only the ones with indices eqkfm1.selpoints will be used.
+
 
 	int procId = 0;
 
@@ -335,8 +337,8 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
 	int Nsel=eqkfm1[0].nsel;
 	int NP_tot=0, p1, i;
-	int pure_thrustnorm, pure_strslip;
 	int err=0;
+	int flag_open, flag_sslip, flag_dslip;
 
 	for (int j=0; j<NF; j++) NP_tot+=eqkfm1[j].np_di*eqkfm1[j].np_st;
 
@@ -350,14 +352,27 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 
 	//---------initialize DCFS----------//
 
-	*Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);	//TODO should deallocate at the end (in main.c).
-	*Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
+	//check if Coeffs tensors should be allocated. todo if subfaults are different, memory wise this is not ideal.
+	flag_open=flag_sslip=flag_dslip=0;
+
+	for (int j=0; j<NF; j++){
+		flag_open=max(flag_open, eqkfm1[j].open!=NULL);
+		flag_sslip=max(flag_sslip, eqkfm1[j].slip_str!=NULL);
+		flag_dslip=max(flag_dslip, eqkfm1[j].slip_dip!=NULL);
+
+	}
+
+
+	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);	//TODO should deallocate at the end (in main.c).
+	if (flag_dslip) *Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
+	if (flag_open) *Coeffs_open=f3tensor(1,NP_tot,1,Nsel,1,6);
 
 	for (int p1=1; p1<=NP_tot; p1++){
 		for (int i=1; i<=Nsel; i++){
 			for (int j=1; j<=6; j++){
-				(*Coeffs_st)[p1][i][j]=0.0;
-				(*Coeffs_dip)[p1][i][j]=0.0;
+				if (flag_sslip) (*Coeffs_st)[p1][i][j]=0.0;	//todo add check as below.
+				if (flag_dslip) (*Coeffs_dip)[p1][i][j]=0.0;
+				if (flag_open)(*Coeffs_open)[p1][i][j]=0.0;
 			}
 		}
 	}
@@ -371,7 +386,6 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 
 	p1=0;	//count total number of patches (in all faults);
 	for (int j=0; j<NF; j++){
-		pure_thrustnorm=pure_strslip=0;
 //		todo: check rake for all patches:
 //		if (fmod(eqkfm1[j].rake1+90,180.0)!=0) pure_thrustnorm=0;
 //		if (fmod(eqkfm1[j].rake1,180.0)!=0) pure_strslip=0;
@@ -394,8 +408,8 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 				i=eqkfm1[0].selpoints[i0];
 				north=crst.y[i];
 				east=crst.x[i];
-				if (pure_thrustnorm!=1) {
-					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1, 0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+				if (eqkfm1[j].slip_str!=NULL) {
+					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_st)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_st)[p1][i0][2]+=1e6*Syy;
@@ -405,8 +419,8 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 					(*Coeffs_st)[p1][i0][6]+=1e6*Sxz;
 				}
 
-				if (pure_strslip!=1){
-					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0, -1, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+				if (eqkfm1[j].slip_dip!=NULL){
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_dip)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_dip)[p1][i0][2]+=1e6*Syy;
@@ -414,6 +428,17 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, 
 					(*Coeffs_dip)[p1][i0][4]+=1e6*Sxy;
 					(*Coeffs_dip)[p1][i0][5]+=1e6*Syz;
 					(*Coeffs_dip)[p1][i0][6]+=1e6*Sxz;
+				}
+
+				if (eqkfm1[j].open!=NULL){
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, 0.0, 1.0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+
+					(*Coeffs_open)[p1][i0][1]+=1e6*Sxx;
+					(*Coeffs_open)[p1][i0][2]+=1e6*Syy;
+					(*Coeffs_open)[p1][i0][3]+=1e6*Szz;
+					(*Coeffs_open)[p1][i0][4]+=1e6*Sxy;
+					(*Coeffs_open)[p1][i0][5]+=1e6*Syz;
+					(*Coeffs_open)[p1][i0][6]+=1e6*Sxz;
 				}
 			}
 		}

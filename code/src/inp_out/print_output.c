@@ -23,7 +23,6 @@ int sum_DCFS(struct pscmp *DCFS, double **cmb, int N, int Ntot){
 	}
 
 	return 0;
-
 }
 
 int sum_DCFSrand(double **DCFSrand, double **cmb, int TS, int N){

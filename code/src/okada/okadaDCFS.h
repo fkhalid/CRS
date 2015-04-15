@@ -19,7 +19,7 @@
 
 //----------------top level functions----------------//
 int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double *dipRs, double *rake, int optrake);
-int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths);
+int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open, struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths);
 int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths);
 int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, struct pscmp DCFS, struct eqkfm *eqkfm1, struct crust crst, double *strikeR, double *dipR, int full_tensor);
 int isoDCFS(struct pscmp DCFS, struct eqkfm eqkfm1);

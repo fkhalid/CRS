@@ -75,7 +75,9 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		//-------------Coulomb stress parameters------------------//
 		comm=comment[0];
 		line[0]=comm;
-		while (line[0]==comm)fgets(line,Nchar_long,fin);
+		while (line[0]==comm){
+			fgets(line,Nchar_long,fin);
+		}
 		sscanf(line,"%lf %lf", Mc_source, border);
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%s %s", sourcemode_fm, sourcemode_nofm);
