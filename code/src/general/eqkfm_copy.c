@@ -121,7 +121,7 @@ void copy_eqkfm_slipmodel(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 	(*eqkfm2).pos_d=eqkfm1.pos_d;
 	(*eqkfm2).slip_str=eqkfm1.slip_str;
 	(*eqkfm2).slip_dip=eqkfm1.slip_dip;
-	(*eqkfm2).open=NULL;
+	(*eqkfm2).open=eqkfm1.open;
 	(*eqkfm2).allslip_str=eqkfm1.allslip_str;
 	(*eqkfm2).allslip_dip=eqkfm1.allslip_dip;
 

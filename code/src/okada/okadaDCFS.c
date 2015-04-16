@@ -447,7 +447,8 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	return(0);
 }
 
-int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open, struct pscmp DCFS, struct eqkfm *eqkfm1, struct crust crst, double *strikeR, double *dipR, int full_tensor){
+int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open, struct pscmp DCFS, struct eqkfm *eqkfm1,
+		struct crust crst, double *strikeR, double *dipR, double *rakeR, int full_tensor){
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
@@ -537,7 +538,8 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open,
 	//-----------------Fill in Syx, Szy, Szx and resolve stress on required plane.-------------//
 	//-----------------------------------------------------------------------------------------//
 
-	if (!full_tensor) resolve_DCFS(DCFS, crst, strikeR, dipR, NULL, 1);	//todo not hardwire optrake?
+//	if (!full_tensor) resolve_DCFS(DCFS, crst, strikeR, dipR, NULL, 1);	//todo not hardwire optrake?
+	if (!full_tensor) resolve_DCFS(DCFS, crst, strikeR, dipR, rakeR, 0);	//todo not hardwire optrake? fixme choose one
 
 	return(errp!=0);
 }

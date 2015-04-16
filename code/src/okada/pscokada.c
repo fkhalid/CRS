@@ -8,86 +8,6 @@
 #include "dc3d.h"
 
 
-
-/************************************************************/
-/*			cmbfix				    */
-/*		calculate Coulomb Stress		    */
-/*							    */
-/* input:						    */
-/*  stress tensor, pore pressure, friction coefficient	    */
-/*  receiver orientation parameter (strike, dip and rake)   */
-/*							    */
-/* return:						    */
-/*  Coulomb stress (cmb) and normal stress (sig)	    */
-/************************************************************/
-
-//void cmbfix(double sxx, double syy, double szz, double sxy, double syz, double szx, double p, double f, double *cmb, double *sig, double strike, double dip, double rake) {
-//
-//
-//	double **s, *ns, *ts, *rst, *rdi;
-//	double strike_radian, dip_radian, rake_radian, tau, sigg;
-//	int i, j;
-//
-//	s   = dmatrix(1,3,1,3);
-//	ns  = dvector(1,3);
-//	ts  = dvector(1,3);
-//	rst = dvector(1,3);
-//	rdi = dvector(1,3);
-//
-//	s[1][1] = sxx;
-//	s[1][2] = sxy;
-//	s[1][3] = szx;
-//	s[2][1] = sxy;
-//	s[2][2] = syy;
-//	s[2][3] = syz;
-//	s[3][1] = szx;
-//	s[3][2] = syz;
-//	s[3][3] = szz;
-//
-//	strike_radian = strike * DEG2RAD;
-//	dip_radian    = dip * DEG2RAD;
-//	rake_radian   = rake * DEG2RAD;
-//
-//	ns[1] =  sin(dip_radian) * cos(strike_radian + 0.5 * PI);
-//	ns[2] =  sin(dip_radian) * sin(strike_radian + 0.5 * PI);
-//	ns[3] = -cos(dip_radian);
-//
-//	rst[1] = cos(strike_radian);
-//	rst[2] = sin(strike_radian);
-//	rst[3] = 0.0;
-//
-//	rdi[1] = cos(dip_radian) * cos(strike_radian + 0.5 * PI);
-//	rdi[2] = cos(dip_radian) * sin(strike_radian + 0.5 * PI);
-//	rdi[3] = sin(dip_radian);
-//
-//	/* sigg = normal stress */
-//	/*  tau = shear stress  */
-//	for (i = 1; i <= 3; i++)
-//		ts[i] = rst[i] * cos(rake_radian) - rdi[i] * sin(rake_radian);
-//
-//	sigg = 0.0;
-//	tau = 0.0;
-//
-//	for (j = 1; j <= 3; j++) {
-//		for (i = 1; i <= 3; i++) {
-//			sigg = sigg + ns[i] * s[i][j] * ns[j];
-//			tau = tau + ts[i] * s[i][j] * ns[j];
-//		}
-//	}
-//
-//	/* dCMB = shear stress + friction*(normal stress + pore pressure) */
-//	*cmb = tau + f * (sigg + p);
-//	*sig = sigg;
-//
-//	free_dmatrix(s, 1, 3, 1, 3);
-//	free_dvector(ns, 1, 3);
-//	free_dvector(ts, 1, 3);
-//	free_dvector(rst, 1, 3);
-//	free_dvector(rdi, 1, 3);
-//}
-
-
-
 /************************************************/
 /*			pscokada						    */
 /*												*/
@@ -98,7 +18,7 @@
 void pscokada(double x1, double y1, double z1, double strike1, double dip1, double L, double W, double slip_strike, double slip_dip, double open, double x2, double y2, double z2, double *sxx, double *syy, double *szz, double *sxy, double *syz, double *szx, double alpha, double lambda, double mu, double friction) {
 //slip, strike in radians.
 //x is northward, y is eastward, and z is downward.
-//x1, y1, z1 are coordinates of center top of the patch:  -------X-------		(for some reason using center doesn't work).
+//x1, y1, z1 are coordinates of center top of the patch:  -------X-------
 //														   \             \
 //														    \             \
 //														     \             \

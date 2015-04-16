@@ -192,9 +192,10 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							eqkfmAf[nfaults+nf].slip_str=eqkfmAf[nfaults+nf].allslip_str[i];
 							eqkfmAf[nfaults+nf].slip_dip=eqkfmAf[nfaults+nf].allslip_dip[i];
 						}
-						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
+						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults, crst, NULL, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
 						if (vary_recfault==0) {
-							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
+							//resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
+							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.str0+fm_offset, 0);	//fixme one line or the other
 							if (splines && i<NTSeff){
 								for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[a_ev+i].cmb[n];
 							}
@@ -232,12 +233,13 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					Coeffs_st=temp->Coeffs_st;
 					Coeffs_dip=temp->Coeffs_dip;
 					Coeffs_open=temp->Coeffs_open;
-					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS[temp->which_main], eqkfm0+NFsofar, crst, NULL, NULL, 1);
+					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS[temp->which_main], eqkfm0+NFsofar, crst, NULL, NULL, NULL,1);
 
 					//resolve coefficients if receiver faults don't change between iterations:
 					switch (vary_recfault){
 						case 0:
-							resolve_DCFS(DCFS[temp->which_main], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
+							//resolve_DCFS(DCFS[temp->which_main], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);	//fixme choose one
+							resolve_DCFS(DCFS[temp->which_main], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);
 							if (gridpoints_err){
 								int eq1=temp->which_main;
 
@@ -342,7 +344,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			if (splines==0){
 
-				if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, NULL, 1);
+				//if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, NULL, 1);
+				if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, rake0, 0);	//fixme choose a line
 				for (int l=0; l<NTScont; l++) {
 					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
 
@@ -358,7 +361,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					//fixme cmb_cumu[0];
 					for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]=0.0;
 					for (int l=0; l<NTScont; l++) {
-						resolve_DCFS(DCFS_Af[a*NTScont+l], crst, strike0, dip0, NULL, 1);
+						//resolve_DCFS(DCFS_Af[a*NTScont+l], crst, strike0, dip0, NULL, 1); fixme choose one
+						resolve_DCFS(DCFS_Af[a*NTScont+l], crst, strike0, dip0, rake0, 0);
 						if (l<NTScont-1) for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]+=DCFS_Af[a*NTScont+l].cmb[n];
 					}
 				}
@@ -395,7 +399,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			else{
 				if (eqkfm0[NFsofar].is_slipmodel){
 					if (vary_recfault==1){	// In this case stress tensor has to be resolved on a different plane at each iteration:
-						resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1);
+						//resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1); fixme choose a line
+						resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, rake0, 0);
 					}
 					if (gridpoints_err==1) {
 						//if vary_recfault==0, the field hasn't changed and cmb0 should be used.

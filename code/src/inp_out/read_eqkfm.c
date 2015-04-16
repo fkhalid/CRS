@@ -513,6 +513,7 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 	// [Fahad] Variables used for MPI.
 	int fileError = 0;
 	int procId = 0;
+	int err=0;
 
 	#ifdef _CRS_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
@@ -549,9 +550,11 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 		while (line[0]==comm[0])fgets(line, nchar, fin);
 		for (int i=1; i<=3; i++){
 			while (line[0]!=comm[0])fgets(line, nchar, fin);
-			while (line[0]==comm[0])fgets(line, nchar, fin);
+			while (line[0]==comm[0]){
+				fgets(line, nchar, fin);
+			}
 		}
-		sscanf(line, "%d", &NF);
+		err+=(sscanf(line, "%d", &NF)!=1);
 	}
 
 	#ifdef _CRS_MPI
@@ -566,10 +569,10 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 		}
 		for (int f=0; f<NF; f++){
 			if(procId == 0) {
-				sscanf(line, "%d   %lf   %lf   %lf   %lf   %lf   %lf   %lf   %d   %d   %lf",
+				err+=(sscanf(line, "%d   %lf   %lf   %lf   %lf   %lf   %lf   %lf   %d   %d   %lf",
 						&djunk, &(eqfm1[f].lat), &(eqfm1[f].lon), &(eqfm1[f].depth), &(eqfm1[f].L),
 						&(eqfm1[f].W), &(eqfm1[f].str1), &(eqfm1[f].dip1), &(eqfm1[f].np_st),
-						&(eqfm1[f].np_di), &(eqfm1[f].t));
+						&(eqfm1[f].np_di), &(eqfm1[f].t))!=11);
 				fgets(line, nchar, fin);
 			}
 
@@ -596,11 +599,11 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 			eqfm1[f].open=dvector(1,NP);	//fixme delete later if necessary. Do this across code, and also for slip_str, slip_dip. Use flags.
 			if(procId == 0) {
 				for (int p=1; p<=NP; p++) {
-						sscanf(line, "%lf   %lf    %lf   %lf   %lf",
-								&(eqfm1[f].pos_s[p]), &(eqfm1[f].pos_d[p]),
-								&(eqfm1[f].slip_str[p]), &(eqfm1[f].slip_dip[p]),
-								&(eqfm1[f].open[p]));
-						if (!feof(fin)) fgets(line, nchar, fin);
+					err+=(sscanf(line, "%lf   %lf    %lf   %lf   %lf",
+							&(eqfm1[f].pos_s[p]), &(eqfm1[f].pos_d[p]),
+							&(eqfm1[f].slip_str[p]), &(eqfm1[f].slip_dip[p]),
+							&(eqfm1[f].open[p]))!=5);
+					if (!feof(fin)) fgets(line, nchar, fin);
 				}
 			}
 
@@ -621,5 +624,5 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 	if (NF2!= NULL) *NF2=NF;
 	if (eqfm_out) *eqfm_out=eqfm1;
 
-	return (0);
+	return err;
 }
