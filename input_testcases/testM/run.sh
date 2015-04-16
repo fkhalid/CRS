@@ -25,7 +25,7 @@ ln2="Logfile=output_testcases/testM$i.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputM
 echo "ForecastTemplate=input_testcases/darf_temp_fake$i.txt" >> temp_inputM
 #sed "58s+.*+0+" $parafile > $temppara
-mv $parafile $temppara
+cp $parafile $temppara
 
 $Build/CRS_3.0 temp_inputM
 if [ $Build == "Coverage" ]

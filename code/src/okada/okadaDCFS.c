@@ -370,7 +370,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	for (int p1=1; p1<=NP_tot; p1++){
 		for (int i=1; i<=Nsel; i++){
 			for (int j=1; j<=6; j++){
-				if (flag_sslip) (*Coeffs_st)[p1][i][j]=0.0;	//todo add check as below.
+				if (flag_sslip) (*Coeffs_st)[p1][i][j]=0.0;
 				if (flag_dslip) (*Coeffs_dip)[p1][i][j]=0.0;
 				if (flag_open)(*Coeffs_open)[p1][i][j]=0.0;
 			}
@@ -447,7 +447,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	return(0);
 }
 
-int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, struct pscmp DCFS, struct eqkfm *eqkfm1, struct crust crst, double *strikeR, double *dipR, int full_tensor){
+int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open, struct pscmp DCFS, struct eqkfm *eqkfm1, struct crust crst, double *strikeR, double *dipR, int full_tensor){
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
@@ -501,12 +501,30 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, struct pscmp DCFS, st
 
 			for (p=1; p<=eqkfm1[j].np_di*eqkfm1[j].np_st; p++){
 				p1+=1;
-				DCFS.S[i][1][1]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][1]+eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][1];
-				DCFS.S[i][1][2]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][4]+eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][4];
-				DCFS.S[i][1][3]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][6]+eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][6];
-				DCFS.S[i][2][2]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][2]+eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][2];
-				DCFS.S[i][2][3]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][5]+eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][5];
-				DCFS.S[i][3][3]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][3]+eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][3];
+				if (eqkfm1[j].slip_str){
+					DCFS.S[i][1][1]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][1];
+					DCFS.S[i][1][2]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][4];
+					DCFS.S[i][1][3]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][6];
+					DCFS.S[i][2][2]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][2];
+					DCFS.S[i][2][3]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][5];
+					DCFS.S[i][3][3]+=eqkfm1[j].slip_str[p]*Coeffs_st[p1][i][3];
+				}
+				if (eqkfm1[j].slip_dip){
+					DCFS.S[i][1][1]+=eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][1];
+					DCFS.S[i][1][2]+=eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][4];
+					DCFS.S[i][1][3]+=eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][6];
+					DCFS.S[i][2][2]+=eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][2];
+					DCFS.S[i][2][3]+=eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][5];
+					DCFS.S[i][3][3]+=eqkfm1[j].slip_dip[p]*Coeffs_d[p1][i][3];
+				}
+				if (eqkfm1[j].open){
+					DCFS.S[i][1][1]+=eqkfm1[j].open[p]*Coeffs_open[p1][i][1];
+					DCFS.S[i][1][2]+=eqkfm1[j].open[p]*Coeffs_open[p1][i][4];
+					DCFS.S[i][1][3]+=eqkfm1[j].open[p]*Coeffs_open[p1][i][6];
+					DCFS.S[i][2][2]+=eqkfm1[j].open[p]*Coeffs_open[p1][i][2];
+					DCFS.S[i][2][3]+=eqkfm1[j].open[p]*Coeffs_open[p1][i][5];
+					DCFS.S[i][3][3]+=eqkfm1[j].open[p]*Coeffs_open[p1][i][3];
+				}
 			}
 		}
 		DCFS.S[i][2][1]=DCFS.S[i][1][2];

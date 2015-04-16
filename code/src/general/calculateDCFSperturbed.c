@@ -74,7 +74,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	static struct eqkfm *eqkfm2;
 	static struct eqkfm *eqkfm2A;
 	struct Coeff_LinkList *temp, *AllCoeffaft;
-	float ***Coeffs_st, ***Coeffs_dip;	//coefficients for tensor;
+	float ***Coeffs_st, ***Coeffs_dip, ***Coeffs_open;	//coefficients for tensor;
 	static float **Coeff_ResS, **Coeff_ResD;	//coefficients for cmb (resolved).
 	static struct pscmp *DCFS_Af;
 	int DCFS_Af_size;
@@ -184,7 +184,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 					Coeffs_st=AllCoeffaft->Coeffs_st;
 					Coeffs_dip=AllCoeffaft->Coeffs_dip;
-
+					Coeffs_open=AllCoeffaft->Coeffs_open;
 
 					for (int i=0; i<NTSeff; i++)	{
 						for (int nf=0; nf<DCFS_Af[a_ev].NF; nf++){
@@ -192,7 +192,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							eqkfmAf[nfaults+nf].slip_str=eqkfmAf[nfaults+nf].allslip_str[i];
 							eqkfmAf[nfaults+nf].slip_dip=eqkfmAf[nfaults+nf].allslip_dip[i];
 						}
-						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS_Af[a_ev+i], eqkfmAf+nfaults, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
+						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults, crst, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
 						if (vary_recfault==0) {
 							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
 							if (splines && i<NTSeff){
@@ -231,7 +231,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					//calculate stress tensor at each grid point:
 					Coeffs_st=temp->Coeffs_st;
 					Coeffs_dip=temp->Coeffs_dip;
-					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, DCFS[temp->which_main], eqkfm0+NFsofar, crst, NULL, NULL, 1);
+					Coeffs_open=temp->Coeffs_open;
+					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS[temp->which_main], eqkfm0+NFsofar, crst, NULL, NULL, 1);
 
 					//resolve coefficients if receiver faults don't change between iterations:
 					switch (vary_recfault){

@@ -525,13 +525,14 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 				if (!first_timein){
 					if (temp->Coeffs_st) free_f3tensor(temp->Coeffs_st, 1,0,1,0,1,0);
 					if (temp->Coeffs_dip) free_f3tensor(temp->Coeffs_dip, 1,0,1,0,1,0);
+					if (temp->Coeffs_open) free_f3tensor(temp->Coeffs_open, 1,0,1,0,1,0);
 				}
 
 				#ifdef _CRS_MPI
-					okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), eqkfm0+NFsofar,
+					okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar,
 						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
 				#else
-					okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), NULL, eqkfm0+NFsofar,
+					okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar,
 						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
 				#endif
 
@@ -545,7 +546,7 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 			}
 		}
 		else {
-			temp->Coeffs_st=temp->Coeffs_dip=NULL;
+			temp->Coeffs_st=temp->Coeffs_dip=temp->Coeffs_open=NULL;
 			if (first_timein){
 				temp->NgridT=eqkfm0[0].nsel;
 				temp->NF=Nfaults[i];

@@ -87,7 +87,7 @@ struct Coeff_LinkList{
 	int NP;				// tot. no. of patches (sum of no. of patches of individual faults);
 	int NgridT;			// no. of grid cells.
 	int hasafterslip;	// flag indicating if element should als be used for afterslip.
-	float ***Coeffs_st, ***Coeffs_dip;	// Coefficient for strike slip, dip slip displacements.
+	float ***Coeffs_st, ***Coeffs_dip, ***Coeffs_open;	// Coefficient for strike slip, dip slip displacements.
 	struct Coeff_LinkList *next;	// pointer to next element.
 };
 
