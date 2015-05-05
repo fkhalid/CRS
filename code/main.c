@@ -873,6 +873,7 @@ int main (int argc, char **argv) {
 			if(mod==1) {
 				print_logfile("Calculation starting time %.2lf. Forecast start time %.2lf.\n",tstart_calc, Tstart);
 			}
+			print_logfile("RS parameters: Asig=%3lf, ta=%3lf\n",maxAsig, maxta);
 
 			if (slipmodel_combinations>1) sprintf(outnamemod,"%s%d",outname, mod);
 			else sprintf(outnamemod,"%s",outname);

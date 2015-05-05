@@ -136,7 +136,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		//0 Asig1 Asig2
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d %lf %lf  %d", fixAsig, Asig_min, Asig_max, nAsig0);
-		if (*fixAsig && *LLinversion){
+		if (*fixAsig || !*LLinversion){
 			*Asig0=*Asig_min;
 			*Asig_min=*Asig_max=0.0;
 			*nAsig0=0;
@@ -146,7 +146,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		}
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d %lf %lf %d", fixta, ta_min, ta_max, nta0);
-		if (*fixta && *LLinversion){
+		if (*fixta || !*LLinversion){
 			*ta0=*ta_min;
 			*ta_min=*ta_max=0.0;
 			*nta0=0;
@@ -190,6 +190,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		sscanf(line,"%d", &((*flags).err_gridpoints));
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", Nsur);
+		Nsur=MIN(Nsur,1);
 
 
 		//-------------Other parameters------------------//
