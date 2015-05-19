@@ -14,6 +14,7 @@ C_SRCS += \
 ../code/src/util/interp_quad.c \
 ../code/src/util/jacobi.c \
 ../code/src/util/lnsrch.c \
+../code/src/util/merge.c \
 ../code/src/util/moreutil.c \
 ../code/src/util/mscorr.c \
 ../code/src/util/nrutil.c \
@@ -34,6 +35,7 @@ OBJS += \
 ./code/src/util/interp_quad.o \
 ./code/src/util/jacobi.o \
 ./code/src/util/lnsrch.o \
+./code/src/util/merge.o \
 ./code/src/util/moreutil.o \
 ./code/src/util/mscorr.o \
 ./code/src/util/nrutil.o \
@@ -54,6 +56,7 @@ C_DEPS += \
 ./code/src/util/interp_quad.d \
 ./code/src/util/jacobi.d \
 ./code/src/util/lnsrch.d \
+./code/src/util/merge.d \
 ./code/src/util/moreutil.d \
 ./code/src/util/mscorr.d \
 ./code/src/util/nrutil.d \

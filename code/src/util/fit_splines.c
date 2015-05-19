@@ -22,6 +22,8 @@ void fit_splines(double *t, double *t2, int TS, int TS2, int N, double **slip_be
 // early_inter_mode: 1 for linear interpolation between 0 and first time step, 2 for quadratic.
 // slip_before_err: error associated with each patch. if not given, assumed 1m.
 
+//fixme  mc=0.
+
 int NIT=500;
 double *e, *et;
 double f=0.01, sumas;	//error is fraction of maximum value: e(t)=f*max(t);
@@ -86,9 +88,6 @@ for (int h=1; h<=N; h++) sum+=slip_before[h][TS];
 sign=sum/fabs(sum);
 
 tf[0]=sp[0]=0.0;		//no errors on the requirement y(0)=0; (this is not used in finding splines, for stability).
-
-
-
 
 
 for (int h=1; h<=N; h++){

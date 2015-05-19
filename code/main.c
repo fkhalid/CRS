@@ -68,6 +68,7 @@ int main (int argc, char **argv) {
 
 	if (run_tests){
 		extra_verbose=1;
+		//test_merge_multiple();
 		//log_afterslip();
 		//test_readZMAP_catindex();
 		//background_rates();
@@ -517,7 +518,7 @@ int main (int argc, char **argv) {
 	//todo should allow this to be set from outside
 	double *Cs, *ts;
 	int Nfun, L=10000;	//large number needed if afterslip==1. todo check if this is the case after fixing setup_afterslip_evol.
-	double *times2;
+	double *times2=NULL;
 
 	Nfun=1;
 	Cs=dvector(0,Nfun-1);
@@ -533,8 +534,11 @@ int main (int argc, char **argv) {
 
 		smallest_time=fmin(t_earliest_stress, fmin(tstartLL, Tstart));	//the first time step will be before this time; this is needed in rate_state_evol.
 
-		err=setup_afterslip_evol(smallest_time, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
-				Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);	//FIXME change input arguments
+		//err=setup_afterslip_evol(smallest_time, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
+			//	Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);	//FIXME change input arguments
+
+		setup_afterslip_evol_linear(smallest_time, fmax(tendLL, Tend), &eqkfm_aft,
+				 Naf, all_aslipmodels.Nfaults, &L, &times2);
 		if(err) return 1;
 		print_logfile("\nSetting up time steps for calculations: %d time steps between times [%.2lf, %.2lf].\n", L, times2[0], times2[L]);
 

@@ -103,7 +103,7 @@ void log_afterslip(){
 			fprintf(fout,"\n");
 		//	for (int i=L; i<0; i--) DCFScont[i][1]-=DCFScont[i-1][1];
 
-			rate_state_evolution(cat, times, DCFScont, &DCFS, t0, t1, t1-t0, Asig, ta, NULL, NULL, NULL, NULL, 1, L+1, 1, gamma0, NULL, rate, 0);
+			//rate_state_evolution(cat, times, DCFScont, &DCFS, t0, t1, t1-t0, Asig, ta, NULL, NULL, NULL, NULL, 1, L+1, 1, gamma0, NULL, rate, 0);
 			for (int i=1; i<=L; i++) fprintf(fout,"%.5e\t", rate[i]);
 			fprintf(fout,"\n");
 			fclose(fout);

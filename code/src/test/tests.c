@@ -14,30 +14,28 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "../defines.h"
+#include "../general/find_timesteps.h"
 #include "../general/mem_mgmt.h"
 #include "../geom/convert_geometry.h"
 #include "../geom/coord_trafos.h"
 #include "../geom/find_gridpoints.h"
 #include "../inp_out/print_output.h"
-//#include "../inp_out/read_crust.h"
+#include "../inp_out/read_crust.h"
 #include "../inp_out/read_csep_template.h"
 #include "../inp_out/read_eqkfm.h"
 #include "../inp_out/read_focmec.h"
 #include "../inp_out/read_inputfile.h"
 #include "../inp_out/read_matrix.h"
 #include "../inp_out/read_zmap.h"
-#include "../inp_out/write_csep_forecast.h"
 #include "../okada/okadaDCFS.h"
 #include "../okada/prestress.h"
-#include "../seis/background_rate.h"
 #include "../seis/cmbopt.h"
-#include "../seis/decluster.h"
 #include "../seis/GR.h"
 #include "../seis/Helmstetter.h"
-//#include "../seis/soumod1.h"
-#include "../util/hash.h"
+#include "../util/merge.h"
 #include "../util/moreutil.h"
 #include "../util/nr.h"
 #include "../util/nrutil.h"
@@ -60,6 +58,66 @@ char *testfolder="test";
 extern int gridPMax;
 extern FILE *flog;
 double DCFS_cap=1e7;
+
+int test_merge(){
+
+	double a[10]={1. ,2. , 3., 4., 5., 6., 7., 8., 9., 10.};
+	double b[5]={1. ,2.3 , 2.6, 4.3, 11.};
+	double *r=NULL;
+	int *ai=NULL, *bi=NULL;
+
+	merge(a, 10, b, 5, &r, &ai, &bi);
+
+	for (int n=0; n<15; n++) printf("%.1f\t",r[n]);
+	printf("\n");
+	for (int n=0; n<15; n++) printf("%d\t",ai[n]);
+	printf("\n");
+	for (int n=0; n<15; n++) printf("%d\t",bi[n]);
+	printf("\n");
+
+}
+
+int test_merge_multiple(){
+
+	int N=5;
+	double **vs, *tempv;
+	int lens[5]={3,2,3,3,4};
+	long seed=-46739216;
+
+	double *sorted=NULL;
+	int lfin;
+	int **ind=NULL;
+
+	vs=(double **) malloc((size_t)(5*sizeof(double*)));;
+
+	for (int n=0; n<5; n++) {
+		tempv=NULL;
+		vs[n]=dvector(0,lens[n]-1);
+		for (int j=0; j<lens[n]; j++) vs[n][j]=ran1(&seed);
+		mysort((unsigned long)lens[n], vs[n]-1, NULL, &tempv);
+		for (int j=0; j<lens[n]; j++) {
+			vs[n][j]=tempv[j+1];
+			printf("%.3f\t%s", vs[n][j], j==lens[n]-1? "\n" : "");
+		}
+	}
+
+	merge_multiple(vs, lens, N, &sorted, &lfin, &ind);
+
+	for (int j=0; j<=lfin-1;j++){
+		printf("%.3f\t%s", sorted[j], j==lfin-1? "\n" : "");
+	}
+
+	for (int n=0; n<5; n++) {
+		for (int j=0; j<4;j++){
+			printf("%d\t%s", ind[n][j], j==3? "\n" : "");
+		}
+	}
+
+	return 0;
+
+}
+
+
 
 int test_readZMAP_catindex(){
 

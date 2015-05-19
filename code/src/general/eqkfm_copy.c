@@ -22,6 +22,7 @@ void empty_eqkfm(struct eqkfm *eqkfm0){
 	(*eqkfm0).open=NULL;
 	(*eqkfm0).allslip_str=NULL;
 	(*eqkfm0).allslip_dip=NULL;
+	(*eqkfm0).allslip_open=NULL;
 	(*eqkfm0).pos_s=NULL;
 	(*eqkfm0).pos_d=NULL;
 	(*eqkfm0).distance=NULL;
@@ -124,6 +125,7 @@ void copy_eqkfm_slipmodel(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 	(*eqkfm2).open=eqkfm1.open;
 	(*eqkfm2).allslip_str=eqkfm1.allslip_str;
 	(*eqkfm2).allslip_dip=eqkfm1.allslip_dip;
+	(*eqkfm2).allslip_open=eqkfm1.allslip_open;
 
 	return;
 

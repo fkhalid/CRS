@@ -81,6 +81,7 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 		v[i].nosnap=0;
 		v[i].allslip_str= NULL;
 		v[i].allslip_dip= NULL;
+		v[i].allslip_open= NULL;
 		v[i].tevol=NULL;
 		v[i].pos_s= NULL;
 		v[i].pos_d= NULL;
@@ -179,8 +180,9 @@ void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 		if (v[f].open) free_dvector(v[f].open,1,0);
 		if (v[f].ts) free_dvector(v[f].ts,0,0);
 		if (v[f].tevol) free_dvector(v[f].tevol,0,0);
-		if (v[f].allslip_str) free_dmatrix(v[f].allslip_dip,0,0,1,0);
-		if (v[f].allslip_dip) free_dmatrix(v[f].allslip_str,0,0,1,0);
+		if (v[f].allslip_str) free_dmatrix(v[f].allslip_str,0,0,1,0);
+		if (v[f].allslip_dip) free_dmatrix(v[f].allslip_dip,0,0,1,0);
+		if (v[f].allslip_open) free_dmatrix(v[f].allslip_open,0,0,1,0);
 
 	}
 }

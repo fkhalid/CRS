@@ -45,6 +45,7 @@
 #include "../util/nr.h"
 #include "../util/nrutil.h"
 
+int test_merge_multiple();
 int testspeed_coeff();
 int test_hash();
 

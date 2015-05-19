@@ -93,6 +93,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	double Ldum;
 	double *gammas0;
 	double *nev, *rev, *nev_avg, *rev_avg, *ev_x_avg, *ev_x_pre, *ev_x_dum;
+	double **nev_allsnapshots=NULL, **nev_allsnapdum=NULL;
 	double *cmb, *cmb_avg, *cmbpost, *cmbpost_avg;
 	int N, NgridT_out= crst.uniform ? (crst.nLat_out*crst.nLon_out*crst.nD_out) : NgridT;
 	int err;
@@ -101,7 +102,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	int Ntts=ceil((tt1-tt0)/dtstep);
 	double tnow;
 	FILE *fforex, *fcmb, *fforet1, *fforet2, *fLLev;
-	FILE *fforet_avg;
+	FILE *fforet_avg, *foutallsnap;
+
+	int all_snapshots=1;	//todo pass to function.
 
 	if (all_gammas0==NULL)	uniform_bg_rate=1;
 
@@ -134,6 +137,12 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	rev=dvector(1,Ntts);
 	nev_avg=dvector(1,Ntts);
 	rev_avg=dvector(1,Ntts);
+
+	if (all_snapshots){
+		nev_allsnapshots= dmatrix(1,Ntts, 1, NgridT);
+		nev_allsnapdum=dmatrix(0,Ntts-1, 1, NgridT);	//indices are like this because of how array is address in rate_state_evolution.
+	}
+
 	for (int n=1; n<=NgridT; n++) {
 		ev_x_avg[n]=0.0;
 		ev_x_pre[n]=0.0;
@@ -158,6 +167,8 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	#ifdef _CRS_MPI
 		MPI_File fhw_foret1, fhw_foret2, fhw_forex, fhw_cmb;
 		MPI_Status status;
+
+		all_snapshots=0;	//fixme implement this.
 
 		if (printall_cmb) {
 			sprintf(fname, "%s.dat",printall_cmb);
@@ -204,6 +215,12 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	#endif
 
 	if(procId == 0) {
+
+		if (all_snapshots){
+			sprintf(fname, "%s_allsnaps.dat",print_forex0);
+			foutallsnap=fopen(fname,"w");
+		}
+
 		if (print_LL) {
 			sprintf(fname, "%s.dat",print_LL);
 			fLLev=fopen(fname,"w");
@@ -267,6 +284,15 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
 
+		if (all_snapshots){
+			for (int t=0; t<Ntts; t++){
+				for (int n=1; n<=NgridT; n++){
+					nev_allsnapdum[t][n]=0.0;
+				}
+			}
+		}
+
+
 		print_screen("%d...",nsur);
 
 		if (all_gammas0) gammas0= (multiple_input_gammas)? all_gammas0[nsur] : *all_gammas0;
@@ -285,7 +311,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			}
 
 			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, tt0-tstart, Asig, ta,
-									  (int *) 0, ev_x_dum, (double *) 0, (double *) 0,
+									  (int *) 0, ev_x_dum, (double *) 0, (double *) 0, (double **) 0,
 									  NgridT, NTScont, Nm, gammas, crst.rate0,
 									  dumrate, 1);
 
@@ -308,11 +334,18 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		tnow=tt0;
 
 		err+=rate_state_evolution(cat, times, DCFSrand, DCFS, tt0, tt1, dtstep,
-								 Asig, ta, 0, ev_x, nev+1, rev+1, NgridT, NTScont,
+								 Asig, ta, 0, ev_x, nev+1, rev+1, nev_allsnapdum, NgridT, NTScont,
 								 Nm, gammas, crst.rate0, dumrate, 1);
+
 		for(int t=1; t<=Ntts; t++) {
 			nev_avg[t]+=nev[t]/(1.0*Nsur);
 			rev_avg[t]+=rev[t]/(1.0*Nsur);
+
+			if (all_snapshots){
+				for (int m=1; m<=NgridT; m++) {
+					nev_allsnapshots[t][m]+=nev_allsnapdum[t-1][m]/(1.0*Nsur);
+				}
+			}
 		}
 //		for(int i=1; i<=NgridT; i++) {
 //			ev_x[i]=ev_x_dum[i];
@@ -461,6 +494,21 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				fclose(fforet_avg);
 			}
 		}
+
+		if (all_snapshots) {
+
+			for(int t=1; t<=Ntts; t++) {
+
+				convert_geometry(crst, nev_allsnapshots[t], &ev_x_new, 1, 0);
+				if(procId == 0) {
+					for(int n=1; n<=NgridT_out; n++) {
+						fprintf(foutallsnap, "%.5e\t", ev_x_new[n]*=r0/NgridT);
+					}
+					fprintf(foutallsnap, "\n");
+				}
+			}
+		}
+
 
 		if (print_forex) {
 			convert_geometry(crst, ev_x_avg, &ev_x_new, 1, 0);
@@ -728,7 +776,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			// the time step passed to rate_state_evolution (dt_step) must be larger than tt1-tt0 to avoid having 2 time steps;
 			// tt0-start may not be enough due to floating point error --> use tt0-start+1.0. Also done below.
 			err = rate_state_evolution(cat, times, DCFSrand, DCFS, tstart, tt0, tt0-start+1.0, Asig, ta,
-									  (int *) 0, (double *) 0, (double *) 0, (double *) 0,
+									  (int *) 0, (double *) 0, (double *) 0, (double *) 0, (double **) 0,
 									  NgridT, NTScont, Nm, gammas, (double *) 0,
 									  dumrate, 1);
 		}
@@ -752,13 +800,13 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			if (tnow<eqkfm0[current_main].t){
 				//evolve seismicity up to next large event:
 				err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t, eqkfm0[current_main].t-tnow+1.0,
-										   Asig, ta, 0, 0, &sum, 0, NgridT, NTScont, Nm, gammas,
+										   Asig, ta, 0, 0, &sum, 0, NULL, NgridT, NTScont, Nm, gammas,
 										   crst.rate0, dumrate, 1);
 				integral += (sum)/(1.0*Nsur);
 
 				//evolve seismicity during a time window tw:
 				err += rate_state_evolution(cat, times, DCFSrand, DCFS, eqkfm0[current_main].t, eqkfm0[current_main].t+tw,
-										tw+1.0, Asig, ta, 0, 0, &sum, 0,
+										tw+1.0, Asig, ta, 0, 0, &sum, 0, NULL,
 									   NgridT, NTScont, Nm, gammas, crst.rate0,
 									   dumrate, 1);
 				tnow=eqkfm0[current_main].t+tw;
@@ -768,7 +816,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				//(Actually, if tw has a fixed value this is always the case).
 				if (tnow<eqkfm0[current_main].t+tw){
 					err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, eqkfm0[current_main].t+tw, eqkfm0[current_main].t+tw-tnow+1.0,
-							Asig, ta, 0, ev_x, &sum, 0, NgridT, NTScont, Nm, gammas, crst.rate0,
+							Asig, ta, 0, ev_x, &sum, 0, NULL, NgridT, NTScont, Nm, gammas, crst.rate0,
 							dumrate, 1);
 					tnow=eqkfm0[current_main].t+tw;
 				}
@@ -781,7 +829,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		}
 		if (tnow<tt1){
 			err += rate_state_evolution(cat, times, DCFSrand, DCFS, tnow, tt1, tt1-tnow+1.0, Asig, ta, 0,
-									   ev_x, &sum, 0, NgridT, NTScont, Nm, gammas,
+									   ev_x, &sum, 0, NULL, NgridT, NTScont, Nm, gammas,
 									   crst.rate0, dumrate, 1);
 
 			integral+=(sum)/(1.0*Nsur);

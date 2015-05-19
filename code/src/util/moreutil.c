@@ -93,14 +93,14 @@ void copy_vector(double *m1, double **m2, int a){
 
 void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 	/*
-	 * Like numerical recipes, but returns array containing old previous element index, and uses doubles.
+	 * Like numerical recipes, but returns array containing old element index, and uses doubles.
 	 * ind_out, arr_out are pointers to 1d arrays. If they point to NULL, memory will be allocated. Otherwise, arrays of the correct size should be passed.
 	 */
 
 	unsigned long i,ir=n,j,k,l=1,*istack;
 	int jstack=0, M=7, ii;
 	double a,temp;
-	int *ind=*ind_out;
+	int *ind= (ind_out)? *ind_out : NULL;
 	double *arr= *arr_out;
 
 	if (!ind) ind=ivector(1,n);

@@ -20,13 +20,13 @@ void csep_forecast_general(char *filename, struct crust crst, double *rates, int
 	}
 
 	else{
-	lats=crst.lat_out;
-	lons=crst.lon_out;
-	deps=crst.depth_out;
-	dlat=crst.dlat_out;
-	dlon=crst.dlon_out;
-	ddep=crst.ddepth_out;
-	NG=crst.uniform? (crst.nD_out*crst.nLat_out*crst.nLon_out) : crst.N_allP;
+		lats=crst.lat_out;
+		lons=crst.lon_out;
+		deps=crst.depth_out;
+		dlat=crst.dlat_out;
+		dlon=crst.dlon_out;
+		ddep=crst.ddepth_out;
+		NG=crst.uniform? (crst.nD_out*crst.nLat_out*crst.nLon_out) : crst.N_allP;
 	}
 
 	if (use_mags){

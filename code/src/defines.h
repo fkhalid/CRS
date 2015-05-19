@@ -249,6 +249,7 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	double *open;		//opening
 	double **allslip_str;	//for all time steps (afterslip)
 	double **allslip_dip;	//for all time steps (afterslip)
+	double **allslip_open;	//for all time steps (afterslip)
 //	double *strikes;	//strike of patch (not used)
 //	double *dips;		//dip of patch (not used)
     double *pos_s;		//along strike distance from point: lat,lon (0 for single patch events);

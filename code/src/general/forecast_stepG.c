@@ -12,7 +12,7 @@
 #endif
 
 int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1, double dt_step, double Asig, double ta,
-			int points[], double *out_NeX, double *NeT, double *ReT, int N, int NTS, int Neqks, double *gamma_init, double *back_rate, double *R, int last){
+			int points[], double *out_NeX, double *NeT, double *ReT, double **all_NeT, int N, int NTS, int Neqks, double *gamma_init, double *back_rate, double *R, int last){
 
 	/* Calculates seismicity in space and time based on rate-and-state (Dieterich 1994) constitutive law.
 	 * Aseismic stresses in cmpdata are assumed to grow linearly between time steps.
@@ -34,8 +34,9 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	 *
 	 * Output:
 	 *  out_NeX: number of events in each grid cell. [1...N] (i.e. it refers to the subset of points in "points").
-	 *  NeT: total no of events (i.e., sum of out_NeX)
-	 *  ReT: total seismicity rate at t=tt1.
+	 *  NeT: total no of events in each time step (i.e., sum of out_NeX). [0...nts-1]
+	 *  ReT: total seismicity rate at the end of each time step.  [0...nts-1]
+	 *  all_NeT: no of events binned in space and time  [0...nts-1][1...N];
 	 *  R: seismicity rate at the time of the earthquakes given in cat (used for first term of LogLikelihood).
 	 *
 	 *  NB: assumes that times, cat, DCFS, NTS, times are always the same (each time function is called), since many static internal structures are initialized in the first function call.
@@ -362,6 +363,8 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 		  }
 		if (NeT) NeTprivate[omp_get_thread_num()][step]+=NeX[m];
 		if (ReT) ReTprivate[omp_get_thread_num()][step]+=back_rate_n*(ta/Asig)/gamma;
+
+		if (all_NeT) all_NeT[step][m]=NeX[m];
 
 		step+=1;
 		tt0step=tt1step;

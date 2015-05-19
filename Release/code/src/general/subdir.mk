@@ -9,6 +9,7 @@ C_SRCS += \
 ../code/src/general/eqkfm_copy.c \
 ../code/src/general/find_timesteps.c \
 ../code/src/general/forecast_stepG.c \
+../code/src/general/lin_interp_eqkfm.c \
 ../code/src/general/mem_mgmt.c \
 ../code/src/general/setup.c \
 ../code/src/general/struct_conversions.c 
@@ -19,6 +20,7 @@ OBJS += \
 ./code/src/general/eqkfm_copy.o \
 ./code/src/general/find_timesteps.o \
 ./code/src/general/forecast_stepG.o \
+./code/src/general/lin_interp_eqkfm.o \
 ./code/src/general/mem_mgmt.o \
 ./code/src/general/setup.o \
 ./code/src/general/struct_conversions.o 
@@ -29,6 +31,7 @@ C_DEPS += \
 ./code/src/general/eqkfm_copy.d \
 ./code/src/general/find_timesteps.d \
 ./code/src/general/forecast_stepG.d \
+./code/src/general/lin_interp_eqkfm.d \
 ./code/src/general/mem_mgmt.d \
 ./code/src/general/setup.d \
 ./code/src/general/struct_conversions.d 

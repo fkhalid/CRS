@@ -538,8 +538,8 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open,
 	//-----------------Fill in Syx, Szy, Szx and resolve stress on required plane.-------------//
 	//-----------------------------------------------------------------------------------------//
 
-//	if (!full_tensor) resolve_DCFS(DCFS, crst, strikeR, dipR, NULL, 1);	//todo not hardwire optrake?
-	if (!full_tensor) resolve_DCFS(DCFS, crst, strikeR, dipR, rakeR, 0);	//todo not hardwire optrake? fixme choose one
+	if (!full_tensor) resolve_DCFS(DCFS, crst, strikeR, dipR, NULL, 1);	//todo not hardwire optrake?
+//	if (!full_tensor) resolve_DCFS(DCFS, crst, strikeR, dipR, rakeR, 0);	//todo not hardwire optrake? fixme choose one
 
 	return(errp!=0);
 }

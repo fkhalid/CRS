@@ -624,7 +624,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 					(*allslipmodels).slipmodels[nsm] = malloc(120 * sizeof(char));
 					fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 					if (is_afterslip){
-						(*allslipmodels).Nfaults[nsm]=1; //actual value found later.
+//						(*allslipmodels).Nfaults[nsm]=1; //actual value found later.
 						sscanf(line,"%lf %s", (*allslipmodels).tsnap+nsm, (*allslipmodels).slipmodels[nsm]);
 						(*allslipmodels).tsnap[nsm]+=(*allslipmodels).tmain[nn];
 					}
