@@ -108,7 +108,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 
 	if (time_in==1) {
-		print_logfile("\nSetting up variables for calculating perturbed Coulomb fields.\n");
+		print_logfile("\nSetting up variables for calculating Coulomb stress fields...\n");
+		print_screen("\nSetting up variables for calculating Coulomb stress fields...\n");
 
 		//-----calculate neighbouring points--------//
 
@@ -217,6 +218,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				}
 			}
 		}
+		print_screen("done.\n");
 	}
 
 	//-----------------------------------------------------------------//

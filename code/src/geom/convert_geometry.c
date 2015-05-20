@@ -29,7 +29,7 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
  *
  * NB: if old_v, new_v are the same (i.e. the refined and output grid are the same), old_v will be copied if (*new_v!=NULL),
  * in which case memory should have already been allocated for the correct size; if *new_v, will set *new_v=old_v (to save memory);
- * in this case, one should be careful not to overwrite old_v later by writing into *new_v. To be save, allocate memory to *new_v before.
+ * in this case, one should be careful not to overwrite old_v later by writing into *new_v. To be safe, allocate memory to *new_v before.
  *
  * points change along lat, then along lon, then along depth.
  * indices start from 1.
@@ -131,5 +131,58 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 }
 
 
+int flatten_outgrid(struct crust crst, double *old_v, double **new_v, int *Nfinal){
+	/* Flattens values corresponding to a full output grid to a 2D one, summing over depth layers.
+	 *
+	 * Input:
+	 *  crst: structure containing large grid (crst.nLat_out, crst.nLon_out, crst.nD_out).
+	 *  old_v: original vector
+	 *
+	 * Output:
+	 *  new_v: new vector
+	 *  Nfinal: size of *new_v.
+	 *
+	 * NB: if old_v, new_v are the same (e.g. if crst.uniform==0), old_v will be copied if (*new_v!=NULL),
+	 * in which case memory should have already been allocated for the correct size; if *new_v, will set *new_v=old_v (to save memory);
+	 * in this case, one should be careful not to overwrite old_v later by writing into *new_v. To be safe, allocate memory to *new_v before.
+	 *
+	 * points change along lat, then along lon, then along depth.
+	 * indices start from 1.
+	 * new_v will be initialized if NULL; otherwise, must have correct no. of elements!
+	 *
+	 */
 
+	int N0=crst.nLat_out*crst.nLon_out*crst.nD_out;	//initial size.
+	int old_i;	//old indices.
 
+	if (!crst.uniform){
+		if (!(*new_v)){
+			*new_v=old_v;
+		}
+		else{
+			//if memory has already been allocated for new_v, do not change it (since it may contain extra elements):
+			copy_vector(old_v, new_v, N0);
+		}
+		*Nfinal=N0;
+		return 0;
+	}
+
+	else{
+		*Nfinal=N0/crst.nD_out;
+
+		if (!(*new_v)){
+			*new_v=dvector(1,*Nfinal);
+		}
+
+		for (int i=1; i<=*Nfinal; i++){
+			(*new_v)[i]=0.0;
+			for (int j=1; j<=crst.nD_out; j++){
+				old_i=(j-1)*(*Nfinal)+i;
+				(*new_v)[i]+=old_v[old_i];
+			}
+		}
+	}
+
+	return 0;
+
+}

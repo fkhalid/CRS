@@ -563,6 +563,8 @@ int main (int argc, char **argv) {
 	// TODO: these variables may be too large to be stored in memory (for large Nsur). In this case, they should not be used (and the starting rates results from LL inversion should
 	// never be used in the forecast: see if condition below).
 
+	print_screen("Setting up variables needed for grid search...");
+
 	if (LLinversion && forecast &&  tendLL<=Tstart) {
 		gammas_new=dmatrix(1,Nsur,1,NgridT);
 		gammas_maxLL=dmatrix(1,Nsur,1,NgridT);
@@ -584,12 +586,14 @@ int main (int argc, char **argv) {
 			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
 
 
+	print_screen("done\n");
+
 
 	//******************************************************************************//
 	//  							Setup background rate 							//
 	//******************************************************************************//
 
-
+	print_screen("Setting up background rate...");
 	print_logfile("\nUsing%s uniform background rate.\n", (use_bg_rate_cat || use_bg_rate_grid)? " non" : "");
 
 	if (use_bg_rate_grid) {
@@ -620,6 +624,7 @@ int main (int argc, char **argv) {
 	}
 
 	print_logfile("Default values of background rate: \nMw>=%.2lf\t r=%.5lf\n", cat.Mc, r0);
+	print_screen("done\n");
 
 	//-----------write out summary of grid search:------------//
 

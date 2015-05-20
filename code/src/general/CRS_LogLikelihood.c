@@ -7,6 +7,18 @@
 
 #include "CRS_LogLikelihood.h"
 
+#include <math.h>
+#include <stdio.h>
+
+#include "../defines.h"
+#include "../geom/convert_geometry.h"
+#include "../inp_out/print_output.h"
+#include "../inp_out/write_csep_forecast.h"
+#include "../util/error.h"
+#include "../util/nrutil.h"
+#include "calculateDCFSperturbed.h"
+#include "forecast_stepG.h"
+
 #ifdef _CRS_MPI
 	#include "mpi.h"
 #endif
@@ -88,7 +100,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	char fname[120];
 	char print_forex[120], print_cmb[120], print_cmbpost[120];
 	static double **DCFSrand;
-	static double *dumrate, *gammas, *rate, *ev_x, *ev_x_new=NULL;
+	static double *dumrate, *gammas, *rate, *ev_x, *ev_x_new=NULL, *flat_grid;
 	double integral;
 	double Ldum;
 	double *gammas0;
@@ -97,8 +109,11 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	double *cmb, *cmb_avg, *cmbpost, *cmbpost_avg;
 	int N, NgridT_out= crst.uniform ? (crst.nLat_out*crst.nLon_out*crst.nD_out) : NgridT;
 	int err;
+	int msnap;
 	int uniform_bg_rate=0;
 	int current_main, which_recfault;
+	int NgridTsnaps;
+	int flatten_allsnaps=1;	//boolean to decide whether all snapshots should be flattened (i.e. sum over depth layers) to avoid huge files.
 	int Ntts=ceil((tt1-tt0)/dtstep);
 	double tnow;
 	FILE *fforex, *fcmb, *fforet1, *fforet2, *fLLev;
@@ -128,7 +143,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	ev_x_avg=dvector(1,NgridT);
  	ev_x_pre=dvector(1,NgridT);
 	ev_x_dum=dvector(1,NgridT);
-	ev_x_new=dvector(1,NgridT);
+	ev_x_new=dvector(1,NgridT_out);
 	cmb=dvector(1,NgridT);
 	cmbpost=dvector(1,NgridT);
 	cmbpost_avg=dvector(1,NgridT);
@@ -139,6 +154,13 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	rev_avg=dvector(1,Ntts);
 
 	if (all_snapshots){
+		if (flatten_allsnaps && !crst.uniform){
+			print_screen("Warning: can not flatten snapshots over depth, since grid is not uniform.\n");
+			print_logfile("Warning: can not flatten snapshots over depth, since grid is not uniform.\n");
+			flatten_allsnaps=0;
+		}
+		NgridTsnaps=(flatten_allsnaps)? NgridT_out/crst.nD_out : NgridT_out;
+		flat_grid=dvector(1, NgridTsnaps);
 		nev_allsnapshots= dmatrix(1,Ntts, 1, NgridT);
 		nev_allsnapdum=dmatrix(0,Ntts-1, 1, NgridT);	//indices are like this because of how array is address in rate_state_evolution.
 	}
@@ -498,11 +520,17 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		if (all_snapshots) {
 
 			for(int t=1; t<=Ntts; t++) {
-
 				convert_geometry(crst, nev_allsnapshots[t], &ev_x_new, 1, 0);
+				if (flatten_allsnaps) {
+					flatten_outgrid(crst, ev_x_new, &flat_grid, &NgridTsnaps);
+				}
+				else {
+					flat_grid=ev_x_new;
+					NgridTsnaps= NgridT_out;
+				}
 				if(procId == 0) {
-					for(int n=1; n<=NgridT_out; n++) {
-						fprintf(foutallsnap, "%.5e\t", ev_x_new[n]*=r0/NgridT);
+					for(int n=1; n<=NgridTsnaps; n++) {
+						fprintf(foutallsnap, "%.5e\t", flat_grid[n]*=r0/NgridT);
 					}
 					fprintf(foutallsnap, "\n");
 				}
@@ -555,7 +583,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	free_dvector(gammas, 1,NgridT);
 	free_dvector(ev_x,1,NgridT);
 	free_dvector(ev_x_avg,1,NgridT);
-	free_dvector(ev_x_new,1,NgridT);
+	free_dvector(ev_x_new,1,NgridT_out);
 	free_dvector(cmb,1,NgridT);
 	free_dvector(cmbpost,1,NgridT);
 	free_dvector(cmb_avg,1,NgridT);
