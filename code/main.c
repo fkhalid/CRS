@@ -137,6 +137,7 @@ int main (int argc, char **argv) {
 	double ta_min, ta_max, ta0;		//range of ta for parameter search; value to be used if fixta=1 or LLinversion=0.
 	double r0;						//value of background rate to be used if fixr0=1 or LLinversion=0.
 	int nAsig, nta;					//number of Asig, ta values to use in grid search.
+	int ta_log_step, asig_log_step;
 	double maxAsig, maxta, maxr;	//optimal values from grid search.
 	double Asig, ta, r,		// these are assigned during each grid search iteration.
 			dAsig, dta;		// interval between values in grid search.
@@ -264,7 +265,7 @@ int main (int argc, char **argv) {
 
 //-----------------------read model parameters-------------------//
 
-	err=read_modelparameters(modelparametersfile, &crst, reftime, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0,
+	err=read_modelparameters(modelparametersfile, &crst, reftime, &fixr, &fixAsig, &fixta, &r0, &Asig0, &ta0, &asig_log_step, &ta_log_step,
 			&Asig_min, &Asig_max, &ta_min, &ta_max, &nAsig, &nta,	&tw, &fore_dt,
 			&Nsur, &flags, &(cat.Mc), &Mag_main, &Mc_source, &dDCFS, &DCFS_cap,
 			&dt, &dM, &xytoll, &ztoll, &border, &res, &gridresxy, &gridresz, &smoothing, &LLinversion, &forecast);
@@ -534,6 +535,7 @@ int main (int argc, char **argv) {
 
 		smallest_time=fmin(t_earliest_stress, fmin(tstartLL, Tstart));	//the first time step will be before this time; this is needed in rate_state_evol.
 
+		//fixme add flag to choose between these (should pick first one if there are no splines).
 		//err=setup_afterslip_evol(smallest_time, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
 			//	Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);	//FIXME change input arguments
 
@@ -571,8 +573,8 @@ int main (int argc, char **argv) {
 	Nev=dvector(1,(1+nAsig)*(1+nta));
 	I=dvector(1,(1+nAsig)*(1+nta));
 
-	dAsig=(nAsig==0)? 0.0 : (Asig_max-Asig_min)/nAsig;	//first case to avoid 0/0 later.
-	dta=(nta==0)? 0.0 : (ta_max-ta_min)/nta;
+	dAsig=(nAsig==0)? 0.0 : (asig_log_step ? pow(Asig_max/Asig_min, (1.0/nta)): (Asig_max-Asig_min)/nAsig);	//first case to avoid 0/0 later.
+	dta=(nta==0)? 0.0 : ( ta_log_step ? pow(ta_max/ta_min, (1.0/nta)) : (ta_max-ta_min)/nta);
 
 	for (int p=1; p<=(1+nAsig)*(1+nta); p++) LLs[p]=0.0;
 
@@ -769,7 +771,7 @@ int main (int argc, char **argv) {
 				Asig= (fixAsig)? Asig0 : Asig_min+as*dAsig;
 				for(int tai=0; tai<=nta; tai++) {
 					err=0;
-					ta= (fixta)? ta0 : ta_min+tai*dta;
+					ta= (fixta)? ta0 : ( (ta_log_step)? ta_min*pow(dta,tai) : ta_min+tai*dta);
 					p+=1;
 
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, DCFS, eqkfm_aft,

@@ -223,11 +223,12 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	int err=0, NF, nfmax=0;
-	double 	toll=1e-10, discx, discy;
+	int err=0, NF;
+	double 	toll=1e-10;
 	double **sliptots;
 	struct eqkfm *eqkfm0;	//used to read individual slip models (one per snapshot), later copied into eqkfm0res structure.
 	double ***allslip_str_temp,***allslip_dip_temp, ***allslip_open_temp;	//store slip values from individual snapshots.
+	int is_str, is_dip, is_open;	//flags used to determine which components of deformations are needed (to save memory).
 
 	struct set_of_models setmodels;
 
@@ -242,6 +243,9 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 	setmodels.NF_models[1]=NF;
 	setmodels.NFmax=NF;
 	setmodels.set_of_eqkfm=eqkfm_array(0, NF-1);
+	//fixme check: better 	setmodels.set_of_eqkfm= (struct eqkfm *) malloc((size_t) ((NF+NR_END)*sizeof(struct eqkfm))); since assinged below?
+	//fixme check: this structure is probably not needed at all.
+
 
 	// allocate temporary storage (since eqkfm0 gets overwritten)
 	allslip_str_temp=malloc(NF*sizeof(double **));
@@ -301,9 +305,8 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		eqkfm0[nf].is_slipmodel=1;
 		latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
 
-
 		//check if all elements are 0, and is so set flag.
-		int is_str=0, is_dip=0, is_open=0;
+		is_str=0; is_dip=0; is_open=0;
 		for (int t=0; t<=no_snap-1; t++){
 			for (int p=1; p<=eqkfm0[nf].np_st*eqkfm0[nf].np_di; p++){
 				if (fabs(allslip_str_temp[nf][t][p])>toll) is_str=1;
@@ -362,7 +365,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 	struct set_of_models setmodels;
 	struct eqkfm *eqkfm0;
 	int err=0, NF, nftot=0, nfmax=0;
-	double 	toll=1e-10, discx, discy;
+	double 	toll=1e-10;
 
 	setmodels.NF_models=ivector(1,no_slipmodels);
 	setmodels.Nmod=no_slipmodels;
@@ -392,6 +395,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 			for (int i=0; i<NF; i++) eqkfm0[i].cuts_surf=1;
 		}
 
+		reduce_eqkfm_memory(eqkfm0, NF);	//delete empty slip_str, slip_dip, open arrays.
 		for (int nf=0; nf<NF; nf++) {
 			eqkfm0[nf].t=tmain;
 			eqkfm0[nf].nsel=nsel;
@@ -457,7 +461,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 	#endif
 
 	struct pscmp *DCFS;
-    struct Coeff_LinkList *AllCoeff, *temp;
+    struct Coeff_LinkList *AllCoeff, *temp, *temp2;
     int Nsel, Nsteps, NFtot, NFtotaft;
     int mainshock_withafterslip;
     int afterslip= (eqkfm_aft==NULL) ? 0 : 1;
@@ -535,12 +539,11 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 				print_screen("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
 				return(1);
 			}
-			struct Coeff_LinkList *temp;
-			temp=AllCoeff;
+			temp2=AllCoeff;
 			while (i<Nm && i!=mainshock_withafterslip) {
 				NFtot+=Nfaults[i];
 				i++;
-				temp=temp->next;
+				temp2=temp2->next;
 			}
 
 			if (!check_same_geometry(eqkfm0+NFtot, Nfaults[i], eqkfm_aft+NFtotaft, Nfaults_aft[a])){
@@ -549,11 +552,17 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 				return(1);
 			}
 
+			//set pointers to corresponding co/postseismic elements to each others:
+			for (int nf=0; nf<Nfaults[i]; nf++){
+				eqkfm0[NFtot+nf].co_aft_pointer=eqkfm_aft+NFtotaft+nf;
+				eqkfm_aft[NFtotaft+nf].co_aft_pointer=eqkfm0+NFtot+nf;
+			}
+
 			//cuts_surf must be the same for afterslip and coseismic model:
 			for (int f=0; f<Nfaults_aft[a]; f++) eqkfm_aft[NFtotaft+f].cuts_surf=eqkfm0[NFtot+f].cuts_surf;
 
-			temp->hasafterslip=1;
-			temp=temp->next;
+			temp2->hasafterslip=1;
+			temp2=temp2->next;
 			NFtotaft+=Nfaults_aft[a];
 		}
     }
@@ -631,7 +640,6 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 
     return(0);
 }
-
 
 
 int setup_afterslip_evol_linear(double t0, double t1, struct eqkfm **eqk_aft,
@@ -713,20 +721,6 @@ int setup_afterslip_evol_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	return(0);
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts,

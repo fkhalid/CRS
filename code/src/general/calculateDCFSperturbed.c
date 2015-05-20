@@ -177,7 +177,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			for (int i=0; i<Nmain; i++){
 				if (!AllCoeffaft->hasafterslip) {
 					AllCoeffaft=AllCoeffaft->next;
-					continue;
 				}
 
 				else{
@@ -204,7 +203,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults, crst, NULL, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
 						if (vary_recfault==0) {
 							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
-							//resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.str0+fm_offset, 0);	//fixme one line or the other
+							//resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);	//fixme one line or the other
 							free_d3tensor(DCFS_Af[a_ev+i].S, 1,NgridT,1,3,1,3);
 							if (splines && i<NTSeff){
 								for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[a_ev+i].cmb[n];

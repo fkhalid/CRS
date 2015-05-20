@@ -17,7 +17,7 @@
 //#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 8				// No. of scalar variables in 'struct flags'
-	#define SIZE_BCAST_MODEL_PARAMETERS 31	// No. of scalar variables in 'struct BCast_Model_Parameters'
+	#define SIZE_BCAST_MODEL_PARAMETERS 33	// No. of scalar variables in 'struct BCast_Model_Parameters'
 #endif
 // ---------------------------------
 
@@ -258,7 +258,10 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
     int *selpoints;		//indices of cell points affected by this event.
     int index_cat;		//index of event in catalog.
     struct set_of_models *parent_set_of_models;	//if multiple models are present, this is a pointer to corresponding set_of_models structure.
-						//this is also used for multiple afterslips (i.e. when more than one mainshock is followed by afterslip)
+    											//this is also used for multiple afterslips (i.e. when more than one mainshock is followed by afterslip)
+    											//fixme check: actually, not needed for afterslips (ended up using linear structure instead).
+    struct eqkfm *co_aft_pointer;//pointer linking corresponding coseismic/postseismic elements.
+
 };
 
 // [Fahad] A complete collection of scalar model parameters used in
@@ -279,6 +282,8 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 		double r0;
 		double Asig0;
 		double ta0;
+		int ta_log_step;
+		int asig_log_step;
 		double Asig_min;
 		double Asig_max;
 		double ta_min;

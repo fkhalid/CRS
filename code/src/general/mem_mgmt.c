@@ -18,6 +18,60 @@
 #include "../util/moreutil.h"
 #include "../util/nrutil.h"
 
+void reduce_eqkfm_memory(struct eqkfm *eqkfm0, int NF){
+/* Frees empty arrays in eqkfm0 structure.
+ * Input:
+ *  eqkfm0= pointer to eqkfm array. (*eqkfm)[0...NF-1]
+ *  NF=no of faults, i.e. no. of *eqkfm elements.
+ * Output:
+ *  frees eqkfm.slip_str, eqkfm.slip_dip, eqkfm.slip_open arrays when needed.
+ */
+
+	double 	toll=1e-10;	//tolerance
+	int is_str, is_dip, is_open;	//flags used to determine which components of deformations are needed (to save memory).
+
+	//check if all elements are 0, and is so set flag.
+	for (int nf=0; nf<NF; nf++){
+		check_empty_eqkfm(eqkfm0[nf], toll, &is_str, &is_dip, &is_open);
+
+		//free memory if elements are all 0.
+		if (is_str==0){
+			//if condition needed since the element may have been freed before:
+			if (eqkfm0[nf].slip_str) free_dvector(eqkfm0[nf].slip_str,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			eqkfm0[nf].slip_str=NULL;
+		}
+		if (is_dip==0){
+			if (eqkfm0[nf].slip_dip) free_dvector(eqkfm0[nf].slip_dip,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			eqkfm0[nf].slip_dip=NULL;
+		}
+		if (is_open==0){
+			if (eqkfm0[nf].open) free_dvector(eqkfm0[nf].open,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			eqkfm0[nf].open=NULL;
+		}
+	}
+}
+
+void check_empty_eqkfm(struct eqkfm eqkfm0, double toll, int *is_str, int *is_dip, int *is_open){
+/* Checks if eqkfm0.slip_str(dip,open) are empty (i.e. all 0s within tolerance) and returns boolean value.
+ *
+ * Input:
+ *  eqkfm0: single structure eqkfm.
+ *  toll: tolerance
+ */
+
+	*is_str=0;
+	*is_dip=0;
+	*is_open=0;
+
+	for (int p=1; p<=eqkfm0.np_st*eqkfm0.np_di; p++){
+		if (eqkfm0.slip_str && (*is_str || fabs(eqkfm0.slip_str[p])>toll)) *is_str=1;
+		if (eqkfm0.slip_dip && (*is_dip || fabs(eqkfm0.slip_dip[p])>toll)) *is_dip=1;
+		if (eqkfm0.open && (*is_open || fabs(eqkfm0.open[p])>toll)) *is_open=1;
+
+		if (*is_str && *is_dip && *is_open) break;
+	}
+}
+
 
 void init_crst(struct crust *crst){
 /* Initialize variables in crust structure to default values. */
@@ -105,6 +159,7 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 		v[i].rake2=0;
 		v[i].index_cat=0;
 		v[i].cuts_surf=0;
+		v[i].co_aft_pointer=NULL;
 
 	}
 	return v-n1+NR_END;

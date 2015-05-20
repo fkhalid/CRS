@@ -15,7 +15,7 @@
 
 int read_modelparameters(char *modelparametersfile, struct crust *crst, struct tm reftime,
 						int *fixr, int *fixAsig, int *fixta, double *r0, double *Asig0,
-						double *ta0, double *Asig_min, double *Asig_max, double *ta_min,
+						double *ta0, int *asig_log_step, int *ta_log_step, double *Asig_min, double *Asig_max, double *ta_min,
 						double *ta_max, int *nAsig0, int *nta0, double *tw, double *fore_dt,
 						int *Nsur, struct flags *flags,
 						double *Mc, double *Mag_main, double *Mc_source,
@@ -36,7 +36,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 	char comment[]="#", comm=comment[0];
 	int Nchar_long=500;
 	char line[Nchar_long];
-	char sourcemode_fm[10], sourcemode_nofm[10];
+	char sourcemode_fm[10], sourcemode_nofm[10], logstep[10];
 	char recfault[10];
 	struct tm times;
 	char regstress_mode[120];
@@ -135,24 +135,48 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		//or:
 		//0 Asig1 Asig2
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d %lf %lf  %d", fixAsig, Asig_min, Asig_max, nAsig0);
+		sscanf(line,"%d %lf %lf  %d %s", fixAsig, Asig_min, Asig_max, nAsig0, logstep);
 		if (*fixAsig || !*LLinversion){
 			*Asig0=*Asig_min;
 			*Asig_min=*Asig_max=0.0;
 			*nAsig0=0;
+			*asig_log_step=0;
 		}
 		else{
 			*Asig0=0.0;
+			if (!strcmp(logstep, "log")) {
+				*asig_log_step=1;
+			}
+			else if (!strcmp(logstep, "lin")) {
+				*asig_log_step=0;
+			}
+			else{
+				print_screen("Illegal value for Asigma step mode (should be one of: lin/log).\n", modelparametersfile);
+				print_logfile("Illegal value for Asigma step mode (should be one of: lin/log.\n", modelparametersfile);
+				fileError=1;
+			}
 		}
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-		sscanf(line,"%d %lf %lf %d", fixta, ta_min, ta_max, nta0);
+		sscanf(line,"%d %lf %lf %d %s", fixta, ta_min, ta_max, nta0, logstep);
 		if (*fixta || !*LLinversion){
 			*ta0=*ta_min;
 			*ta_min=*ta_max=0.0;
 			*nta0=0;
+			*ta_log_step=0;
 		}
 		else{
 			*ta0=0.0;
+			if (!strcmp(logstep, "log")) {
+				*ta_log_step=1;
+			}
+			else if (!strcmp(logstep, "lin")) {
+				*ta_log_step=0;
+			}
+			else{
+				print_screen("Illegal value for ta step mode (should be one of: lin/log).\n", modelparametersfile);
+				print_logfile("Illegal value for ta step mode (should be one of: lin/log.\n", modelparametersfile);
+				fileError=1;
+			}
 		}
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%lf", Mc);
@@ -275,6 +299,8 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 			modelParams.r0  		 =  *r0;
 			modelParams.Asig0        =  *Asig0;
 			modelParams.ta0  		 =  *ta0;
+			modelParams.ta_log_step  =  *ta_log_step;
+			modelParams.asig_log_step=  *asig_log_step;
 			modelParams.Asig_min     =  *Asig_min;
 			modelParams.Asig_max     =  *Asig_max;
 			modelParams.ta_min       =  *ta_min;
@@ -355,6 +381,9 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		MPI_Address(&(modelParams.gridresz),    &addresses_ModelParameters[29]);
 		MPI_Address(&(modelParams.smoothing),   &addresses_ModelParameters[30]);
 
+		MPI_Address(&(modelParams.ta_log_step), &addresses_ModelParameters[31]);
+		MPI_Address(&(modelParams.asig_log_step),&addresses_ModelParameters[32]);
+
 
 		// Set displacements
 		for(int i = 0; i < SIZE_BCAST_MODEL_PARAMETERS; ++i) {
@@ -383,6 +412,8 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 			*r0     		= modelParams.r0;
 			*Asig0  		= modelParams.Asig0;
 			*ta0    		= modelParams.ta0;
+			*ta_log_step	= modelParams.ta_log_step;
+			*asig_log_step  = modelParams.asig_log_step;
 			*Asig_min       = modelParams.Asig_min;
 			*Asig_max       = modelParams.Asig_max;
 			*ta_min         = modelParams.ta_min;

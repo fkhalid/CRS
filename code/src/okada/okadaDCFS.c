@@ -103,7 +103,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 }
 
 
-//fixme allow for opening.
+//fixme allow for opening, and do fancy memory stuff as in okadaCoeff (careful with private variables in omp section!!)
 #ifdef _CRS_MPI
 int okadaCoeff_mpi(float ****Coeffs_st,
 				   float ****Coeffs_dip,
@@ -320,7 +320,10 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 // todo [coverage] this block is never tested
 int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 		struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths) {
-	//lats, lons, depths contain complete list of grid points. Only the ones with indices eqkfm1.selpoints will be used.
+
+	/*
+	 * lats, lons, depths contain complete list of grid points. Only the ones with indices eqkfm1.selpoints will be used.
+	 */
 
 
 	int procId = 0;
@@ -336,9 +339,10 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	double alpha;
 	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
 	int Nsel=eqkfm1[0].nsel;
-	int NP_tot=0, p1, i;
+	int NP_tot=0, p1, i, noslip_str, noslip_dip, noopen;
 	int err=0;
 	int flag_open, flag_sslip, flag_dslip;
+	struct eqkfm *afslip;	//dummy variable equal to pointers in eqkfm1 which point to afterslip elements.
 
 	for (int j=0; j<NF; j++) NP_tot+=eqkfm1[j].np_di*eqkfm1[j].np_st;
 
@@ -356,26 +360,26 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	flag_open=flag_sslip=flag_dslip=0;
 
 	for (int j=0; j<NF; j++){
-		flag_open=max(flag_open, eqkfm1[j].open!=NULL);
-		flag_sslip=max(flag_sslip, eqkfm1[j].slip_str!=NULL);
-		flag_dslip=max(flag_dslip, eqkfm1[j].slip_dip!=NULL);
 
+		//if the element is associated with afterslip, should check whether this afterslip has strike/slip/opening component.
+		afslip=	eqkfm1[j].co_aft_pointer;
+
+		//check if there is no slip in this fault:
+		noslip_str= (eqkfm1[j].slip_str==NULL && (afslip==NULL || (*afslip).allslip_str==NULL));
+		noslip_dip= (eqkfm1[j].slip_dip==NULL && (afslip==NULL || (*afslip).allslip_dip==NULL));
+		noopen= (eqkfm1[j].open==NULL && (afslip==NULL || (*afslip).allslip_open==NULL));
+
+		flag_open=max(flag_open, !noopen);
+		flag_sslip=max(flag_sslip, !noslip_str);
+		flag_dslip=max(flag_dslip, !noslip_dip);
+
+		if (flag_open && flag_sslip && flag_dslip) break;
 	}
 
-
+	//allocate memory and set to 0 (inside f3tensor).	//todo could use array of pointers for smarter memory allocation...
 	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);	//TODO should deallocate at the end (in main.c).
 	if (flag_dslip) *Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
 	if (flag_open) *Coeffs_open=f3tensor(1,NP_tot,1,Nsel,1,6);
-
-	for (int p1=1; p1<=NP_tot; p1++){
-		for (int i=1; i<=Nsel; i++){
-			for (int j=1; j<=6; j++){
-				if (flag_sslip) (*Coeffs_st)[p1][i][j]=0.0;
-				if (flag_dslip) (*Coeffs_dip)[p1][i][j]=0.0;
-				if (flag_open)(*Coeffs_open)[p1][i][j]=0.0;
-			}
-		}
-	}
 
 	//-----------------------------------------------------------------------------------------//
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
@@ -403,12 +407,24 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 			p1+=1;
 			patch_pos(eqkfm1[j], p, &eqeast, &eqnorth, &depth);
 
-			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i)
+			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i, afslip, noslip_str, noslip_dip, noopen)
 			for (int i0=1; i0<=Nsel; i0++){
 				i=eqkfm1[0].selpoints[i0];
 				north=crst.y[i];
 				east=crst.x[i];
-				if (eqkfm1[j].slip_str!=NULL) {
+
+				//if the element is associated with afterslip, should check whether this afterslip has strike/slip/opening component.
+				afslip=	eqkfm1[j].co_aft_pointer;
+
+				//check if both coseismic and afterslip have empty arrays for each component of deformation:
+				noslip_str= (eqkfm1[j].slip_str==NULL && (afslip==NULL || (*afslip).allslip_str==NULL));
+				noslip_dip= (eqkfm1[j].slip_dip==NULL && (afslip==NULL || (*afslip).allslip_dip==NULL));
+				noopen= (eqkfm1[j].open==NULL && (afslip==NULL || (*afslip).allslip_open==NULL));
+
+				//todo: in principle could deallocate (*Coeffs_st)[p1] if noslip_str==1 (and similar for str_dip, open).
+				// but can't do this if using f3tensor dunction 'cause memory is a single block.
+
+				if (!noslip_str) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_st)[p1][i0][1]+=1e6*Sxx;
@@ -419,7 +435,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 					(*Coeffs_st)[p1][i0][6]+=1e6*Sxz;
 				}
 
-				if (eqkfm1[j].slip_dip!=NULL){
+				if (!noslip_dip) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_dip)[p1][i0][1]+=1e6*Sxx;
@@ -430,7 +446,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 					(*Coeffs_dip)[p1][i0][6]+=1e6*Sxz;
 				}
 
-				if (eqkfm1[j].open!=NULL){
+				if (!noopen) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, 0.0, 1.0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_open)[p1][i0][1]+=1e6*Sxx;

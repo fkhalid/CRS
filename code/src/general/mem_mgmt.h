@@ -16,6 +16,8 @@
 #include "../defines.h"
 #include "../util/nrutil.h"
 
+void reduce_eqkfm_memory(struct eqkfm *eqkfm0, int NF);
+void check_empty_eqkfm(struct eqkfm eqkfm0, double toll, int *is_str, int *is_dip, int *is_open);
 void shift_cat(struct catalog *cat, int N);
 void init_crst(struct crust *crst);
 void init_cat1(struct catalog *cat, int Zsel);

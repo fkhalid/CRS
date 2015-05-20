@@ -222,6 +222,7 @@ float ***f3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh)
 	long i,j,nrow=nrh-nrl+1,ncol=nch-ncl+1,ndep=ndh-ndl+1;
 	float ***t;
 
+
 	/* allocate pointers to pointers to rows */
 	t=(float ***) malloc((size_t)((nrow+NR_END)*sizeof(float**)));
 	if (!t) nrerror("allocation failure 1 in f3tensor()");
@@ -235,7 +236,7 @@ float ***f3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh)
 	t[nrl] -= ncl;
 
 	/* allocate rows and set pointers to them */
-	t[nrl][ncl]=(float *) malloc((size_t)((nrow*ncol*ndep+NR_END)*sizeof(float)));
+	t[nrl][ncl]=(float *) calloc((size_t)((nrow*ncol*ndep+NR_END)),sizeof(float));
 	if (!t[nrl][ncl]) nrerror("allocation failure 3 in f3tensor()");
 	t[nrl][ncl] += NR_END;
 	t[nrl][ncl] -= ndl;
