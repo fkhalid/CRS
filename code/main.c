@@ -6,22 +6,27 @@
  */
 
 #include <math.h>
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
+#include <sys/param.h>
+//#include <sys/stat.h>
 #include <time.h>
 
 #include "src/defines.h"
-#include "src/seis/background_rate.h"
 #include "src/general/CRS_LogLikelihood.h"
-#include "src/inp_out/print_output.h"
+#include "src/general/setup.h"
+//#include "src/inp_out/print_output.h"
 #include "src/inp_out/read_crust.h"
 #include "src/inp_out/read_csep_template.h"
 #include "src/inp_out/read_eqkfm.h"
+#include "src/inp_out/read_focmec.h"
 #include "src/inp_out/read_inputfile.h"
+#include "src/seis/background_rate.h"
 #include "src/seis/GR.h"
-#include "src/util/hash.h"
+#include "src/util/error.h"
+//#include "src/util/hash.h"
 #include "src/util/moreutil.h"
 #include "src/util/nrutil.h"
 
@@ -355,7 +360,7 @@ int main (int argc, char **argv) {
 //---------------------------------------------//
 
 	if (flags.afterslip !=0) {
-		err=read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1);
+		err=read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1, &(flags.aseismic_log));
 		err+=setup_afterslip_eqkfm(all_aslipmodels, crst, &eqkfm_aft);
 		if (err!=0) error_quit("Error in setting up afterslip slip model. Exiting.\n");
 		Naf=all_aslipmodels.NSM;
@@ -366,14 +371,14 @@ int main (int argc, char **argv) {
 	}
 
 	//flags.splines= (flags.afterslip)? (all_aslipmodels.NSM>1): 0;	//FIXME need to do this for each afterslip
-	flags.splines= (flags.afterslip)? (eqkfm_aft[0].nosnap>1): 0;
+	flags.aseismic_multisnap= (flags.afterslip)? (eqkfm_aft[0].nosnap>1): 0;
 
 //----------------------------------------------------------//
 //--------------Setup aftershocks, mainshocks --------------//
 //----------------------------------------------------------//
 
 	//read list of coseismic slip models.
-	err=read_listslipmodel(slipmodelfile, reftime, &all_slipmodels, res, 0);
+	err=read_listslipmodel(slipmodelfile, reftime, &all_slipmodels, res, 0, NULL);
 	if (err) error_quit("Error in reading slip model file. Exiting.\n");
 
 	if (flags.err_recfault) {
@@ -516,16 +521,8 @@ int main (int argc, char **argv) {
 
 	print_screen("Setting up time steps...");
 
-	//todo should allow this to be set from outside
-	double *Cs, *ts;
-	int Nfun, L=10000;	//large number needed if afterslip==1. todo check if this is the case after fixing setup_afterslip_evol.
+	int L;
 	double *times2=NULL;
-
-	Nfun=1;
-	Cs=dvector(0,Nfun-1);
-	ts=dvector(0,Nfun-1);
-	Cs[0]=436.63;
-	ts[0]=14.2653;
 
 	//todo allow for general stressing history here.
 	//t_earliest_stress used later to calculate tstart_calc; 1e30 ensures value is ignored (see later).
@@ -535,12 +532,37 @@ int main (int argc, char **argv) {
 
 		smallest_time=fmin(t_earliest_stress, fmin(tstartLL, Tstart));	//the first time step will be before this time; this is needed in rate_state_evol.
 
-		//fixme add flag to choose between these (should pick first one if there are no splines).
-		//err=setup_afterslip_evol(smallest_time, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
-			//	Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);	//FIXME change input arguments
+		if (flags.aseismic_log){
+			//todo should allow this to be set from outside
+			double *Cs, *ts;
+			int Nfun;
 
-		setup_afterslip_evol_linear(smallest_time, fmax(tendLL, Tend), &eqkfm_aft,
-				 Naf, all_aslipmodels.Nfaults, &L, &times2);
+			Nfun=1;
+			Cs=dvector(0,Nfun-1);
+			ts=dvector(0,Nfun-1);
+			Cs[0]=436.63;
+			ts[0]=14.2653;
+
+			if (flags.aseismic_multisnap) {
+				err=setup_afterslip_multi_log(smallest_time, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
+					Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);
+			}
+			else{
+				err=setup_afterslip_single_log(smallest_time, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
+					Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);
+			}
+		}
+
+		else{
+
+			if (flags.aseismic_multisnap) {
+				err=setup_afterslip_multi_linear(smallest_time, fmax(tendLL, Tend), &eqkfm_aft, Naf, all_aslipmodels.Nfaults, &L, &times2);
+			}
+			else{
+				err=setup_afterslip_single_linear(smallest_time, fmax(tendLL, Tend), &eqkfm_aft, Naf, all_aslipmodels.Nfaults, &L, &times2);
+			}
+
+		}
 		if(err) return 1;
 		print_logfile("\nSetting up time steps for calculations: %d time steps between times [%.2lf, %.2lf].\n", L, times2[0], times2[L]);
 

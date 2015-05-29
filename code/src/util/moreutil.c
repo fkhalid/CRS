@@ -85,8 +85,6 @@ void copy_vector(double *m1, double **m2, int a){
 		(*m2)[ns]=m1[ns];
 	}
 
-	//*m2=m1;
-
 	return;
 }
 

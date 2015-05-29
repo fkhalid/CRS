@@ -40,7 +40,6 @@ int setup_afterslip_eqkfm(struct slipmodels_list slipmodels, struct crust crst, 
 int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodel, char *cmb_format, int no_slipmodels, double mu, double disc,
 		double tmain, int nsel, int *sel_pts, double *mmain, int cuts_surf, int *NF0, double lat0, double lon0);
 int load_newdata(double *t0, double t1, struct set_of_models *allmodels, int Nmain, int *NFaults, char **slipmodels, char **multimodels, int *no_slipmodels, int *Nmain_now);
-int setup_afterslip_evol(double t0, double t1, double *Cs, double *ts, int Nfun, struct eqkfm **eq_aft, int NA, int *Nfaults, int *L, double **times2, long *seed);
 int mask_afterslip(double time, double *times, int L, double *evol_afterslip0, double **evol_afterslip, int *Lnow);
 int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out, struct crust crst, struct eqkfm *eqkfm0,
 		int Nm, int *Nfaults, struct eqkfm *eqkfm_aft, int no_afterslip, int *Nfaults_aft);

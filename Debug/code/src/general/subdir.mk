@@ -12,6 +12,7 @@ C_SRCS += \
 ../code/src/general/lin_interp_eqkfm.c \
 ../code/src/general/mem_mgmt.c \
 ../code/src/general/setup.c \
+../code/src/general/setup_time.c \
 ../code/src/general/struct_conversions.c 
 
 OBJS += \
@@ -23,6 +24,7 @@ OBJS += \
 ./code/src/general/lin_interp_eqkfm.o \
 ./code/src/general/mem_mgmt.o \
 ./code/src/general/setup.o \
+./code/src/general/setup_time.o \
 ./code/src/general/struct_conversions.o 
 
 C_DEPS += \
@@ -34,6 +36,7 @@ C_DEPS += \
 ./code/src/general/lin_interp_eqkfm.d \
 ./code/src/general/mem_mgmt.d \
 ./code/src/general/setup.d \
+./code/src/general/setup_time.d \
 ./code/src/general/struct_conversions.d 
 
 

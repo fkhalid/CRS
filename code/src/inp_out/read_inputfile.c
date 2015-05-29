@@ -501,7 +501,7 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 // FIXME: [Fahad] MPI code this this function requires optimization ...
 int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels,
-					   double res, int is_afterslip) {
+					   double res, int is_afterslip, int *aseismic_log) {
 	/*
 	 * Read a file containing a list of slip models.
 	 *
@@ -513,6 +513,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	 *
 	 * output:
 	 * 	allslipmodels: list of slip models;
+	 * 	aseismic_log: flag indicating if logarithmic time steps should be used for aseismic processes (splines or single snapshot).
 	 *
 	 */
 
@@ -566,6 +567,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			fgets(line,Nchar,fin);
 			if (is_afterslip) {
 				sscanf(line,"%s", &((*allslipmodels).cmb_format));
+				*aseismic_log=1;	//fixme read from file.
 			}
 			else {
 				sscanf(line,"%s %d", &((*allslipmodels).cmb_format), &((*allslipmodels).constant_geometry)); //todo check this is the same as coseismic models.
@@ -574,6 +576,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 		#ifdef _CRS_MPI
 			MPI_Bcast(&Nm0, 1, MPI_INT, 0, MPI_COMM_WORLD);
+			MPI_Bcast(&aseismic_log, 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&((*allslipmodels).constant_geometry), 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&((*allslipmodels).cmb_format), 120, MPI_CHAR, 0, MPI_COMM_WORLD);
 		#endif

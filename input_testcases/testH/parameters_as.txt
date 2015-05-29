@@ -41,8 +41,8 @@ fm	no
 #    If no time should be skipped, set Mag_main to a large value (setting Mag_main to a small value and tw=0.0 leads to longer computation times).
 1
 1      0.022
-0      8000   10000   1
-0      7000   10000   1
+0      8000   10000   1	lin
+0      7000   10000   1	lin
 2.0
 0.0012  5.95
 #=============================================#

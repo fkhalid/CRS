@@ -16,7 +16,7 @@
 // ----- [Fahad] Added for MPI -----
 //#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
-	#define BCAST_FLAGS_SIZE 8				// No. of scalar variables in 'struct flags'
+	#define BCAST_FLAGS_SIZE 9				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 33	// No. of scalar variables in 'struct BCast_Model_Parameters'
 #endif
 // ---------------------------------
@@ -64,7 +64,8 @@ struct flags{
 	int OOPs;
 	//afterslip:
 	int afterslip;
-	int splines;
+	int aseismic_log;
+	int aseismic_multisnap;
 	//control way aftershocks are treated:
 	int sources_all_iso;
 	int sources_without_focmec;

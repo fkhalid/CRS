@@ -70,7 +70,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	int	afterslip=flag.afterslip, \
 		vary_recfault=flag.err_recfault, \
 		gridpoints_err=flag.err_gridpoints, \
-		splines=flag.splines, \
+		multisnap=flag.aseismic_multisnap, \
 		full_field=(flag.sources_without_focmec==2);
 
 	static double *strike0, *dip0, *rake0;	//strike0, dip0, rake0 are focal mechanism that will change at each iteration.
@@ -159,14 +159,14 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 		if (afterslip!=0){
 
-			NTSeff=(splines)? NTScont : 1;
+			NTSeff=(multisnap)? NTScont : 1;
 			DCFS_Af_size= NTSeff*NA;
 			DCFS_Af= pscmp_array(0,DCFS_Af_size);
 
 			a_ev=0;	//counter for DCFS_Af
 			nfaults=0;	//counter for eqkfmAf
 
-			if (splines) {
+			if (multisnap) {
 				cmb_cumu=dmatrix(0,NA-1,1,NgridT);
 				for (int a=0; a<NA; a++){
 					for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]=0.0;
@@ -196,17 +196,18 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 					for (int i=0; i<NTSeff; i++)	{
 						for (int nf=0; nf<DCFS_Af[a_ev].NF; nf++){
-							//copy slip values for each snapshot and fault into slip_X (this is needed because okadaCoeff2DCFS uses them):
+							//assign slip values for each snapshot and fault into slip_X (this is needed because okadaCoeff2DCFS uses them):
 							eqkfmAf[nfaults+nf].slip_str= (eqkfmAf[nfaults+nf].allslip_str)? eqkfmAf[nfaults+nf].allslip_str[i] : NULL;
 							eqkfmAf[nfaults+nf].slip_dip= (eqkfmAf[nfaults+nf].allslip_dip)? eqkfmAf[nfaults+nf].allslip_dip[i] : NULL;
 							eqkfmAf[nfaults+nf].open= (eqkfmAf[nfaults+nf].allslip_open)? eqkfmAf[nfaults+nf].allslip_open[i] : NULL;
 						}
-						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults, crst, NULL, NULL, NULL, 1); //todo free memory used by *AllCoeff; todo make this work for splines==1 too...
+						//todo make this work for splines==1 too...
+						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults, crst, NULL, NULL, NULL, 1); //todo free memory used by *AllCoeff;
 						if (vary_recfault==0) {
 							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
 							//resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);	//fixme one line or the other
 							free_d3tensor(DCFS_Af[a_ev+i].S, 1,NgridT,1,3,1,3);
-							if (splines && i<NTSeff){
+							if (multisnap && i<NTSeff){
 								for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[a_ev+i].cmb[n];
 							}
 						}
@@ -353,7 +354,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		i=0;
 		for (int a=0; a<NA; a++){
 
-			if (splines==0){
+			if (multisnap==0){
 
 				if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, NULL, 1);
 				//if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, rake0, 0);	//fixme choose a line

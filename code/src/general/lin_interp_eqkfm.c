@@ -5,6 +5,8 @@
  *      Author: camcat
  */
 
+#include <stddef.h>
+
 #include "../defines.h"
 #include "../util/nrutil.h"
 
@@ -115,11 +117,11 @@ void fit_lin(double *times1, double *times2, int Nas, int L, int *ind, int NP, d
  *
  *Input:
  * times1[0...Nas-1]= initial time steps
- * slipbefore_st[1...NP][0...Nas-1]=initial values
+ * slipbefore_st[1...NP][0...Nas-1]=initial values. If not given, will assume it's 1 for all patches.
  * times2[0...L-1]= final time steps
  * ind= indices of times2 elements which are also in times1.
  *
- * (*slipbefore_st)[1...NP][0...L-1]=final values.
+ * (*slip_after)[1...NP][0...L-1]=final values.
  */
 
 
@@ -139,7 +141,7 @@ void fit_lin(double *times1, double *times2, int Nas, int L, int *ind, int NP, d
 	  //loop over original time steps:
 	  for (int j=0; j<Nas-1; j++){
 		  //original stress change:
-		  delta_slip= slipbefore_st[p][j+1]-slipbefore_st[p][j];
+		  delta_slip= (slipbefore_st)? slipbefore_st[p][j+1]-slipbefore_st[p][j] : 1.0;
 		  delta_t= times1[j+1]-times1[j];
 
 		  //new stress changes:

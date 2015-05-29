@@ -22,7 +22,7 @@ int findtimestepsomori(double te, double t0, double t1, double tstart, double te
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	double dfdt, dt;
+	double dfdt, dt, tnow;
 	int N, j=0, err=0;
 	double K_over_tau;
 
@@ -32,18 +32,14 @@ int findtimestepsomori(double te, double t0, double t1, double tstart, double te
 	dt=Dtau*(1.0/dfdt);
 	N=(int) (t1-t0)*(1.0/dt);			//N is always > than the needed number of elements since the first derivative is monotonically decreasing.
 
-	t[0]=t0;
-	while (t[j]<=t1){
-		dfdt=(1.0-p)*K_over_tau*tau0*pow(t[j]+c-te,-p);
+	tnow=t0;
+	if (t) t[0]=t0;
+	while (tnow<=t1){
+		dfdt=(1.0-p)*K_over_tau*tau0*pow(tnow+c-te,-p);
 		dt=Dtau*(1.0/dfdt);
-		t[j+1]=t[j]+dt;
+		tnow+=dt;
+		if (t) t[j+1]=tnow;
 		j+=1;
-		if (j==(*L)) {
-			print_screen("** Error: L too small in findtimestepsomori.c. Exiting. **\n");
-			print_logfile("** Error: L too small in findtimestepsomori.c. Exiting. **\n");
-			err=1;
-			break;
-		}
 	}
 
 	if (j>1000) print_screen("\n ** Warning: findtimesteps.m produced %d time steps! **\n",j);

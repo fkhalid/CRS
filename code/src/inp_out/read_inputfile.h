@@ -23,6 +23,6 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		double *Tstart, double *Tend, double *tstartLL, double *tendLL, long *seed, int *num_fm);
 
 int read_slipformecfiles(char *inputfile, char ***listfiles, int *nfiles);
-int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels, double res, int is_afterslip);
+int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels, double res, int is_afterslip, int *aseismic_log);
 
 #endif /* READ_INPUTFILE_H_ */

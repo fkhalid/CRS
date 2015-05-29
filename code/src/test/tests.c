@@ -281,7 +281,7 @@ int test_read_inputfiles(){
 	struct tm reftime;
 	double tstart, tend;
 	struct slipmodels_list slip_list;
-	int nfm;
+	int nfm, j;
 
 	read_inputfile(file, outname, reftime_str, fore_template, catname, focmeccat, background_rate_grid, NULL, NULL,
 			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
@@ -298,11 +298,11 @@ int test_read_inputfiles(){
 	printf("tstart=%.3lf\n", tstart);
 	printf("tend=%.3lf\n", tend);
 
-	read_listslipmodel(slipmodelfile, reftime, &slip_list, 3.0, 0);
+	read_listslipmodel(slipmodelfile, reftime, &slip_list, 3.0, 0, NULL);
 	printf("\nslipmodels:\n NSM=%d, is_aft=%d\n", slip_list.NSM, slip_list.is_afterslip);
 	for (int n=0; n<slip_list.NSM; n++) printf("t=%.3lf, m=%.3lf, d=%.3lf, file=%s, Nf=%d, no_mod=%d\n", slip_list.tmain[n], slip_list.mmain[n], slip_list.disc[n], slip_list.slipmodels[n], slip_list.Nfaults[n], slip_list.no_slipmodels[n]);
 
-	read_listslipmodel(afterslipmodelfile, reftime, &slip_list, 3.0, 1);
+	read_listslipmodel(afterslipmodelfile, reftime, &slip_list, 3.0, 1, &j);
 	printf("\nafterslip:\nNSM=%d, is_aft=%d\n", slip_list.NSM, slip_list.is_afterslip);
 	for (int n=0; n<slip_list.NSM; n++) printf("t=%.3lf, d=%.3lf, file=%s, Nf=%d, no_mod=%d\n", slip_list.tmain[n], slip_list.disc[0], slip_list.slipmodels[n], slip_list.Nfaults[0], slip_list.no_slipmodels[0]);
 
