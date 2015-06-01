@@ -489,6 +489,8 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 
 	#endif
 
+	print_screen("*Ln 492, %lf*\n", (*crst).str0[0]);
+
 	//calculate regional stress field:
 	if (!(strcmp(regstress_mode,"oops"))) {
 		prestress(1e6*s[0], 1e6*s[1], 1e6*s[2], (*crst).str0[0], (*crst).dip0[0], (*crst).rake0[0], 0.0,(*crst).fric, &((*crst).S));

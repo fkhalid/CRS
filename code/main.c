@@ -354,6 +354,8 @@ int main (int argc, char **argv) {
 	}
 	NgridT=crst.N_allP;
 
+	print_screen("*Ln 357*\n");
+
 
 //---------------------------------------------//
 //--------------Setup afterslip----------------//

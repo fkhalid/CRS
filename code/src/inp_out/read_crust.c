@@ -65,6 +65,8 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 		error_quit(" ** Error while reading grid template. Exiting. **\n");
 	}
 
+
+
 	lat0=(*crst).latmin;
 	lat1=(*crst).latmax;
 	lon0=(*crst).lonmin;
@@ -187,6 +189,8 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 	//--------------read value of focal mechanism grid from file:-------------//
 	//----------(this applies is a single foc mec is given per grid point)----//
 
+	print_screen("*Ln 192, %lf*\n", (*crst).str0[0]);
+
 	//if focmecgridfile is given, each point has its own focal mechanism:
 	if (focmecgridfile && strcmp(focmecgridfile,"")!=0){
 
@@ -196,6 +200,11 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 
 		//read file of focal mechanisms:
 		err1 = read_focmecgridfile(focmecgridfile, crst);
+
+		if(err1){
+			print_screen("*Warning: errors occurred while reading focmecgridfile (%s)*\n", focmecgridfile);
+			print_logfile("*Warning: errors occurred while reading focmecgridfile*\n");
+		}
 
 		// todo [coverage] this block is never tested
 		// if a refined grid is being used, focal mechanism values should me mapped to refined geometry:
@@ -213,6 +222,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 		}
 
 		//copy regional mechanism into 0th element:
+		//print_screen("*Ln 227 %d*\n", (*crst).str0[0]);
 		(*crst).str0[0]=str0tmp;
 		(*crst).dip0[0]=dip0tmp;
 
@@ -220,6 +230,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 			print_screen("*Warning: errors occurred while reading focmecgridfile (%s)*\n", focmecgridfile);
 			print_logfile("*Warning: errors occurred while reading focmecgridfile*\n");
 		}
+
 	}
 
 	//--------------if (vary_focmec==1), read indices and no. of foc. mec zones into crst-----------//
@@ -268,7 +279,8 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 	#endif
 
 	double **data;
-	int err=0, NL,
+	long NL;
+	int err=0,
 		NP= (*crst).uniform? (*crst).nLat_out*(*crst).nLon_out*(*crst).nD_out : (*crst).N_allP;	//expected no. of lines in file (no. of forecast points).
 
 	data=dmatrix(1,2,1,NP);
@@ -286,7 +298,7 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 		MPI_Bcast(data[nrl], nrow*ncol+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	#endif
 
-	if (err || NL!=NP){
+	if (err || ((int)NL)!=NP){
 		if (err) {
 			print_screen("Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
 			print_logfile("Error: can not open file %s (read_focmecgridfile), exiting.\n", fname);
@@ -317,7 +329,9 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 	(*crst).fmzone=ivector(1,(*crst).N_allP);
 	for (int i=1; i<=(*crst).N_allP; i++) (*crst).fmzone[i]=i-1;
 
-	free_dmatrix(data, 1,2,1,(*crst).N_allP);
+	free_dmatrix(data, 1,2,1,NP);
+
+	print_screen("*Ln 346, %d, %f*\n", (*crst).str0, (*crst).str0[0]);
 
 	return 0;
 }

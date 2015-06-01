@@ -243,7 +243,7 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 	int Nas=(*eqk_aft)[0].nosnap;
 	int Ltot=0, offset=1, nfaults;
 
-	int printout_splines=0;	//can set to 1 to check if splines are giving correct stressing history.
+	int printout_splines=1;	//can set to 1 to check if splines are giving correct stressing history.
 	FILE *fout;
 	char fname[120];
 
