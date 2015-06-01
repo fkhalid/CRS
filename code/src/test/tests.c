@@ -902,7 +902,7 @@ int test_forecast_stepG2_new(){
 
 	//find time steps:
 	times_aft=dvector(0,NTS);
-	findtimestepsomori(0.0, t0, t1, 0, 183, cmb_step, dtau, 0.6, 0.001, times_aft+1, NULL, &NTS);
+	//findtimestepsomori(0.0, t0, t1, 0, 183, cmb_step, dtau, 0.6, 0.001, times_aft+1, NULL, &NTS);
 	times_aft[0]=-1e-4;
 
 	//setup afterslip evolution:

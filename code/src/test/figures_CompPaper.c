@@ -75,7 +75,8 @@ void log_afterslip(){
 			sprintf(fname, "tests/log_afterslip3_%.0f.dat", Dtau);
 
 			fout=fopen(fname,"w");
-			findtimestepsomori(0.0, 1e-14, t1, t0, t1, tau_postseismic, Dtau, p, c, times+1, &K, &L);
+			//findtimestepsomori now takes K as input.
+			//findtimestepsomori(0.0, 1e-14, t1, t0, t1, tau_postseismic, Dtau, p, c, times+1, &K, &L);
 
 			fprintf(fout0, "%.3lf\t %.3lf\n", Dtau, K);	//print out to summary file.
 

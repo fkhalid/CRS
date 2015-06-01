@@ -5,8 +5,6 @@
  *      Author: camcat
  */
 
-//#include "setup_time.h"
-
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -21,23 +19,45 @@
 #include "lin_interp_eqkfm.h"
 
 
-int timesteps_log(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults, int *L, double **times2,
-		double smallstepstime, double TAU, double dtau){
+int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults, int *L, double **times2,
+		double smallstepstime, double TAU, double dtau, double timeTAU){
+
+	/* Calculates time steps based on the information in eqk_aft.
+	 * To obtain time steps with an increasing spacing, a function of the form t_{i}=t_{i-1}+K(t+c-teq)^p is used: for p=1 and a logarithmic stressing history,
+	 * this gives equal stresses within each time step. (NB: t refers to the start of each aseismic event).
+	 *
+	 * Input:
+	 *  t0, t1: start and end time.
+	 *  eqk_aft: array containing all the events to be considered.	Range [0...NFtot-1], where NFtot=sum(Nfaults);
+	 *  Nfaults:  number of faults per event. Range [0...NA-1].
+	 *
+	 *  smallstepstime: initial period during which smaller time steps are used (uses 0.3K instead of K).
+	 *	 K: parameter describing how closely spaced time steps are: t_{i}=t_{i-1}+K(t+c-teq)^p
+	 *
+	 * Output:
+	 *  times2: time steps. Memory is allocated here and the arrays is populated. Range [0...*L].
+	 *  L: largest index in times2.
+	 */
 
 	int offset, L0, Ltot;
 	int nev, nfaults;
 	double Teq, tend;
 	int err=0;
+	double c=0.001, p=0.6;
+
+	double K=0.6;
 
 	//Dry run: find total no. of time steps, without filling out times2 (not allocated yet):
 	offset=1;
 	nev=nfaults=0;
+
 	while(nev<NA && (*eqk_aft)[nfaults].t<t1){
 		Teq=(*eqk_aft)[nfaults].t;
 		tend= (nev<NA-1) ? fmin((*eqk_aft)[nfaults+Nfaults[nev]].t,t1) : t1;
-		err+=findtimestepsomori(Teq, Teq, fmin(smallstepstime+Teq,tend), 0, 183, TAU, 0.3*dtau, 0.6, 0.001, NULL, NULL, L);
+
+		err+=findtimestepsomori(Teq, Teq, fmin(smallstepstime+Teq,tend), 0.3*K, 0.6, 0.001, NULL, NULL, L);
 		if (smallstepstime+Teq<tend) {
-			err+=findtimestepsomori(Teq, smallstepstime+Teq, tend, 0, 183, TAU, dtau, 0.6, 0.001, NULL, NULL, &L0);
+			err+=findtimestepsomori(Teq, smallstepstime+Teq, tend, K, 0.6, 0.001, NULL, NULL, &L0);
 			Ltot=offset=*L+L0+offset;
 		}
 		else{
@@ -58,9 +78,10 @@ int timesteps_log(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfa
 	while(nev<NA && (*eqk_aft)[nfaults].t<t1){
 		Teq=(*eqk_aft)[nfaults].t;
 		tend= (nev<NA-1) ? fmin((*eqk_aft)[nfaults+Nfaults[nev]].t,t1) : t1;
-		err+=findtimestepsomori(Teq, Teq, fmin(smallstepstime+Teq,tend), 0, 183, TAU, 0.3*dtau, 0.6, 0.001, (*times2)+offset, NULL, L);
+
+		err+=findtimestepsomori(Teq, Teq, fmin(smallstepstime+Teq,tend), 0.3*K, 0.6, 0.001, (*times2)+offset, NULL, L);
 		if (smallstepstime+Teq<tend) {
-			err+=findtimestepsomori(Teq, smallstepstime+Teq, tend, 0, 183, TAU, dtau, 0.6, 0.001, (*times2)+*L+offset, NULL, &L0);
+			err+=findtimestepsomori(Teq, smallstepstime+Teq, tend, K, 0.6, 0.001, (*times2)+*L+offset, NULL, &L0);
 			Ltot=offset=*L+L0+offset;
 		}
 		else{
@@ -231,7 +252,7 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 // eq_aft has indices: [0...Nas*Nfaults-1].
 
 	int err=0;
-	double TAU=200000, dtau=7000;	//todo allow to set from outside.
+	double TAU=200000, dtau=7000, timeTAU=183;	//todo allow to set from outside.
 	double M0,mu;
 	double smallstepstime=12;
 	double now, prev, norm, curr;
@@ -241,7 +262,7 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 	double Teq;
 	double *t_afterslip;
 	int Nas=(*eqk_aft)[0].nosnap;
-	int Ltot=0, offset=1, nfaults;
+	int nfaults;
 
 	int printout_splines=1;	//can set to 1 to check if splines are giving correct stressing history.
 	FILE *fout;
@@ -249,25 +270,28 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 
 	eq_aft= *eqk_aft;
 
-	err=timesteps_log(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime, TAU, dtau);
+	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime, TAU, dtau, timeTAU);
 
 	if (printout_splines){
+		nfaults=0;
 		for (int nev=0; nev<NA; nev++){
+			Nas=(*eqk_aft)[nfaults].nosnap;
 			sprintf(fname,"splines_old%d.dat",nev);
 			fout=fopen(fname,"w");
 			for (int l=0; l<Nas; l++) {
 				fprintf(fout,"%.5e\t",(*eqk_aft)[0].ts[l]);
 			}
 			fprintf(fout,"\n");
-				for (int f=0; f<Nfaults[nev]; f++) {
+				for (int f=nfaults; f<nfaults+Nfaults[nev]; f++) {
 					for (int p=1; p<=(*eqk_aft)[f].np_di*(*eqk_aft)[f].np_st; p++) {
 						for (int l=0; l<Nas; l++) {
-							if ((*eqk_aft)[f].allslip_open) fprintf(fout,"%.5e\t",(*eqk_aft)[f].allslip_open[l][p]);
+							if ((*eqk_aft)[f].allslip_str) fprintf(fout,"%.5e\t",(*eqk_aft)[f].allslip_str[l][p]);
 						}
 						fprintf(fout,"\n");
 					}
 				}
 			fclose(fout);
+			nfaults+=Nfaults[nev];
 		}
 	}
 
@@ -313,22 +337,24 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 	//printout TODO add str, dip, open. (also above).
 
 	if (printout_splines){
+		nfaults=0;
 		for (int nev=0; nev<NA; nev++){
 			sprintf(fname,"splines%d.dat",nev);
 			fout=fopen(fname,"w");
 			for (int l=0; l<=*L-1; l++) {
-				fprintf(fout,"%.5e\t",(*times2)[l]);
+				fprintf(fout,"%.5e\t",(*times2)[l+1]);
 			}
 			fprintf(fout,"\n");
-				for (int f=0; f<Nfaults[nev]; f++) {
+				for (int f=nfaults; f<nfaults+Nfaults[nev]; f++) {
 					for (int p=1; p<=(*eqk_aft)[f].np_di*(*eqk_aft)[f].np_st; p++) {
 						for (int l=0; l<=*L-1; l++) {
-							if ((*eqk_aft)[f].allslip_open) fprintf(fout,"%.5e\t",(*eqk_aft)[f].allslip_open[l][p]);
+							if ((*eqk_aft)[f].allslip_str) fprintf(fout,"%.5e\t",(*eqk_aft)[f].allslip_str[l][p]);
 						}
 						fprintf(fout,"\n");
 					}
 				}
 			fclose(fout);
+			nfaults+=Nfaults[nev];
 		}
 	}
 
@@ -346,7 +372,7 @@ int setup_afterslip_single_log(double t0, double t1, double *Cs, double *ts,
 // logarithmic: flag indicating if stressing history is logarithmic. If not, use linear.
 
 	int err=0;
-	double TAU=200000, dtau=7000;	//todo allow to set from outside.
+	double TAU=200000, dtau=7000, timeTAU=183;	//todo allow to set from outside.
 	double smallstepstime=12;
 	double now, prev, norm, curr;
 	double Tendaft;	//Time to which cumulative afterslip snapshot refers.
@@ -357,7 +383,7 @@ int setup_afterslip_single_log(double t0, double t1, double *Cs, double *ts,
 
 	eq_aft= *eqk_aft;
 
-	err=timesteps_log(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime, TAU, dtau);
+	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime, TAU, dtau, timeTAU);
 
 	// Temporal evolution of afterslip.//
 	nfaults=0;
