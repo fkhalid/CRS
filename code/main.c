@@ -530,6 +530,8 @@ int main (int argc, char **argv) {
 	//t_earliest_stress used later to calculate tstart_calc; 1e30 ensures value is ignored (see later).
 	t_earliest_stress= (Nco>0) ? eqkfm_co[0].t-1e-4 : 1e30;	//time of earliest source. fixme will change when general stressing history is allowed.
 
+	flags.aseismic_log=1;
+
 	if (flags.afterslip){
 
 		smallest_time=fmin(t_earliest_stress, fmin(tstartLL, Tstart));	//the first time step will be before this time; this is needed in rate_state_evol.

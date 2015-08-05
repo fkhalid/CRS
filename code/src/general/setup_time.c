@@ -22,29 +22,28 @@
 int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults, int *L, double **times2,
 		double smallstepstime, double TAU, double dtau, double timeTAU){
 
-	/* Calculates time steps based on the information in eqk_aft.
-	 * To obtain time steps with an increasing spacing, a function of the form t_{i}=t_{i-1}+K(t+c-teq)^p is used: for p=1 and a logarithmic stressing history,
-	 * this gives equal stresses within each time step. (NB: t refers to the start of each aseismic event).
-	 *
-	 * Input:
-	 *  t0, t1: start and end time.
-	 *  eqk_aft: array containing all the events to be considered.	Range [0...NFtot-1], where NFtot=sum(Nfaults);
-	 *  Nfaults:  number of faults per event. Range [0...NA-1].
-	 *
-	 *  smallstepstime: initial period during which smaller time steps are used (uses 0.3K instead of K).
-	 *	 K: parameter describing how closely spaced time steps are: t_{i}=t_{i-1}+K(t+c-teq)^p
-	 *
-	 * Output:
-	 *  times2: time steps. Memory is allocated here and the arrays is populated. Range [0...*L].
-	 *  L: largest index in times2.
-	 */
+/* Calculates time steps based on the information in eqk_aft.
+ * To obtain time steps with an increasing spacing, a function of the form t_{i}=t_{i-1}+K(t+c-teq)^p is used: for p=1 and a logarithmic stressing history,
+ * this gives equal stresses within each time step. (NB: t refers to the start of each aseismic event).
+ *
+ * Input:
+ *  t0, t1: start and end time.
+ *  eqk_aft: array containing all the events to be considered.	Range [0...NFtot-1], where NFtot=sum(Nfaults);
+ *  Nfaults:  number of faults per event. Range [0...NA-1].
+ *
+ *  smallstepstime: initial period during which smaller time steps are used (uses 0.3K instead of K).
+ *	 K: parameter describing how closely spaced time steps are: t_{i}=t_{i-1}+K(t+c-teq)^p
+ *
+ * Output:
+ *  times2: time steps. Memory is allocated here and the arrays is populated. Range [0...*L].
+ *  L: largest index in times2.
+ */
 
 	int offset, L0, Ltot;
 	int nev, nfaults;
 	double Teq, tend;
 	int err=0;
 	double c=0.001, p=0.6;
-
 	double K=0.6;
 
 	//Dry run: find total no. of time steps, without filling out times2 (not allocated yet):
@@ -100,8 +99,18 @@ int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *N
 int timesteps_lin(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults,
 		int *L, double **times2, int ***allind){
 
-/* Combines all stressing histories, giving vector with combined snapshot times.
+/* Calculates time steps by combining the snapshots times of all aseismic events, giving vector with combined and sorted snapshot times.
  * The total number of time steps is the sum of the time steps given for each event, and stressing histories are calculated accordingly.
+ *
+ * Input:
+ *  t0, t1: start and end time.
+ *  eqk_aft: array containing all the events to be considered.	Range [0...NFtot-1], where NFtot=sum(Nfaults);
+ *  Nfaults:  number of faults per event. Range [0...NA-1]. *
+ *
+ * Output:
+ *  times2: time steps. Memory is allocated here and the arrays is populated. Range [0...*L].
+ *  L: largest index in times2.
+ *  indices[n] contains the list of elements which originally belonged each of the events in eqk_aft. Memory allocated if a pointer to a NULL array is passed.
  */
 
 	int nfaults=0;
@@ -138,20 +147,55 @@ int timesteps_lin(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfa
 	return 0;
 }
 
-
-
-
 int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 						 int NA, int *Nfaults, int *L, double **times2){
 
-/* Combines all stressing histories.
- * The total number of time steps is the sum of the time steps given for each event, and stressing histories are calculated accordingly.
+/* Combines all stressing histories for all elements in eqk_aft, and rewrites them referred to combined time steps.
+ *
+ * Input:
+ *  t0, t1: start and end time.
+ *  eqk_aft: array containing all the events to be considered.	Range [0...NFtot-1], where NFtot=sum(Nfaults);
+ *  Nfaults:  number of faults per event. Range [0...NA-1]. *
+ *
+ *
+ * Output:
+ *  times2: time steps. Memory is allocated here and the arrays is populated. Range [0...*L].
+ *  L: largest index in times2.
+ *
+ *  The total number of time steps is the sum of the time steps given for each event, and stressing histories are calculated accordingly.
+ *
  */
 
 	int nfaults=0;
 	int **allind=NULL;
-	int *lens;	//lengths of time steps lists.
 	struct eqkfm *eq_aft= *eqk_aft;
+	int printout_history=1, Nas; 	//can set to 1 to check if splines are giving correct stressing history.
+
+	FILE *fout;
+	char fname[120];
+
+	if (printout_history){
+		nfaults=0;
+		for (int nev=0; nev<NA; nev++){
+			Nas=(*eqk_aft)[nfaults].nosnap;
+			sprintf(fname,"linear_old%d.dat",nev);
+			fout=fopen(fname,"w");
+			for (int l=0; l<Nas; l++) {
+				fprintf(fout,"%.5e\t",(*eqk_aft)[nfaults].ts[l]);
+			}
+			fprintf(fout,"\n");
+				for (int f=nfaults; f<nfaults+Nfaults[nev]; f++) {
+					for (int p=1; p<=(*eqk_aft)[f].np_di*(*eqk_aft)[f].np_st; p++) {
+						for (int l=0; l<Nas; l++) {
+							if ((*eqk_aft)[f].allslip_str) fprintf(fout,"%.5e\t",(*eqk_aft)[f].allslip_str[l][p]);
+						}
+						fprintf(fout,"\n");
+					}
+				}
+			fclose(fout);
+			nfaults+=Nfaults[nev];
+		}
+	}
 
 	//calculate combined time steps:
 	timesteps_lin(t0, t1, eqk_aft, NA, Nfaults, L, times2, &allind);
@@ -160,7 +204,8 @@ int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	nfaults=0;
 	for (int nev=0; nev<NA; nev++){
 		//need to shift indices by 1 since there is an extra element at the start:
-		for (int j=0; j<lens[nev]; j++) allind[nev][j]+=1;
+		Nas=eq_aft[0].nosnap;
+		for (int j=0; j<=Nas; j++) allind[nev][j]+=1;
 		lin_interp_eqkfm(&eq_aft, Nfaults[nev], *L, *times2, allind[nev]);
 		for (int f=0; f<Nfaults[nev]; f++) eq_aft[f].tevol=NULL;
 		nfaults+=Nfaults[nev];
@@ -168,25 +213,29 @@ int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	}
 	eq_aft-=nfaults;	//shift it back.
 
-//	FILE *fout;
-//	char fname[120];
-//	for (int nev=0; nev<NA; nev++){
-//		sprintf(fname,"linear%d.dat",nev);
-//		fout=fopen(fname,"w");
-//		for (int l=0; l<=*L-1; l++) {
-//			fprintf(fout,"%.5e\t",(*times2)[l]);
-//		}
-//		fprintf(fout,"\n");
-//			for (int f=0; f<Nfaults[nev]; f++) {
-//				for (int p=1; p<=(*eqk_aft)[f].np_di*(*eqk_aft)[f].np_st; p++) {
-//					for (int l=0; l<=*L-1; l++) {
-//						if ((*eqk_aft)[f].allslip_open) fprintf(fout,"%.5e\t",(*eqk_aft)[f].allslip_open[l][p]);
-//					}
-//					fprintf(fout,"\n");
-//				}
-//			}
-//		fclose(fout);
-//	}
+	//fixme check: should calculate differences here?
+
+	if (printout_history){
+		nfaults=0;
+		for (int nev=0; nev<NA; nev++){
+			sprintf(fname,"linear%d.dat",nev);
+			fout=fopen(fname,"w");
+			for (int l=0; l<=*L-1; l++) {
+				fprintf(fout,"%.5e\t",(*times2)[l]);
+			}
+			fprintf(fout,"\n");
+			for (int f=nfaults; f<nfaults+Nfaults[nev]; f++) {
+				for (int p=1; p<=(*eqk_aft)[f].np_di*(*eqk_aft)[f].np_st; p++) {
+					for (int l=0; l<=*L-1; l++) {
+						if ((*eqk_aft)[f].allslip_str) fprintf(fout,"%.5e\t",(*eqk_aft)[f].allslip_str[l][p]);
+					}
+					fprintf(fout,"\n");
+				}
+			}
+			fclose(fout);
+			nfaults+=Nfaults[nev];
+		}
+	}
 
 	return(0);
 
@@ -279,7 +328,7 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 			sprintf(fname,"splines_old%d.dat",nev);
 			fout=fopen(fname,"w");
 			for (int l=0; l<Nas; l++) {
-				fprintf(fout,"%.5e\t",(*eqk_aft)[0].ts[l]);
+				fprintf(fout,"%.5e\t",(*eqk_aft)[nfaults].ts[l]);
 			}
 			fprintf(fout,"\n");
 				for (int f=nfaults; f<nfaults+Nfaults[nev]; f++) {
@@ -310,22 +359,32 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 		for (int f=0; f<Nfaults[nev]; f++) {
 
 			for (int p=1; p<=eq_aft[f].np_di*eq_aft[f].np_st; p++) {
-				for (int l=0; l<=*L-1; l++) {
-					if ((*times2)[l+1]<0.0){
+				for (int l=*L; l>=0; l--) {
+					if ((*times2)[l]<0.0){
 						//no afterslip before its start time:
 						if (eq_aft[f].allslip_str) eq_aft[f].allslip_str[l][p]=0.0;
 						if (eq_aft[f].allslip_dip) eq_aft[f].allslip_dip[l][p]=0.0;
 						if (eq_aft[f].allslip_open) eq_aft[f].allslip_open[l][p]=0.0;
 					}
 					else{
-						if (eq_aft[f].allslip_str) eq_aft[f].allslip_str[l][p]=eq_aft[f].allslip_str[l+1][p]-eq_aft[f].allslip_str[l][p];
-						if (eq_aft[f].allslip_dip) eq_aft[f].allslip_dip[l][p]=eq_aft[f].allslip_dip[l+1][p]-eq_aft[f].allslip_dip[l][p];
-						if (eq_aft[f].allslip_open) eq_aft[f].allslip_open[l][p]=eq_aft[f].allslip_open[l+1][p]-eq_aft[f].allslip_open[l][p];
+						if (l>0 && (*times2)[l-1]>0.0){	//this is to avoid subtracting from element with t<Teq.
+							if (eq_aft[f].allslip_str) eq_aft[f].allslip_str[l][p]-=eq_aft[f].allslip_str[l-1][p];
+							if (eq_aft[f].allslip_dip) eq_aft[f].allslip_dip[l][p]-=eq_aft[f].allslip_dip[l-1][p];
+							if (eq_aft[f].allslip_open) eq_aft[f].allslip_open[l][p]-=eq_aft[f].allslip_open[l-1][p];
+						}
 					}
+				}
+
+				//shift by one since eq_aft[f].allslip_str[l][p] must refer to time between times2[t+1] and times2[t].
+				for (int l=0; l<*L; l++) {
+					if (eq_aft[f].allslip_str) eq_aft[f].allslip_str[l][p]=eq_aft[f].allslip_str[l+1][p];
+					if (eq_aft[f].allslip_dip) eq_aft[f].allslip_dip[l][p]=eq_aft[f].allslip_dip[l+1][p];
+					if (eq_aft[f].allslip_open) eq_aft[f].allslip_open[l][p]=eq_aft[f].allslip_open[l+1][p];
 				}
 			 }
 			eq_aft[f].tevol=NULL;
 		}
+
 		for (int i=0; i<Nas; i++) t_afterslip[i]+=Teq;	//revert shift from before;
 		for (int i=0; i<=*L; i++) (*times2)[i]+=Teq;	//revert shift from before;
 		nfaults+=Nfaults[nev];
@@ -342,9 +401,9 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 			sprintf(fname,"splines%d.dat",nev);
 			fout=fopen(fname,"w");
 			for (int l=0; l<=*L-1; l++) {
-				fprintf(fout,"%.5e\t",(*times2)[l+1]);
+				fprintf(fout,"%.5e\t",(*times2)[l]);
 			}
-			fprintf(fout,"\n");
+			fprintf(fout,"\n\t");
 				for (int f=nfaults; f<nfaults+Nfaults[nev]; f++) {
 					for (int p=1; p<=(*eqk_aft)[f].np_di*(*eqk_aft)[f].np_st; p++) {
 						for (int l=0; l<=*L-1; l++) {

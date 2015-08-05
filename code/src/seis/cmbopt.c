@@ -71,7 +71,8 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 
 }
 
-void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double szx, double p, double f, double st0, double di0, double ra0, double *cmb,double *st1, double *di1, double *ra1, double *st2, double *di2, double *ra2){
+void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double szx, double p, double f,
+		double st0, double di0, double ra0, double *cmb,double *st1, double *di1, double *ra1, double *st2, double *di2, double *ra2){
 /*  Calculates coulomb stress with the optimal orientation. Taken from Ronjiang fortran function in pscmp program.
  *
  * 	input:
@@ -106,9 +107,15 @@ void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double s
         d=sxx*pow(syz,2)+syy*pow(szx,2)+szz*pow(sxy,2)-2.0*sxy*syz*szx-sxx*syy*szz;
         roots3(b,c,d,s);
       }
+
+      // Find Coulomb stresses on 3 planes, each using 2 of the principal stresses:
+
       cmb1=0.5*fabs(s[2]-s[3])*sqrt(1+f*f)+f*(0.5*(s[2]+s[3])+p);
       cmb2=0.5*fabs(s[3]-s[1])*sqrt(1+f*f)+f*(0.5*(s[3]+s[1])+p);
       cmb3=0.5*fabs(s[1]-s[2])*sqrt(1+f*f)+f*(0.5*(s[1]+s[2])+p);
+
+      // Find largest Coulomb stress:
+
       *cmb=fmax(cmb1,fmax(cmb2,cmb3));
       *st1=0.0;
       *di1=0.0;
@@ -116,27 +123,39 @@ void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double s
       *st2=0.0;
       *di2=0.0;
       *ra2=0.0;
-      if(*cmb==cmb1){
+
+      // Question: why comparing cmb value instead of just finding max. and min. values of stress?
+      // s1: max. stress
+      // s2: min. stress
+      // s3: intermediate
+
+      if(*cmb==cmb1){	//min and max. stress axis must be the 2,3 axis.
         s3=s[1];
         s1=fmax(s[2],s[3]);
         s2=fmin(s[2],s[3]);
       }
-      else if(*cmb==cmb2){
+      else if(*cmb==cmb2){	//min and max. stress axis must be the 1,3 axis.
 		s1=fmax(s[3],s[1]);
 		s2=fmin(s[3],s[1]);
 		s3=s[2];
       }
-   	  else{
+   	  else{				//min and max. stress axis must be the 1,2 axis.
 		s1=fmax(s[1],s[2]);
 		s2=fmin(s[1],s[2]);
 		s3=s[3];
       }
+
+      // Normal stress on optimal plane (sigma_beta in King et al, 1994):
       sig=0.5*((s1-s2)*f/sqrt(1+f*f)+s1+s2);
+
       s[1]=s1;
       s[2]=s2;
       s[3]=s3;
-//determine eigenvectors (the principal stress directions)
+
+      //determine eigenvectors (the principal stress directions)
       j0=0;
+
+      //j1, j2: indices of eigenvalues equal to each other.
       if(s[1]==s[2]){
         j0=3;
         j1=1;
@@ -165,6 +184,12 @@ void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double s
 			print_logfile("* Warning: more than two optimal rupture orientations! *");
         }
       }
+
+      // In this loop, j=1-3 if 3 distinct eigenvalues are found, j=j0 otherwise (j0 is the index of the distinct eigenvalue).
+      // r[1...3][j] corresponds to jth eigenvalue.
+      // r[1...3][1] : largest eigenvalue.
+      // r[1...3][2] : smallest eigenvalue.
+
       for (int j=jmin; j<=jmax; j++){
         det1=syz*syz-(syy-s[j])*(szz-s[j]);
         det2=szx*szx-(sxx-s[j])*(szz-s[j]);
@@ -186,9 +211,10 @@ void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double s
           r[3][j]=det3;
         }
       }
-/*if any two eigenvalues are identical, their corresponding
-eigenvectors should be redetermined by orthogonalizing
-them to the 3. eigenvector as well as to each other*/
+
+	/*if any two eigenvalues are identical, their corresponding
+	eigenvectors should be redetermined by orthogonalizing
+	them to the 3. eigenvector as well as to each other*/
 
       if(j0 > 0){
         rmax=fmax(fabs(r[1][j0]),fmax(fabs(r[2][j0]),fabs(r[3][j0])));
@@ -223,19 +249,31 @@ them to the 3. eigenvector as well as to each other*/
           for (int i=1; i<=3; i++) r[i][j2]=r[i][j2]-am*r[i][j1];
         }
       }
+
+      //normalize eigenvectors:
       for (int j=1; j<=3; j++){
         am=sqrt(pow(r[1][j],2)+pow(r[2][j],2)+pow(r[3][j],2));
         for (int i=1; i<=3; i++) r[i][j]=r[i][j]/am;
       }
 
+      // Angle of max. cmb stress calculated analytically (see e.g. King et al, 1994).
+      // NB This is the angle between the *slip vector* and the largest principal axis.
+
       alpha=0.5*atan(1.0/f);
-      snn=s[1]*pow(cos(alpha),2)+s[2]*pow(sin(alpha),2);
-//determine the two optimal fault-plane normals
+
+      //snn=s[1]*pow(cos(alpha),2)+s[2]*pow(sin(alpha),2);
+      snn=s[2]*pow(cos(alpha),2)+s[1]*pow(sin(alpha),2);	//[camilla]: switched sigma1, sigma3 axis.
+
+      //determine the two optimal fault-plane normals
       for (int i=1; i<=3; i++){
-        ns[i][1]=r[i][1]*cos(alpha)+r[i][2]*sin(alpha);
-        ns[i][2]=r[i][1]*cos(alpha)-r[i][2]*sin(alpha);
+    	//ns[i][1]=r[i][1]*cos(alpha)+r[i][2]*sin(alpha);
+        //ns[i][2]=r[i][1]*cos(alpha)-r[i][2]*sin(alpha);
+
+    	// [camilla]: switched the values of principal axis, since alpha is given from the axis with the largest eigenvalue.
+ 		  ns[i][1]=r[i][2]*cos(alpha)-r[i][1]*sin(alpha);
+		  ns[i][2]=r[i][2]*cos(alpha)+r[i][1]*sin(alpha);
       }
-//determine the direction of max. shear stress
+      //determine the direction of max. shear stress
       for (int j=1; j<=2; j++){
         am=sqrt(pow(ns[1][j],2)+pow(ns[2][j],2)+pow(ns[3][j],2));
         if (ns[3][j] > 0.0) am=-am;
@@ -248,7 +286,8 @@ them to the 3. eigenvector as well as to each other*/
         for (int i=1; i<=3; i++) ts[i][j]=ts[i][j]/am;
       }
 
-//determine the two optimal focal mechanisms
+      // determine the two optimal focal mechanisms
+      // NB coordinate system with x northwards, y eastwards, z downwards.
 
       *st1=fmod(atan2(ns[2][1],ns[1][1])*180.0/PI+270.0,360.0);
 	  *di1=acos(-ns[3][1])*180.0/PI;

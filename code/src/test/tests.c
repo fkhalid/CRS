@@ -59,6 +59,155 @@ extern int gridPMax;
 extern FILE *flog;
 double DCFS_cap=1e7;
 
+
+//int test_Flaminia(){
+//
+//	double end_time = 10;// 10 days of observation
+//	double Delta_t = 1000*SEC2DAY;
+//
+//	double taudot_ref = 7;	//7Pa/day	//1e4;	// 0.01MPa/day
+//	double r0=2e-3;
+//	double Asigma = 3e4; //0.03PMa  //= 1e6 ; //1MPa
+//	double ta=Asigma/taudot_ref;
+//	double *stress, **data, *times_stress;
+//	char infile[200]="/home/des/camcat/Desktop/dstress_dt.dat";
+//	char outfile[200]="/home/des/camcat/Desktop/drate_dt_output2";
+//	int NL;
+//	int Nsub=10;
+//	double *t_out, *Rout, *Nout;
+//	int NTS;
+//	FILE *fout;
+//
+//	NL=countline(infile);
+//	data=dmatrix(1,NL,1,1);
+//
+//	read_matrix(infile, 1, 1, data, NULL);
+//
+//	times_stress=dvector(0,NL+1);
+//	stress=dvector(0,NL);
+//	for (int t=0; t<=NL; t++) {
+//		times_stress[t]=Delta_t*t;
+//		if (t>0) stress[t]=1e6*data[t][1];
+//	}
+//
+//	times_stress[NL+1]=end_time;
+//	stress[NL+1]=0;
+//
+//	forecast_simple(Asigma, ta, r0, stress, times_stress, NL, Nsub, &t_out, &Rout, &Nout, &NTS);
+//
+//	fout=fopen(outfile,"w");
+//	for (int i=1; i<=NTS; i++) fprintf(fout, "%.5e\t%.5e\t%.5e\n", t_out[i], Rout[i], Nout[i]);
+//	fclose(fout);
+//
+//}
+
+int test_Flaminia(){
+
+	double end_time = 10;// 10 days of observation
+	double Delta_t = 1000*SEC2DAY;
+
+	double taudot_ref = 1e4;	//7Pa/day	//1e4;	// 0.01MPa/day
+	double r0=1;
+	double Asigma = 1e6; //0.03PMa  //= 1e6 ; //1MPa
+	double ta=Asigma/taudot_ref;
+	double *stress, **data, *times_stress;
+	char infile[200]="/home/des/camcat/Desktop/dstress_dt.dat";
+	char outfile[200]="/home/des/camcat/Desktop/drate_dt_neg";
+	int NL;
+	int Nsub=1;
+	double *t_out, *Rout, *Nout;
+	int NTS;
+	FILE *fout;
+
+	printf("Asig=%.3f MPa, ta=%.3f d, taudot=%.3f MPa/d, t_shad~%.3f\n", Asigma*1e-6, ta, taudot_ref*1e-6, (-40E6/Asigma)*ta);
+
+	NL=countline(infile);
+	data=dmatrix(1,NL,1,1);
+
+	read_matrix(infile, 1, 1, data, NULL);
+
+	times_stress=dvector(0,NL+1);
+	stress=dvector(0,NL+1);
+	for (int t=0; t<=NL; t++) {
+		times_stress[t]=Delta_t*t;
+		if (t>0) stress[t]=-1e6*data[t][1];
+	}
+
+	times_stress[NL+1]=end_time;
+	stress[NL+1]=0;
+
+	forecast_simple(Asigma, ta, r0, stress, times_stress, NL+1, Nsub, &t_out, &Rout, &Nout, &NTS);
+
+	fout=fopen(outfile,"w");
+	fprintf(fout, "Time\t\tRate\\ttNevents\n");
+	for (int i=1; i<=NTS; i++) fprintf(fout, "%.5e\t%.5e\t%.5e\n", t_out[i], Rout[i], Nout[i]);
+	fclose(fout);
+
+}
+
+
+int forecast_simple(double Asig, double ta, double r0, double *stress, double *t, int NTS0, int Nsub, double **ts, double **R, double **N, int *NTS){
+
+	/* Input:
+	 *
+	 * RS parameters: Asig, ta, r0
+	 * t[0...N]
+	 * stress[1...N]
+	 * stress[n] is between t[n-1] and t[n].
+	 * Nsub = substeps (for calculation).
+	 *
+	 * Output:
+	 *
+	 * R: seismicity rate
+	 * N: no of events
+	 * ts: output time steps
+	 *
+	 */
+
+
+	double dt, dtsmall;
+	double dtau_dt00=Asig/ta;
+	double dtau_dt;
+	double tau;
+	double ta1;
+	double a,b;
+	double gamma;
+	int ntot=NTS0*Nsub;
+
+	if (ts) *ts=dvector(1,ntot);
+	if (R) *R=dvector(1,ntot);
+	if (N) *N=dvector(1,ntot);
+
+	int i=0;
+	for (int n=1; n<=NTS0; n++){
+
+		dt=t[n]-t[n-1];
+		dtsmall=dt/Nsub;
+		dtau_dt=(Asig/ta)+stress[n]/dt;	//stressing rate during current time step (including stress step from cmpdata and background stressing rate):
+
+		for (int m=1; m<=Nsub; m++){
+			i+=1;
+			tau=dtau_dt*dtsmall;	//stress change during current time step
+			ta1=Asig/dtau_dt;	//dummy variable
+			//find no. of earthquakes
+			if (N){
+				a=gamma*dtau_dt-1;	//dummy variable
+				b=a*exp(-dtsmall/ta1)+1;	//dummy variable
+				if (!isinf(fabs(b))) (*N)[i]= fmax(0.0, r0*(dtau_dt/dtau_dt00)*(dtsmall+ta1*log(b/(gamma*dtau_dt))));	//due to numerical error it can give -ve values.
+			}
+			//update gamma:
+			gamma=(fabs(tau/Asig)>1e-10)? (gamma-dtsmall/(tau))*exp(-tau/Asig)+dtsmall/(tau) : gamma*(1-tau/Asig)+dtsmall/Asig;
+			if (R) (*R)[i]=r0*(ta/Asig)/gamma;
+			if (ts) (*ts)[i]=t[n-1]+m*dtsmall;
+		}
+	}
+
+	if (NTS) *NTS=ntot;
+	return 0;
+}
+
+
+
 int test_merge(){
 
 	double a[10]={1. ,2. , 3., 4., 5., 6., 7., 8., 9., 10.};
@@ -1621,19 +1770,152 @@ int test_latlon2localcartesian(){
 //	return 0;
 //}
 
+#define ROTATE(a,i,j,k,l) g=a[i][j];h=a[k][l];a[i][j]=g-s*(h+g*tau);\
+	a[k][l]=h+s*(g-h*tau);
+
+void jacobi(float **a, int n, float d[], float **v, int *nrot)
+{
+	int j,iq,ip,i;
+	float tresh,theta,tau,t,sm,s,h,g,c,*b,*z;
+
+	b=vector(1,n);
+	z=vector(1,n);
+	for (ip=1;ip<=n;ip++) {
+		for (iq=1;iq<=n;iq++) v[ip][iq]=0.0;
+		v[ip][ip]=1.0;
+	}
+	for (ip=1;ip<=n;ip++) {
+		b[ip]=d[ip]=a[ip][ip];
+		z[ip]=0.0;
+	}
+	if (nrot) *nrot=0;
+	for (i=1;i<=50;i++) {
+		sm=0.0;
+		for (ip=1;ip<=n-1;ip++) {
+			for (iq=ip+1;iq<=n;iq++)
+				sm += fabs(a[ip][iq]);
+		}
+		if (sm == 0.0) {
+			free_vector(z,1,n);
+			free_vector(b,1,n);
+			return;
+		}
+		if (i < 4)
+			tresh=0.2*sm/(n*n);
+		else
+			tresh=0.0;
+		for (ip=1;ip<=n-1;ip++) {
+			for (iq=ip+1;iq<=n;iq++) {
+				g=100.0*fabs(a[ip][iq]);
+				if (i > 4 && (float)(fabs(d[ip])+g) == (float)fabs(d[ip])
+					&& (float)(fabs(d[iq])+g) == (float)fabs(d[iq]))
+					a[ip][iq]=0.0;
+				else if (fabs(a[ip][iq]) > tresh) {
+					h=d[iq]-d[ip];
+					if ((float)(fabs(h)+g) == (float)fabs(h))
+						t=(a[ip][iq])/h;
+					else {
+						theta=0.5*h/(a[ip][iq]);
+						t=1.0/(fabs(theta)+sqrt(1.0+theta*theta));
+						if (theta < 0.0) t = -t;
+					}
+					c=1.0/sqrt(1+t*t);
+					s=t*c;
+					tau=s/(1.0+c);
+					h=t*a[ip][iq];
+					z[ip] -= h;
+					z[iq] += h;
+					d[ip] -= h;
+					d[iq] += h;
+					a[ip][iq]=0.0;
+					for (j=1;j<=ip-1;j++) {
+						ROTATE(a,j,ip,j,iq)
+					}
+					for (j=ip+1;j<=iq-1;j++) {
+						ROTATE(a,ip,j,j,iq)
+					}
+					for (j=iq+1;j<=n;j++) {
+						ROTATE(a,ip,j,iq,j)
+					}
+					for (j=1;j<=n;j++) {
+						ROTATE(v,j,ip,j,iq)
+					}
+					if (nrot) ++(*nrot);
+				}
+			}
+		}
+		for (ip=1;ip<=n;ip++) {
+			b[ip] += z[ip];
+			d[ip]=b[ip];
+			z[ip]=0.0;
+		}
+	}
+	nrerror("Too many iterations in routine jacobi");
+}
+
+int test_oops(){
+
+	double **S;
+	double st0, di0=90.0, ra0=180.0;
+	double cmb, st1, st2, di1, di2, ra1, ra2;
+	double f=0.4;
+
+	//sigma1 is EW-oriented, sigma3 is NS-oriented, sigma2 vertical.
+	double s[]={-10.0, 10, 0.0};		//principal stresses
+	double st[]={0.0, -90.0, 60.0};	//strikes of principal axis
+	double di[]={0.0, 0.0, 90.0};		//dips of principal axis
+
+	st0=90-0.5*RAD2DEG*atan(1.0/f);
+
+	prestress(s[0], s[1], s[2], st0, di0, ra0, 0.0, f, &S);
+
+	printf("\nS: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%.2e\t", S[i][j]);
+		}
+		printf("\n");
+	}
+
+	cmbopt(S[1][1], S[2][2], S[3][3], S[1][2], S[2][3], S[1][3], 0.0, f, 0.0, 90.0, 180.0, &cmb, &st1, &di1, &ra1, &st2, &di2, &ra2);
+
+	printf("\n oops:\n");
+	printf("st0=%lf\t di0=%lf\t ra0=%lf\n\n", st0, di0, ra0);
+
+	printf("st1=%lf\t di1=%lf\t ra1=%lf\n", st1, di1, ra1);
+	printf("st2=%lf\t di2=%lf\t ra2=%lf\n", st2, di2, ra2);
+
+
+	S=prestress_eigen(s, st, di);
+
+	printf("\nS: \n");
+	for (int i=1; i<=3; i++){
+		for (int j=1; j<=3; j++) {
+			printf("%.2e\t", S[i][j]);
+		}
+		printf("\n");
+	}
+
+}
+
 int test_matrix(){
 
 //	double 	s[]={-10.0,-0.5,-0.1},\
 //			st[]={115.0, 0.0, 25.0},\
 //			di[]={0.0,90.0,0.0};
 
-	double 	s[]={-10.0,-0.1,-0.5},\
-			st[]={115.0, 25.0, 205.0},\
-			di[]={0.0,10.0,80.0};
+//	double 	s[]={-10.0,-0.1,-0.5},\
+//			st[]={115.0, 25.0, 205.0},\
+//			di[]={0.0,10.0,80.0};
 
 //	double  s[]={-5.0, 5.0, 0.0},\
 //			st[]= {6.646198, -83.345443, 60.000013 },	\
 //			di[]={-0.596911, -0.802279, 89.000000};
+
+	double 	s[]={-10.0, 10, 0.0},\
+			st[]={0.0, 90.0, 60.0},\
+			di[]={0.0, 0.0, 90.0};
+
 
 	float eig[4];
 	float **v;
@@ -1656,7 +1938,7 @@ int test_matrix(){
 	}
 
 	//broken since jacobi is commented out.
-	//jacobi(Sf, 3, eig, v, &j);
+	jacobi(Sf, 3, eig, v, &j);
 	printf("\nv: \n");
 	for (int i=1; i<=3; i++){
 		for (int j=1; j<=3; j++) {

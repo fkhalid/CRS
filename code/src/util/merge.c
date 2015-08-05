@@ -16,7 +16,7 @@ void merge_multiple(double **vs, int *lens, int N, double **sorted, int *len_fin
 /* merge N lists.
  * vs[0...N-1][..], where vs[n] is a list: vs[n][0...l-1], where l=lens[n].
  * lens[0...N-1] contains the lengths of the arrays.
- * indices[n] contains the list of elements in sorted which originally belonged to vs[n].
+ * indices[n] contains the list of elements which originally belonged to vs[n].
  *
  * It merges recursively, i.e. by merging the first two, adding the third, then the fourth, etc.
  * Probably not the most efficient way (may be faster to loop over the arrays to find the next element in the final array), but easier to implement.
@@ -90,6 +90,7 @@ void merge_multiple(double **vs, int *lens, int N, double **sorted, int *len_fin
 
 	 for (int n=N-1; n>=0; n--){
 		 c=0;
+		 for (int j=0; j<lenmax; j++) (*indices)[n][j]=-2;	//later will shift up by 1 and become -1.
 		 for (int j=0; j<*len_fin; j++){
 			 if (c>=lens[n]) break;
 			 if (indbool[n][j]){
@@ -123,10 +124,12 @@ void merge(double a[], int m, double b[], int n, double **sorted, int **ai, int 
 
   j = k = 0;
 
-  for (i = 0; i < m + n;) {
-
+  for (i = 0; i < m + n; i++) {
 	if (ai) (*ai)[i]=0;
 	if (bi) (*bi)[i]=0;
+  }
+
+  for (i = 0; i < m + n;) {
 
     if (j < m && k < n) {
       if (a[j] < b[k]) {
@@ -138,7 +141,7 @@ void merge(double a[], int m, double b[], int n, double **sorted, int **ai, int 
     	(*sorted)[i] = b[k];
         if (bi) (*bi)[i]=1;
         k++;
-      }
+        }
       i++;
     }
     else if (j == m) {

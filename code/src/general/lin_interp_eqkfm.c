@@ -11,17 +11,20 @@
 #include "../util/nrutil.h"
 
 void lin_interp_eqkfm(struct eqkfm **eqkfm_aft, int NF, int L, double *times2, int *ind){
-	/* Input:
-	 *
-	 *  eqkfm is the array of eqkfm elements refering to a single event (each element corresponts to a subfault).
-	 *  NF is the number of subfaults. eqfm[0...NF-1].
-	 *  NT= no of time steps
-	 *  times= time steps [0...NT-1]
-	 *  ind= lists indices of elements in times which where originally in eqkfm[x].ts (NB the 0th element is eqfm[x].t).
-	 *
-	 * Output: changes values of eqkfm[x].allslip_xxx arrays, and eqkfm[x].ts, now referring to new time steps.
-	 *
-	 */
+
+/* Rewrites stressing history in a eqkfm_aft structure based on time new steps given in times2.
+ *
+ * Input:
+ *
+ *  eqkfm is the array of eqkfm elements refering to a single event (each element corresponts to a subfault).
+ *  NF is the number of subfaults. eqfm[0...NF-1].
+ *  NT= no of time steps
+ *  times= time steps [0...NT-1]
+ *  ind= lists indices of elements in times which where originally in eqkfm[x].ts (NB the 0th element is eqfm[x].t).
+ *
+ * Output: changes values of eqkfm[x].allslip_xxx arrays, and eqkfm[x].ts, now referring to new time steps.
+ *
+ */
 
 
 	double **slipbefore_st, **slipbefore_di, **slip_after_st, **slip_after_di, **slipbefore_op, **slip_after_op;
@@ -113,7 +116,7 @@ void lin_interp_eqkfm(struct eqkfm **eqkfm_aft, int NF, int L, double *times2, i
 
 void fit_lin(double *times1, double *times2, int Nas, int L, int *ind, int NP, double **slipbefore_st, double **slip_after){
 
-/* Linear fit.
+/* Linear interpolation.
  *
  *Input:
  * times1[0...Nas-1]= initial time steps
