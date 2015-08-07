@@ -19,6 +19,8 @@ void prestress(double s1, double s2, double s3, double strike, double dip, doubl
 //	pore pressure, friction coefficient
 //    output
 //	max. preseismic Coulomb stress, prestress tensor
+
+//	local memories:
 //	
   
       double  alpha,st,di,ra,cmb1,cmb2,cmb3, cmb;
@@ -34,9 +36,6 @@ void prestress(double s1, double s2, double s3, double strike, double dip, doubl
       cmb=fmax(fmax(cmb1,cmb2),cmb3);
 
       if(s1==s2 && s2==s3)return;
-
-      // sig[0]= largest eigenvalue, sig[1]= smallest eigenvalue, s[2] intermediate.
-      // Why using cmb values when you could simply sort them?
 
       if(cmb==cmb1){
         sig[2]=s1;
@@ -56,7 +55,7 @@ void prestress(double s1, double s2, double s3, double strike, double dip, doubl
 		}
       }
       
-//   determine principal stress orientation
+////determine principal stress orientation
       alpha=0.5*atan2(1.0,f);
       st=strike*DEG2RAD;
       di=dip*DEG2RAD;
@@ -77,16 +76,10 @@ void prestress(double s1, double s2, double s3, double strike, double dip, doubl
       for (int i=0; i<3; i++) ts[i]=rst[i]*cos(ra)-rdi[i]*sin(ra);
 	      
       for (int i=0; i<3; i++){
-    	// NB here rot[i][0] is the sigma3 axis, rot[i][1] is the sigma1 axis.
-        //rot[i][0]=ns[i]*cos(alpha)+ts[i]*sin(alpha);
-        //rot[i][1]=ns[i]*sin(alpha)-ts[i]*cos(alpha);
-
-      	// [camilla]: switched the values of principal axis (rot[i][0] and rot[i][1]), since alpha is given from the axis with the largest eigenvalue (rot[i][0])
-    	  rot[i][1]=ns[i]*cos(alpha)+ts[i]*sin(alpha);
-		  rot[i][0]=ns[i]*sin(alpha)-ts[i]*cos(alpha);
+        rot[i][0]=ns[i]*cos(alpha)+ts[i]*sin(alpha);
+        rot[i][1]=ns[i]*sin(alpha)-ts[i]*cos(alpha);
       }
       
-      // intermediate axis given by vector product between slip and normal vector:
       rot[0][2]=ts[1]*ns[2]-ts[2]*ns[1];
       rot[1][2]=ts[2]*ns[0]-ts[0]*ns[2];
       rot[2][2]=ts[0]*ns[1]-ts[1]*ns[0];
@@ -129,7 +122,6 @@ double **prestress_eigen(double *s, double *str, double *dip){
 
 	S=mtimesm3(ST=mtimesm3(Q, L, NULL), QT, NULL);
 	free_dmatrix(ST, 1,3,1,3);
-
 	return S;
 
 }
