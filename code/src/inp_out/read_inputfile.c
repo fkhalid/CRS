@@ -293,10 +293,12 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	// output functions print_logfile, print_screen already contain the same condition;
 	// and because some of the variables are changed below (e.g. outname, focmeccat), and they were not broadcast.
 	if(procId == 0) {
+
 		if ((value_found[6] + value_found[5] + value_found[15])>1){
 			print_screen("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
 			print_logfile("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
 			err=1;
+
 		}
 		if ((value_found[11] + value_found[16])>1){
 			print_screen("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[11], keys[16]);
@@ -371,6 +373,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 				case 14:
 					if (Logfile) strcpy(Logfile,"");
 					break;
+
 				case 15:
 					if (fixedmecfile) strcpy(fixedmecfile,"");
 					break;
@@ -392,6 +395,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	}
 
 	#ifdef _CRS_MPI
+
 		MPI_Bcast(num_fm, 				1, MPI_INT, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&nofm, 				1, MPI_INT, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&focmeccatIsNull, 	1, MPI_INT, 0, MPI_COMM_WORLD);

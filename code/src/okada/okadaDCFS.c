@@ -107,12 +107,14 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 #ifdef _CRS_MPI
 int okadaCoeff_mpi(float ****Coeffs_st,
 				   float ****Coeffs_dip,
+				   float ****Coeffs_open,
 				   struct eqkfm *eqkfm1,
 				   int NF,
 				   struct crust crst,
 				   double *lats,
 				   double *lons,
 				   double *depths) {
+
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
@@ -650,7 +652,6 @@ double ** comp2tensor(float *v, double ***S0){
 }
 
 double *normal_vector(double strikeR, double dipR){
-
 	double *n;
 
 	n=dvector(1,3);

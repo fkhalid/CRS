@@ -14,7 +14,7 @@
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
-//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
+#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 9				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 33	// No. of scalar variables in 'struct BCast_Model_Parameters'
@@ -280,11 +280,11 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 		int Nsur;
 		int LLinversion;
 		int forecast;
+		int ta_log_step;
+		int asig_log_step;
 		double r0;
 		double Asig0;
 		double ta0;
-		int ta_log_step;
-		int asig_log_step;
 		double Asig_min;
 		double Asig_max;
 		double ta_min;

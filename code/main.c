@@ -266,6 +266,7 @@ int main (int argc, char **argv) {
 		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+
 	#endif
 
 //-----------------------read model parameters-------------------//
@@ -345,6 +346,7 @@ int main (int argc, char **argv) {
 		system(syscopy);
 	}
 
+
 //----------- Read grid (crst) information from templates -------//
 
 	err=read_crust(fore_template, fixedmecfile , &crst, gridresxy, gridresz, flags.err_recfault);
@@ -353,8 +355,6 @@ int main (int argc, char **argv) {
 		error_quit("Errors while reading ForecastTemplate or FixedMecFile. Exiting.\n", fore_template);
 	}
 	NgridT=crst.N_allP;
-
-	print_screen("*Ln 357*\n");
 
 
 //---------------------------------------------//

@@ -214,7 +214,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		sscanf(line,"%d", &((*flags).err_gridpoints));
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", Nsur);
-		Nsur=MIN(Nsur,1);
+		*Nsur=MIN(*Nsur,1);
 
 
 		//-------------Other parameters------------------//
@@ -272,7 +272,8 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		fclose(fin);
 	}
 
-	#ifdef _CRS_MPI
+	#ifdef _CRS_MPIersion;	//7
+	modelParams.forecast     =  *foreca
 		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
 
@@ -284,43 +285,47 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 	//		 a separate function ...
 
 	#ifdef _CRS_MPI
+
 		// Copy scalars to the BCast_Model_Parameters struct
 		struct BCast_Model_Parameters modelParams;
 
 		if(procId == 0) {
-			modelParams.fixr         =  *fixr;
-			modelParams.fixAsig      =  *fixAsig;
-			modelParams.fixta        =  *fixta;
-			modelParams.nAsig0       =  *nAsig0;
-			modelParams.nta0         =  *nta0;
-			modelParams.Nsur         =  *Nsur;
-			modelParams.LLinversion  =  *LLinversion;
-			modelParams.forecast     =  *forecast;
-			modelParams.r0  		 =  *r0;
-			modelParams.Asig0        =  *Asig0;
-			modelParams.ta0  		 =  *ta0;
-			modelParams.ta_log_step  =  *ta_log_step;
-			modelParams.asig_log_step=  *asig_log_step;
-			modelParams.Asig_min     =  *Asig_min;
-			modelParams.Asig_max     =  *Asig_max;
-			modelParams.ta_min       =  *ta_min;
-			modelParams.ta_max       =  *ta_max;
-			modelParams.tw   		 =  *tw;
-			modelParams.fore_dt      =  *fore_dt;
-			modelParams.Mc   		 =  *Mc;
-			modelParams.Mag_main     =  *Mag_main;
-			modelParams.Mc_source    =  *Mc_source;
-			modelParams.dCFS         =  *dCFS;
-			modelParams.DCFS_cap     =  *DCFS_cap;
-			modelParams.dt 			 =  *dt;
-			modelParams.dM  		 =  *dM;
-			modelParams.xytoll       =  *xytoll;
-			modelParams.ztoll        =  *ztoll;
-			modelParams.border       =  *border;
-			modelParams.res 		 =  *res;
-			modelParams.gridresxy    =  *gridresxy;
-			modelParams.gridresz     =  *gridresz;
-			modelParams.smoothing    =  *smoothing;
+			//Integers:
+			modelParams.fixr         =  *fixr;			//1
+			modelParams.fixAsig      =  *fixAsig;		//2
+			modelParams.fixta        =  *fixta;			//3
+			modelParams.nAsig0       =  *nAsig0;		//4
+			modelParams.nta0         =  *nta0;			//5
+			modelParams.Nsur         =  *Nsur;			//6
+			modelParams.LLinversion  =  *LLinversion;	//7
+			modelParams.forecast     =  *forecast;		//8
+			modelParams.ta_log_step  =  *ta_log_step;	//9
+			modelParams.asig_log_step=  *asig_log_step;	//10
+
+			//doubles:
+			modelParams.r0  		 =  *r0;			//11
+			modelParams.Asig0        =  *Asig0;			//12
+			modelParams.ta0  		 =  *ta0;			//13
+			modelParams.Asig_min     =  *Asig_min;		//14
+			modelParams.Asig_max     =  *Asig_max;		//15
+			modelParams.ta_min       =  *ta_min;		//16
+			modelParams.ta_max       =  *ta_max;		//17
+			modelParams.tw   		 =  *tw;			//18
+			modelParams.fore_dt      =  *fore_dt;	//19
+			modelParams.Mc   		 =  *Mc;		//20
+			modelParams.Mag_main     =  *Mag_main;	//21
+			modelParams.Mc_source    =  *Mc_source;	//22
+			modelParams.dCFS         =  *dCFS;		//23
+			modelParams.DCFS_cap     =  *DCFS_cap;	//24
+			modelParams.dt 			 =  *dt;		//25
+			modelParams.dM  		 =  *dM;		//26
+			modelParams.xytoll       =  *xytoll;	//27
+			modelParams.ztoll        =  *ztoll;		//28
+			modelParams.border       =  *border;	//29
+			modelParams.res 		 =  *res;		//30
+			modelParams.gridresxy    =  *gridresxy;	//31
+			modelParams.gridresz     =  *gridresz;	//32
+			modelParams.smoothing    =  *smoothing;	//33
 
 		}
 
@@ -338,10 +343,10 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		}
 
 		// Set types
-		for(int i = 0; i < 8; ++i) {
+		for(int i = 0; i < 10; ++i) {
 			types_ModelParameters[i] = MPI_INT;
 		}
-		for(int i = 8; i < SIZE_BCAST_MODEL_PARAMETERS; ++i) {
+		for(int i = 10; i < SIZE_BCAST_MODEL_PARAMETERS; ++i) {
 			types_ModelParameters[i] = MPI_DOUBLE;
 		}
 
@@ -356,34 +361,32 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		MPI_Address(&(modelParams.Nsur),        &addresses_ModelParameters[5]);
 		MPI_Address(&(modelParams.LLinversion), &addresses_ModelParameters[6]);
 		MPI_Address(&(modelParams.forecast),    &addresses_ModelParameters[7]);
+		MPI_Address(&(modelParams.ta_log_step), &addresses_ModelParameters[8]);
+		MPI_Address(&(modelParams.asig_log_step),&addresses_ModelParameters[9]);
 
-		MPI_Address(&(modelParams.r0), 			&addresses_ModelParameters[8]);
-		MPI_Address(&(modelParams.Asig0),       &addresses_ModelParameters[9]);
-		MPI_Address(&(modelParams.ta0), 		&addresses_ModelParameters[10]);
-		MPI_Address(&(modelParams.Asig_min),    &addresses_ModelParameters[11]);
-		MPI_Address(&(modelParams.Asig_max),    &addresses_ModelParameters[12]);
-		MPI_Address(&(modelParams.ta_min),      &addresses_ModelParameters[13]);
-		MPI_Address(&(modelParams.ta_max),      &addresses_ModelParameters[14]);
-		MPI_Address(&(modelParams.tw),  		&addresses_ModelParameters[15]);
-		MPI_Address(&(modelParams.fore_dt),     &addresses_ModelParameters[16]);
-		MPI_Address(&(modelParams.Mc),  		&addresses_ModelParameters[17]);
-		MPI_Address(&(modelParams.Mag_main),    &addresses_ModelParameters[18]);
-		MPI_Address(&(modelParams.Mc_source),   &addresses_ModelParameters[19]);
-		MPI_Address(&(modelParams.dCFS),        &addresses_ModelParameters[20]);
-		MPI_Address(&(modelParams.DCFS_cap),    &addresses_ModelParameters[21]);
-		MPI_Address(&(modelParams.dt),  		&addresses_ModelParameters[22]);
-		MPI_Address(&(modelParams.dM),  		&addresses_ModelParameters[23]);
-		MPI_Address(&(modelParams.xytoll),      &addresses_ModelParameters[24]);
-		MPI_Address(&(modelParams.ztoll),       &addresses_ModelParameters[25]);
-		MPI_Address(&(modelParams.border),      &addresses_ModelParameters[26]);
-		MPI_Address(&(modelParams.res), 		&addresses_ModelParameters[27]);
-		MPI_Address(&(modelParams.gridresxy),   &addresses_ModelParameters[28]);
-		MPI_Address(&(modelParams.gridresz),    &addresses_ModelParameters[29]);
-		MPI_Address(&(modelParams.smoothing),   &addresses_ModelParameters[30]);
-
-		MPI_Address(&(modelParams.ta_log_step), &addresses_ModelParameters[31]);
-		MPI_Address(&(modelParams.asig_log_step),&addresses_ModelParameters[32]);
-
+		MPI_Address(&(modelParams.r0), 			&addresses_ModelParameters[10]);
+		MPI_Address(&(modelParams.Asig0),       &addresses_ModelParameters[11]);
+		MPI_Address(&(modelParams.ta0), 		&addresses_ModelParameters[12]);
+		MPI_Address(&(modelParams.Asig_min),    &addresses_ModelParameters[13]);
+		MPI_Address(&(modelParams.Asig_max),    &addresses_ModelParameters[14]);
+		MPI_Address(&(modelParams.ta_min),      &addresses_ModelParameters[15]);
+		MPI_Address(&(modelParams.ta_max),      &addresses_ModelParameters[16]);
+		MPI_Address(&(modelParams.tw),  		&addresses_ModelParameters[17]);
+		MPI_Address(&(modelParams.fore_dt),     &addresses_ModelParameters[18]);
+		MPI_Address(&(modelParams.Mc),  		&addresses_ModelParameters[19]);
+		MPI_Address(&(modelParams.Mag_main),    &addresses_ModelParameters[20]);
+		MPI_Address(&(modelParams.Mc_source),   &addresses_ModelParameters[21]);
+		MPI_Address(&(modelParams.dCFS),        &addresses_ModelParameters[22]);
+		MPI_Address(&(modelParams.DCFS_cap),    &addresses_ModelParameters[23]);
+		MPI_Address(&(modelParams.dt),  		&addresses_ModelParameters[24]);
+		MPI_Address(&(modelParams.dM),  		&addresses_ModelParameters[25]);
+		MPI_Address(&(modelParams.xytoll),      &addresses_ModelParameters[26]);
+		MPI_Address(&(modelParams.ztoll),       &addresses_ModelParameters[27]);
+		MPI_Address(&(modelParams.border),      &addresses_ModelParameters[28]);
+		MPI_Address(&(modelParams.res), 		&addresses_ModelParameters[29]);
+		MPI_Address(&(modelParams.gridresxy),   &addresses_ModelParameters[30]);
+		MPI_Address(&(modelParams.gridresz),    &addresses_ModelParameters[31]);
+		MPI_Address(&(modelParams.smoothing),   &addresses_ModelParameters[32]);
 
 		// Set displacements
 		for(int i = 0; i < SIZE_BCAST_MODEL_PARAMETERS; ++i) {
@@ -436,6 +439,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 			*smoothing      = modelParams.smoothing;
 		}
 
+
 		// Map struct flags to MPI struct type
 		MPI_Datatype CRS_MPI_BCast_Flags;
 		int blocks_Flags[BCAST_FLAGS_SIZE];
@@ -457,10 +461,12 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		MPI_Address(&(flags->err_gridpoints),    		&addresses_Flags[1]);
 		MPI_Address(&(flags->OOPs),      		 		&addresses_Flags[2]);
 		MPI_Address(&(flags->afterslip),         		&addresses_Flags[3]);
-		MPI_Address(&(flags->splines),   		 		&addresses_Flags[4]);
-		MPI_Address(&(flags->sources_all_iso),   		&addresses_Flags[5]);
-		MPI_Address(&(flags->sources_without_focmec),   &addresses_Flags[6]);
-		MPI_Address(&(flags->sample_all),        		&addresses_Flags[7]);
+		MPI_Address(&(flags->aseismic_log),   		 	&addresses_Flags[4]);
+		MPI_Address(&(flags->aseismic_multisnap),   	&addresses_Flags[5]);
+		MPI_Address(&(flags->sources_all_iso),   		&addresses_Flags[6]);
+		MPI_Address(&(flags->sources_without_focmec),   &addresses_Flags[7]);
+		MPI_Address(&(flags->sample_all),        		&addresses_Flags[8]);
+
 
 		// Set displacements
 		for(int i = 0; i < BCAST_FLAGS_SIZE; ++i) {
