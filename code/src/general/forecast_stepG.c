@@ -210,7 +210,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	  for (int eq=0; eq<=cat.Z; eq++) Rprivate[t][eq]=0.0;
   }
 
-  //Similar to above, but for individual time steps: //fixme move allocation up.
+  //Similar to above, but for individual time steps:
   nts=(dt_step<tol0) ? 0 : ceil((tt1-tt0)/dt_step);	//number of output time steps;
   for (int i=0; i<nts; i++){
     if (ReT) ReT[i]=0.0;

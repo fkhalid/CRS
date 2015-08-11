@@ -7,8 +7,8 @@
 # reference time for ev. 2              no. of snapshots models (lines to read) until next event
 #
 2
-pscmp	log
+pscmp	lin
 2004-09-28T17:05:20Z    1
-100	input_testcases/emptymodel.inp
-2004-09-28T17:15:24Z	1
+274.0   input_testcases/testD/Parkfield_AftB.dat
+2005-09-28T17:15:24Z	1
 274.0	input_testcases/testD/Parkfield_Aft.dat

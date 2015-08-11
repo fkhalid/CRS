@@ -532,7 +532,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	FILE *fin;
 	int Nchar=1000;
 	char line[Nchar];
-	char time_str[50];
+	char time_str[50], log_evol[10];
 	char comment[]="#", comm=comment[0];
 	struct tm times;
 	int Nm0, nsm, no_slipmod;
@@ -570,8 +570,19 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			sscanf(line,"%d", &Nm0);
 			fgets(line,Nchar,fin);
 			if (is_afterslip) {
-				sscanf(line,"%s", &((*allslipmodels).cmb_format));
-				*aseismic_log=1;	//fixme read from file.
+				sscanf(line,"%s %s", &((*allslipmodels).cmb_format), log_evol);
+
+				if (!strcmp(log_evol, "log")) {
+					*aseismic_log=1;
+				}
+				else if (!strcmp(log_evol, "lin")) {
+					*aseismic_log=0;
+				}
+				else{
+					print_screen("Illegal value for type of temporal evolution (should be one of: lin/log).\n", input_fname);
+					print_logfile("Illegal value for type of temporal evolution (should be one of: lin/log.\n", input_fname);
+					fileError=1;
+				}
 			}
 			else {
 				sscanf(line,"%s %d", &((*allslipmodels).cmb_format), &((*allslipmodels).constant_geometry)); //todo check this is the same as coseismic models.

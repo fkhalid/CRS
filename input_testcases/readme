@@ -2,6 +2,7 @@ testA:	sources of uncertainty
 testB:	input catalogs (e.g. mainshock missing or moved back)
 testC:	Mc_source=2.0, different aftershock modes.
 testD:	afterslip
+testDL:	afterslip, with linear (not log) steps
 testE:	background rate
 testF:	fixedmec file
 testG:	similar to testC, but without uncertainties. GT1 uses tapering.
@@ -9,3 +10,6 @@ testH:	similar to testG, but very simplified (few sources)
 testI:	use of multiple slip models per event.
 testL:	tests pscmp, fsp, farfalle formats; also multiple slip models with different no. of subfaults
 testM:	multiple magnitude bins
+testN:
+testNA:	afterslip
+testNAL:afterslip, linear

@@ -362,7 +362,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
 
 					//loop over events with afterslip:
-					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=eqkfmAf[i].tevol[l]*DCFS_Af[a].cmb[n];	//FIXME not eqkfmAf[0].
+					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=eqkfmAf[i].tevol[l]*DCFS_Af[a].cmb[n];
 				}
 				i+=DCFS_Af[a].NF;
 			}

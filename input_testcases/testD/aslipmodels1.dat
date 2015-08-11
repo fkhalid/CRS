@@ -7,6 +7,6 @@
 # reference time for ev. 2              no. of snapshots models (lines to read) until next event
 #
 1
-pscmp
+pscmp	log
 2004-09-28T17:15:24Z	1
 274.0	input_testcases/testD/Parkfield_Aft.dat
