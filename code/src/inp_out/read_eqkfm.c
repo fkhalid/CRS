@@ -596,7 +596,7 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 			eqfm1[f].pos_d=dvector(1,NP);
 			eqfm1[f].slip_str=dvector(1,NP);
 			eqfm1[f].slip_dip=dvector(1,NP);
-			eqfm1[f].open=dvector(1,NP);	//fixme delete later if necessary. Do this across code, and also for slip_str, slip_dip. Use flags.
+			eqfm1[f].open=dvector(1,NP);
 			if(procId == 0) {
 				for (int p=1; p<=NP; p++) {
 					err+=(sscanf(line, "%lf   %lf    %lf   %lf   %lf",

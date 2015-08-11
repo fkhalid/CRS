@@ -392,7 +392,6 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	  }
   }
 
-  //fixme do this once at the end.
   free_dmatrix(Rprivate,0,nthreadstot-1, 0, cat.Z);
   free_dmatrix(NeTprivate,0,nthreadstot-1, 0, nts-1);
   free_dmatrix(ReTprivate,0,nthreadstot-1, 0, nts-1);

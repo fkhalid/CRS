@@ -182,6 +182,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 		Nm=list_slipmodels.no_slipmodels[N];	//number of snapshots for current afterslip event.
     	err+=setup_afterslip_element(*eqkfm0res+totfaults, slipmodels+counter, cmb_format, Nm, crst.mu, disc[N], tmain[N], tsnap+counter,
     			crst.N_allP, crst.list_allP, list_slipmodels.cut_surf[counter], crst.lat0, crst.lon0);
+
 		counter+=Nm;
 		totfaults+=Nfaults[N];
     }
@@ -215,7 +216,6 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 	 */
 
 	//TODO may also want to allow individual snapshots of allslip_xxx to be NULL (e.g. eqkfm0res[f].allslip_xxx[t]=NULL if there is no slip at time t).
-
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
 
@@ -230,22 +230,9 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 	double ***allslip_str_temp,***allslip_dip_temp, ***allslip_open_temp;	//store slip values from individual snapshots.
 	int is_str, is_dip, is_open;	//flags used to determine which components of deformations are needed (to save memory).
 
-	struct set_of_models setmodels;
-
 	//read the last snapshot to find NF and initialize temporary variable eqkfm0.
 	err=read_eqkfm(slipmodels[no_snap-1], cmb_format, &eqkfm0, &NF, NULL, mu);	//find NF and eqkfm0[x].np_x
 	if (err) return (err);
-
-	//A single slip model geometry is used for afterslip (whereas earthquakes can have multiple alternative slip models):
-	setmodels.NF_models=ivector(1,1);
-	setmodels.Nmod=1;
-	setmodels.current_model=1;
-	setmodels.NF_models[1]=NF;
-	setmodels.NFmax=NF;
-	setmodels.set_of_eqkfm=eqkfm_array(0, NF-1);
-	//fixme check: better 	setmodels.set_of_eqkfm= (struct eqkfm *) malloc((size_t) ((NF+NR_END)*sizeof(struct eqkfm))); since assinged below?
-	//fixme check: this structure is probably not needed at all.
-
 
 	// allocate temporary storage (since eqkfm0 gets overwritten)
 	allslip_str_temp=malloc(NF*sizeof(double **));
@@ -257,7 +244,6 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		allslip_open_temp[nf]=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 	}
 
-
 	//allocate tot_slip vectors
 	sliptots= dmatrix(0, no_snap-1, 0, NF-1);
 
@@ -266,7 +252,6 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		err=read_eqkfm(slipmodels[m], cmb_format, &eqkfm0, &NF, NULL, mu);
 		for (int nf=0; nf<NF; nf++){
 			sliptots[m][nf]=eqkfm0[nf].tot_slip[0];
-			//TODO could check whether slip_str, dip, open are full of 0s and if so set allslip_str_temp[nf][m]=NULL.
 			copy_vector(eqkfm0[nf].slip_str, &(allslip_str_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			copy_vector(eqkfm0[nf].slip_dip, &(allslip_dip_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			copy_vector(eqkfm0[nf].open, &(allslip_open_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
@@ -336,14 +321,10 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		eqkfm0[nf].allslip_dip=allslip_dip_temp[nf];
 		eqkfm0[nf].allslip_open=allslip_open_temp[nf];
 
-		setmodels.set_of_eqkfm[nf]=eqkfm0[nf];
+		copy_eqkfm_all(eqkfm0[nf], eqkfm0res+nf);
+
+		//setmodels.set_of_eqkfm[nf]=eqkfm0[nf];
 	}
-
-	//allocate memory and copy values from setmodels;
-	(*eqkfm0res).parent_set_of_models=(struct set_of_models *) malloc((size_t) (sizeof(struct set_of_models)));
-	memcpy((*eqkfm0res).parent_set_of_models, &setmodels, (size_t) sizeof(struct set_of_models));
-
-	set_current_slip_model(eqkfm0res,1);
 	
 	return err;
 }
@@ -533,6 +514,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
     	int i=0;
 		NFtot=NFtotaft=0;
     	for (int a=0; a<no_afterslip; a++){
+    		printf("afterslip time=%.5lf\n", eqkfm_aft[NFtotaft].t);
 			mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, eqkfm_aft[NFtotaft].t, 0.000011575);
 			if (mainshock_withafterslip==-1){
 				print_logfile("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
@@ -587,7 +569,9 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
     static int first_timein=1, switch_slipmodel;
 
     //todo delete
-	MPI_Barrier(MPI_COMM_WORLD);
+	#ifdef CRS_MPI
+    	MPI_Barrier(MPI_COMM_WORLD);
+	#endif
 	print_logfile("Hello here is rank %d, ln. 591 (setup.c).\n", procId);
 
 	//Fill in elements of structure:
@@ -607,7 +591,10 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 					print_logfile("Hello here is rank %d, ln. 607 (setup.c).\n", procId);
 				}
 
-				MPI_Barrier(MPI_COMM_WORLD);
+			    //todo delete
+				#ifdef CRS_MPI
+			    	MPI_Barrier(MPI_COMM_WORLD);
+				#endif
 				print_logfile("Hello here is rank %d, ln. 610 (setup.c).\n", procId);
 
 				#ifdef _CRS_MPI
@@ -616,7 +603,10 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 					okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar, Nfaults[i], crst);
 				#endif
 
-				MPI_Barrier(MPI_COMM_WORLD);
+				    //todo delete
+					#ifdef CRS_MPI
+				    	MPI_Barrier(MPI_COMM_WORLD);
+					#endif
 				print_logfile("Hello here is rank %d, ln. 619 (setup.c).\n", procId);
 
 				temp->NgridT=eqkfm0[0].nsel;

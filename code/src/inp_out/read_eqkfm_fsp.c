@@ -12,6 +12,18 @@
 #endif
 
 int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
+	/* Reads a slip model file in fsp format.
+	 * At the moment it does not support opening: pscmp format should be used instead.
+	 *
+	 * Input
+	 *  fname:	name of slip model file
+	 *
+	 * Output
+	 *  *eqfm_out: structure representing the slip model. Each element of the array is a subfault (i.e. rectangular area discretized into patches).
+	 *  			Range [0...*NF_out-1].
+	 *  			It can be passed as NULL, and will be ignored.
+	 */
+
 	int ff;
 	int nf;
 	FILE *fin;
@@ -167,7 +179,6 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 			#endif
 		}
 
-		// todo [coverage] this block is never tested
 		else {
 			if(procId == 0) {
 				next_separator(fin,"MULTISEGMENT MODEL");
@@ -209,7 +220,7 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				(*eqfm_out)[f].pos_s=dvector(1,ndi_nst);
 				(*eqfm_out)[f].slip_str=dvector(1,ndi_nst);
 				(*eqfm_out)[f].slip_dip=dvector(1,ndi_nst);
-				(*eqfm_out)[f].open=NULL;	//fixme check if opening can be given in fsp format, if so make sure to broadcast.
+				(*eqfm_out)[f].open=NULL;
 
 				if ((*eqfm_out)[f].np_st*(*eqfm_out)[f].np_di!=ndi_nst){
 					print_screen("Error: geometry of slip model %s not understood. Exit.\n", fname);
@@ -238,6 +249,12 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 
 	return (err!=0);
 }
+
+
+/*
+ * 	Auxiliary functions needed to read fsp files.
+ */
+
 
 void track_position(long *pos, int NP, FILE* fin){	//todo move to more general file.
 
@@ -323,7 +340,6 @@ int find_key(FILE *fin, char *string, double *value){
 
 int search_string(char *str1, char *str2){
 /* Check if str2 is contained in str1.
- * TODO move to more general place (util?)
  */
 
 	int nchar=strlen(str2), off=0;

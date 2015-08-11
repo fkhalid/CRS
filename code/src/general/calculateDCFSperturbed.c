@@ -369,7 +369,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			else{
 				if (vary_recfault==1){
-					// todo [coverage] this block is never tested
 					//fixme cmb_cumu[0];
 					for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]=0.0;
 					for (int l=0; l<NTScont; l++) {

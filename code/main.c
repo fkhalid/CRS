@@ -491,7 +491,7 @@ int main (int argc, char **argv) {
     #endif
 
 
-	err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf, all_aslipmodels.Nfaults);	//FIXME change 2nd last argument.
+	err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf, all_aslipmodels.Nfaults);
 
 	if (err){
 		error_quit("Error in setting up okada coefficients structure or associating afterslip with a mainshock.\n");

@@ -14,7 +14,7 @@
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
-#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
+//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 9				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 33	// No. of scalar variables in 'struct BCast_Model_Parameters'
@@ -259,8 +259,6 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
     int *selpoints;		//indices of cell points affected by this event.
     int index_cat;		//index of event in catalog.
     struct set_of_models *parent_set_of_models;	//if multiple models are present, this is a pointer to corresponding set_of_models structure.
-    											//this is also used for multiple afterslips (i.e. when more than one mainshock is followed by afterslip)
-    											//fixme check: actually, not needed for afterslips (ended up using linear structure instead).
     struct eqkfm *co_aft_pointer;//pointer linking corresponding coseismic/postseismic elements.
 
 };
