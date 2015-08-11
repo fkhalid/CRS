@@ -214,7 +214,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		sscanf(line,"%d", &((*flags).err_gridpoints));
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d", Nsur);
-		*Nsur=MIN(*Nsur,1);
+		*Nsur=MAX(*Nsur,1);
 
 
 		//-------------Other parameters------------------//

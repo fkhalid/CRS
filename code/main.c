@@ -42,7 +42,7 @@ int extra_verbose, quiet;
 
 int main (int argc, char **argv) {
 	// [Fahad] Variables used by MPI related code.
-	int procId = 0;		// [Fahad] Process rank
+	int procId = 0;		// [Fahad] Process rankdifftoll.sh t137Bmpi/testA2_foremap.dat t120Bmpi/testA2_foremap.dat 9
 	int numProcs = 1;	// [Fahad] Total number of MPI processes
 	double startTime, endTime;
 
@@ -741,7 +741,6 @@ int main (int argc, char **argv) {
 			else print_logfile("\t%s\n","Synthetic slip model (or isotropic field)");
 			nf+=Nfaults_co[n];
 		}
-
 
 		if (!all_slipmodels.constant_geometry){
 			if (mod!=1){

@@ -130,9 +130,10 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	double alpha;
 	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
 	int Nsel = eqkfm1[0].nsel;
-	int NP_tot = 0, i;
-	int pure_thrustnorm, pure_strslip;
+	int NP_tot=0, p1, i, noslip_str, noslip_dip, noopen;
 	int err=0;
+	int flag_open, flag_sslip, flag_dslip;
+	struct eqkfm *afslip;	//dummy variable equal to pointers in eqkfm1 which point to afterslip elements.
 
 	for(int j=0; j<NF; j++) {
 		NP_tot+=eqkfm1[j].np_di*eqkfm1[j].np_st;
@@ -145,8 +146,31 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	print_screen("Depth of surface: %.3lf km.\n", depth0);
 
 	//---------initialize DCFS----------//
-	*Coeffs_st  = f3tensor(1, NP_tot, 1, Nsel, 1, 6);	//TODO should deallocate at the end (in main.c).
-	*Coeffs_dip = f3tensor(1, NP_tot, 1, Nsel, 1, 6);
+
+	//check if Coeffs tensors should be allocated. todo if subfaults are different, memory wise this is not ideal.
+	flag_open=flag_sslip=flag_dslip=0;
+
+	for (int j=0; j<NF; j++){
+
+		//if the element is associated with afterslip, should check whether this afterslip has strike/slip/opening component.
+		afslip=	eqkfm1[j].co_aft_pointer;
+
+		//check if there is no slip in this fault:
+		noslip_str= (eqkfm1[j].slip_str==NULL && (afslip==NULL || (*afslip).allslip_str==NULL));
+		noslip_dip= (eqkfm1[j].slip_dip==NULL && (afslip==NULL || (*afslip).allslip_dip==NULL));
+		noopen= (eqkfm1[j].open==NULL && (afslip==NULL || (*afslip).allslip_open==NULL));
+
+		flag_open=max(flag_open, !noopen);
+		flag_sslip=max(flag_sslip, !noslip_str);
+		flag_dslip=max(flag_dslip, !noslip_dip);
+
+		if (flag_open && flag_sslip && flag_dslip) break;
+	}
+
+	//allocate memory and set to 0 (inside f3tensor).	//todo could use array of pointers for smarter memory allocation...
+	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);	//TODO should deallocate at the end (in main.c).
+	if (flag_dslip) *Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
+	if (flag_open) *Coeffs_open=f3tensor(1,NP_tot,1,Nsel,1,6);
 
 	//-----------------------------------------------------------------------------------------//
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
@@ -156,11 +180,13 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	print_logfile("Calculating Okada solutions (%d patches, %d grid points)...\n", NP_tot, Nsel);
 
 	for (int j=0; j<NF; j++) {
+
+		//todo delete
+//		printf("Hello here is rank %d, line 188 (okadaDCFS), NF=%d\n", procId, NF);
+
 		// [Fahad]: MPI -- 	Flag to indicate if the current
 		//				--  fault should be processed in serial.
 		int processFaultSerially = 0;
-
-		pure_thrustnorm=pure_strslip=0;
 
 		if ((err=choose_focmec(eqkfm1[j], &strike, &dip, &rake))!=0){
 			print_screen("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
@@ -192,7 +218,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			start = 0;
 
 			if(procId == 0) {
-				printf("\n Number of processes: %d", numProcs);
+				printf("\n Number of proces258ses: %d", numProcs);
 				printf("\n Number of patches: %d", numPatches);
 			}
 			print_screen("*** No. of patches is less than the No. of processes. Processing fault in serial ... ***\n",j);
@@ -204,7 +230,6 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			//		  : the partition size and reallocate the linearized tensors.
 			if(partitionSize * numProcs != numPatches) {
 				partitionSize += 1;
-
 				coeffs_st  = (float*) realloc(coeffs_st,  (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
 				coeffs_dip = (float*) realloc(coeffs_dip, (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
 			}
@@ -229,13 +254,31 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			patch_pos(eqkfm1[j], p2+1, &eqeast, &eqnorth, &depth);
 			++p2;
 
-			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i)
+			//todo delete
+			MPI_Barrier(MPI_COMM_WORLD);
+//			printf("Hello here is rank %d, line 258, p=%d/%d (okadaDCFS)\n", procId, p, partitionSize-1);
+
+			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i, afslip, noslip_str, noslip_dip, noopen)
 			for(int i0=0; i0<Nsel; i0++) {
 				i=eqkfm1[0].selpoints[i0+1];	// [Fahad] Added '1' to the index
 				north=crst.y[i];
 				east=crst.x[i];
 
-				if(pure_thrustnorm!=1) {
+				//if the element is associated with afterslip, should check whether this afterslip has strike/slip/opening component.
+				//if (p>0) printf("Hello here is rank %d, line 267 (okadaDCFS)\n", procId);
+				afslip=	eqkfm1[j].co_aft_pointer;
+				//if (p>0) printf("Hello here is rank %d, line 269 (okadaDCFS)\n", procId);
+
+				//check if both coseismic and afterslip have empty arrays for each component of deformation:
+				noslip_str= (eqkfm1[j].slip_str==NULL && (afslip==NULL || (*afslip).allslip_str==NULL));
+				noslip_dip= (eqkfm1[j].slip_dip==NULL && (afslip==NULL || (*afslip).allslip_dip==NULL));
+				noopen= (eqkfm1[j].open==NULL && (afslip==NULL || (*afslip).allslip_open==NULL));
+
+				//todo: in principle could deallocate (*Coeffs_st)[p1] if noslip_str==1 (and similar for str_dip, open).
+				// but can't do this if using f3tensor dunction 'cause memory is a single block.
+
+
+				if (!noslip_str) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0,
 							north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							alpha, crst.lambda, crst.mu, crst.fric);
@@ -250,7 +293,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 					coeffs_st_partitioned[index + 5] += 1e6*Sxz;
 				}
 
-				if(pure_strslip!=1) {
+				if (!noslip_dip) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0,
 							 north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							 alpha, crst.lambda, crst.mu, crst.fric);
@@ -267,6 +310,8 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			}
 		}
 
+//		printf("Hello here is rank %d, line 316.\n");
+
 		if(processFaultSerially) {
 			// [Fahad]: Concatenate the partition array into the full patch
 			//		  : linearized tensor array, since the fault has been
@@ -275,6 +320,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 				coeffs_st[k]  = coeffs_st_partitioned[k];
 				coeffs_dip[k] = coeffs_dip_partitioned[k];
 			}
+//			printf("Hello here is rank %d, line 326.\n");
 		}
 		else {
 			MPI_Allgather(coeffs_st_partitioned, partitionedTensorSize,
@@ -284,10 +330,14 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			MPI_Allgather(coeffs_dip_partitioned, partitionedTensorSize,
 						  MPI_FLOAT, coeffs_dip, partitionedTensorSize,
 						  MPI_FLOAT, MPI_COMM_WORLD);
+
+//			printf("Hello here is rank %d, line 337.\n");
 		}
 
 		free(coeffs_st_partitioned);
 		free(coeffs_dip_partitioned);
+
+//		printf("Hello here is rank %d, line 343.\n");
 
 		// [Fahad] - Copy data from the linearized tensors to the f3tensors.
 
@@ -300,16 +350,22 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			tensorIndex += eqkfm1[fault].np_di*eqkfm1[fault].np_st;
 		}
 
+//		printf("Hello here is rank %d, line 356.\n");
+
 		for(int i = 0; i < numPatches; ++i) {
 			for(int j = 0; j < Nsel; ++j) {
 				for(int k = 0; k < 6; ++k) {
 					linearIndex = (i * Nsel * 6) + (j * 6) + k;
 
-					(*Coeffs_st) [tensorIndex + i + 1][j+1][k+1] = coeffs_st [linearIndex];
-					(*Coeffs_dip)[tensorIndex + i + 1][j+1][k+1] = coeffs_dip[linearIndex];
+					if (flag_sslip) (*Coeffs_st) [tensorIndex + i + 1][j+1][k+1] = coeffs_st [linearIndex];
+					if (flag_dslip) (*Coeffs_dip)[tensorIndex + i + 1][j+1][k+1] = coeffs_dip[linearIndex];
+					//fixme add opening
 				}
 			}
 		}
+
+//		printf("Hello here is rank %d, line 369.\n");
+
 
 		free(coeffs_st);
 		free(coeffs_dip);
@@ -317,7 +373,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 
 	return(0);
 }
-#endif
+#endif#endif
 
 // todo [coverage] this block is never tested
 int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,

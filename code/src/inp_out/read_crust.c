@@ -189,8 +189,6 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 	//--------------read value of focal mechanism grid from file:-------------//
 	//----------(this applies is a single foc mec is given per grid point)----//
 
-	print_screen("*Ln 192, %lf*\n", (*crst).str0[0]);
-
 	//if focmecgridfile is given, each point has its own focal mechanism:
 	if (focmecgridfile && strcmp(focmecgridfile,"")!=0){
 
