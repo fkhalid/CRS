@@ -586,6 +586,10 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
     int NFsofar=0;
     static int first_timein=1, switch_slipmodel;
 
+    //todo delete
+	MPI_Barrier(MPI_COMM_WORLD);
+	print_logfile("Hello here is rank %d, ln. 591 (setup.c).\n", procId);
+
 	//Fill in elements of structure:
 	temp= *Coefficients;
 	for(int i=0; i<Nm; i++) {
@@ -596,17 +600,24 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 			if (first_timein || switch_slipmodel){
 				if (!first_timein){
 					if (temp->Coeffs_st) free_f3tensor(temp->Coeffs_st, 1,0,1,0,1,0);
+					print_logfile("Hello here is rank %d, ln. 603 (setup.c).\n", procId);
 					if (temp->Coeffs_dip) free_f3tensor(temp->Coeffs_dip, 1,0,1,0,1,0);
+					print_logfile("Hello here is rank %d, ln. 605 (setup.c).\n", procId);
 					if (temp->Coeffs_open) free_f3tensor(temp->Coeffs_open, 1,0,1,0,1,0);
+					print_logfile("Hello here is rank %d, ln. 607 (setup.c).\n", procId);
 				}
 
+				MPI_Barrier(MPI_COMM_WORLD);
+				print_logfile("Hello here is rank %d, ln. 610 (setup.c).\n", procId);
+
 				#ifdef _CRS_MPI
-					okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar,
-						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+					okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar, Nfaults[i], crst);
 				#else
-					okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar,
-						   Nfaults[i], crst, crst.lat, crst.lon, crst.depth);
+					okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar, Nfaults[i], crst);
 				#endif
+
+				MPI_Barrier(MPI_COMM_WORLD);
+				print_logfile("Hello here is rank %d, ln. 619 (setup.c).\n", procId);
 
 				temp->NgridT=eqkfm0[0].nsel;
 				temp->NF=Nfaults[i];

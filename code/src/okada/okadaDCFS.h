@@ -19,16 +19,14 @@
 
 //----------------top level functions----------------//
 int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double *dipRs, double *rake, int optrake);
-int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open, struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths);
-int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open, struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths);
-int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d,float ***Coeffs_open, struct pscmp DCFS, struct eqkfm *eqkfm1,
-		struct crust crst, double *strikeR, double *dipR, double *rakeR, int full_tensor);
+int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open, struct eqkfm *eqkfm1, int NF, struct crust crst);
+int okadaCoeff_mpi(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open, struct eqkfm *eqkfm1, int NF, struct crust crst);
+int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d,float ***Coeffs_open, struct pscmp DCFS, struct eqkfm *eqkfm1);
 int isoDCFS(struct pscmp DCFS, struct eqkfm eqkfm1);
 
 //----------------auxiliary functions----------------//
 int choose_focmec(struct eqkfm eqkfm1, double *strike, double *dip, double *rake);
 void patch_pos(struct eqkfm eqfm, int p, double *east, double *north, double *depth);
-double ** comp2tensor(float *v, double ***S0);
 double *normal_vector(double, double);
 double *slip_vector(double strikeR, double dipR, double rakeR);
 double *opt_s(double *stress, double sigma, double *n, double *result);

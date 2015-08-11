@@ -202,7 +202,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							eqkfmAf[nfaults+nf].open= (eqkfmAf[nfaults+nf].allslip_open)? eqkfmAf[nfaults+nf].allslip_open[i] : NULL;
 						}
 						//todo make this work for splines==1 too...
-						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults, crst, NULL, NULL, NULL, 1); //todo free memory used by *AllCoeff;
+						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults); //todo free memory used by *AllCoeff;
 						if (vary_recfault==0) {
 							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
 							//resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);	//fixme one line or the other
@@ -245,7 +245,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					Coeffs_st=temp->Coeffs_st;
 					Coeffs_dip=temp->Coeffs_dip;
 					Coeffs_open=temp->Coeffs_open;
-					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS[temp->which_main], eqkfm0+NFsofar, crst, NULL, NULL, NULL,1);
+					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS[temp->which_main], eqkfm0+NFsofar);
 
 					//resolve coefficients if receiver faults don't change between iterations:
 					switch (vary_recfault){

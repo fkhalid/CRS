@@ -102,18 +102,21 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	return(0);
 }
 
-
-//fixme allow for opening, and do fancy memory stuff as in okadaCoeff (careful with private variables in omp section!!)
 #ifdef _CRS_MPI
 int okadaCoeff_mpi(float ****Coeffs_st,
 				   float ****Coeffs_dip,
 				   float ****Coeffs_open,
 				   struct eqkfm *eqkfm1,
 				   int NF,
-				   struct crust crst,
-				   double *lats,
-				   double *lons,
-				   double *depths) {
+				   struct crust crst) {
+
+	/* Allocates and populates arrays containing the okada coefficients between each fault and grid point.
+	 * This function is where most of the memory used by the program in most cases is allocated, and it may still be optimized (see comments).
+	 *
+	 * Input:
+	 *  eqkfm1: structure containing slip models. Range [0...NF-1].
+	 *  crst: crust structure, containing position of grid points and elastic parameters.
+	 */
 
 
 	// [Fahad] Variables used for MPI.
@@ -130,9 +133,10 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	double alpha;
 	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
 	int Nsel = eqkfm1[0].nsel;
-	int NP_tot=0, p1, i, noslip_str, noslip_dip, noopen;
+	int NP_tot=0, p1, i;
+	int noslip_str, noslip_dip, noopen; //these are flags used to reduce no. of calculations (if there is no slip on a subfault).
 	int err=0;
-	int flag_open, flag_sslip, flag_dslip;
+	int flag_open, flag_sslip, flag_dslip; //these are flags used to reduce memory allocation (if there is no slip anywhere).
 	struct eqkfm *afslip;	//dummy variable equal to pointers in eqkfm1 which point to afterslip elements.
 
 	for(int j=0; j<NF; j++) {
@@ -147,7 +151,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 
 	//---------initialize DCFS----------//
 
-	//check if Coeffs tensors should be allocated. todo if subfaults are different, memory wise this is not ideal.
+	//check if Coeffs tensors should be allocated.
 	flag_open=flag_sslip=flag_dslip=0;
 
 	for (int j=0; j<NF; j++){
@@ -167,7 +171,10 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 		if (flag_open && flag_sslip && flag_dslip) break;
 	}
 
-	//allocate memory and set to 0 (inside f3tensor).	//todo could use array of pointers for smarter memory allocation...
+	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
+	//todo it may also be better to process each of the 3 tensors (Coeffs_XX) separately: less likely to run out of memory.
+
+	//allocate memory and set to 0 (inside f3tensor).
 	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);	//TODO should deallocate at the end (in main.c).
 	if (flag_dslip) *Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
 	if (flag_open) *Coeffs_open=f3tensor(1,NP_tot,1,Nsel,1,6);
@@ -181,17 +188,14 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 
 	for (int j=0; j<NF; j++) {
 
-		//todo delete
-//		printf("Hello here is rank %d, line 188 (okadaDCFS), NF=%d\n", procId, NF);
-
 		// [Fahad]: MPI -- 	Flag to indicate if the current
-		//				--  fault should be processed in serial.
+		//				--  fault should be processed in serial.g through surface.
+		double strike, dip, rake;
 		int processFaultSerially = 0;
 
 		if ((err=choose_focmec(eqkfm1[j], &strike, &dip, &rake))!=0){
 			print_screen("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
 			print_logfile("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
-
 			return(1);
 		}
 
@@ -207,6 +211,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 		size_t fullTensorSize = ((numPatches) * Nsel * 6);
 		float *coeffs_st  = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
 		float *coeffs_dip = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
+		float *coeffs_open = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
 
 		// [Fahad]: If the No. of MPI ranks is greater than the number of patches,
 		//		  : serially process all patches in the current fault.
@@ -218,7 +223,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			start = 0;
 
 			if(procId == 0) {
-				printf("\n Number of proces258ses: %d", numProcs);
+				printf("\n Number of processes: %d", numProcs);
 				printf("\n Number of patches: %d", numPatches);
 			}
 			print_screen("*** No. of patches is less than the No. of processes. Processing fault in serial ... ***\n",j);
@@ -232,6 +237,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 				partitionSize += 1;
 				coeffs_st  = (float*) realloc(coeffs_st,  (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
 				coeffs_dip = (float*) realloc(coeffs_dip, (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
+				coeffs_open = (float*) realloc(coeffs_open, (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
 			}
 
 			start = (procId * partitionSize);
@@ -243,10 +249,12 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 		size_t partitionedTensorSize = partitionSize * Nsel * 6;
 		float *coeffs_st_partitioned  = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
 		float *coeffs_dip_partitioned = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
+		float *coeffs_open_partitioned = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
 
 		for(int i = 0; i < partitionedTensorSize; ++i) {
 			coeffs_st_partitioned [i] = 0.0;
 			coeffs_dip_partitioned[i] = 0.0;
+			coeffs_open_partitioned[i] = 0.0;
 		}
 
 		int p2 = start, index=0;
@@ -254,33 +262,25 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			patch_pos(eqkfm1[j], p2+1, &eqeast, &eqnorth, &depth);
 			++p2;
 
-			//todo delete
-			MPI_Barrier(MPI_COMM_WORLD);
-//			printf("Hello here is rank %d, line 258, p=%d/%d (okadaDCFS)\n", procId, p, partitionSize-1);
-
 			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i, afslip, noslip_str, noslip_dip, noopen)
-			for(int i0=0; i0<Nsel; i0++) {
+			for(int i0=0; i0<Nsel; i0++) {	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
+				//todo it may also be better to process each of the 3 tensors (Coeffs_XX) separately: less likely to run out of memory.
+
 				i=eqkfm1[0].selpoints[i0+1];	// [Fahad] Added '1' to the index
 				north=crst.y[i];
 				east=crst.x[i];
 
 				//if the element is associated with afterslip, should check whether this afterslip has strike/slip/opening component.
-				//if (p>0) printf("Hello here is rank %d, line 267 (okadaDCFS)\n", procId);
 				afslip=	eqkfm1[j].co_aft_pointer;
-				//if (p>0) printf("Hello here is rank %d, line 269 (okadaDCFS)\n", procId);
 
 				//check if both coseismic and afterslip have empty arrays for each component of deformation:
 				noslip_str= (eqkfm1[j].slip_str==NULL && (afslip==NULL || (*afslip).allslip_str==NULL));
 				noslip_dip= (eqkfm1[j].slip_dip==NULL && (afslip==NULL || (*afslip).allslip_dip==NULL));
 				noopen= (eqkfm1[j].open==NULL && (afslip==NULL || (*afslip).allslip_open==NULL));
 
-				//todo: in principle could deallocate (*Coeffs_st)[p1] if noslip_str==1 (and similar for str_dip, open).
-				// but can't do this if using f3tensor dunction 'cause memory is a single block.
-
-
 				if (!noslip_str) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0,
-							north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
+							north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							alpha, crst.lambda, crst.mu, crst.fric);
 
 					index = (p * Nsel * 6) + (i0 * 6);
@@ -295,7 +295,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 
 				if (!noslip_dip) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0,
-							 north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
+							 north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
 							 alpha, crst.lambda, crst.mu, crst.fric);
 
 					index = (p * Nsel * 6) + (i0 * 6);
@@ -307,10 +307,23 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 					coeffs_dip_partitioned[index + 4] += 1e6*Syz;
 					coeffs_dip_partitioned[index + 5] += 1e6*Sxz;
 				}
+
+				if (!noopen) {
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, 0.0, 1.0,
+							 north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
+							 alpha, crst.lambda, crst.mu, crst.fric);
+
+					index = (p * Nsel * 6) + (i0 * 6);
+
+					coeffs_open_partitioned[index + 0] += 1e6*Sxx;
+					coeffs_open_partitioned[index + 1] += 1e6*Syy;
+					coeffs_open_partitioned[index + 2] += 1e6*Szz;
+					coeffs_open_partitioned[index + 3] += 1e6*Sxy;
+					coeffs_open_partitioned[index + 4] += 1e6*Syz;
+					coeffs_open_partitioned[index + 5] += 1e6*Sxz;
+				}
 			}
 		}
-
-//		printf("Hello here is rank %d, line 316.\n");
 
 		if(processFaultSerially) {
 			// [Fahad]: Concatenate the partition array into the full patch
@@ -319,8 +332,8 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			for(size_t k = 0; k < partitionedTensorSize; ++k) {
 				coeffs_st[k]  = coeffs_st_partitioned[k];
 				coeffs_dip[k] = coeffs_dip_partitioned[k];
+				coeffs_open[k] = coeffs_open_partitioned[k];
 			}
-//			printf("Hello here is rank %d, line 326.\n");
 		}
 		else {
 			MPI_Allgather(coeffs_st_partitioned, partitionedTensorSize,
@@ -331,13 +344,14 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 						  MPI_FLOAT, coeffs_dip, partitionedTensorSize,
 						  MPI_FLOAT, MPI_COMM_WORLD);
 
-//			printf("Hello here is rank %d, line 337.\n");
+			MPI_Allgather(coeffs_open_partitioned, partitionedTensorSize,
+						  MPI_FLOAT, coeffs_open, partitionedTensorSize,
+						  MPI_FLOAT, MPI_COMM_WORLD);
 		}
 
 		free(coeffs_st_partitioned);
 		free(coeffs_dip_partitioned);
-
-//		printf("Hello here is rank %d, line 343.\n");
+		free(coeffs_open_partitioned);
 
 		// [Fahad] - Copy data from the linearized tensors to the f3tensors.
 
@@ -350,8 +364,6 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			tensorIndex += eqkfm1[fault].np_di*eqkfm1[fault].np_st;
 		}
 
-//		printf("Hello here is rank %d, line 356.\n");
-
 		for(int i = 0; i < numPatches; ++i) {
 			for(int j = 0; j < Nsel; ++j) {
 				for(int k = 0; k < 6; ++k) {
@@ -359,30 +371,30 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 
 					if (flag_sslip) (*Coeffs_st) [tensorIndex + i + 1][j+1][k+1] = coeffs_st [linearIndex];
 					if (flag_dslip) (*Coeffs_dip)[tensorIndex + i + 1][j+1][k+1] = coeffs_dip[linearIndex];
-					//fixme add opening
+					if (flag_open) (*Coeffs_open)[tensorIndex + i + 1][j+1][k+1] = coeffs_open[linearIndex];
 				}
 			}
 		}
 
-//		printf("Hello here is rank %d, line 369.\n");
-
-
 		free(coeffs_st);
 		free(coeffs_dip);
+		free(coeffs_open);
 	}
 
 	return(0);
 }
-#endif#endif
+#endif
 
-// todo [coverage] this block is never tested
 int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
-		struct eqkfm *eqkfm1, int NF, struct crust crst, double *lats, double *lons, double *depths) {
+		struct eqkfm *eqkfm1, int NF, struct crust crst) {
 
-	/*
-	 * lats, lons, depths contain complete list of grid points. Only the ones with indices eqkfm1.selpoints will be used.
+	/* Allocates and populates arrays containing the okada coefficients between each fault and grid point.
+	 * This function is where most of the memory used by the program in most cases is allocated, and it may still be optimized (see comments).
+	 *
+	 * Input:
+	 *  eqkfm1: structure containing slip models. Range [0...NF-1].
+	 *  crst: crust structure, containing position of grid points and elastic parameters.
 	 */
-
 
 	int procId = 0;
 
@@ -414,7 +426,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 
 	//---------initialize DCFS----------//
 
-	//check if Coeffs tensors should be allocated. todo if subfaults are different, memory wise this is not ideal.
+	//check if Coeffs tensors should be allocated.
 	flag_open=flag_sslip=flag_dslip=0;
 
 	for (int j=0; j<NF; j++){
@@ -434,6 +446,8 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 		if (flag_open && flag_sslip && flag_dslip) break;
 	}
 
+	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
+
 	//allocate memory and set to 0 (inside f3tensor).	//todo could use array of pointers for smarter memory allocation...
 	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);	//TODO should deallocate at the end (in main.c).
 	if (flag_dslip) *Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
@@ -448,9 +462,6 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 
 	p1=0;	//count total number of patches (in all faults);
 	for (int j=0; j<NF; j++){
-//		todo: check rake for all patches:
-//		if (fmod(eqkfm1[j].rake1+90,180.0)!=0) pure_thrustnorm=0;
-//		if (fmod(eqkfm1[j].rake1,180.0)!=0) pure_strslip=0;
 
 		if ((err=choose_focmec(eqkfm1[j], &strike, &dip, &rake))!=0){
 			print_screen("*** Illegal value for eqkfm[%d].whichfm (okadaDCFS) ***\n",j);
@@ -479,11 +490,8 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 				noslip_dip= (eqkfm1[j].slip_dip==NULL && (afslip==NULL || (*afslip).allslip_dip==NULL));
 				noopen= (eqkfm1[j].open==NULL && (afslip==NULL || (*afslip).allslip_open==NULL));
 
-				//todo: in principle could deallocate (*Coeffs_st)[p1] if noslip_str==1 (and similar for str_dip, open).
-				// but can't do this if using f3tensor dunction 'cause memory is a single block.
-
 				if (!noslip_str) {
-					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0, north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_st)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_st)[p1][i0][2]+=1e6*Syy;
@@ -494,7 +502,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 				}
 
 				if (!noslip_dip) {
-					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0, north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_dip)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_dip)[p1][i0][2]+=1e6*Syy;
@@ -505,7 +513,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 				}
 
 				if (!noopen) {
-					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, 0.0, 1.0, north, east, depths[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, 0.0, 1.0, north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
 
 					(*Coeffs_open)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_open)[p1][i0][2]+=1e6*Syy;
@@ -521,8 +529,17 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	return(0);
 }
 
-int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open, struct pscmp DCFS, struct eqkfm *eqkfm1,
-		struct crust crst, double *strikeR, double *dipR, double *rakeR, int full_tensor){
+int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open, struct pscmp DCFS, struct eqkfm *eqkfm1){
+	/* Calculates stress tensors (DCFS) given a set of okada coefficients (Coeffs_XX) and a slip/opening model (eqkfm1).
+	 *
+	 * Input:
+	 *  Coeffs_XX: okada coefficients, relating unit displacement on a fault patch to stress tensor components at a grid point.
+	 *  eqkfm1: structure containing slip models.
+	 *
+	 * Output:
+	 *  DCFS: will be populated with stress tensors at each grid point.
+	 */
+
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
@@ -533,13 +550,11 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open,
 	#endif
 
 	double strike, dip, rake;
-	double alpha;
 	int p1, p, j;
 	int Nsel;
 	int NF=DCFS.NF;
 	int err=0, errp=0;
 
-	// todo [coverage] this block is never tested
 	if ((DCFS.nsel!=(*eqkfm1).nsel)){
 		print_screen("**Warning: DCFS.nsel!=eqkfm.nsel in okadaCoeff2DCFS. Will use those from eqkfm1. **\n");
 		print_logfile("**Error: DCFS.nsel!=eqkfm1.nsel (%d, %d) in okadaCoeff2DCFS.**\n", DCFS.nsel, (*eqkfm1).nsel);
@@ -548,8 +563,6 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open,
 	}
 
 	Nsel=DCFS.nsel;
-
-	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
 
 	for (int i0=1; i0<=DCFS.nsel; i0++) {
 		DCFS.cmb[i0]=0.0;
@@ -608,22 +621,24 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open,
 
 	}
 
-	//-----------------------------------------------------------------------------------------//
-	//-----------------Fill in Syx, Szy, Szx and resolve stress on required plane.-------------//
-	//-----------------------------------------------------------------------------------------//
-
-	if (!full_tensor) resolve_DCFS(DCFS, crst, strikeR, dipR, NULL, 1);	//todo not hardwire optrake?
-//	if (!full_tensor) resolve_DCFS(DCFS, crst, strikeR, dipR, rakeR, 0);	//todo not hardwire optrake? fixme choose one
-
 	return(errp!=0);
 }
 
 int isoDCFS(struct pscmp DCFS, struct eqkfm eqkfm1){
+
+	/* Calculates radially decaying, isotropic stress changes given a seismic source (eqkfm1)
+	 *
+	 * Input:
+	 *  eqkfm1: contains information about the earthquake source.
+	 *
+	 * Output:
+	 *  DCFS.cmb contains Coulomb stress changes.
+	 */
+
 	double M0, r;
 	int Nsel;
 	double DCFSmax=DCFS_cap;
 
-	// todo [coverage] this block is never tested
 	if (DCFS.nsel!=eqkfm1.nsel){
 		print_logfile("**Error: DCFS.nsel!=eqkfm.nsel in isoDCFS.**\n");
 		print_screen("**Warning: DCFS.nsel!=eqkfm.nsel in isoDCFS. Will choose the one from DCFS.**\n");
@@ -641,6 +656,7 @@ int isoDCFS(struct pscmp DCFS, struct eqkfm eqkfm1){
 	}
 	return(0);
 }
+
 
 //---------------------------------------------------------------------//
 //-----					Auxiliary functions						  -----//
@@ -688,26 +704,8 @@ void patch_pos(struct eqkfm eqfm, int p, double *east, double *north, double *de
 	return;
 }
 
-// todo [coverage] this block is never tested
-double ** comp2tensor(float *v, double ***S0){
-	//fills in S0 if given, if NULL allocate new memory.
-	double **S;
-
-	S= (S0)? *S0 : dmatrix(1,3,1,3);
-	S[1][1]=(double) v[1];
-	S[1][2]=(double) v[4];
-	S[1][3]=(double) v[6];
-	S[2][1]=(double) v[4];
-	S[2][2]=(double) v[2];
-	S[2][3]=(double) v[5];
-	S[3][1]=(double) v[6];
-	S[3][2]=(double) v[5];
-	S[3][3]=(double) v[3];
-
-	return S;
-}
-
 double *normal_vector(double strikeR, double dipR){
+//calculates normal vector to a plane from its strike, dip.
 	double *n;
 
 	n=dvector(1,3);
@@ -718,8 +716,8 @@ double *normal_vector(double strikeR, double dipR){
 	return n;
 }
 
-// todo [coverage] this block is never tested
 double *slip_vector(double strikeR, double dipR, double rakeR){
+//calculates slip vector from its strike, dip, rake.
 
 	double *s;
 	s=dvector(1,3);
@@ -771,7 +769,6 @@ double *sum_v(double *v1, double *v2, double *sum, int N){
 	return v3;
 }
 
-// todo [coverage] this block is never tested
 double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f, double *stress0, double sigma0, double *newrake, int opt_rake){
 //To be called after filling in DCFS.S. (with functions below).
 //total stress should be passed if optimal rake is to be used (opt_rake==1).
