@@ -31,7 +31,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				double dtstep, double Asig, double ta, double r0, double **all_gammas0,
 				int multiple_input_gammas, int fromstart, char * print_cmb0,
 				char *print_forex0, char *print_foret, char * printall_cmb, char *printall_forex,
-				char *printall_foret, char *print_LL) {
+				char *printall_foret, char *print_LL, int refresh) {
 
 	//Similar to CRSLogLikelihood, but loops over time steps to produce time forecast.
 	//recfault= [0,1,2] means: don't vary rec. fault, vary (choose random one), vary and sample all catalog in order.
@@ -325,7 +325,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		if(fromstart) {
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
 								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
-								   fmzonelim, NFM, seed, tstart, tt1, 0,
+								   fmzonelim, NFM, seed, tstart, tt1, refresh && nsur==start,
 								   which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {
@@ -344,7 +344,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		else {
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
 								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
-								   fmzonelim, NFM, seed, tt0, tt1, 0,
+								   fmzonelim, NFM, seed, tt0, tt1, refresh && nsur==start,
 								   which_recfault);
 
 			for(int n=1; n<=NgridT; n++) {

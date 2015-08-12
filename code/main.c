@@ -645,10 +645,14 @@ int main (int argc, char **argv) {
 
 	if(procId == 0) {
 
-		sprintf(fname,"%s_ParamSearch.dat", outname);
-		fout=fopen(fname,"w");
-		sprintf(fname,"%s_LogLikelihood.dat", outname);
-		foutfore=fopen(fname,"w");
+		if (LLinversion){
+			sprintf(fname,"%s_ParamSearch.dat", outname);
+			fout=fopen(fname,"w");
+		}
+		if (forecast){
+			sprintf(fname,"%s_LogLikelihood.dat", outname);
+			foutfore=fopen(fname,"w");
+		}
 	}
 
 	//-----------Setup variable needed for forecast:------------//
@@ -913,7 +917,7 @@ int main (int argc, char **argv) {
 
 			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, crst, AllCoeff, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec,
 					&seed, cat, times2,tstart_calc, Tstart, Tend, fore_dt, maxAsig, maxta, maxr, gammasfore, multi_gammas, 1,
-					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL);
+					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL, !LLinversion);
 
 			print_logfile("Output files written: %s, %s, %s, %s, %s, %s, %s.\n",
 								  print_cmb, print_forex, print_foret, printall_cmb, printall_forex,
@@ -1006,8 +1010,8 @@ int main (int argc, char **argv) {
 
 
 	if(procId == 0) {
-		fclose(fout);
-		fclose(foutfore);
+		if (LLinversion) fclose(fout);
+		if (forecast) fclose(foutfore);
 	}
 
 	print_logfile("\nFinal Rate-and-State parameters (used for forecast):\n");
