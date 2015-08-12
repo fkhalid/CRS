@@ -369,7 +369,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			else{
 				if (vary_recfault==1){
-					//fixme cmb_cumu[0];
 					for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]=0.0;
 					for (int l=0; l<NTScont; l++) {
 						resolve_DCFS(DCFS_Af[a*NTScont+l], crst, strike0, dip0, NULL, 1); //fixme choose one

@@ -84,8 +84,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	 *
 	 */
 
-	//fixme: v important. if LLinversion=0 and multiple slip models are given, something equivalent to "refresh" should be done here (see CRSLoglikelihood).
-
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
 	int start, end, partitionSize;

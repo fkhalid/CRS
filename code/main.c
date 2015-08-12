@@ -363,7 +363,7 @@ int main (int argc, char **argv) {
 //---------------------------------------------//
 
 	if (flags.afterslip !=0) {
-		err=read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1, &(flags.aseismic_linear), &t0log);
+		err=read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1, &(flags.aseismic_linear), &t0log, &(flags.aseismic_multisnap));
 		err+=setup_afterslip_eqkfm(all_aslipmodels, crst, &eqkfm_aft);
 		if (err!=0) error_quit("Error in setting up afterslip slip model. Exiting.\n");
 		Naf=all_aslipmodels.NSM;
@@ -373,14 +373,12 @@ int main (int argc, char **argv) {
 		Naf=0;
 	}
 
-	flags.aseismic_multisnap= (flags.afterslip)? (eqkfm_aft[0].nosnap>1): 0;//FIXME need to do this for each afterslip
-
 //----------------------------------------------------------//
 //--------------Setup aftershocks, mainshocks --------------//
 //----------------------------------------------------------//
 
 	//read list of coseismic slip models.
-	err=read_listslipmodel(slipmodelfile, reftime, &all_slipmodels, res, 0, NULL, NULL);
+	err=read_listslipmodel(slipmodelfile, reftime, &all_slipmodels, res, 0, NULL, NULL, NULL);
 	if (err) error_quit("Error in reading slip model file. Exiting.\n");
 
 	if (flags.err_recfault) {

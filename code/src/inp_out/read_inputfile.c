@@ -505,7 +505,7 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 // FIXME: [Fahad] MPI code this this function requires optimization ...
 int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels,
-					   double res, int is_afterslip, int *aseismic_linear, double *t0log) {
+					   double res, int is_afterslip, int *aseismic_linear, double *t0log, int *flag_multisnap) {
 	/*
 	 * Read a file containing a list of slip models.
 	 *
@@ -544,6 +544,9 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			fileError = 1;
 		}
 	}
+
+	if (is_afterslip) *flag_multisnap=-1;	//initial value, meaning not assigned yet. (will change later)
+
 
 	#ifdef _CRS_MPI
 		MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -627,6 +630,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				if (is_afterslip){
 					sscanf(line,"%s %d", time_str, &no_slipmod);	//[Camilla] NB: no_slipmod changes at each nn iteration.
 
+					//check if the number of snapshots is in agreement with flags:
 					if (aseismic_splines==1 & no_slipmod<2){
 						print_screen("Error: more than 1 snapshot required if time step mode set to splines (file %s).\n", input_fname);
 						print_logfile("Error: more than 1 snapshot required if time step mode set to splines (file %s).\n", input_fname);
@@ -638,7 +642,18 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 						print_logfile("Error: multiple snapshots not allowed if time step mode set to log (file %s).\n", input_fname);
 						fileError=1;
 					}
+
+					//check if no. of snapshots (single or multiple) is always the same:
+					if ((*flag_multisnap==1 & no_slipmod<2) | (*flag_multisnap==0 & no_slipmod!=1)){
+						print_screen("Error: aseismic events should either have a single snapshot each, or multiple snapshots each (file %s).\n", input_fname);
+						print_logfile("Error: aseismic events should either have a single snapshot each, or multiple snapshots each (file %s).\n", input_fname);
+						fileError=1;
+					}
+
+					//update value of flag_multisnap:
+					*flag_multisnap= (no_slipmod>1) ? 1 : 0;
 				}	
+
 				else{
                     sscanf(line,"%s %lf %d", time_str, (*allslipmodels).mmain+nn, &no_slipmod);     //[Camilla] NB: no_slipmod changes at each nn iteration.
 				}						
