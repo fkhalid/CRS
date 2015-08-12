@@ -505,7 +505,7 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 // FIXME: [Fahad] MPI code this this function requires optimization ...
 int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels,
-					   double res, int is_afterslip, int *aseismic_log) {
+					   double res, int is_afterslip, int *aseismic_linear, double *t0log) {
 	/*
 	 * Read a file containing a list of slip models.
 	 *
@@ -524,6 +524,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	// [Fahad] Variables used for MPI
 	int procId = 0;
 	int fileError = 0, size_slipmodels = 0;
+	int aseismic_log=0, aseismic_splines=0;	//flags.
 
 	#ifdef _CRS_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
@@ -570,18 +571,28 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			sscanf(line,"%d", &Nm0);
 			fgets(line,Nchar,fin);
 			if (is_afterslip) {
-				sscanf(line,"%s %s", &((*allslipmodels).cmb_format), log_evol);
-
+				sscanf(line,"%s %s %lf", &((*allslipmodels).cmb_format), log_evol, t0log);
 				if (!strcmp(log_evol, "log")) {
-					*aseismic_log=1;
+					*aseismic_linear=0;
+					aseismic_log=1;
 				}
-				else if (!strcmp(log_evol, "lin")) {
-					*aseismic_log=0;
-				}
-				else{
-					print_screen("Illegal value for type of temporal evolution (should be one of: lin/log).\n", input_fname);
-					print_logfile("Illegal value for type of temporal evolution (should be one of: lin/log.\n", input_fname);
-					fileError=1;
+
+				else {
+					if (!strcmp(log_evol, "splines")) {
+						*aseismic_linear=0;
+						aseismic_splines=1;
+					}
+					else {
+						if (!strcmp(log_evol, "lin")) {
+
+							*aseismic_linear=1;
+						}
+						else{
+							print_screen("Illegal value for type of temporal evolution (should be one of: lin/log).\n", input_fname);
+							print_logfile("Illegal value for type of temporal evolution (should be one of: lin/log.\n", input_fname);
+							fileError=1;
+						}
+					}
 				}
 			}
 			else {
@@ -592,6 +603,8 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		#ifdef _CRS_MPI
 			MPI_Bcast(&Nm0, 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&aseismic_log, 1, MPI_INT, 0, MPI_COMM_WORLD);
+			MPI_Bcast(&aseismic_splines, 1, MPI_INT, 0, MPI_COMM_WORLD);
+			MPI_Bcast(aseismic_linear, 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&((*allslipmodels).constant_geometry), 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&((*allslipmodels).cmb_format), 120, MPI_CHAR, 0, MPI_COMM_WORLD);
 		#endif
@@ -613,6 +626,18 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 				if (is_afterslip){
 					sscanf(line,"%s %d", time_str, &no_slipmod);	//[Camilla] NB: no_slipmod changes at each nn iteration.
+
+					if (aseismic_splines==1 & no_slipmod<2){
+						print_screen("Error: more than 1 snapshot required if time step mode set to splines (file %s).\n", input_fname);
+						print_logfile("Error: more than 1 snapshot required if time step mode set to splines (file %s).\n", input_fname);
+						fileError=1;
+					}
+
+					if (aseismic_log==1 & no_slipmod!=1){
+						print_screen("Error: multiple snapshots not allowed if time step mode set to log (file %s).\n", input_fname);
+						print_logfile("Error: multiple snapshots not allowed if time step mode set to log (file %s).\n", input_fname);
+						fileError=1;
+					}
 				}	
 				else{
                     sscanf(line,"%s %lf %d", time_str, (*allslipmodels).mmain+nn, &no_slipmod);     //[Camilla] NB: no_slipmod changes at each nn iteration.

@@ -156,7 +156,8 @@ int main (int argc, char **argv) {
 			tw,				//time window to skip after each event with Mw>=Mag_main in LL calculation (due to catalog incompleteness)
 			tstart_calc, 	//start of calculation time for forecast (to avoid recalculating stuff from inversion period).
 			t_earliest_stress,	//time of the earliest stress change, used for forecast.
-			smallest_time;	//start time of time steps for aseismic stresses, times2 (needed in rate_state_evol).
+			smallest_time,	//start time of time steps for aseismic stresses, times2 (needed in rate_state_evol).
+			t0log;			//timescale of logarithmic afterslip: slip(t)~ log(1+t/t0log).
 	double fore_dt;			//step between forecast output (temporal forecast).
 	double *tts;			//vector containing times of forecast output (temporal forecast).
 	int Ntts;				//size of tts.
@@ -362,7 +363,7 @@ int main (int argc, char **argv) {
 //---------------------------------------------//
 
 	if (flags.afterslip !=0) {
-		err=read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1, &(flags.aseismic_log));
+		err=read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1, &(flags.aseismic_linear), &t0log);
 		err+=setup_afterslip_eqkfm(all_aslipmodels, crst, &eqkfm_aft);
 		if (err!=0) error_quit("Error in setting up afterslip slip model. Exiting.\n");
 		Naf=all_aslipmodels.NSM;
@@ -379,7 +380,7 @@ int main (int argc, char **argv) {
 //----------------------------------------------------------//
 
 	//read list of coseismic slip models.
-	err=read_listslipmodel(slipmodelfile, reftime, &all_slipmodels, res, 0, NULL);
+	err=read_listslipmodel(slipmodelfile, reftime, &all_slipmodels, res, 0, NULL, NULL);
 	if (err) error_quit("Error in reading slip model file. Exiting.\n");
 
 	if (flags.err_recfault) {
@@ -533,28 +534,7 @@ int main (int argc, char **argv) {
 
 		smallest_time=fmin(t_earliest_stress, fmin(tstartLL, Tstart));	//the first time step will be before this time; this is needed in rate_state_evol.
 
-		if (flags.aseismic_log){
-			//todo should allow this to be set from outside
-			double *Cs, *ts;
-			int Nfun;
-
-			Nfun=1;
-			Cs=dvector(0,Nfun-1);
-			ts=dvector(0,Nfun-1);
-			Cs[0]=436.63;
-			ts[0]=14.2653;
-
-			if (flags.aseismic_multisnap) {
-				err=setup_afterslip_multi_log(smallest_time, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
-					Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);
-			}
-			else{
-				err=setup_afterslip_single_log(smallest_time, fmax(tendLL, Tend), Cs, ts, Nfun, &eqkfm_aft,
-					Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);
-			}
-		}
-
-		else{
+		if (flags.aseismic_linear){
 
 			if (flags.aseismic_multisnap) {
 				err=setup_afterslip_multi_linear(smallest_time, fmax(tendLL, Tend), &eqkfm_aft, Naf, all_aslipmodels.Nfaults, &L, &times2);
@@ -564,6 +544,18 @@ int main (int argc, char **argv) {
 			}
 
 		}
+
+		else{
+			if (flags.aseismic_multisnap) {
+				err=setup_afterslip_splines(smallest_time, fmax(tendLL, Tend), &eqkfm_aft,
+					Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);
+			}
+			else{
+				err=setup_afterslip_single_log(smallest_time, fmax(tendLL, Tend), t0log, &eqkfm_aft,
+					Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);
+			}
+		}
+
 		if(err) return 1;
 		print_logfile("\nSetting up time steps for calculations: %d time steps between times [%.2lf, %.2lf].\n", L, times2[0], times2[L]);
 

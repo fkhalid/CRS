@@ -7,7 +7,7 @@
 # reference time for ev. 2              no. of snapshots models (lines to read) until next event
 #
 2
-pscmp	log	14.2653
+pscmp	splines
 2004-09-28T17:05:20Z    5
 1.0     input_testcases/slipmodels/poslp_lambda7_T0_T1.inp
 5.0     input_testcases/slipmodels/poslp_lambda7_T0_T5.inp

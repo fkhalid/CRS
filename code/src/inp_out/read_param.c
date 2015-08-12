@@ -461,7 +461,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		MPI_Address(&(flags->err_gridpoints),    		&addresses_Flags[1]);
 		MPI_Address(&(flags->OOPs),      		 		&addresses_Flags[2]);
 		MPI_Address(&(flags->afterslip),         		&addresses_Flags[3]);
-		MPI_Address(&(flags->aseismic_log),   		 	&addresses_Flags[4]);
+		MPI_Address(&(flags->aseismic_linear), 		 	&addresses_Flags[4]);
 		MPI_Address(&(flags->aseismic_multisnap),   	&addresses_Flags[5]);
 		MPI_Address(&(flags->sources_all_iso),   		&addresses_Flags[6]);
 		MPI_Address(&(flags->sources_without_focmec),   &addresses_Flags[7]);

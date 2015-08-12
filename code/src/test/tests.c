@@ -447,11 +447,11 @@ int test_read_inputfiles(){
 	printf("tstart=%.3lf\n", tstart);
 	printf("tend=%.3lf\n", tend);
 
-	read_listslipmodel(slipmodelfile, reftime, &slip_list, 3.0, 0, NULL);
+	read_listslipmodel(slipmodelfile, reftime, &slip_list, 3.0, 0, NULL, NULL);
 	printf("\nslipmodels:\n NSM=%d, is_aft=%d\n", slip_list.NSM, slip_list.is_afterslip);
 	for (int n=0; n<slip_list.NSM; n++) printf("t=%.3lf, m=%.3lf, d=%.3lf, file=%s, Nf=%d, no_mod=%d\n", slip_list.tmain[n], slip_list.mmain[n], slip_list.disc[n], slip_list.slipmodels[n], slip_list.Nfaults[n], slip_list.no_slipmodels[n]);
 
-	read_listslipmodel(afterslipmodelfile, reftime, &slip_list, 3.0, 1, &j);
+	read_listslipmodel(afterslipmodelfile, reftime, &slip_list, 3.0, 1, &j, &j);
 	printf("\nafterslip:\nNSM=%d, is_aft=%d\n", slip_list.NSM, slip_list.is_afterslip);
 	for (int n=0; n<slip_list.NSM; n++) printf("t=%.3lf, d=%.3lf, file=%s, Nf=%d, no_mod=%d\n", slip_list.tmain[n], slip_list.disc[0], slip_list.slipmodels[n], slip_list.Nfaults[0], slip_list.no_slipmodels[0]);
 
@@ -1296,12 +1296,12 @@ int test_allOkada_simple_multiplerec(){
 //
 		coeffs.NgridT=dcfs.nsel;
 		coeffs.NP=eqfm.np_di*eqfm.np_st;
-		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), NULL,  &eqfm, 1, crst, latgrid, longrid, depgrid);
+		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), NULL,  &eqfm, 1, crst);
 
-		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm, crst,  strikes, dips,NULL, 0);
-		sprintf(fname, "%s/okada3/CRS_2.01%d.dat",testfolder, n);	//0,2,3 wrong
-		print_grid(fname, dcfs, crst, NULL);
-		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
+//		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm, crst);
+//		sprintf(fname, "%s/okada3/CRS_2.01%d.dat",testfolder, n);	//0,2,3 wrong
+//		print_grid(fname, dcfs, crst, NULL);
+//		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
 	//	okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, 0.0, 0.0, 1);
 		resolve_DCFS(dcfs, crst, strikes, dips, NULL, 1);
@@ -1309,7 +1309,7 @@ int test_allOkada_simple_multiplerec(){
 		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm, crst, NULL, NULL, NULL,1);
+		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm);
 		resolve_DCFS(dcfs, crst, strikes, dips, rakes, 0);
 		sprintf(fname, "%s/okada3/okadaCoeff_fix_A%d.dat",testfolder, n);	//all wrong
 		print_grid(fname, dcfs, crst, NULL);
@@ -1467,12 +1467,7 @@ int test_allOkada_simple(){
 //
 		coeffs.NgridT=dcfs.nsel;
 		coeffs.NP=eqfm.np_di*eqfm.np_st;
-		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), NULL, &eqfm, 1, crst, latgrid, longrid, depgrid);
-
-		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm, crst,  &eqfm.str1, &eqfm.dip1, NULL, 0);
-		sprintf(fname, "%s/okada2/CRS_2.01%d.dat",testfolder, n);
-		print_grid(fname, dcfs, crst, NULL);
-		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
+		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), NULL, &eqfm, 1, crst);
 
 	//	okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, dcfs, &eqfm, crst, 0.0, 0.0, 1);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, NULL, 1);
@@ -1480,7 +1475,7 @@ int test_allOkada_simple(){
 		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm, crst, NULL, NULL, NULL, 1);
+		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1),  0);
 		sprintf(fname, "%s/okada2/okadaCoeff_fix_A%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
@@ -1644,20 +1639,20 @@ int test_allOkada(){
 
 		coeffs.NgridT=dcfs.nsel;
 		coeffs.NP=eqfm.np_di*eqfm.np_st;
-		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), NULL, &eqfm, 1, crst, latgrid, longrid, depgrid);
+		okadaCoeff(&(coeffs.Coeffs_st), &(coeffs.Coeffs_dip), NULL, &eqfm, 1, crst);
 
-		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm, crst,  &eqfm.str1, &eqfm.dip1, NULL, 0);
-		sprintf(fname, "%s/okada/okadaCoeff_fix_optrakeA%d.dat",testfolder, n);
-		print_grid(fname, dcfs, crst, NULL);
-		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
+//		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm, crst,  &eqfm.str1, &eqfm.dip1, NULL, 0);
+//		sprintf(fname, "%s/okada/okadaCoeff_fix_optrakeA%d.dat",testfolder, n);
+//		print_grid(fname, dcfs, crst, NULL);
+//		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm, crst, NULL, NULL, NULL, 1);
+		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, NULL, 1);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_optrakeB%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
 		for (int i=1; i<=dcfs.nsel; i++) dcfs.cmb[i]=0.0;
 
-		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm, crst, NULL, NULL, NULL, 1);
+		okadaCoeff2DCFS(coeffs.Coeffs_st, coeffs.Coeffs_dip, NULL, dcfs, &eqfm);
 		resolve_DCFS(dcfs, crst, &eqfm.str1, &eqfm.dip1, &(eqfm.rake1), 0);
 		sprintf(fname, "%s/okada/okadaCoeff_fix_A%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
@@ -2319,7 +2314,7 @@ int testspeed_coeff(){
 	}
 
 	time(&extime0);
-   	okadaCoeff(&(AllCoeff.Coeffs_st), &(AllCoeff.Coeffs_dip), NULL, &eqkfm0, 1, crst, lats, lons, deps);
+   	okadaCoeff(&(AllCoeff.Coeffs_st), &(AllCoeff.Coeffs_dip), NULL, &eqkfm0, 1, crst);
 	time(&extime1);
 	printf("Time to calculate coefficients: %f sec\n", difftime(extime1,extime0));
 

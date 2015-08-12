@@ -163,16 +163,18 @@ int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
  *  L: largest index in times2.
  *
  *  The total number of time steps is the sum of the time steps given for each event, and stressing histories are calculated accordingly.
- *
  */
 
 	int nfaults=0;
 	int **allind=NULL;
 	struct eqkfm *eq_aft= *eqk_aft;
-	int printout_history=1, Nas; 	//can set to 1 to check if splines are giving correct stressing history.
+	int printout_history=0, Nas; 	//can set to 1 to check if splines are giving correct stressing history. Will print strike slip, opening or dip slip (hardwired below)
 
 	FILE *fout;
 	char fname[120];
+
+	print_screen("Aseismic slip: will fit a linear function.\n");
+	print_logfile("Aseismic slip: will fit a linear function.\n");
 
 	if (printout_history){
 		nfaults=0;
@@ -213,8 +215,6 @@ int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	}
 	eq_aft-=nfaults;	//shift it back.
 
-	//fixme check: should calculate differences here?
-
 	if (printout_history){
 		nfaults=0;
 		for (int nev=0; nev<NA; nev++){
@@ -244,13 +244,25 @@ int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 int setup_afterslip_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 						 int NA, int *Nfaults, int *L, double **times2) {
 
-//if splines==1, eqk_aft is substituted with more densily discretized version (L steps instead of Nas).
-//Cs, ts, coefficients of temporal evolution functions (See Savage Parkfield paper). Nfun: no. of such funtions.
-// eq_aft has indices: [0...Nas*Nfaults-1].
-// logarithmic: flag indicating if stressing history is logarithmic. If not, use linear.
+/* Combines all stressing histories for all elements in eqk_aft, and rewrites them referred to combined time steps.
+ *
+ * Input:
+ *  t0, t1: start and end time.
+ *  eqk_aft: array containing all the events to be considered.	Range [0...NFtot-1], where NFtot=sum(Nfaults);
+ *  Nfaults:  number of faults per event. Range [0...NA-1]. *
+ *
+ *
+ * Output:
+ *  times2: time steps. Memory is allocated here and the arrays is populated. Range [0...*L].
+ *  L: largest index in times2.
+ *
+ *  The total number of time steps is the sum of the time steps given for each event, and stressing histories are calculated accordingly.
+ */
+
+	print_screen("Aseismic slip: will fit a linear function.\n");
+	print_logfile("Aseismic slip: will fit a linear function.\n");
 
 	int err=0;
-//	double now, prev, norm, curr;
 	int **allind=NULL;
 	struct eqkfm *eq_aft;
 
@@ -291,17 +303,29 @@ int setup_afterslip_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	return(err!=0);
 }
 
-int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
-						 int Nfun, struct eqkfm **eqk_aft,
+int setup_afterslip_splines(double t0, double t1, struct eqkfm **eqk_aft,
 						 int NA, int *Nfaults, int *L, double **times2,
 						 long *seed) {
 
-//if splines==1, eqk_aft is substituted with more densily discretized version (L steps instead of Nas).
-//Cs, ts, coefficients of temporal evolution functions (See Savage Parkfield paper). Nfun: no. of such funtions.
-// eq_aft has indices: [0...Nas*Nfaults-1].
+/* Combines all stressing histories for all elements in eqk_aft, by fitting a spline function to the snapshots given, and rewrites them referred to new time steps.
+ *
+ * Input:
+ *  t0, t1: start and end time.
+ *  eqk_aft: array containing all the events to be considered.	Range [0...NFtot-1], where NFtot=sum(Nfaults);
+ *  Nfaults:  number of faults per event. Range [0...NA-1].
+ *  seed: used for random numbers generation.
+ *
+ *
+ * Output:
+ *  times2: time steps. Memory is allocated here and the arrays is populated. Range [0...*L].
+ *  L: largest index in times2.
+ *
+ *  The total number of time steps is the sum of the time steps given for each event, and stressing histories are calculated accordingly.
+ */
+
 
 	int err=0;
-	double TAU=200000, dtau=7000, timeTAU=183;	//todo allow to set from outside.
+	double TAU=200000, dtau=7000, timeTAU=183;
 	double M0,mu;
 	double smallstepstime=12;
 	double now, prev, norm, curr;
@@ -313,13 +337,16 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 	int Nas=(*eqk_aft)[0].nosnap;
 	int nfaults;
 
-	int printout_splines=1;	//can set to 1 to check if splines are giving correct stressing history.
+	int printout_splines=0;	//can set to 1 to check if splines are giving correct stressing history. will print strike slip, opening or dip slip (hardwired below)
 	FILE *fout;
 	char fname[120];
 
 	eq_aft= *eqk_aft;
 
 	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime, TAU, dtau, timeTAU);
+
+	print_screen("Aseismic slip: will fit splines.\n");
+	print_logfile("Aseismic slip: will fit splines.\n");
 
 	if (printout_splines){
 		nfaults=0;
@@ -393,8 +420,6 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 
 	*eqk_aft=eq_aft-nfaults;	//shift it back.
 
-	//printout TODO add str, dip, open. (also above).
-
 	if (printout_splines){
 		nfaults=0;
 		for (int nev=0; nev<NA; nev++){
@@ -420,18 +445,29 @@ int setup_afterslip_multi_log(double t0, double t1, double *Cs, double *ts,
 	return(err!=0);
 }
 
-int setup_afterslip_single_log(double t0, double t1, double *Cs, double *ts,
-						 int Nfun, struct eqkfm **eqk_aft,
+int setup_afterslip_single_log(double t0, double t1, double ts,
+						 struct eqkfm **eqk_aft,
 						 int NA, int *Nfaults, int *L, double **times2,
 						 long *seed) {
 
-//if splines==1, eqk_aft is substituted with more densily discretized version (L steps instead of Nas).
-//Cs, ts, coefficients of temporal evolution functions (See Savage Parkfield paper). Nfun: no. of such funtions.
-// eq_aft has indices: [0...Nas*Nfaults-1].
-// logarithmic: flag indicating if stressing history is logarithmic. If not, use linear.
+/* Combines all stressing histories for all elements in eqk_aft, by fitting a logarithmic function to the snapshot given.
+ *
+ * Input:
+ *  t0, t1: start and end time.
+ *  eqk_aft: array containing all the events to be considered.	Range [0...NFtot-1], where NFtot=sum(Nfaults);
+ *  Nfaults:  number of faults per event. Range [0...NA-1].
+ *  seed: used for random numbers generation.
+ *
+ *
+ * Output:
+ *  times2: time steps. Memory is allocated here and the arrays is populated. Range [0...*L].
+ *  L: largest index in times2.
+ *
+ *  The total number of time steps is the sum of the time steps given for each event, and stressing histories are calculated accordingly.
+ */
 
 	int err=0;
-	double TAU=200000, dtau=7000, timeTAU=183;	//todo allow to set from outside.
+	double TAU=200000, dtau=7000, timeTAU=183;
 	double smallstepstime=12;
 	double now, prev, norm, curr;
 	double Tendaft;	//Time to which cumulative afterslip snapshot refers.
@@ -441,6 +477,9 @@ int setup_afterslip_single_log(double t0, double t1, double *Cs, double *ts,
 	int nfaults;
 
 	eq_aft= *eqk_aft;
+
+	print_screen("Aseismic slip: will fit a logarithmic function: s(t)~log(1+t/%.3lf)\n", ts);
+	print_logfile("Aseismic slip: will fit a logarithmic function: s(t)~log(1+t/%.3lf)\n", ts);
 
 	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime, TAU, dtau, timeTAU);
 
@@ -453,8 +492,7 @@ int setup_afterslip_single_log(double t0, double t1, double *Cs, double *ts,
 		//allocate tevol vector:
 		(*eqk_aft)[nfaults].tevol=dvector(0,*L-1);
 
-		norm=0.0;
-		for (int i=0; i<Nfun; i++) norm+=Cs[i]*log(1+(Tendaft-Teq)/ts[i]);
+		norm=log(1+(Tendaft-Teq)/ts);
 		now=0.0;
 		curr=0.0;
 
@@ -465,8 +503,7 @@ int setup_afterslip_single_log(double t0, double t1, double *Cs, double *ts,
 			else{
 				prev=curr;
 				now= (*times2)[t]-Teq;
-				curr=0.0;
-				for (int i=0; i<Nfun; i++) curr+=Cs[i]*log(1+now/ts[i]);
+				curr=log(1+now/ts);
 				(*eqk_aft)[nfaults].tevol[t-1]= (curr-prev)/norm;
 			}
 		}

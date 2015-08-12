@@ -64,7 +64,7 @@ struct flags{
 	int OOPs;
 	//afterslip:
 	int afterslip;
-	int aseismic_log;
+	int aseismic_linear;
 	int aseismic_multisnap;
 	//control way aftershocks are treated:
 	int sources_all_iso;
