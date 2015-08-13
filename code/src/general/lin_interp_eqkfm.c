@@ -26,7 +26,6 @@ void lin_interp_eqkfm(struct eqkfm **eqkfm_aft, int NF, int L, double *times2, i
  *
  */
 
-
 	double **slipbefore_st, **slipbefore_di, **slip_after_st, **slip_after_di, **slipbefore_op, **slip_after_op;
 	double *times1;
 	int *NP, NP_tot, Nas;
