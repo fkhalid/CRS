@@ -225,7 +225,6 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 
 	int err=0, NF;
 	double 	toll=1e-10;
-	double **sliptots;
 	struct eqkfm *eqkfm0;	//used to read individual slip models (one per snapshot), later copied into eqkfm0res structure.
 	double ***allslip_str_temp,***allslip_dip_temp, ***allslip_open_temp;	//store slip values from individual snapshots.
 	int is_str, is_dip, is_open;	//flags used to determine which components of deformations are needed (to save memory).
@@ -245,13 +244,11 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 	}
 
 	//allocate tot_slip vectors
-	sliptots= dmatrix(0, no_snap-1, 0, NF-1);
 
 	//read in values for slip:
 	for (int m=0; m<no_snap; m++){
 		err=read_eqkfm(slipmodels[m], cmb_format, &eqkfm0, &NF, NULL, mu);
 		for (int nf=0; nf<NF; nf++){
-			sliptots[m][nf]=eqkfm0[nf].tot_slip[0];
 			copy_vector(eqkfm0[nf].slip_str, &(allslip_str_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			copy_vector(eqkfm0[nf].slip_dip, &(allslip_dip_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			copy_vector(eqkfm0[nf].open, &(allslip_open_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);

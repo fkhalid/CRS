@@ -12,7 +12,16 @@
 #endif
 
 int WellsCoppersmith(double M, double rake, double *L, double *W, double *S) {
-//L,W in km; S in m.
+
+/* Estimate earthquake size and slip based on:
+ *
+ * Wells, D. L., & Coppermith, K. J. (1994). New Empirical Relationships among Magnitude, Rupture Length, Rupture Width, Rupture Area, and Surface Displacement.
+ * Bull. Seism. Soc. Am., 84(4), 974–1002.
+ *
+ * It uses the value of surface area, and assumes a square model.
+ * L,W in km; S in m.
+ *
+ */
 
 	double a_RLD, sd_a_RLD,	b_RLD, sd_b_RLD, a_RW, sd_a_RW, b_RW, \
 		   sd_b_RW, a_AD, sd_a_AD, b_AD, sd_b_AD, a_RA, sd_a_RA, \

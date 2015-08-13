@@ -28,11 +28,24 @@
 int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb,
 						int N1, int *Ncomb, int **nfout,
 						double dt, double dmag, double res, struct crust crst, struct flags flags) {
-/* assumes that eqfm1 only has single fault events, but slip models may have more...
- * does not do spatial selection (unlike combine_eqkfm).
- * return combined catalog, rather than list of indices mapping one catalog to the other.
- * return error code (1 if not all events from second catalog are selected).
+
+/* Matches the earthquakes in eqfm1 (presumably from an earthquake catalog) with available slip models. Also takes care of events which do not have a slip model,
+ * by creating a synthetic slip from the focal mechanism if possible.
+ *
+ * Input:
+ *  eqfm1: structure containing all sources. Each source is one element of the array. Range [0...N1-1]
+ *  all_slipmodels: structure containing the slip models.
+ *  dt, dmag: tolerances for matching times and magnitude between catalog and slip model list.
+ *  res: final slip model resolution of synthetic slip models derived from a focal mechanism.
+ *  crst: crust structure containing grid point information.
+ *  flags: contains flags about what to do for events without a slip model and without a focal mechanism available.
+ *
+ *  eqfm_comb:	structure containing all sources, with final slip models.
+ *  			If some of the slip model has multiple subfaults, this array is longer than the total no. of sources. Range [0...NFtot-1], where NFtot=sum(nfout).
+ *  nfout: contains the number of subfaults of each source (i.e. no. of eqfm_comb elements associated with it). Range [0...Ncomb-1]
+ *  Ncomb: no. of earthquake sources. May be smaller than N1 if some events are excluded because they don't have slip model or foc mec (depends on flags).
  */
+
 	// [Fahad] Variables used for MPI
 	int procId = 0;
 
@@ -96,7 +109,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 		return 1;
 	}
 
-	//todo make sure mmain is already assigned here!! (NB: all this may not be needed if clear association b/w cat and foc mec is given).
+	//fixme make sure mmain is already assigned here!! (NB: all this may not be needed if clear association b/w cat and foc mec is given).
 	which_slipmod = combine_cats(all_slipmodels.tmain, timesfromeqkfm(eqfm1, N1, (int *) 0),
 								 all_slipmodels.mmain, magssfromeqkfm(eqfm1, N1, (int *) 0 ),
 								 all_slipmodels.NSM, N1, dt, dmag);
@@ -205,7 +218,18 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 }
 
 int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int refine, int taper){
-	//eqfm1 should already contain strX, dipX, rakeX, mag, whichfm.
+	/* Creates a synthetic slip model based on the focal mechanism and the empirical relations of Wells and Coppersmith.
+	 *
+	 * Input:
+	 * 	eqfm1: description of the focal mechanism. Should already contain strX, dipX, rakeX, mag, whichfm.
+	 * 	res: final resolution of the slip model (patch size, in km). Only used if refine==1.
+	 * 	refine: flag indicating is the slip model should be refined.
+	 * 	taper: flag indicating if the slip model should be tapered at the edges. Will taper on all 4 edges.
+	 *
+	 * Output:
+	 *  eqfm1 is populated with the slip model.
+	 *
+	 */
 
 	struct eqkfm eqkfm0;
 	struct eqkfm *eqkfmP;
@@ -233,7 +257,6 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 	WellsCoppersmith((*eqkfmP).mag, (*eqkfmP).rake1, &((*eqkfmP).L), &((*eqkfmP).W), &slip);
 	slip=(*eqkfmP).tot_slip[0]=pow(10,(1.5*((*eqkfmP).mag+6)))*(1.0/(crst.mu*pow(10,12)*(*eqkfmP).W*(*eqkfmP).L));
 
-	// todo [coverage] shifting of fault depth is never tested
 	switch ((*eqkfmP).whichfm){
 		case 1:
 			if ((*eqkfmP).depth<0.5*(*eqkfmP).W*sin(DEG2RAD*(*eqkfmP).dip1)) {
@@ -279,7 +302,7 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 	}
 
 	if (refine) {
-		err+=suomod1_resample(eqkfm0, eqfm1, res, 0.0);	//create a slip model with right resolution.
+		err+=suomod1_resample(eqkfm0, eqfm1, res);	//create a slip model with right resolution.
 		if (taper) err+=suomod1_taper((*eqfm1), eqfm1, 1, 1, 1, 1);
 	}
 
@@ -293,6 +316,20 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 //--------------------------read slip model files----------------------//
 
 int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out, double *Mw, double mu) {
+/* Reads file containing a slip model.
+ *
+ * Input
+ *  fname:	name of slip model file
+ *  format: string containing the format of the slip model.
+ *
+ * Output
+ *  *eqfm1: structure representing the slip model. Each element of the array is a subfault (i.e. rectangular area discretized into patches).
+ *  			Range [0...*NF_out-1].
+ * 	*Mw: earthquake magnitude calculated from the slip model
+ * 	mu: chear modulus, used to calculate magnitude.
+ */
+
+
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
 
@@ -352,10 +389,19 @@ int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out,
 	return (0);
 }
 
-// todo [coverage] this block is never tested
 int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
-	// [Fahad] Variables used for MPI.
-	//todo check if opening can also be included in farfalle format.
+	/* Reads a slip model file in farfalle format.
+	 * At the moment it does not support opening: pscmp format should be used instead.
+	 *
+	 * Input
+	 *  fname:	name of slip model file
+	 *
+	 * Output
+	 *  *eqfm_out: structure representing the slip model. Each element of the array is a subfault (i.e. rectangular area discretized into patches).
+	 *  			Range [0...*NF_out-1].
+	 *  			It can be passed as NULL, and will be ignored (will just count).
+	 */
+
 	int fileError = 0;
 	int procId = 0;
 
@@ -399,7 +445,7 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 			MPI_Bcast(&NF, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		#endif
 
-			if (eqfm_out) {
+		if (eqfm_out) {
 			eqfm=eqkfm_array(0,NF-1);
 			for (int f=0; f<NF; f++){
 				if(procId == 0) {
@@ -508,7 +554,16 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 }
 
 int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
-//mu in same units as in crst.
+/* Reads a slip model file in pscmp format.
+ *
+ * Input
+ *  fname:	name of slip model file
+ *
+ * Output
+ *  *eqfm_out: structure representing the slip model. Each element of the array is a subfault (i.e. rectangular area discretized into patches).
+ *  			Range [0...*NF2-1].
+ *  			It can be passed as NULL, and will be ignored (will just count).
+ */
 
 	// [Fahad] Variables used for MPI.
 	int fileError = 0;

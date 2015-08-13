@@ -18,6 +18,7 @@
 #include "find_timesteps.h"
 #include "lin_interp_eqkfm.h"
 
+//#include "mpi.h"	//fixme delete
 
 int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults, int *L, double **times2,
 		double smallstepstime, double TAU, double dtau, double timeTAU){
@@ -139,7 +140,8 @@ int timesteps_lin(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfa
 	(*times2)[0]=fmin(t0, times2temp[0])-1e-6;
 	(*times2)[*L+1]=fmax(t1, times2temp[*L-1])+1e-6;
 	copy_vector(times2temp-1, times2, *L);
-	*L+=2;
+	//*L+=2;
+	*L+=1;
 
 	for (int nev=0; nev<NA; nev++) free(allts[nev]);
 	free(allts);
@@ -173,8 +175,8 @@ int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	FILE *fout;
 	char fname[120];
 
-	print_screen("Aseismic slip: will fit a linear function.\n");
-	print_logfile("Aseismic slip: will fit a linear function.\n");
+	print_screen("Aseismic slip: will fit a linear function (multiple snapshots).\n");
+	print_logfile("Aseismic slip: will fit a linear function (multiple snapshots).\n");
 
 	if (printout_history){
 		nfaults=0;
@@ -214,6 +216,7 @@ int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 		eq_aft+=Nfaults[nev];
 	}
 	eq_aft-=nfaults;	//shift it back.
+
 
 	if (printout_history){
 		nfaults=0;
@@ -259,8 +262,8 @@ int setup_afterslip_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
  *  The total number of time steps is the sum of the time steps given for each event, and stressing histories are calculated accordingly.
  */
 
-	print_screen("Aseismic slip: will fit a linear function.\n");
-	print_logfile("Aseismic slip: will fit a linear function.\n");
+	print_screen("Aseismic slip: will fit a linear function (single snapshot).\n");
+	print_logfile("Aseismic slip: will fit a linear function (single snapshot).\n");
 
 	int err=0;
 	int **allind=NULL;
@@ -276,11 +279,20 @@ int setup_afterslip_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	//calculate combined time steps:
 	timesteps_lin(t0, t1, eqk_aft, NA, Nfaults, L, times2, &allind);
 
-	temp_tevol=dmatrix(1,1,0,*L-1);
 
+	for (int i=0; i<=*L; i++) printf("times2[%d]=%.5e\n", i, (*times2)[i]);	//fixme delete
+
+
+	temp_tevol=dmatrix(1,1,0,*L-1);
 
 	// Temporal evolution of afterslip.//
 	nfaults=0;
+
+	int procId = 0;	//fixme delete.
+	#ifdef _CRS_MPI
+		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
+	#endif
+//	printf("Rank%d:L=%d\n", procId, *L);
 
 	for (int nev=0; nev<NA; nev++){
 		times1[0]=(*eqk_aft)[nfaults].t;
@@ -289,15 +301,44 @@ int setup_afterslip_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 		//find value of tevol:
 		fit_lin(times1, times2, Nas+1, *L, allind[nev], 1, NULL, temp_tevol);
 
+//		for (int i=0; i<*L; i++) printf("Rank%d:%lf(temp_evol)\n", procId, temp_tevol[1][i]);
+
 		//assign tevol arrays:
+//		(*eqk_aft)[nfaults].tevol=dvector(0,*L-1);	//shifted by 1 because of copy_vector
+//		for (int i=1; i<=*L; i++) (*eqk_aft)[nfaults].tevol[i-1]=temp_tevol[1][i];
+
 		(*eqk_aft)[nfaults].tevol=dvector(1,*L);	//shifted by 1 because of copy_vector
 		copy_vector(temp_tevol[1], &((*eqk_aft)[nfaults].tevol), *L);
-		(*eqk_aft)[nfaults].tevol-=1;	//so it starts from 0
+		(*eqk_aft)[nfaults].tevol+=1;	//so it starts from 0
+
 		for (int f=1; f<Nfaults[nev]; f++) {
 			(*eqk_aft)[nfaults+f].tevol=(*eqk_aft)[nfaults].tevol;
 		}
+		for (int f=0; f<Nfaults[nev]; f++) {
+			for (int i=0; i<*L; i++) printf("Rank%d:%lf(307)\n", procId, (*eqk_aft)[nfaults+f].tevol[i]);
+		}
+		nfaults+=Nfaults[nev];
+//		printf("Rank%d:%d(nf)\n", procId, Nfaults[nev]);
+	}
+
+
+	nfaults=0;
+
+	for (int nev=0; nev<NA; nev++) {
+//		for (int i=0; i<=Nas; i++) printf("Rank%d:%d(ai[%d][%d])\n", procId, nev, i, allind[nev][i]);
+	}
+//	for (int i=0; i<=Nas; i++) printf("Rank%d:%lf(t1)\n", procId, times1[i]);
+//	for (int i=0; i<*L; i++) printf("Rank%d:%lf(t2)\n", procId, times2[i]);
+
+	for (int nev=0; nev<NA; nev++){
+		for (int f=1; f<Nfaults[nev]; f++) {
+//			printf("Rank%d:%d(ns)\n", procId, (*eqk_aft)[nfaults+f].nosnap);
+//			for (int i=0; i<*L; i++) printf("Rank%d:%lf\n", procId, (*eqk_aft)[nfaults+f].tevol[i]);
+		}
 		nfaults+=Nfaults[nev];
 	}
+
+
 
 	free_dmatrix(temp_tevol, 1, 1, 0, *L-1);
 	return(err!=0);

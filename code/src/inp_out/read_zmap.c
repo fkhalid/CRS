@@ -561,7 +561,6 @@ int read_firstlineZMAP(char *file, struct tm reftime, double *stime){
 		*stime=difftime(mktime(&ev),mktime(&reftime))*SEC2DAY;
 	}
 
-	//todo [askFahad] is this ok? (stime is passed a function argument)
 	#ifdef _CRS_MPI
 		MPI_Bcast(stime, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	#endif

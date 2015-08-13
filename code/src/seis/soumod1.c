@@ -23,21 +23,20 @@
 	#include "mpi.h"
 #endif
 
-// todo [coverage] this block is never tested
-double tot_slip (struct eqkfm eqfm1){
-
-	double slip=0.0;
-	int NP=eqfm1.np_di*eqfm1.np_st;
-
-	for (int p=1; p<=NP; p++) {
-		slip+=pow(eqfm1.slip_str[p]*eqfm1.slip_str[p]+eqfm1.slip_dip[p]*eqfm1.slip_dip[p],0.5);
-	}
-
-	return slip/NP;
-}
 
 // todo [coverage] this block is never tested
 int scale_to_mag(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double * slips, double *rakes){
+	/* Rescales the slip from eqkfm2 so that they have the same average slip (i.e. magnitude)
+	 * It assumes that the two models have the same area, but different discretizations.
+	 *
+	 * Input:
+	 *  eqkfm1: contains input slip model.
+	 *  eqkfm2: contains no. of patches.
+	 *  slips, rakes: contains slip values (scalar) and their rakes for eqkfm2
+	 *
+	 * Output:
+	 *  (*eqkfm2).slip_str, (*eqkfm2).slip_dip are populated.
+	 */
 
 	double slip, M0old, M0;	//slip, seismic moments.
 	int N1= eqkfm1.np_di*eqkfm1.np_st;
@@ -62,7 +61,18 @@ int scale_to_mag(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double * slips, doub
 	return 0;
 }
 
-int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, double velmean){
+int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc){
+
+/* Resamples a slip model to increase resolution.
+ *
+ * Input:
+ *  eqkfm1: original slip model
+ *  disc: required resolution
+ *
+ * Output:
+ *  eqkfm2: refined slip model.
+ */
+
   char     outname2[]="source_res.out";
   double   reflat, reflon, refdepth, strike, rake, dip1;
   double   odiscx, odiscy, maxox=-1e10, maxoy=-1e10, minox=1e10, minoy=1e10, start_x, start_y;
@@ -229,7 +239,7 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 	}
 
 	scale_to_mag(eqkfm1, eqkfm2, REold, rakeold);		//final slip.
-	(*eqkfm2).tot_slip[0]=tot_slip(*eqkfm2);
+//	(*eqkfm2).tot_slip[0]=tot_slip(*eqkfm2);
 
 
   //--------------Print things out-------------------//
@@ -264,6 +274,16 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, dou
 }
 
 int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom, int right, int left){
+/* Tapers a slip model (keeping same geometry/discretization).
+ *
+ * Input
+ *  eqkfm1: original slip model.
+ *  top, bottom, right, left: flags indicating which sides should be tapered.
+ *
+ * Output:
+ *  eqkfm2: tapared slip model.
+ */
+
   char     outname2[200];
   double   strike, rake, dip;
   double   odiscx, odiscy, maxox=-1e10, maxoy=-1e10, minox=1e10, minoy=1e10, *start_x, start_y;
@@ -297,7 +317,6 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
     	return 0;
     }
 
-	// todo [coverage] this block is never tested
 	REslipo=dvector(1,ns);
 	rakes=dvector(1,ns);
 	taper=dvector(1,ns);
@@ -401,7 +420,7 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
 	}
 
 	scale_to_mag(eqkfm1, eqkfm2, slip, rakes);		//final slip.
-	(*eqkfm2).tot_slip[0]=tot_slip(*eqkfm2);
+//	(*eqkfm2).tot_slip[0]=tot_slip(*eqkfm2);
 
   //--------------Print things out-------------------//
 

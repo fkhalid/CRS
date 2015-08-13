@@ -254,7 +254,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags. catname is used in setup.c.
-		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	//todo [askFahad]: do we need to broadcast this?
+		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(outname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	// [Fahad]: Since all processes now need to write to files.
 		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
@@ -479,7 +479,6 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 		// FIXME: [Fahad] The following will generate an error if ferror(fin)
 		//		  was true in any of the iterations of the while loop above.
 		//		  Check with the author and implement the correct code.
-		// todo [askFahad]: can we just move broadcasting fileError and returning 1 above this block?
 		if(procId != 0) {
 			*listfiles = malloc((*nfiles)*sizeof(char*));
 			for(int i = 0; i < (*nfiles); ++i) {
@@ -605,9 +604,12 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 		#ifdef _CRS_MPI
 			MPI_Bcast(&Nm0, 1, MPI_INT, 0, MPI_COMM_WORLD);
-			MPI_Bcast(&aseismic_log, 1, MPI_INT, 0, MPI_COMM_WORLD);
-			MPI_Bcast(&aseismic_splines, 1, MPI_INT, 0, MPI_COMM_WORLD);
-			MPI_Bcast(aseismic_linear, 1, MPI_INT, 0, MPI_COMM_WORLD);
+			if (is_afterslip){
+				MPI_Bcast(&aseismic_log, 1, MPI_INT, 0, MPI_COMM_WORLD);
+				MPI_Bcast(&aseismic_splines, 1, MPI_INT, 0, MPI_COMM_WORLD);
+				MPI_Bcast(aseismic_linear, 1, MPI_INT, 0, MPI_COMM_WORLD);
+				MPI_Bcast(t0log, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			}
 			MPI_Bcast(&((*allslipmodels).constant_geometry), 1, MPI_INT, 0, MPI_COMM_WORLD);
 			MPI_Bcast(&((*allslipmodels).cmb_format), 120, MPI_CHAR, 0, MPI_COMM_WORLD);
 		#endif
@@ -701,6 +703,9 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 		#ifdef _CRS_MPI
 				MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
+				if (is_afterslip){
+					MPI_Bcast(flag_multisnap, 1, MPI_INT, 0, MPI_COMM_WORLD);
+				}
 		#endif  
 
 		if (fileError){
@@ -757,7 +762,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	nsm=0;
 	if (is_afterslip) print_logfile("\nAfterslip input file: %s.\n", input_fname);
 	else print_logfile("\nSlip input file: %s.\n", input_fname);
-	print_logfile("%d %s slip models:\n", (*allslipmodels).NSM, is_afterslip? "after" : "");
+	print_logfile("%d %s slip models:\n", (*allslipmodels).NSM, is_afterslip? "aseismic" : "seismic");
 	for (int m=0; m<(*allslipmodels).NSM; m++){
 		if (is_afterslip){
 			//TODO loop over nsm here too.

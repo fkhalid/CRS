@@ -21,8 +21,7 @@
 #include "../util/nrutil.h"
 #include "../util/ran1.h"
 
-double tot_slip (struct eqkfm eqfm1);
 int scale_to_mag(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double * slips, double *rakes);
 int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom, int right, int left);
-int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc, double velmean);
+int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc);
 

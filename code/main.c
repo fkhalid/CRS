@@ -556,6 +556,9 @@ int main (int argc, char **argv) {
 
 		if(err) return 1;
 		print_logfile("\nSetting up time steps for calculations: %d time steps between times [%.2lf, %.2lf].\n", L, times2[0], times2[L]);
+		//todo delete
+		printf("L=%d\n", L);
+		for (int i=0; i<=L; i++) printf("times2[%d]=%.5e\n", i, times2[i]);
 
 	}
 
@@ -575,6 +578,8 @@ int main (int argc, char **argv) {
 	// gammas_new is overwritten for each (Asig, ta) value; the values for the optimal value are saved in gammas_maxLL.
 	// TODO: these variables may be too large to be stored in memory (for large Nsur). In this case, they should not be used (and the starting rates results from LL inversion should
 	// never be used in the forecast: see if condition below).
+
+	printf("Rank%d, multisnap=%d\n)", procId, flags.aseismic_multisnap);
 
 	print_screen("Setting up variables needed for grid search...");
 

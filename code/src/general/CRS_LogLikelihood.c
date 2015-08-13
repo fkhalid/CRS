@@ -295,11 +295,11 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-		#ifdef _CRS_MPI
+//		#ifdef _CRS_MPI
 //			*seed = newSeed * (long)nsur;
 			// [Fahad]: FIXME -- For testing only ...
 			*seed = seeds[nsur-1];
-		#endif
+//		#endif
 
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
@@ -774,12 +774,12 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
 
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-		#ifdef _CRS_MPI
+//		#ifdef _CRS_MPI
 			// [Fahad]: FIXME -- For testing only ...
 			if(first_timein != 1) {
 				*seed = seeds[nsur-1];
 			}
-		#endif
+//		#endif
 
 
 		//if (flags.sample_all), each iteration corresponds to a focal mechanism. Otherwise, which_recfault=0 means: choose random one.
@@ -816,6 +816,28 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
 			}
 		}
+
+
+		//fixme delete
+//		FILE *fout;
+//		char fname[120];
+//		printf("NTScont=%d, NgridT=%d\n", NTScont, NgridT);
+//		sprintf(fname,"DCFSrand%d", procId);
+//		fout=fopen(fname,"w");
+//		for (int i=0; i<=NTScont; i++){
+//			for (int j=1; j<=NgridT; j+=500){
+//				fprintf(fout, "%.5e\t", DCFSrand[i][j]);
+//			}
+//			fprintf(fout,"\n");
+//			//fprintf(fout, "%.5e\t", eqkfm_aft[0].tevol[i]);
+//		}
+//
+//		fclose(fout);
+
+//		double *i=NULL;
+//		*i=0;	//to make it segfault.
+
+
 
 		//Calculate seismicity evolution (skipping a time window after each mainshock):
 		current_main=0;
