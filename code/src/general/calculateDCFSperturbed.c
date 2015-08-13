@@ -150,7 +150,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 		default:
 			break;
-	}
+		}
 
 
 		//-----------------------------------------------------------------//
@@ -202,7 +202,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							eqkfmAf[nfaults+nf].open= (eqkfmAf[nfaults+nf].allslip_open)? eqkfmAf[nfaults+nf].allslip_open[i] : NULL;
 						}
 						//todo make this work for splines==1 too...
-						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults); //todo free memory used by *AllCoeff;
+						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults);
 						if (vary_recfault==0) {
 							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
 							//resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);	//fixme one line or the other
@@ -354,24 +354,15 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		i=0;
 		for (int a=0; a<NA; a++){
 
-//			for (int l=0; l<NTScont; l++) printf("testing...a=%d, i=%d, tevol=%.5e\n", a, i, eqkfmAf[i].tevol[l]);
-
 			if (multisnap==0){
 
 				if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, NULL, 1);
 				//if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, rake0, 0);	//fixme choose a line
 				for (int l=0; l<NTScont; l++) {
-//					printf("l=%d, times[l-1]=%.3e, times[l+1]=%.3e\n", l, l>0? times[l-1] : 999, l<NTScont-1? times[l+1] : 999);
-					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) {
-						//for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=0.0;
-						continue;
-					}
+					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
 
 					//loop over events with afterslip:
-//					else{
-						for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=eqkfmAf[i].tevol[l]*DCFS_Af[a].cmb[n];
-						//printf("DCFSrand[%d][500]=%.5e\n", l, DCFSrand[l][500]);
-//					}
+					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=eqkfmAf[i].tevol[l]*DCFS_Af[a].cmb[n];
 				}
 				i+=DCFS_Af[a].NF;
 			}
@@ -396,7 +387,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 	}
 
-//	for (int l=0; l<NTScont; l++) printf("DCFSrand2[%d][500]=%.5e\n", l, DCFSrand[l][500]);
 
 	//------------------------------------------------------------------------------------------------------//
 	//	calculated stress field from mainshocks (i.e. events for which a non trivial slip model is used):   //
@@ -476,19 +466,3 @@ void smoothen_DCFS(struct pscmp DCFS, int nlat, int nlon, int nd, long *seed, in
 		}
 	}
 }
-
-//void smoothen_vector(int NgridT, int nLat, int nLon, int nD, double *values, long *seed, int **nn, int return_range){
-//	double randcmb;
-//	double **interp_DCFS=dmatrix(1,NgridT, 1, 2);
-//
-//	interp_nn(NgridT,nLat,nLon,nD,values,interp_DCFS,0,nn);
-//	for (int i=1; i<=NgridT; i++) {
-//		if (return_range) values[i]=interp_DCFS[i][2]-interp_DCFS[i][1];
-//		else {
-//			randcmb=interp_DCFS[i][1]+ran1(seed)*(interp_DCFS[i][2]-interp_DCFS[i][1]);
-//			*seed=-*seed;
-//			values[i]=randcmb;
-//		}
-//	}
-//	free_dmatrix(interp_DCFS,1,NgridT, 1, 2);
-//}

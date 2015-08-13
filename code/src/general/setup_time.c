@@ -306,8 +306,6 @@ int setup_afterslip_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	}
 
 
-	nfaults=0;
-
 	free_dmatrix(temp_tevol, 1, 1, 0, *L-1);
 	return(err!=0);
 }

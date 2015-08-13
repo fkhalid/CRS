@@ -699,7 +699,18 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			// [Fahad] Assignment happens at the end of the function when MPI is being used.
 			first_timein=0;
 		#endif
+
+		//Initialize stress fields:
 		DCFSrand= (flags.afterslip) ? dmatrix(0,NTScont,1,NgridT) : NULL;
+		if (flags.afterslip){
+			DCFSrand= dmatrix(0,NTScont,1,NgridT);
+			for (int i=0; i<NTScont; i++){
+				for (int j=1; j<=NgridT; j++){
+					DCFSrand[i][j]=0;
+				}
+			}
+		}
+
 		dumrate=dvector(1,cat.Z);
 		rate=dvector(1,cat.Z);
 		gammas=dvector(1,NgridT);
