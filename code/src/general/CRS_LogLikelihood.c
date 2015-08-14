@@ -33,21 +33,14 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				char *print_forex0, char *print_foret, char * printall_cmb, char *printall_forex,
 				char *printall_foret, char *print_LL, int refresh) {
 
-	//Similar to CRSLogLikelihood, but loops over time steps to produce time forecast.
-	//recfault= [0,1,2] means: don't vary rec. fault, vary (choose random one), vary and sample all catalog in order.
-	//tstart=starting time of entire period considered (may be <tt0). only used if fromstart==1;
-	//if multiple_input_gammas==1, expect allgammas0[1...Nsur][1...NgridT]; else, allgammas0is pointer to vector: [1...NgridT].
-	// this can be useful if non stationary values of gamma are used (...)
-	//same for multiple_input_gammas (if multiple_output_gammas, return gammas that would give average rate).
-	//all_gammas0[0] can be an array of starting values for gamma; they will be non steady-state values. Otherwise, ...
 
-	/*INPUT:-------------------------------------------------------------//
+	/* Calculates seismicily evolution and spatial distribution and prints output files.
+	 *
+	 * INPUT:-------------------------------------------------------------
 	 *
 	 * Nsur= no. of iterations
 	 * DCFS= array containing stress steps.
 	 * eqkfm_aft= array of afterslip:
-	 * 		if splines==1
-	 * 		if splines==0
 	 * eqkfm0= array of mainshocks;
 	 * crst= general model info.
 	 * AllCoeff= Okada Coefficients for all mainshock slip models;
@@ -55,32 +48,39 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	 * Nm=no. of mainshocks;	size of eqkfm0
 	 * Na= no. of events with afterslip
 	 * focmec= array of focal mechanisms parameters.
+	 * fmzonelim= indices used to determine areas with the same receiver fault.
 	 * NFM= no. of focal mechanisms
+	 * NgridT: no. of grid points.
 	 *
-	 * flags:
-	 * afterslip, aftershocks;
-	 * vary_recfault: 0=use fix planes, 1=use foc. mec, 2=ose OOPs;
-	 * vary_slipmodel
-	 * gridpoints_err
-	 * splines
-	 *
-	 * struct catalog cat= catalog for which LL ir calculated.
+	 * struct catalog cat= catalog for which LL is calculated.
 	 * times: time steps for numerical integration.
 	 * tstart: overall time at which calculation of rates should start;
-	 * tts: list of time steps (tts[0] is starting time; tts[1...Ntts] are times at which rate is calculated).
+	 * tt0, tt1, dtstep: start, end and time ste[s for which temporal evolution is produced.
+	 *
 	 *
 	 * RS parameters and flags:
 	 * Asig, ta, r0;
 	 * all_gammas0=initial gammas;	is NULL, use gamma=ta/Asig;
-	 *
 	 * multiple_input_gammas: indicates if a set of gammas per iteration is given;
-	 * multiple_output_gammas: indicates if a set of gammas per iteration should be provided as output;
 	 * fromstart: indicates if the gammas refer to tstart (fromstart=1) or t0(fromstart=0).
+	 * refresh: flag to be set to 1 if the slip models have changed from previous function call;
+	 *
 	 *
 	 * the following are filenames to which output is written (ignored if NULL is passed). all with extension, except printall_foret(will add _cumu.dat, _rate.dat)
 	 * printall_cmb, printall_forex: prints out a file containing the values at each gridpoint for all iterations (cmb value is for DCFS[0]).
 	 * printall_foret: prints out a file containing time evolution of forecast for all iterations.
 	 * print_LL: prints out a file containing log(r_ek) for all events ek.
+	 * printall_cmb, vprintall_forex, printall_foret: if given, will print out all Monte Carlo iterations.
+	 * print_LL: if given will print out a file with log-likelihood information.
+	 *
+	 * if multiple_input_gammas==1, expect allgammas0[1...Nsur][1...NgridT]; else, allgammas0is pointer to vector: [1...NgridT].
+	 * this can be useful if non stationary values of gamma are used (...)
+	 * same for multiple_input_gammas (if multiple_output_gammas, return gammas that would give average rate).
+	 * all_gammas0[0] can be an array of starting values for gamma; they will be non steady-state values.
+	 *
+	 * OUTPUT:-------------------------------------------------------------
+	 *
+	 * LL: LogLikelihood
 	 *
 	 */
 
@@ -600,8 +600,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 					 int Nm, int Na, int NgridT, double **focmec, int *fmzonelim, int NFM,
 					 long *seed, struct catalog cat, double *times, double tstart, double tt0,
 					 double tt1, double tw, double Mag_main, double Asig, double ta, double r0, int fixr,
-					 double *gammas0, double **all_new_gammas, int fromstart, char * printall_cmb,
-					 char *printall_forex, int refresh) {
+					 double *gammas0, double **all_new_gammas, int fromstart, int refresh) {
 
 	//recfault= [0,1,2] means: don't vary rec. fault, vary (choose random one), vary and sample all catalog in order.
 	//tstart=starting time of entire period considered (may be <tt0). only used if fromstart==1;
@@ -613,9 +612,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	 *
 	 * Nsur= no. of iterations
 	 * DCFS= array containing stress steps.
-	 * eqkfm_aft= array of afterslip:
-	 * 		if splines==1
-	 * 		if splines==0
+	 * eqkfm_aft= array of afterslip.
 	 * eqkfm0= array of mainshocks;
 	 * crst= general model info.
 	 * AllCoeff= Okada Coefficients for all mainshock slip models;
@@ -623,24 +620,20 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	 * Nm=no. of mainshocks;	size of eqkfm0
 	 * Na= no. of events with afterslip
 	 * focmec= array of focal mechanisms parameters.
+	 * fmzonelim= indices used to determine areas with the same receiver fault.
 	 * NFM= no. of focal mechanisms
+	 * NgridT: no. of grid points.
 	 *
-	 * flags:
-	 * afterslip, aftershocks;
-	 * vary_recfault: 0=use fix planes, 1=use foc. mec, 2=ose OOPs;
-	 * vary_slipmodel
-	 * gridpoints_err
-	 * splines
 	 *
 	 * struct catalog cat= catalog for which LL ir calculated.
 	 * times: time steps for numerical integration.
 	 * tstart: overall time at which calculation of rates should start;
 	 * [tt0, tt1]: time for which LL is calculated;
-	 * tw: time window to be ignored after each mainshock;
+	 * tw: time window to be ignored after each earthquake exceeding magnitude Mag_main.
 	 *
 	 * RS parameters and flags:
 	 * Asig, ta, r0, fixr;
-	 * all_gammas0=initial gammas;	is NULL, use gamma=ta/Asig;
+	 * gammas0=initial gammas;	is NULL, use gamma=ta/Asig;
 	 *
 	 * multiple_input_gammas: indicates if a set of gammas per iteration is given;
 	 * multiple_output_gammas: indicates if a set of gammas per iteration should be provided as output;
@@ -649,17 +642,20 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	 * the following are filenames to which output is written (ignored if NULL is passed).
 	 * printall_cmb, printall_forex: prints out a file containing the values at each gridpoint for all iterations (cmb value is for DCFS[0]).
 	 *
-	// OUTPUT:-------------------------------------------------------------//
+	 * OUTPUT:-------------------------------------------------------------//
 	 *
-	 * Output variables are incremented by the amount calculated for relevant time period; if fixrate=0, LL is recalculated from the start.
+	 * Output variables are incremented by the amount calculated for relevant time period;
 	 *
- 	 * LL= LogLikelihood;
- 	 * LL= LLdum0+Nlog(r)-r*I;
-	 * Ldum0= summation part of LogLikelihood (w/o rate dependence);
+ 	 * LL= LogLikelihood. LL= LLdum0+Nev*log(r)-r*I;
+	 * Ldum0= summation part of LogLikelihood, with dependence on background rate (r) removed: the total summation is given by LLdum0 + Nev*log(r).
 	 * I= tot no. events (integral part of LL) / r.;
+	 * Nev: no. of events in the catalog used during this time period.
 	 * all_new_gammas= final gammas.
+	 * r_out: spatially uniform background rate calculated by optimizing LL.
 	 *
 	 */
+
+
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
@@ -725,9 +721,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 	sum=sum1=sum2=0;
 	err=0;
-
-	if (printall_cmb) fcmb=fopen(printall_cmb,"w");
-	if (printall_forex) fforex=fopen(printall_forex,"w");
 
 	#ifdef _CRS_MPI
 		int rootPartitionSize = 0;
@@ -800,7 +793,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 		//Set starting rates:
 		if (fromstart){
-		// todo [coverage] this block is never tested
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
 								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
 								   fmzonelim, NFM, seed, tstart, tt1,
@@ -827,28 +819,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				gammas[n]= (gammas0)? gammas0[n] : ta/Asig;	//if gammas0 NULL, use uniform background rate (steady state).
 			}
 		}
-
-
-		//fixme delete
-//		FILE *fout;
-//		char fname[120];
-//		printf("NTScont=%d, NgridT=%d\n", NTScont, NgridT);
-//		sprintf(fname,"DCFSrand%d", procId);
-//		fout=fopen(fname,"w");
-//		for (int i=0; i<=NTScont; i++){
-//			for (int j=1; j<=NgridT; j+=500){
-//				fprintf(fout, "%.5e\t", DCFSrand[i][j]);
-//			}
-//			fprintf(fout,"\n");
-//			//fprintf(fout, "%.5e\t", eqkfm_aft[0].tevol[i]);
-//		}
-//
-//		fclose(fout);
-
-//		double *i=NULL;
-//		*i=0;	//to make it segfault.
-
-
 
 		//Calculate seismicity evolution (skipping a time window after each mainshock):
 		current_main=0;
@@ -911,16 +881,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 				#endif
 			}
 		}
-
-		// todo [coverage] this block (2x) is never tested
-		if (printall_cmb) {
-			for (int n=1; n<=NgridT; n++) fprintf(fcmb, "%lf\t", DCFS[0].cmb[n]);
-			if (nsur <Nsur) fprintf(fcmb, "\n");
-		}
-		if (printall_forex) {
-			for (int n=1; n<=NgridT; n++) fprintf(fforex, "%lf\t", ev_x[n]);
-			if (nsur <Nsur) fprintf(fforex, "\n");
-		}
 	}
 
 	#ifdef _CRS_MPI
@@ -936,7 +896,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		free_dvector(rate, 1, cat.Z);
 		rate = recv_rate;
 
-		// [Fahad]: TODO -- This is way too complicated. Try to come up with a more
+		// TODO [Fahad]-- This is way too complicated. Try to come up with a more
 		//				 -- elegant algorithm. Add comments in the meanwhile ...
 		if (all_new_gammas) {
 			MPI_Allgather(linearizedLocalNewGammas, localNewGammasSize, MPI_DOUBLE,
@@ -983,8 +943,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 	//calculate average rate and LL:
 	if (!err){
-		if (printall_cmb) fclose(fcmb);
-		if (printall_forex) fclose(fforex);
 
 		Ldum0=0.0;
 		N=0;

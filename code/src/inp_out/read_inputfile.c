@@ -598,7 +598,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				}
 			}
 			else {
-				sscanf(line,"%s %d", &((*allslipmodels).cmb_format), &((*allslipmodels).constant_geometry)); //todo check this is the same as coseismic models.
+				sscanf(line,"%s %d", &((*allslipmodels).cmb_format), &((*allslipmodels).constant_geometry));
 			}
 		}
 
@@ -765,7 +765,6 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	print_logfile("%d %s slip models:\n", (*allslipmodels).NSM, is_afterslip? "aseismic" : "seismic");
 	for (int m=0; m<(*allslipmodels).NSM; m++){
 		if (is_afterslip){
-			//TODO loop over nsm here too.
 			if (m==0) print_logfile("\t time \t name\n");
 			print_logfile("\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).slipmodels[m]);
 		}

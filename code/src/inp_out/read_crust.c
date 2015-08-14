@@ -95,8 +95,6 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 
 	//--------------calculate refined geometry:-------------//
 
-	//todo allow grid refinement for non uniform grid.
-
 	dy=Re*DEG2RAD*(*crst).dlat_out;
 	dx=Re*DEG2RAD*cos(DEG2RAD*(0.5*(lat1+lat0)))*(*crst).dlon_out;
 	no_subpointsx= (int) (0.01+ceil(dx/resxy));
@@ -141,9 +139,17 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 				}
 			}
 		}
+
+		print_logfile("Forecast resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km;\n", dy, dx, (*crst).ddepth_out);
+		if (is_refined) {
+			print_logfile( "Internal resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km -> %d x %d x %d = %d grid points.\n", resxy, resxy, resz, NLat, NLon, Nd, NG);
+		}
+		else {
+			print_logfile("Internal resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km-> %d x %d x %d = %d grid points.\n", dy, dx, (*crst).ddepth_out, (*crst).nLat_out, (*crst).nLon_out, (*crst).nD_out, (*crst).N_allP);
+			print_logfile("Real int.resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km.\n", dy, dx, (*crst).ddepth_out);
+		}
 	}
 
-	// todo [coverage] this block is never tested
 	else {
 		if (no_subpointsx!=1 || no_subpointsy!=1 || no_subpointsz!=1) {
 			print_screen("** Warning: non uniform grid in file %s, can not refine geometry (read_crust.c).**\n",fnametemplate);
@@ -166,16 +172,6 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 		(*crst).dAgrid=dvector(1,NG);
 		(*crst).list_allP=ivector(1,NG);
 		for (int i=1; i<=NG; i++) (*crst).list_allP[i]=i;
-	}
-
-	//todo think about these output messages if points are not a uniform grid.
-	print_logfile("Forecast resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km;\n", dy, dx, (*crst).ddepth_out);
-	if (is_refined) {
-		print_logfile( "Internal resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km -> %d x %d x %d = %d grid points.\n", resxy, resxy, resz, NLat, NLon, Nd, NG);
-	}
-	else {
-		print_logfile("Internal resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km-> %d x %d x %d = %d grid points.\n", dy, dx, (*crst).ddepth_out, (*crst).nLat_out, (*crst).nLon_out, (*crst).nD_out, (*crst).N_allP);
-		print_logfile("Real int.resolution: dlat=%.2lf km, dlon=%.2lf km, ddep=%.2lf km.\n", dy, dx, (*crst).ddepth_out);
 	}
 
 	//--------------calculate area of each grid cell, and local coordinates:-------------//
@@ -204,7 +200,6 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 			print_logfile("*Warning: errors occurred while reading focmecgridfile*\n");
 		}
 
-		// todo [coverage] this block is never tested
 		// if a refined grid is being used, focal mechanism values should me mapped to refined geometry:
 		if (is_refined){
 			//allocate strtmp and diptmp since 0th element is also needed:

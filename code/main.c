@@ -10,14 +10,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/param.h>
-//#include <sys/stat.h>
+//#include <sys/param.h>
 #include <time.h>
 
 #include "src/defines.h"
 #include "src/general/CRS_LogLikelihood.h"
 #include "src/general/setup.h"
-//#include "src/inp_out/print_output.h"
+#include "src/general/setup_time.h"
 #include "src/inp_out/read_crust.h"
 #include "src/inp_out/read_csep_template.h"
 #include "src/inp_out/read_eqkfm.h"
@@ -26,15 +25,12 @@
 #include "src/seis/background_rate.h"
 #include "src/seis/GR.h"
 #include "src/util/error.h"
-//#include "src/util/hash.h"
 #include "src/util/moreutil.h"
 #include "src/util/nrutil.h"
 
 #ifdef _CRS_MPI
 	#include "mpi.h"
 #endif
-
-//todo check that lat=(-180, 180) are interpreted correctly throughout the program.
 
 double DCFS_cap;
 FILE *flog=NULL;
@@ -106,8 +102,8 @@ int main (int argc, char **argv) {
 	struct eqkfm *eqkfm_temp=0, 	//temporary structure to store earthquakes from catalog of foc. mec. (later copied in eqkfm_co)
 			*eqkfm_co=0, 			//contains all slip models for seismic sources (including synthetic ones from focal mechanisms).
 			*eqkfm_aft=0;			//contains all aseismic slip models.
-	double Mag_main, Mc_source;	//Mag_main used to skip tw for LL calculations (todo: should not do this for forecasts).
-								//Mag_main also used for declustering in case background rate; todo should put it somewhere else in input file.
+	double Mag_main, Mc_source;	//Mag_main used to skip tw for LL calculations
+								//Mag_main also used for declustering in case background rate;
 								//Mc_sources is the minimum magnitude of earthquakes to be used as stress sources.
 
 	double dt, dM, xytoll, ztoll, border;	//tolerance used to match earthquakes from catalog and from focal mechanism catalog.
@@ -460,7 +456,6 @@ int main (int argc, char **argv) {
 	// [Fahad] 	- We need to make sure that the number of iterations is not less
 	//		   	- than the number of MPI processes; so that all processes can
 	//			- contribute to the computations.
-	// TODO: Rewrite the error message so that it is more helpful to the user ...
 	#ifdef _CRS_MPI
 		if((LLinversion || forecast) && (numProcs > Nsur)) {
 			if(procId == 0) {
@@ -524,7 +519,6 @@ int main (int argc, char **argv) {
 	int L;
 	double *times2=NULL;
 
-	//todo allow for general stressing history here.
 	//t_earliest_stress used later to calculate tstart_calc; 1e30 ensures value is ignored (see later).
 	t_earliest_stress= (Nco>0) ? eqkfm_co[0].t-1e-4 : 1e30;	//time of earliest source. fixme will change when general stressing history is allowed.
 
@@ -556,9 +550,6 @@ int main (int argc, char **argv) {
 
 		if(err) return 1;
 		print_logfile("\nSetting up time steps for calculations: %d time steps between times [%.2lf, %.2lf].\n", L, times2[0], times2[L]);
-		//todo delete
-		printf("L=%d\n", L);
-		for (int i=0; i<=L; i++) printf("times2[%d]=%.5e\n", i, times2[i]);
 
 	}
 
@@ -601,7 +592,7 @@ int main (int argc, char **argv) {
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
 	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm_co, flags,
 			crst, AllCoeff, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat, times2,
-			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 0, 0, 1);
+			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 1);
 
 
 	print_screen("done\n");
@@ -804,7 +795,7 @@ int main (int argc, char **argv) {
 										  	eqkfm_co, flags, crst, AllCoeff,
 										  	L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat,
 										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, NULL,
-										  	gammas_new, 0, 0, 0, !tai && !as);
+										  	gammas_new, 0, !tai && !as);
 
 					if (!err){
 

@@ -133,7 +133,6 @@ for (int h=1; h<=N; h++){
 
 		switch (early_inter_mode){
 			case 1:
-				// todo [coverage] this block is never tested
 				for (int ts=1;ts<=early_fit; ts++) (*slip_after)[h][ts]+=(sp[1]*(t2[ts]/t[1])*(1.0/NIT));
 				break;
 			case 2:
@@ -156,7 +155,6 @@ for (int h=1; h<=N; h++){
 		}
 }
 
-// todo [coverage] this block is never tested
 	if (normalize){
 		int t0=TS, t1=0;
 		double final_cumslip0=0.0, final_cumslip1=0.0, dslip;

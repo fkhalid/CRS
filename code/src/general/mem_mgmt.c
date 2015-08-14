@@ -216,13 +216,11 @@ struct pscmp *pscmp_arrayinit(struct crust v0, long n1, long n2){
 		return v-n1+NR_END;;
 }
 
-// todo [coverage] this block is never tested
 void free_eqkfmarray(struct eqkfm *v, long n1, long n2){
 /* free a eqkfm vector allocated with eqkfm_array() */
 	free((FREE_ARG) (v+n1-NR_END));
 }
 
-// todo [coverage] this block is never tested
 void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 
 	for (int f=n1; f<=n2; f++){
@@ -240,48 +238,6 @@ void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 		if (v[f].allslip_open) free_dmatrix(v[f].allslip_open,0,0,1,0);
 
 	}
-}
-
-// todo should use one of these functions and delete the other one.
-// todo [coverage] this block is never tested
-void freepart_pscmparray(struct pscmp *v, long n1, long n2){
-//only frees stuff which wasn't linked to other structure (see pscmp_arrayinit).
-	for (int i=n1; i<=n2; i++){
-
-		if (v[i].S!=NULL) {
-			for (int j=1; j<=v[i].nsel; j++) free_dmatrix(v[i].S[j],1,3,1,3);
-			free(v[i].S[i]);
-		}
-		if (v[i].cmb!=NULL) free(v[i].cmb);
-		if (v[i].st1!=NULL) free(v[i].st1);
-		if (v[i].di1!=NULL) free(v[i].di1);
-		if (v[i].ra1!=NULL) free(v[i].ra1);
-		if (v[i].st2!=NULL) free(v[i].st2);
-		if (v[i].di2!=NULL) free(v[i].di2);
-		if (v[i].ra2!=NULL) free(v[i].ra2);
-	}
-	free((FREE_ARG) (v+n1-NR_END));
-}
-
-// todo [coverage] this block is never tested
-void freefull_pscmparray(struct pscmp *v, long n1, long n2){
-
-	for (int i=n1; i<=n2; i++){
-		if (v[i].fdist!=NULL) free(v[i].fdist);
-		if (v[i].S!=NULL) {
-			for (int j=1; j<=v[i].nsel; j++) free_dmatrix(v[i].S[j],1,3,1,3);
-			free(v[i].S[i]);
-		}
-		if (v[i].cmb!=NULL) free(v[i].cmb);
-		if (v[i].st1!=NULL) free(v[i].st1);
-		if (v[i].di1!=NULL) free(v[i].di1);
-		if (v[i].ra1!=NULL) free(v[i].ra1);
-		if (v[i].st2!=NULL) free(v[i].st2);
-		if (v[i].di2!=NULL) free(v[i].di2);
-		if (v[i].ra2!=NULL) free(v[i].ra2);
-		if (v[i].which_pts!=NULL) free(v[i].which_pts);
-	}
-	free((FREE_ARG) (v+n1-NR_END));
 }
 
 void free_cat(struct catalog cat){

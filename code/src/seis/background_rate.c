@@ -118,7 +118,6 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 	}
 
 	else{
-		// todo [coverage] this block is never tested
 		// Assume vertically homogeneous rate, since can not use depth info (non uniform grid does not necessarily have layers).
 		*rate_grid=Helmstetter_nonuni(crst.x, crst.y, crst.N_allP, cat.x0, cat.y0, cat.err, weights, cat.Z, ord);
 		normv(*rate_grid, crst.N_allP);

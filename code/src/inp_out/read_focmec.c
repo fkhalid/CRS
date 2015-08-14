@@ -364,8 +364,8 @@ int readfocmec(char *focmecfile, struct crust crst,
 			slip=(*eqkfm)[p0].tot_slip[0]=pow(10,(1.5*((*eqkfm)[p0].mag+6)))*(1.0/(crst.mu*pow(10,12)*(*eqkfm)[p0].W*(*eqkfm)[p0].L));
 			//shift depth to make sure slip model is not outside domain:
 			if ((*eqkfm)[p0].depth<0.5*(*eqkfm)[p0].W*sin(DEG2RAD*(*eqkfm)[p0].dip1)) {
-				//(*eqkfm)[p0].depth=0.5*(*eqkfm)[p0].W*sin(DEG2RAD*(*eqkfm)[p0].dip1);
-				//TODO: (1) decide if line about should be uncommented; (2) print out warning (either way).
+				print_screen("** Warning: synthetic slip model for source event at t=%.3e, mag=%.2lf is partially above ground.\n", (*eqkfm)[p0].t, (*eqkfm)[p0].mag);
+				print_logfile("** Warning: synthetic slip model for source event at t=%.3e, mag=%.2lf is partially above ground.\n", (*eqkfm)[p0].t, (*eqkfm)[p0].mag);
 			}
 			(*eqkfm)[p0].slip_str[1]=slip*cos(DEG2RAD*(*eqkfm)[p0].rake1);
 			(*eqkfm)[p0].slip_dip[1]=-slip*sin(DEG2RAD*(*eqkfm)[p0].rake1);

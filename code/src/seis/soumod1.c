@@ -23,8 +23,6 @@
 	#include "mpi.h"
 #endif
 
-
-// todo [coverage] this block is never tested
 int scale_to_mag(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double * slips, double *rakes){
 	/* Rescales the slip from eqkfm2 so that they have the same average slip (i.e. magnitude)
 	 * It assumes that the two models have the same area, but different discretizations.

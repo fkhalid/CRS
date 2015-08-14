@@ -175,6 +175,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			//Find element of AllCoeff which should also be used for afterslip:
 			AllCoeffaft=AllCoeff;
+
 			for (int i=0; i<Nmain; i++){
 				if (!AllCoeffaft->hasafterslip) {
 					AllCoeffaft=AllCoeffaft->next;
@@ -201,7 +202,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							eqkfmAf[nfaults+nf].slip_dip= (eqkfmAf[nfaults+nf].allslip_dip)? eqkfmAf[nfaults+nf].allslip_dip[i] : NULL;
 							eqkfmAf[nfaults+nf].open= (eqkfmAf[nfaults+nf].allslip_open)? eqkfmAf[nfaults+nf].allslip_open[i] : NULL;
 						}
-						//todo make this work for splines==1 too...
 						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults);
 						if (vary_recfault==0) {
 							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
@@ -269,8 +269,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 							break;
 						case 2:
-							// todo [coverage] this block is never tested
-							DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from afterslip, assuming that from mainshocks is much larger this is ok.
+							DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from afterslip, assuming that stresses from mainshocks are much larger.
 							break;
 						default:
 							break;
@@ -332,7 +331,6 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 		else {
 			// use the foc. mec. for this iteration (this is done when all focal mechanisms should be sampled; only activated in main.c if nofmzones=1).
-			// todo [coverage] this block is never tested
 			*strike0=focmec[1][which_recfault];
 			*dip0=focmec[2][which_recfault];
 			*rake0=focmec[3][which_recfault];	//only used for splines==1 (see below).
@@ -346,8 +344,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	if (afterslip==0){
 		for (int l=0; l<NTScont; l++){
 			if (times[l] <tdata0 || times[l]>tdata1) continue;
-		// todo [coverage] this line is never tested
-			for (int n=1; n<=NgridT; n++) if (DCFSrand) DCFSrand[l][n]=0.0;	//todo should DCFSrand just set to NULL if afterslip==0?
+			for (int n=1; n<=NgridT; n++) if (DCFSrand) DCFSrand[l][n]=0.0;
 		}
 	}
 	else {
@@ -431,10 +428,23 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	}
 }
 
-//todo move soewhere else
 void smoothen_DCFS(struct pscmp DCFS, int nlat, int nlon, int nd, long *seed, int use_cmb0, int **nn){
-	//can use DCFS.cmb (which gets overwritten) or DCFS.cmb0 (which is preserved) -> latter is useful if grid point smoothing is only source of uncertainty.
-	//with this option, DCFS.cmb0= mean value of field; DCFS.cmb=range of values.
+	/* Calculates perturbed stress field by estimating the gradients within each cell from the difference with neighbor ones.
+	 * Only works with regular grids.
+	 *
+	 * Input
+	 *  DCFS: already contains stress field (cmb)
+	 *  nlat, nlon, nd: number of elements along each dimension.
+	 *  seed: for random number generation
+	 *  use_cmb0: flag. if set to 0, the values in DCFS.cmb are perturbed and overwritten.
+	 *  				if set to 1, it will take the values from DCFS.cmb0 and perturb them within a precalculated range given by DCFS.Dcmb.
+	 *  						With this option, DCFS.cmb0= mean value of field; DCFS.cmb=range of values. This method is faster, and
+	 *  						DCFS.cmb0 is not overwritten: useful if grid point smoothing is only source of uncertainty.
+	 *
+	 * Output:
+	 *  DCFS.cmb is populated.
+	 */
+
 
 	double randcmb;
 	double *mycmb, **interp_DCFS;

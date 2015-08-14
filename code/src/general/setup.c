@@ -73,8 +73,6 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
  *
  */
 
-//todo make sure that first focal mechanism is the best oriented.
-
 	// [Fahad] Variables used for MPI
 	int procId = 0;
 
@@ -116,8 +114,6 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 
 	print_screen("%d events used for LL calculation, %d events used as sources.\n", (int) (*cat).Z, *Ntot);
 	print_logfile("%d events used for LL calculation, %d events used as sources.\n", (int) (*cat).Z, *Ntot);
-
-	//todo warning if no events are selected as sources.
 
 	return (err!=0);
 }
@@ -283,7 +279,6 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		eqkfm0[nf].t=tmain;
 		eqkfm0[nf].nsel=nsel;
 		eqkfm0[nf].selpoints=sel_pts;
-		//todo check: this line ok? (copied from CRSjuly)
 		eqkfm0[nf].is_slipmodel=1;
 		latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
 
@@ -378,7 +373,6 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 			eqkfm0[nf].t=tmain;
 			eqkfm0[nf].nsel=nsel;
 			eqkfm0[nf].selpoints=sel_pts;
-			//todo check: this line ok? (copied from CRSjuly)
 			eqkfm0[nf].is_slipmodel=1;
 			latlon2localcartesian(eqkfm0[nf].lat, eqkfm0[nf].lon, lat0, lon0, &(eqkfm0[nf].y), &(eqkfm0[nf].x));
 			setmodels.set_of_eqkfm[nftot+nf]=eqkfm0[nf];
@@ -487,7 +481,6 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 			DCFS[eq].m=(2.0/3.0)*log10(M0)-6;
 			DCFS[eq].NF=Nfaults[eq];
 			if (DCFS[eq].nsel!=Nsel){
-				// todo [coverage] this block is never tested
 				if (DCFS[eq].nsel>0){
 					free_d3tensor(DCFS[eq].S,1,DCFS[eq].nsel,1,3,1,3);
 					free_dvector(DCFS[eq].cmb,1,DCFS[eq].nsel);
@@ -565,12 +558,6 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
     int NFsofar=0;
     static int first_timein=1, switch_slipmodel;
 
-    //todo delete
-	#ifdef CRS_MPI
-    	MPI_Barrier(MPI_COMM_WORLD);
-	#endif
-	print_logfile("Hello here is rank %d, ln. 591 (setup.c).\n", procId);
-
 	//Fill in elements of structure:
 	temp= *Coefficients;
 	for(int i=0; i<Nm; i++) {
@@ -581,30 +568,15 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 			if (first_timein || switch_slipmodel){
 				if (!first_timein){
 					if (temp->Coeffs_st) free_f3tensor(temp->Coeffs_st, 1,0,1,0,1,0);
-					print_logfile("Hello here is rank %d, ln. 603 (setup.c).\n", procId);
 					if (temp->Coeffs_dip) free_f3tensor(temp->Coeffs_dip, 1,0,1,0,1,0);
-					print_logfile("Hello here is rank %d, ln. 605 (setup.c).\n", procId);
 					if (temp->Coeffs_open) free_f3tensor(temp->Coeffs_open, 1,0,1,0,1,0);
-					print_logfile("Hello here is rank %d, ln. 607 (setup.c).\n", procId);
 				}
-
-			    //todo delete
-				#ifdef CRS_MPI
-			    	MPI_Barrier(MPI_COMM_WORLD);
-				#endif
-				print_logfile("Hello here is rank %d, ln. 610 (setup.c).\n", procId);
 
 				#ifdef _CRS_MPI
 					okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar, Nfaults[i], crst);
 				#else
 					okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar, Nfaults[i], crst);
 				#endif
-
-				    //todo delete
-					#ifdef CRS_MPI
-				    	MPI_Barrier(MPI_COMM_WORLD);
-					#endif
-				print_logfile("Hello here is rank %d, ln. 619 (setup.c).\n", procId);
 
 				temp->NgridT=eqkfm0[0].nsel;
 				temp->NF=Nfaults[i];

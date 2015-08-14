@@ -8,7 +8,6 @@
 
 #include "mscorr.h"
 
-// todo [coverage] this block is never tested
 double mscorr(double st1,double di1, double ra1, double st2, double di2, double ra2){
 
 //corralation between two source mechanism (st,di and ra in degree)

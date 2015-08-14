@@ -46,7 +46,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	double std_merr=0.1, std_verr=20.0, std_herr=4.0;	//todo read from somewhere!
+	double std_merr=0.1, std_verr=20.0, std_herr=4.0;	//fixme read from somewhere!
 	int line_length=2000;
 	int hh, lines=0, valid=0, empty=0, missing_values=0;
 	int * old2new;
@@ -55,7 +55,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	int no_expected_columns=13;	//ZMAP format as used by CSEP?
 	int Z;
 	double Mc_offset=0.3, dM=0.9;	//todo don't hardwide Mc_offset; dM should be passed.
-	int cut_sd=3.0;	//no. of s.dev. for cutting off gaussian.	//todo read from somewhere?
+	int cut_sd=3.0;	//no. of s.dev. for cutting off gaussian.
 	double t_last_large;
 	int k;
 	struct tm ev;
@@ -223,7 +223,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 				if (mag[valid+1]<-10 || mag[valid+1]>12) mag_out_of_range=1;
 				if (dep[valid+1]<0 || dep[valid+1]>2000) dep_out_of_range=1;
 
-				// todo [coverage] this block is never tested
 				if (lon_out_of_range || lat_out_of_range || date_out_of_range || time_out_of_range || mag_out_of_range || dep_out_of_range) {
 					missing_values+=1;
 					if (hh!=no_expected_columns || missing_values){
@@ -324,7 +323,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		if (mag[i]>=Mmain) t_last_large=times[i];
 	}
 
-	// todo [coverage] this block is never tested
 	if (!eq1 && !eq2) {
 		if (cat) (*cat).Z=0;
 		if (Ntot) *Ntot=0;
@@ -539,7 +537,6 @@ int read_firstlineZMAP(char *file, struct tm reftime, double *stime){
 			min= (int) flmin;
 			sec= (int) fsec;
 		}
-		// todo [coverage] this block is never tested
 		else {
 			sscanf(line, "%*lf %*lf %lf %lf %lf %*lf %*lf %lf %lf %lf %*lf %*lf %*lf\n",	&fyear, &fmon, &fday, &fhour, &flmin, &fsec);
 			year=(int) fyear;

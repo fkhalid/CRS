@@ -29,8 +29,7 @@ int CRSLogLikelihood (double *LL, double *Ldum0_out, double *Nev, double *I, dou
 		struct eqkfm *eqkfm_aft, struct eqkfm *eqkfm0, struct flags flags,
 		struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont, int Nm, int Na, int NgridT, double **focmec, int *fmzonelim, int NFM,
 		long *seed, struct catalog cat, double *times, double tstart, double tt0, double tt1, double tw, double Mag_main, double Asig, double ta, double r0, int fixr,
-		double *gammas0, double **all_new_gammas, int fromstart,
-		char * printall_cmb, char *printall_forex, int refresh);
+		double *gammas0, double **all_new_gammas, int fromstart, int refresh);
 
 #ifdef _CRS_MPI
 // [Fahad] -- Added for use in partition size calculation when using

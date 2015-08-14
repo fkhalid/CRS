@@ -64,7 +64,7 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 
 		dist2=1e30;
 		for (int n=n10; n<=n1; n++){
-			if (sel1[n]!=0) continue;	//todo should not assign elements on a first come, first served basis...
+			if (sel1[n]!=0) continue;
 			dist20=pow((eqkfm2[n2].t-eqkfm1[n].t)/dt,2)+pow((eqkfm2[n2].mag-eqkfm1[n].mag)/dM,2);
 			if (dist2>dist20){
 				dist2=dist20;
@@ -143,7 +143,6 @@ int *combine_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2
 	double dist2, dist20;
 
 	if (!N2) return NULL;
-	// todo [coverage] this block is never tested
 	if (!N1) {
 		sel= ivector(0,N2-1);
 		for (int n=0; n<N2; n++) sel[n]=-1;
@@ -215,7 +214,6 @@ double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int 
 	if (ind) *ind=imatrix(1,2,0,N1+N2);
 	res=dmatrix(1,2,0,N1+N2);
 
-	// todo [coverage] this block is never tested
 	if (!N1){
 		if (tot) *tot=N2;
 		for (int i=0; i<N2; i++){
@@ -552,7 +550,6 @@ return mags;
 
 }
 
-//todo move somewhere else?
 void eqkfm2dist(struct eqkfm *eqkfm1, double *lats, double *lons, double *depths, int N, int Ntot, int all){
 	/*
 	 * Calculates distances between sources in eqjfm1 and grid points, and writes them into eqkfm1[i].dist.

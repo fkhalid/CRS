@@ -31,7 +31,7 @@ double *normal_vector(double, double);
 double *slip_vector(double strikeR, double dipR, double rakeR);
 double *opt_s(double *stress, double sigma, double *n, double *result);
 double *sum_v(double *v1, double *v2, double *sum, int N);
-double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f, double *stress0, double sigma0, double *newrake, int opt_rake);
-double resolve_n(double **S, double *n, double *rake, double fric, double *stress0, double sigma0, double *slip_v);
+double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f, double *stress0, double sigma0, int opt_rake);
+double resolve_n(double **S, double *n, double fric, double *stress0, double sigma0, double *slip_v);
 
 #endif /* OKADADCFS_H_ */

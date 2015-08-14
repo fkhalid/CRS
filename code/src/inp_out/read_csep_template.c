@@ -132,7 +132,6 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 	nmag=2;
 	mag0=data[7][1];
 	mag1=data[8][1];
-	// todo [coverage] this block is never tested
 	while (fabs(data[8][1]-data[8][nmag])>toll) {
 		mag0=fmin(mag0, data[7][nmag]);
 		mag1=fmax(mag0, data[8][nmag]);
@@ -192,7 +191,6 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 		if (ndep) *ndep= (int) (toll+(dep1-dep0)/ddepi);
 	}
 
-	// todo [coverage] this block is never tested
 	else {
 		if (uni)  *uni=0;
 		if (nlat) *nlat= 0;

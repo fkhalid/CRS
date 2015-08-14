@@ -34,8 +34,6 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	 *
 	 *  DCFS.cmb: coulomb stress field.
 	 *
-	 * todo make vectors static to avoid repeated memory allocations?
-	 *
 	 */
 
 	// [Fahad] Variables used for MPI
@@ -84,7 +82,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	#pragma omp parallel for private(fm)
 	for (int i=1; i<=Nsel; i++){
 		fm= (no_fm_zones==1) ? 0 : crst.fmzone[i];	//zone index.
-		DCFS.cmb[i]=resolve_n(DCFS.S[i], n[fm], NULL, crst.fric, stress0s[fm], sigma0s[fm], s[fm]);
+		DCFS.cmb[i]=resolve_n(DCFS.S[i], n[fm], crst.fric, stress0s[fm], sigma0s[fm], s[fm]);
 		if (DCFS.cmb[i]>MaxDCFS) DCFS.cmb[i]=MaxDCFS;
 		if (DCFS.cmb[i]<-MaxDCFS) DCFS.cmb[i]=-MaxDCFS;
 	}
@@ -175,7 +173,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	//todo it may also be better to process each of the 3 tensors (Coeffs_XX) separately: less likely to run out of memory.
 
 	//allocate memory and set to 0 (inside f3tensor).
-	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);	//TODO should deallocate at the end (in main.c).
+	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);
 	if (flag_dslip) *Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
 	if (flag_open) *Coeffs_open=f3tensor(1,NP_tot,1,Nsel,1,6);
 
@@ -449,7 +447,7 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
 
 	//allocate memory and set to 0 (inside f3tensor).	//todo could use array of pointers for smarter memory allocation...
-	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);	//TODO should deallocate at the end (in main.c).
+	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);
 	if (flag_dslip) *Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
 	if (flag_open) *Coeffs_open=f3tensor(1,NP_tot,1,Nsel,1,6);
 
@@ -769,7 +767,7 @@ double *sum_v(double *v1, double *v2, double *sum, int N){
 	return v3;
 }
 
-double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f, double *stress0, double sigma0, double *newrake, int opt_rake){
+double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f, double *stress0, double sigma0, int opt_rake){
 //To be called after filling in DCFS.S. (with functions below).
 //total stress should be passed if optimal rake is to be used (opt_rake==1).
 //resolves stress tensor S on mechanisms with dipR, strikeR and rake.
@@ -782,7 +780,7 @@ double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f
 	if (opt_rake) s=NULL;
 	else s=slip_vector(strikeR, dipR, rakeR);
 
-	cmb=resolve_n(S, n, newrake, f, stress0, sigma0, s);
+	cmb=resolve_n(S, n, f, stress0, sigma0, s);
 
 	free_dvector(n,1,3);
 	if (s) free_dvector(s,1,3);
@@ -790,7 +788,7 @@ double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f
 	return cmb;
 }
 
-double resolve_n(double **S, double *n, double *rake, double fric, double *stress0, double sigma0, double *slip_v){
+double resolve_n(double **S, double *n, double fric, double *stress0, double sigma0, double *slip_v){
 //resolves stress S on focal mechanism with plane normal to vector n[1..3], and slip direction vector s[1..3].
 //if slip_v==NULL, will use optimal rake. This is calculated from stress tensor S as well as background stresses stress0, and background normal pressure sigma0.
 //is sigma0==0, stress0==NULL, no background stress.
@@ -811,8 +809,6 @@ double resolve_n(double **S, double *n, double *rake, double fric, double *stres
 		tau=vdotv(stress,s,3);
 	}
 	else tau=vdotv(stress,slip_v,3);
-
-	if (optrake && rake) (*rake)=RAD2DEG*asin(-s[3]/sqrt(1-n[3]*n[3]));	//todo check if this is ambiguous...
 
 	free_dvector(s,1,3);
 	free_dvector(stress,1,3);

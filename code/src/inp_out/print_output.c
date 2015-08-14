@@ -14,7 +14,7 @@ int sum_DCFS(struct pscmp *DCFS, double **cmb, int N, int Ntot){
 
 	for (int n=0; n<N; n++){
 		i=1;
-		for (int k=1; k<=Ntot; k++){		//todo check if this works with DCFS.nsel<Ntot.
+		for (int k=1; k<=Ntot; k++){
 			if (i<=DCFS[n].nsel && DCFS[n].which_pts[i]==k) {
 				(*cmb)[k]+=DCFS[n].cmb[i];
 				i++;
@@ -39,66 +39,6 @@ int sum_DCFSrand(double **DCFSrand, double **cmb, int TS, int N){
 	return 0;
 }
 
-//void printmatrix(double **S){
-//	//printout 3x3 matrix
-//
-//	for (int ii=1; ii<=3; ii++) {
-//		for (int jj=1; jj<3; jj++) printf("%.3lf\t",S[ii][jj]);
-//		if (ii<3) printf("%.3lf\n",S[ii][3]);
-//		else  printf("%.3lf]\n",S[ii][3]);
-//	}
-//
-//	return;
-//
-//}
-
-//int print_cat(char *fname, struct catalog cat){
-///*uses following format:
-// * 1. Longitude [deg]
-//   2. Latitude [deg]
-//   3. Time (days)
-//   4. Magnitude
-//   5. Depth [km]
-// *
-// */
-//
-//	FILE *fout;
-//	int Z=cat.Z;
-//
-//	fout=fopen(fname,"w");
-//	for (int i=1; i<Z; i++) fprintf(fout, "%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf%.3lf\t%.3lf\t\n", cat.lon0[i], cat.lat0[i], cat.t[i], cat.mag[i], cat.depths0[i], cat.err[i], cat.verr[i]);
-//	fprintf(fout, "%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf%.3lf\t%.3lf\t", cat.lon0[Z], cat.lat0[Z], cat.t[Z], cat.mag[Z], cat.depths0[Z],cat.err[Z], cat.verr[Z]);
-//	fclose(fout);
-//
-//	return 0;
-//}
-
-//int print_cat_long(char *fname, struct catalog cat){
-///*uses following format (2 lines per event):
-// * No_gridpoints herr verr point1 point2 point3 ...
-// * No_gridpoints herr verr weight1 weight2 weight3 ...
-// */
-//
-//	FILE *fout;
-//	int Z=cat.Z;
-//
-//	fout=fopen(fname,"w");
-//	for (int i=1; i<Z; i++) {
-//
-//		fprintf(fout, "%d\t%.3e\t%.3e\t", cat.ngrid[i], cat.err[i], cat.verr[i]);
-//		for (int j=1; j<=cat.ngrid[i]; j++) fprintf(fout, "%d\t", cat.ngridpoints[i][j]);
-//
-//		fprintf(fout, "\n%d\t%.3e\t%.3e\t", cat.ngrid[i], cat.err[i], cat.verr[i]);
-//		for (int j=1; j<=cat.ngrid[i]; j++) fprintf(fout, "%.3e\t", cat.weights[i][j]);
-//		fprintf(fout, "\n");
-//	}
-//
-//	fclose(fout);
-//
-//	return 0;
-//}
-
-
 int print_grid(char *fname, struct pscmp DCFS, struct crust crst, double *rate){
 /* if rate is a null pointer, prints out the coulomb stress field (DCFS.cmb).
  * uses refined grid geometry.
@@ -118,7 +58,7 @@ int print_grid(char *fname, struct pscmp DCFS, struct crust crst, double *rate){
 		return(1);
 	}
 	i=1;
-	for (int k=1; k<=Ntot; k++){		//todo check if this works with DCFS.nsel<Ntot.
+	for (int k=1; k<=Ntot; k++){
 		Lon1=crst.lon[k]-crst.dlon/2.0;
 		Lon2=crst.lon[k]+crst.dlon/2.0;
 		Lat1=crst.lat[k]-crst.dlat/2.0;

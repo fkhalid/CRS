@@ -355,7 +355,6 @@ double ***d3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh)
 	return t;
 }
 
-// todo [coverage] this block is never tested
 void free_d3tensor(double ***t, long nrl, long nrh, long ncl, long nch,
 	long ndl, long ndh)
 /* free a double f3tensor allocated by f3tensor() */
@@ -364,67 +363,6 @@ void free_d3tensor(double ***t, long nrl, long nrh, long ncl, long nch,
 	free((FREE_ARG) (t[nrl]+ncl-NR_END));
 	free((FREE_ARG) (t+nrl-NR_END));
 }
-
-//void intersect_lists(int *l1, int *l2, int **l3, int **pts_l1, int **pts_l2, int N1, int N2, int *N3){
-////NB assumes lists are sorted.
-//	int p1=1, p2=1, n3=0;
-//	int *ltemp, *ltemp_l1, *ltemp_l2;
-//
-//	if (N1==0 || N2==0) {
-//		(*l3)= (*pts_l1) = (*pts_l2) = (int *) 0;
-//		*N3=0;
-//		return;
-//	}
-//
-//	if (l1==l2){
-//		*N3=N1;
-//		*l3=l1;
-//		if (pts_l1 != (int **) 0) {
-//			*pts_l1= ivector(1,*N3);
-//			for (int j=1; j<=*N3; j++) (*pts_l1)[j]=j;
-//		}
-//		if (pts_l2 != (int **) 0) {
-//			if (pts_l1 != (int **) 0) *pts_l2=*pts_l1;
-//			else {
-//				*pts_l2= ivector(1,*N3);
-//				for (int j=1; j<=*N3; j++) (*pts_l2)[j]=j;
-//			}
-//		}
-//		return;
-//	}
-//	ltemp= (N1<=N2)? ivector(1,N1) : ivector(1,N2);
-//	ltemp_l1= (N1<=N2)? ivector(1,N1) : ivector(1,N2);
-//	ltemp_l2= (N1<=N2)? ivector(1,N1) : ivector(1,N2);
-//
-//	while (p2<=N2){
-//		while (p1<N1 && l1[p1]<l2[p2]) p1++;
-//			if (l1[p1]==l2[p2]) {
-//				n3++;
-//				ltemp[n3]=l1[p1];
-//				ltemp_l1[n3]=p1;
-//				ltemp_l2[n3]=p2;
-//				p2++;
-//			}
-//			else p2++;
-//			if (p1==N1) break;
-//	}
-//
-//	*N3=n3;
-//	*l3= ivector(1,n3);
-//	if (pts_l1 != (int **) 0) *pts_l1= ivector(1,n3);
-//	if (pts_l2 != (int **) 0) *pts_l2= ivector(1,n3);
-//	 for (int i=1; i<=n3; i++) {
-//		 (*l3)[i]=ltemp[i];
-//		 if (pts_l1 != (int **) 0) (*pts_l1)[i]=ltemp_l1[i];
-//		 if (pts_l2 != (int **) 0) (*pts_l2)[i]=ltemp_l2[i];
-//	 }
-//
-//	free_ivector(ltemp,1,fmin(N1,N2));
-//	free_ivector(ltemp_l1,1,fmin(N1,N2));
-//	free_ivector(ltemp_l2,1,fmin(N1,N2));
-//
-//	return;
-//}
 
 void nearest_neighbours(int NP, int D1, int D2, int D3, int **nn){
 // points change along D1, then along D2, then along D3 (DX is no of points in each dimension).

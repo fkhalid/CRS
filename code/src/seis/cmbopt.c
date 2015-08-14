@@ -8,7 +8,6 @@
 #include "cmbopt.h"
 
 
-// todo [coverage] this block is never tested
 void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 	/* Calculates OOPs in a stress field given by the sum of background stress field (crst.S) and stress steps contained in DCFS.
 	 * Also calculates Coulomb stress change due to DCFS[ind] on these planes.
@@ -54,9 +53,9 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 		//find OOPs and resolve total stress (DCFS+S0):
 		//out of the two, the oop closest to the regional mechanism (crst.str0[0], crst.dip0[0], crst.rake0[0]) is chosen.
 		cmbopt(sxx, syy, szz, sxy, syz, sxz, 0, crst.fric, crst.str0[0], crst.dip0[0], crst.rake0[0], DCFS[ind].cmb+i, DCFS[ind].st1+i, DCFS[ind].di1+i, DCFS[ind].ra1+i, DCFS[ind].st2+i, DCFS[ind].di2+i, DCFS[ind].ra2+i);
-		//resolve background stress on both planes and calculate largest DCFS:	//todo think: should do this or use plane with largest *total* stress?
-		cmb1=resolve_S(DCFS[ind].S[i], DCFS[ind].st1[i], DCFS[ind].di1[i], DCFS[ind].ra1[i], crst.fric, NULL, 0.0, NULL, 0);
-		cmb2=resolve_S(DCFS[ind].S[i], DCFS[ind].st2[i], DCFS[ind].di2[i], DCFS[ind].ra2[i], crst.fric, NULL, 0.0, NULL, 0);
+		//resolve background stress on both planes and calculate largest DCFS:
+		cmb1=resolve_S(DCFS[ind].S[i], DCFS[ind].st1[i], DCFS[ind].di1[i], DCFS[ind].ra1[i], crst.fric, NULL, 0.0, 0);
+		cmb2=resolve_S(DCFS[ind].S[i], DCFS[ind].st2[i], DCFS[ind].di2[i], DCFS[ind].ra2[i], crst.fric, NULL, 0.0, 0);
 		DCFS[ind].cmb[i]=fmax(cmb1,cmb2);
 		if (DCFS[ind].cmb[i]>MaxDCFS) DCFS[ind].cmb[i]=MaxDCFS;
 		if (DCFS[ind].cmb[i]<-MaxDCFS) DCFS[ind].cmb[i]=-MaxDCFS;

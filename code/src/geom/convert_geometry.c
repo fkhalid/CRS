@@ -59,7 +59,6 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 		return 0;
 	}
 
-	// todo [coverage] from here on is never tested
 	if (increase_resolution){
 		D1=crst.nLat_out;	//large cells
 		D2=crst.nLon_out;

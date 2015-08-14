@@ -59,7 +59,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int c2=0, c3=0;	//counters.
 	int err=0, err0, j;
 	int *all_pts;
-	int no_synthetic_slipmodels=0;
+	int no_synthetic_slipmodels=0, no_slipmodels=0;
 	static struct set_of_models dummy_parentsetofmodels;
 	char *cmb_format=all_slipmodels.cmb_format;
 	dummy_parentsetofmodels.Nmod=0;	//this value indicates than no slip model is available (will use synthetic slip model from foc. mec. or isotropic field).
@@ -168,8 +168,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 					else{
 						// If none of the conditions above holds, assume isotropic field.
 						(*eqfm_comb)[c3].is_slipmodel=0;
-
-						/* todo: add counter here and produce some output (similar to what done previously for aftershocks). */
+						no_slipmodels+=1;
 					}
 				}
 
@@ -206,7 +205,11 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	if (no_synthetic_slipmodels){
 		print_screen("Using synthetic slip model from focal mechanism for %i earthquakes\n", no_synthetic_slipmodels);
 		print_logfile("Using synthetic slip model from focal mechanism for %i earthquakes\n", no_synthetic_slipmodels);
+	}
 
+	if (no_slipmodels){
+		print_screen("Using isotropic stress field for %i earthquakes\n", no_slipmodels);
+		print_logfile("Using isotropic stress field for %i earthquakes\n", no_slipmodels);
 	}
 
 	if (c_evfound<N2){
@@ -253,7 +256,6 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 	(*eqkfmP).pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
 	(*eqkfmP).pos_d[1]=0;
 
-	//TODO in theory, should find L and W for both mech. (rake differs).
 	WellsCoppersmith((*eqkfmP).mag, (*eqkfmP).rake1, &((*eqkfmP).L), &((*eqkfmP).W), &slip);
 	slip=(*eqkfmP).tot_slip[0]=pow(10,(1.5*((*eqkfmP).mag+6)))*(1.0/(crst.mu*pow(10,12)*(*eqkfmP).W*(*eqkfmP).L));
 

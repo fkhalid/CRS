@@ -256,7 +256,7 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
  */
 
 
-void track_position(long *pos, int NP, FILE* fin){	//todo move to more general file.
+void track_position(long *pos, int NP, FILE* fin){
 
 	for (int i=NP; i>0; i--) pos[i]=pos[i-1];
 	pos[0]=ftell(fin);
@@ -472,7 +472,7 @@ int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 			lattop=lat-RAD2DEG*(pos_dip[i]-0.5*(dw))*dipVy/Re;
 			dy=Re*(lattop-lat0)*DEG2RAD;
 			dx=(Re*cos(DEG2RAD*lat))*(lontop-lon0)*DEG2RAD;
-			// todo [coverage] this block is never tested
+
 			if ((dy>0.1) && (fabs(fmod(atan(dx/dy)+pi,pi)-fmod(strike,pi))>strike_toll)){
 				print_screen(" **Warning: Epicenter is not on the fault! Will use a new epicenter ** \n");
 				print_screen("\tOld epicenter: [lat, lon]= [%.3lf, %.3lf]\n", lat0,lon0);
