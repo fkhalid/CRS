@@ -24,7 +24,7 @@
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,
 							struct eqkfm *eqkfm0, struct flags flag,
 							double *times, int Nmain, int NA, struct crust crst,
-							struct Coeff_LinkList *AllCoeff, int NTScont,
+							struct Coeff_LinkList *AllCoeff, struct Coeff_LinkList *AllCoeff_aseis, int NTScont,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
 							double tdata0, double tdata1,
 							int refresh, int which_recfault);

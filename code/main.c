@@ -130,7 +130,7 @@ int main (int argc, char **argv) {
 		Nfocmec=0;	//number of focal mechanisms (size of focmec).
 
 
-	struct Coeff_LinkList *AllCoeff;	//contains okada coefficients.
+	struct Coeff_LinkList *AllCoeff, *AllCoeff_aseis;	//contains okada coefficients.
 
 	//RateState variables:
 	int fixta, fixAsig, fixr;		//flags indicating if parameters should be fixed (not inverted for).
@@ -484,7 +484,8 @@ int main (int argc, char **argv) {
     #endif
 
 
-	err=setup_CoeffsDCFS(&AllCoeff, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf, all_aslipmodels.Nfaults);
+	err=setup_CoeffsDCFS(&AllCoeff, &AllCoeff_aseis, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf,
+			all_aslipmodels.Nfaults);
 
 	if (err){
 		error_quit("Error in setting up okada coefficients structure or associating afterslip with a mainshock.\n");
@@ -570,8 +571,6 @@ int main (int argc, char **argv) {
 	// TODO: these variables may be too large to be stored in memory (for large Nsur). In this case, they should not be used (and the starting rates results from LL inversion should
 	// never be used in the forecast: see if condition below).
 
-	printf("Rank%d, multisnap=%d\n)", procId, flags.aseismic_multisnap);
-
 	print_screen("Setting up variables needed for grid search...");
 
 	if (LLinversion && forecast &&  tendLL<=Tstart) {
@@ -591,7 +590,7 @@ int main (int argc, char **argv) {
 
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
 	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm_co, flags,
-			crst, AllCoeff, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat, times2,
+			crst, AllCoeff, AllCoeff_aseis, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat, times2,
 			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 1);
 
 
@@ -792,7 +791,7 @@ int main (int argc, char **argv) {
 					p+=1;
 
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, DCFS, eqkfm_aft,
-										  	eqkfm_co, flags, crst, AllCoeff,
+										  	eqkfm_co, flags, crst, AllCoeff, AllCoeff_aseis,
 										  	L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat,
 										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, NULL,
 										  	gammas_new, 0, !tai && !as);
@@ -909,7 +908,7 @@ int main (int argc, char **argv) {
 			sprintf(printall_foret,"%s_forecast_all", outnamemod);
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
-			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, crst, AllCoeff, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec,
+			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, crst, AllCoeff, AllCoeff_aseis, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec,
 					&seed, cat, times2,tstart_calc, Tstart, Tend, fore_dt, maxAsig, maxta, maxr, gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL, !LLinversion);
 

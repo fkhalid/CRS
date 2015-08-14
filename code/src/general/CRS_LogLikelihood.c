@@ -25,7 +25,7 @@
 
 int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
 				struct eqkfm *eqkfm0, struct flags flags,
-				struct crust crst, struct Coeff_LinkList *AllCoeff,
+				struct crust crst, struct Coeff_LinkList *AllCoeff, struct Coeff_LinkList *AllCoeff_aseis,
 				int NTScont, int Nm, int Na, int NgridT, double **focmec, int *fmzonelim,
 				int NFM, long *seed, struct catalog cat, double *times, double tstart, double tt0, double tt1,
 				double dtstep, double Asig, double ta, double r0, double **all_gammas0,
@@ -322,7 +322,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		//Set starting rates:
 		if(fromstart) {
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
-								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
+								   times, Nm, Na, crst, AllCoeff, AllCoeff_aseis, NTScont, focmec,
 								   fmzonelim, NFM, seed, tstart, tt1, refresh && nsur==start,
 								   which_recfault);
 
@@ -341,7 +341,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 		else {
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
-								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
+								   times, Nm, Na, crst, AllCoeff, AllCoeff_aseis, NTScont, focmec,
 								   fmzonelim, NFM, seed, tt0, tt1, refresh && nsur==start,
 								   which_recfault);
 
@@ -596,7 +596,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, double *r_out,
 					 int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_aft,
 					 struct eqkfm *eqkfm0, struct flags flags,
-					 struct crust crst, struct Coeff_LinkList *AllCoeff, int NTScont,
+					 struct crust crst, struct Coeff_LinkList *AllCoeff, struct Coeff_LinkList *AllCoeff_aseis, int NTScont,
 					 int Nm, int Na, int NgridT, double **focmec, int *fmzonelim, int NFM,
 					 long *seed, struct catalog cat, double *times, double tstart, double tt0,
 					 double tt1, double tw, double Mag_main, double Asig, double ta, double r0, int fixr,
@@ -794,7 +794,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		//Set starting rates:
 		if (fromstart){
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
-								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
+								   times, Nm, Na, crst, AllCoeff, AllCoeff_aseis, NTScont, focmec,
 								   fmzonelim, NFM, seed, tstart, tt1,
 								   refresh && nsur==start /*&& first_timein*/, which_recfault);
 
@@ -811,7 +811,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		}
 		else{
 			calculateDCFSperturbed(DCFSrand, DCFS, eqkfm_aft, eqkfm0, flags,
-								   times, Nm, Na, crst, AllCoeff, NTScont, focmec,
+								   times, Nm, Na, crst, AllCoeff, AllCoeff_aseis, NTScont, focmec,
 								   fmzonelim, NFM, seed, tt0, tt1,
 								   refresh && nsur==start /*&& first_timein*/, which_recfault);
 

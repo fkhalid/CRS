@@ -28,7 +28,8 @@
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,
 							struct eqkfm *eqkfm0, struct flags flag,
 							double *times, int Nmain, int NA, struct crust crst,
-							struct Coeff_LinkList *AllCoeff, int NTScont,
+							struct Coeff_LinkList *AllCoeff,
+							struct Coeff_LinkList *AllCoeffaft, int NTScont,
 							double **focmec, int *fmzoneslim, int NFM, long *seed,
 							double tdata0, double tdata1, int refresh, int which_recfault) {
 
@@ -87,7 +88,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	static int fm_offset=0;	//offset to be added to crst.str0 (dip0) if a fixed receiver fault is used (more details below).
 	static struct eqkfm *eqkfm2;
 	static struct eqkfm *eqkfm2A;
-	struct Coeff_LinkList *temp, *AllCoeffaft;
+	struct Coeff_LinkList *temp, *temp2;
 	float ***Coeffs_st, ***Coeffs_dip, ***Coeffs_open;	//coefficients for tensor;
 	static float **Coeff_ResS, **Coeff_ResD;	//coefficients for cmb (resolved).
 	static struct pscmp *DCFS_Af;
@@ -99,6 +100,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	static double *mycmb=NULL;
 	static double **cmb_cumu;
 	int n_withslimodel, n_withoutslimodel;
+
 //	FILE *fout;
 	time_in+=1;
 
@@ -173,50 +175,40 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				}
 			}
 
-			//Find element of AllCoeff which should also be used for afterslip:
-			AllCoeffaft=AllCoeff;
+			for (int i=0; i<NA; i++){
 
-			for (int i=0; i<Nmain; i++){
-				if (!AllCoeffaft->hasafterslip) {
-					AllCoeffaft=AllCoeffaft->next;
+				for (int i=0; i<NTSeff; i++){
+					DCFS_Af[a_ev+i].NF=AllCoeffaft->NF;
+					DCFS_Af[a_ev+i].cmb= dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
+					DCFS_Af[a_ev+i].S=d3tensor(1,NgridT,1,3,1,3);
+					DCFS_Af[a_ev+i].nsel=eqkfmAf[nfaults].nsel;
+					DCFS_Af[a_ev+i].which_pts=eqkfmAf[nfaults].selpoints;
 				}
 
-				else{
+				Coeffs_st=AllCoeffaft->Coeffs_st;
+				Coeffs_dip=AllCoeffaft->Coeffs_dip;
+				Coeffs_open=AllCoeffaft->Coeffs_open;
 
-					for (int i=0; i<NTSeff; i++){
-						DCFS_Af[a_ev+i].NF=AllCoeffaft->NF;
-						DCFS_Af[a_ev+i].cmb= dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
-						DCFS_Af[a_ev+i].S=d3tensor(1,NgridT,1,3,1,3);
-						DCFS_Af[a_ev+i].nsel=eqkfmAf[nfaults].nsel;
-						DCFS_Af[a_ev+i].which_pts=eqkfmAf[nfaults].selpoints;
+				for (int i=0; i<NTSeff; i++)	{
+					for (int nf=0; nf<DCFS_Af[a_ev].NF; nf++){
+						//assign slip values for each snapshot and fault into slip_X (this is needed because okadaCoeff2DCFS uses them):
+						eqkfmAf[nfaults+nf].slip_str= (eqkfmAf[nfaults+nf].allslip_str)? eqkfmAf[nfaults+nf].allslip_str[i] : NULL;
+						eqkfmAf[nfaults+nf].slip_dip= (eqkfmAf[nfaults+nf].allslip_dip)? eqkfmAf[nfaults+nf].allslip_dip[i] : NULL;
+						eqkfmAf[nfaults+nf].open= (eqkfmAf[nfaults+nf].allslip_open)? eqkfmAf[nfaults+nf].allslip_open[i] : NULL;
 					}
-
-					Coeffs_st=AllCoeffaft->Coeffs_st;
-					Coeffs_dip=AllCoeffaft->Coeffs_dip;
-					Coeffs_open=AllCoeffaft->Coeffs_open;
-
-					for (int i=0; i<NTSeff; i++)	{
-						for (int nf=0; nf<DCFS_Af[a_ev].NF; nf++){
-							//assign slip values for each snapshot and fault into slip_X (this is needed because okadaCoeff2DCFS uses them):
-							eqkfmAf[nfaults+nf].slip_str= (eqkfmAf[nfaults+nf].allslip_str)? eqkfmAf[nfaults+nf].allslip_str[i] : NULL;
-							eqkfmAf[nfaults+nf].slip_dip= (eqkfmAf[nfaults+nf].allslip_dip)? eqkfmAf[nfaults+nf].allslip_dip[i] : NULL;
-							eqkfmAf[nfaults+nf].open= (eqkfmAf[nfaults+nf].allslip_open)? eqkfmAf[nfaults+nf].allslip_open[i] : NULL;
-						}
-						okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults);
-						if (vary_recfault==0) {
-							resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
-							//resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);	//fixme one line or the other
-							free_d3tensor(DCFS_Af[a_ev+i].S, 1,NgridT,1,3,1,3);
-							if (multisnap && i<NTSeff){
-								for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[a_ev+i].cmb[n];
-							}
+					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults);
+					if (vary_recfault==0) {
+						resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
+						//resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);	//fixme one line or the other
+						free_d3tensor(DCFS_Af[a_ev+i].S, 1,NgridT,1,3,1,3);
+						if (multisnap && i<NTSeff){
+							for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[a_ev+i].cmb[n];
 						}
 					}
-					nfaults+=DCFS_Af[a_ev].NF;	//counter for eqkfmAf
-					a_ev+=NTSeff;	//counter for DCFS_Af
-					AllCoeffaft=AllCoeffaft->next;
-
 				}
+				nfaults+=DCFS_Af[a_ev].NF;	//counter for eqkfmAf
+				a_ev+=NTSeff;	//counter for DCFS_Af
+				AllCoeffaft=AllCoeffaft->next;
 			}
 		}
 		print_screen("done.\n");

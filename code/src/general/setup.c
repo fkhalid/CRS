@@ -418,7 +418,7 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 	return;
 }
 
-int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_out,
+int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList **Coefficients_aseismic, struct pscmp **DCFS_out,
 		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults, struct eqkfm *eqkfm_aft, int no_afterslip, int *Nfaults_aft) {
 	/*
 	 *  aftersliptime: event time of the mainshock containing afterslip.
@@ -433,9 +433,9 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 	#endif
 
 	struct pscmp *DCFS;
-    struct Coeff_LinkList *AllCoeff, *temp, *temp2;
+    struct Coeff_LinkList *AllCoeff, *temp, *temp2, *AllCoeff_aseismic;
     int Nsel, Nsteps, NFtot, NFtotaft;
-    int mainshock_withafterslip;
+    int mainshock_withafterslip, same_geometry;
     int afterslip= (eqkfm_aft==NULL) ? 0 : 1;
     double M0;
 
@@ -446,16 +446,14 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
     	AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
 		temp= AllCoeff;
 		for(int i=0; i<Nm; i++) {
+			temp->aseismic_pointer=NULL;
+			temp->which_main=i;
 			if (i<Nm-1) {
-				temp->hasafterslip=0;
 				temp->next= malloc(sizeof(struct Coeff_LinkList));
 				temp= temp->next;
-				temp->which_main=i;
 			}
 			else {
-				temp->hasafterslip=0;
 				temp->next=(struct Coeff_LinkList *) 0;
-				temp->which_main=i;
 			}
 		}
 
@@ -501,42 +499,55 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct pscmp **DCFS_o
 	// uses a ~1 sec tolerance
 
     if (afterslip){
-    	int i=0;
+
+    	AllCoeff_aseismic= malloc( sizeof(struct Coeff_LinkList));
+    	temp=AllCoeff_aseismic;
+
 		NFtot=NFtotaft=0;
     	for (int a=0; a<no_afterslip; a++){
-    		printf("afterslip time=%.5lf\n", eqkfm_aft[NFtotaft].t);
-			mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, eqkfm_aft[NFtotaft].t, 0.000011575);
-			if (mainshock_withafterslip==-1){
+    		//check whether the aseismic slip is associated with coseismic slip.
+    		//this is done so that the same okada coefficients are used: less memory/computations are needed.
+    		mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, eqkfm_aft[NFtotaft].t, 0.000011575);
+
+    		//if a mainshock is found, calculate respective position in eqkfm0 structure (NFtot) and in AllCoeff.
+    		if (mainshock_withafterslip!=-1){
+    			NFtot=0;
+				for (int i=0; i<mainshock_withafterslip; i++) NFtot+=Nfaults[i];
+				same_geometry=check_same_geometry(eqkfm0+NFtot, Nfaults[mainshock_withafterslip], eqkfm_aft+NFtotaft, Nfaults_aft[a]);
+    		}
+
+			if (mainshock_withafterslip==-1 || !same_geometry){
 				print_logfile("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
 				print_screen("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
 				return(1);
 			}
-			temp2=AllCoeff;
-			while (i<Nm && i!=mainshock_withafterslip) {
-				NFtot+=Nfaults[i];
-				i++;
+			else{
+				//shift to correct AllCoeff element:
+    			temp2=AllCoeff;
+    			while (temp2 && temp2->which_main!=mainshock_withafterslip) temp2=temp2->next;
+
+				//set pointers to corresponding co/postseismic elements to each others:
+				for (int nf=0; nf<Nfaults[mainshock_withafterslip]; nf++){
+					eqkfm0[NFtot+nf].co_aft_pointer=eqkfm_aft+NFtotaft+nf;
+					eqkfm_aft[NFtotaft+nf].co_aft_pointer=eqkfm0+NFtot+nf;
+				}
+
+				//cuts_surf must be the same for afterslip and coseismic model:
+				for (int f=0; f<Nfaults_aft[a]; f++) eqkfm_aft[NFtotaft+f].cuts_surf=eqkfm0[NFtot+f].cuts_surf;
+
+				temp2->aseismic_pointer=temp;
 				temp2=temp2->next;
+
+				temp->next= malloc(sizeof(struct Coeff_LinkList));
+				temp=temp->next;
+
 			}
-
-			if (!check_same_geometry(eqkfm0+NFtot, Nfaults[i], eqkfm_aft+NFtotaft, Nfaults_aft[a])){
-				print_logfile("Error: Afterslip model no %d and coseismic slip model have different geometry. Exiting.\n", a+1);
-				print_screen("Error: Afterslip model no %d and coseismic slip model have different geometry. Exiting.\n", a+1);
-				return(1);
-			}
-
-			//set pointers to corresponding co/postseismic elements to each others:
-			for (int nf=0; nf<Nfaults[i]; nf++){
-				eqkfm0[NFtot+nf].co_aft_pointer=eqkfm_aft+NFtotaft+nf;
-				eqkfm_aft[NFtotaft+nf].co_aft_pointer=eqkfm0+NFtot+nf;
-			}
-
-			//cuts_surf must be the same for afterslip and coseismic model:
-			for (int f=0; f<Nfaults_aft[a]; f++) eqkfm_aft[NFtotaft+f].cuts_surf=eqkfm0[NFtot+f].cuts_surf;
-
-			temp2->hasafterslip=1;
-			temp2=temp2->next;
 			NFtotaft+=Nfaults_aft[a];
 		}
+
+		*Coefficients_aseismic=AllCoeff_aseismic;
+		print_logfile("Okada Coefficients structure set up for %d aseismic sources.\n", no_afterslip);
+
     }
 
     return(0);
@@ -553,7 +564,7 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 		MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 	#endif
 
-    struct Coeff_LinkList *temp;
+    struct Coeff_LinkList *temp, *temp2;
     struct set_of_models tmp_setofmodels;
     int NFsofar=0;
     static int first_timein=1, switch_slipmodel;
@@ -600,6 +611,18 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 			}
 		}
 		NFsofar+=Nfaults[i];
+
+		temp2=temp->aseismic_pointer;
+		if (temp2){
+			temp2->NF=temp->NF;				// tot. no of faults;
+			temp2->which_main=temp->which_main;		// index of pscmp DCFS to which earthquake refer;
+			temp2->NP=temp->NP;				// tot. no. of patches (sum of no. of patches of individual faults);
+			temp2->NgridT=temp->NgridT;			// no. of grid cells.
+			temp2->Coeffs_st=temp->Coeffs_st;
+			temp2->Coeffs_dip=temp->Coeffs_dip;
+			temp2->Coeffs_open=temp->Coeffs_open;	// Coefficient for strike slip, dip slip displacements.
+		}
+
 		if (i<Nm-1) {
 			temp= temp->next;
 		}
