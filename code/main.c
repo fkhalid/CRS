@@ -492,6 +492,7 @@ int main (int argc, char **argv) {
 	}
 
 	update_CoeffsDCFS(&AllCoeff, crst, eqkfm_co, Nco, Nfaults_co);
+	update_CoeffsDCFS(&AllCoeff_aseis, crst, eqkfm_aft, Naf, all_aslipmodels.Nfaults);
 
 	#ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
@@ -521,7 +522,8 @@ int main (int argc, char **argv) {
 	double *times2=NULL;
 
 	//t_earliest_stress used later to calculate tstart_calc; 1e30 ensures value is ignored (see later).
-	t_earliest_stress= (Nco>0) ? eqkfm_co[0].t-1e-4 : 1e30;	//time of earliest source. fixme will change when general stressing history is allowed.
+	t_earliest_stress= (Nco>0) ? eqkfm_co[0].t-1e-4 : 1e30;	//time of earliest source.
+	t_earliest_stress= (Naf>0) ? fmin(eqkfm_aft[0].t-1e-4, t_earliest_stress) : t_earliest_stress;	//time of earliest source.
 
 	if (flags.afterslip){
 

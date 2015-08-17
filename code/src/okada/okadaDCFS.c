@@ -173,9 +173,9 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	//todo it may also be better to process each of the 3 tensors (Coeffs_XX) separately: less likely to run out of memory.
 
 	//allocate memory and set to 0 (inside f3tensor).
-	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);
-	if (flag_dslip) *Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
-	if (flag_open) *Coeffs_open=f3tensor(1,NP_tot,1,Nsel,1,6);
+	*Coeffs_st = (flag_sslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
+	*Coeffs_dip= (flag_dslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
+	*Coeffs_open= (flag_open) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
 
 	//-----------------------------------------------------------------------------------------//
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
@@ -447,9 +447,9 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
 
 	//allocate memory and set to 0 (inside f3tensor).	//todo could use array of pointers for smarter memory allocation...
-	if (flag_sslip) *Coeffs_st=f3tensor(1,NP_tot,1,Nsel,1,6);
-	if (flag_dslip) *Coeffs_dip=f3tensor(1,NP_tot,1,Nsel,1,6);
-	if (flag_open) *Coeffs_open=f3tensor(1,NP_tot,1,Nsel,1,6);
+	*Coeffs_st= (flag_sslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
+	*Coeffs_dip= (flag_dslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
+	*Coeffs_open= (flag_open) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
 
 	//-----------------------------------------------------------------------------------------//
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//

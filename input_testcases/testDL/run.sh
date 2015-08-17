@@ -123,3 +123,33 @@ mkdir coverage/testDL6
 cp Coverage/code/src/*/*.gc* coverage/testDL6
 fi
 
+#1 afterslip models, corresponding to an empty earthquake. Should be the same as w/o the eqk (testDL8)
+ln1="OutputForecastFile=output_testcases/testDL7"
+ln2="Logfile=output_testcases/testDL7.log"
+ln7="InputCatalogFile=input_testcases/testDL/catalog3.dat"
+
+sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist3*" | sed "13s+.*+$ln13+" | sed "7s+.*+$ln7+"  | sed "6s+.*+$ln6+" | sed "4s+.*+$ln4+" > temp_inputDL
+echo "InputListAfterslipModels=input_testcases/testDL/aslipmodels7.dat" >> temp_inputDL
+cp  $parafile $temppara
+$Build/CRS_3.0 temp_inputDL
+if [ $Build == "Coverage" ]
+then
+mkdir coverage/testDL7
+cp Coverage/code/src/*/*.gc* coverage/testDL7
+fi
+
+#1 afterslip models, corresponding to no earthquake. Should be the same as testDL7
+ln1="OutputForecastFile=output_testcases/testDL8"
+ln2="Logfile=output_testcases/testDL8.log"
+ln7="InputCatalogFile=input_testcases/testDL/catalog4.dat"
+
+sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist3*" | sed "13s+.*+$ln13+" | sed "7s+.*+$ln7+"  | sed "6s+.*+$ln6+" | sed "4s+.*+$ln4+" > temp_inputDL
+echo "InputListAfterslipModels=input_testcases/testDL/aslipmodels7.dat" >> temp_inputDL
+cp  $parafile $temppara
+$Build/CRS_3.0 temp_inputDL
+if [ $Build == "Coverage" ]
+then
+mkdir coverage/testDL8
+cp Coverage/code/src/*/*.gc* coverage/testDL8
+fi
+

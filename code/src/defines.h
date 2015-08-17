@@ -14,7 +14,7 @@
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
-//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
+#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 9				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 33	// No. of scalar variables in 'struct BCast_Model_Parameters'
@@ -89,7 +89,7 @@ struct Coeff_LinkList{
 	int NgridT;			// no. of grid cells.
 	float ***Coeffs_st, ***Coeffs_dip, ***Coeffs_open;	// Coefficient for strike slip, dip slip displacements.
 	struct Coeff_LinkList *next;	// pointer to next element.
-	struct Coeff_LinkList *aseismic_pointer;	// pointer to next element.
+	struct Coeff_LinkList *borrow_coeff_from;	// pointer to next element.
 };
 
 // earthquake catalog.

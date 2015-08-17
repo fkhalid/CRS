@@ -81,9 +81,9 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	#endif
 
 	struct eqkfm *eqkfm1fm;
-	double tstartS, tendS, tstartCat, tendCat;
+	double tendS, tendCat;
 	double minmag;
-	int err=0, errP, NgridT=crst.N_allP;
+	int err=0, NgridT=crst.N_allP;
 	int Nfm;
 
 	print_screen("Setting up catalog...\n");
@@ -434,7 +434,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
 
 	struct pscmp *DCFS;
     struct Coeff_LinkList *AllCoeff, *temp, *temp2, *AllCoeff_aseismic;
-    int Nsel, Nsteps, NFtot, NFtotaft;
+    int Nsel, NFtot, NFtotaft;
     int mainshock_withafterslip, same_geometry;
     int afterslip= (eqkfm_aft==NULL) ? 0 : 1;
     double M0;
@@ -446,7 +446,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
     	AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
 		temp= AllCoeff;
 		for(int i=0; i<Nm; i++) {
-			temp->aseismic_pointer=NULL;
+			temp->borrow_coeff_from=NULL;	//since coefficients will be calculated for all seismic sources.
 			temp->which_main=i;
 			if (i<Nm-1) {
 				temp->next= malloc(sizeof(struct Coeff_LinkList));
@@ -517,9 +517,16 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
     		}
 
 			if (mainshock_withafterslip==-1 || !same_geometry){
-				print_logfile("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
-				print_screen("Error: Reference time for afterslip does not correspond to a mainshock. Exiting.\n");
-				return(1);
+
+				//fixme here should create a model anyways.
+				//be very careful with indices, also check them for the other condition!
+
+				for (int nf=0; nf<Nfaults_aft[a]; nf++){
+					eqkfm_aft[NFtotaft+nf].co_aft_pointer=NULL;
+				}
+
+				temp->borrow_coeff_from=NULL;
+
 			}
 			else{
 				//shift to correct AllCoeff element:
@@ -535,13 +542,13 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
 				//cuts_surf must be the same for afterslip and coseismic model:
 				for (int f=0; f<Nfaults_aft[a]; f++) eqkfm_aft[NFtotaft+f].cuts_surf=eqkfm0[NFtot+f].cuts_surf;
 
-				temp2->aseismic_pointer=temp;
+				//set pointers of corresponding elements to each others. Later this will be used to avoid calculating Okada coeff. twice.
+				temp->borrow_coeff_from=temp2;
 				temp2=temp2->next;
-
-				temp->next= malloc(sizeof(struct Coeff_LinkList));
-				temp=temp->next;
-
 			}
+
+			temp->next= malloc(sizeof(struct Coeff_LinkList));
+			temp=temp->next;
 			NFtotaft+=Nfaults_aft[a];
 		}
 
@@ -572,56 +579,69 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 	//Fill in elements of structure:
 	temp= *Coefficients;
 	for(int i=0; i<Nm; i++) {
-		if (eqkfm0[NFsofar].is_slipmodel) {
-			// coefficients should only calculated if more than one slip model is provided (switch_slipmodel):
-			tmp_setofmodels=*(eqkfm0[NFsofar].parent_set_of_models);
-			switch_slipmodel= (tmp_setofmodels.Nmod > 1);
-			if (first_timein || switch_slipmodel){
-				if (!first_timein){
-					if (temp->Coeffs_st) free_f3tensor(temp->Coeffs_st, 1,0,1,0,1,0);
-					if (temp->Coeffs_dip) free_f3tensor(temp->Coeffs_dip, 1,0,1,0,1,0);
-					if (temp->Coeffs_open) free_f3tensor(temp->Coeffs_open, 1,0,1,0,1,0);
+		if (temp->borrow_coeff_from==NULL){	//coefficients should be calculated.
+
+			if (eqkfm0[NFsofar].is_slipmodel) {
+				// coefficients should only calculated if more than one slip model is provided (switch_slipmodel):
+				// for afterslip, multiple slip models are now allowed: parent_set_of_models=NULL
+				if (eqkfm0[NFsofar].parent_set_of_models){
+					tmp_setofmodels=*(eqkfm0[NFsofar].parent_set_of_models);
+					switch_slipmodel= (tmp_setofmodels.Nmod > 1);
+				}
+				else{
+					//with aseismic slip, this function will only be entered once (but first_timein=0 since it was entered with seismic slip), and coefficients should be populated.
+					switch_slipmodel=1;
 				}
 
-				#ifdef _CRS_MPI
-					okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar, Nfaults[i], crst);
-				#else
-					okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar, Nfaults[i], crst);
-				#endif
+				if (first_timein || switch_slipmodel){
+					if (!first_timein){
+						if (temp->Coeffs_st) free_f3tensor(temp->Coeffs_st, 1,0,1,0,1,0);
+						if (temp->Coeffs_dip) free_f3tensor(temp->Coeffs_dip, 1,0,1,0,1,0);
+						if (temp->Coeffs_open) free_f3tensor(temp->Coeffs_open, 1,0,1,0,1,0);
+					}
 
-				temp->NgridT=eqkfm0[0].nsel;
-				temp->NF=Nfaults[i];
-				temp->NP=0;
-				for(int f=0; f<Nfaults[i]; f++) {
-					temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+					#ifdef _CRS_MPI
+						okadaCoeff_mpi(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar, Nfaults[i], crst);
+					#else
+						okadaCoeff(&(temp->Coeffs_st), &(temp->Coeffs_dip), &(temp->Coeffs_open), eqkfm0+NFsofar, Nfaults[i], crst);
+					#endif
+
+					temp->NgridT=eqkfm0[0].nsel;
+					temp->NF=Nfaults[i];
+					temp->NP=0;
+					for(int f=0; f<Nfaults[i]; f++) {
+						temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+					}
+					temp->which_main=i;
 				}
-				temp->which_main=i;
+			}
+			else {
+				temp->Coeffs_st=temp->Coeffs_dip=temp->Coeffs_open=NULL;
+				if (first_timein){
+					temp->NgridT=eqkfm0[0].nsel;
+					temp->NF=Nfaults[i];
+					temp->NP=0;
+					for(int f=0; f<Nfaults[i]; f++) {
+						temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
+					}
+					temp->which_main=i;
+				}
 			}
 		}
-		else {
-			temp->Coeffs_st=temp->Coeffs_dip=temp->Coeffs_open=NULL;
-			if (first_timein){
-				temp->NgridT=eqkfm0[0].nsel;
-				temp->NF=Nfaults[i];
-				temp->NP=0;
-				for(int f=0; f<Nfaults[i]; f++) {
-					temp->NP+= eqkfm0[NFsofar+f].np_di*eqkfm0[NFsofar+f].np_st;
-				}
-				temp->which_main=i;
-			}
+
+		else{
+			temp2=temp->borrow_coeff_from;
+			temp->NF=temp2->NF;				// tot. no of faults;
+			temp->which_main=temp2->which_main;		// index of pscmp DCFS to which earthquake refer;
+			temp->NP=temp2->NP;				// tot. no. of patches (sum of no. of patches of individual faults);
+			temp->NgridT=temp2->NgridT;			// no. of grid cells.
+			temp->Coeffs_st=temp2->Coeffs_st;
+			temp->Coeffs_dip=temp2->Coeffs_dip;
+			temp->Coeffs_open=temp2->Coeffs_open;	// Coefficient for strike slip, dip slip displacements.
 		}
+
 		NFsofar+=Nfaults[i];
 
-		temp2=temp->aseismic_pointer;
-		if (temp2){
-			temp2->NF=temp->NF;				// tot. no of faults;
-			temp2->which_main=temp->which_main;		// index of pscmp DCFS to which earthquake refer;
-			temp2->NP=temp->NP;				// tot. no. of patches (sum of no. of patches of individual faults);
-			temp2->NgridT=temp->NgridT;			// no. of grid cells.
-			temp2->Coeffs_st=temp->Coeffs_st;
-			temp2->Coeffs_dip=temp->Coeffs_dip;
-			temp2->Coeffs_open=temp->Coeffs_open;	// Coefficient for strike slip, dip slip displacements.
-		}
 
 		if (i<Nm-1) {
 			temp= temp->next;
