@@ -70,7 +70,7 @@ int main (int argc, char **argv) {
 	if (run_tests){
 		extra_verbose=1;
 		//test_merge_multiple();
-		//log_afterslip();
+		//log_aseismic();
 		//test_readZMAP_catindex();
 		//background_rates();
 		//test_forecast_stepG2_new();
@@ -93,7 +93,7 @@ int main (int argc, char **argv) {
 		printall_cmb[Nchar],  printall_forex[Nchar],  printall_foret[Nchar];	//output related file names
 	char infile[Nchar], fore_template[Nchar], catname[Nchar],
 		background_rate_grid[Nchar], background_rate_cat[Nchar], slipmodelfile[Nchar],
-		afterslipmodelfile[Nchar], modelparametersfile[Nchar], fixedmecfile[Nchar];	//input related file names
+		aseismicmodelfile[Nchar], modelparametersfile[Nchar], fixedmecfile[Nchar];	//input related file names
 	char **focmeccats;
 
 
@@ -109,7 +109,7 @@ int main (int argc, char **argv) {
 	double dt, dM, xytoll, ztoll, border;	//tolerance used to match earthquakes from catalog and from focal mechanism catalog.
 
 	int Ntemp,		//size of eqkfm_temp
-		Nco, Naf,		//number of seismic sources. size of Nfaults_co; no. of afterslips.
+		Nco, Naf,		//number of seismic sources. size of Nfaults_co; no. of aseismic slip models.
 		*Nfaults_co=0;	//number of faults for each seismic source. size of eqkfm_co is the sum of its elements.
 
 	double res, 	//slip model resolution
@@ -248,7 +248,7 @@ int main (int argc, char **argv) {
 	//-----------------------read input file -------------------//
 
 	err=read_inputfile(infile, outname, fore_template, catname, &focmeccats, background_rate_grid, background_rate_cat,
-			fixedmecfile, slipmodelfile, afterslipmodelfile, modelparametersfile, logfile, &reftime, &Tstart, &Tend, &tstartLL, &tendLL, &seed,
+			fixedmecfile, slipmodelfile, aseismicmodelfile, modelparametersfile, logfile, &reftime, &Tstart, &Tend, &tstartLL, &tendLL, &seed,
 			&no_fm_cats);
 
 	if (err) {
@@ -260,7 +260,7 @@ int main (int argc, char **argv) {
 		// 		   setting certain flags.
 		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(aseismicmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 
@@ -293,12 +293,12 @@ int main (int argc, char **argv) {
 		print_screen("Warning: FixedMecFile will not be used (receiver fault flag in parameter file not set to 'fixed').\n");
 	}
 
-	if ((strcmp(afterslipmodelfile,"")==0)) {
-		print_screen("InputListAfterslipModels not given: will not use afterslip.\n");
-		flags.afterslip=0;
+	if ((strcmp(aseismicmodelfile,"")==0)) {
+		print_screen("InputListAfterslipModels not given: will not use aseismic slip.\n");
+		flags.aseismic=0;
 	}
 	else{
-		flags.afterslip=1;
+		flags.aseismic=1;
 	}
 
 	if (strcmp(background_rate_grid,"")==0)	use_bg_rate_grid=0;
@@ -355,13 +355,13 @@ int main (int argc, char **argv) {
 
 
 //---------------------------------------------//
-//--------------Setup afterslip----------------//
+//--------------Setup aseismic slip------------//
 //---------------------------------------------//
 
-	if (flags.afterslip !=0) {
-		err=read_listslipmodel(afterslipmodelfile, reftime, &all_aslipmodels, res, 1, &(flags.aseismic_linear), &t0log, &(flags.aseismic_multisnap));
-		err+=setup_afterslip_eqkfm(all_aslipmodels, crst, &eqkfm_aft);
-		if (err!=0) error_quit("Error in setting up afterslip slip model. Exiting.\n");
+	if (flags.aseismic !=0) {
+		err=read_listslipmodel(aseismicmodelfile, reftime, &all_aslipmodels, res, 1, &(flags.aseismic_linear), &t0log, &(flags.aseismic_multisnap));
+		err+=setup_aseismic_eqkfm(all_aslipmodels, crst, &eqkfm_aft);
+		if (err!=0) error_quit("Error in setting up aseismic slip model. Exiting.\n");
 		Naf=all_aslipmodels.NSM;
 	}
 	else {
@@ -488,7 +488,7 @@ int main (int argc, char **argv) {
 			all_aslipmodels.Nfaults);
 
 	if (err){
-		error_quit("Error in setting up okada coefficients structure or associating afterslip with a mainshock.\n");
+		error_quit("Error in setting up okada coefficients structure.\n");
 	}
 
 	update_CoeffsDCFS(&AllCoeff, crst, eqkfm_co, Nco, Nfaults_co);
@@ -525,28 +525,28 @@ int main (int argc, char **argv) {
 	t_earliest_stress= (Nco>0) ? eqkfm_co[0].t-1e-4 : 1e30;	//time of earliest source.
 	t_earliest_stress= (Naf>0) ? fmin(eqkfm_aft[0].t-1e-4, t_earliest_stress) : t_earliest_stress;	//time of earliest source.
 
-	if (flags.afterslip){
+	if (flags.aseismic){
 
 		smallest_time=fmin(t_earliest_stress, fmin(tstartLL, Tstart));	//the first time step will be before this time; this is needed in rate_state_evol.
 
 		if (flags.aseismic_linear){
 
 			if (flags.aseismic_multisnap) {
-				err=setup_afterslip_multi_linear(smallest_time, fmax(tendLL, Tend), &eqkfm_aft, Naf, all_aslipmodels.Nfaults, &L, &times2);
+				err=setup_aseismic_multi_linear(smallest_time, fmax(tendLL, Tend), &eqkfm_aft, Naf, all_aslipmodels.Nfaults, &L, &times2);
 			}
 			else{
-				err=setup_afterslip_single_linear(smallest_time, fmax(tendLL, Tend), &eqkfm_aft, Naf, all_aslipmodels.Nfaults, &L, &times2);
+				err=setup_aseismic_single_linear(smallest_time, fmax(tendLL, Tend), &eqkfm_aft, Naf, all_aslipmodels.Nfaults, &L, &times2);
 			}
 
 		}
 
 		else{
 			if (flags.aseismic_multisnap) {
-				err=setup_afterslip_splines(smallest_time, fmax(tendLL, Tend), &eqkfm_aft,
+				err=setup_aseismic_splines(smallest_time, fmax(tendLL, Tend), &eqkfm_aft,
 					Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);
 			}
 			else{
-				err=setup_afterslip_single_log(smallest_time, fmax(tendLL, Tend), t0log, &eqkfm_aft,
+				err=setup_aseismic_single_log(smallest_time, fmax(tendLL, Tend), t0log, &eqkfm_aft,
 					Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);
 			}
 		}
@@ -732,9 +732,6 @@ int main (int argc, char **argv) {
 
 		if (!all_slipmodels.constant_geometry){
 			if (mod!=1){
-//				if (AllCoeff->Coeffs_dip) free_f3tensor(AllCoeff->Coeffs_dip, 1,0,1,0,1,0);
-//				if (AllCoeff->Coeffs_st) free_f3tensor(AllCoeff->Coeffs_st, 1,0,1,0,1,0);
-//				if (AllCoeff) free(AllCoeff);
 				update_CoeffsDCFS(&AllCoeff, crst, eqkfm_co, Nco, Nfaults_co);
 			}
 		}

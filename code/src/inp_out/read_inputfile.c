@@ -21,7 +21,7 @@
 #endif
 
 int read_inputfile(char *input_fname, char *outname, char *fore_template,
-		char *catname, char ***focmeccat, char *background_rate_grid, char *background_rate_cat, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,
+		char *catname, char ***focmeccat, char *background_rate_grid, char *background_rate_cat, char *fixedmecfile, char *slipmodelfile, char *aseismicmodelfile,
 		char *model_parameters_file, char *Logfile, struct tm *reftime,
 		double *Tstart, double *Tend, double *tstartLL, double *tendLL, long *seed, int *num_fm){
 
@@ -38,7 +38,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	 * 		catname: catalog (ZMAP)
 	 * 		focmeccat: catalog of focal mechanisms
 	 * 		background_rate_grid: file containing background seismicity model
-	 * 		slipmodefile, afterslipmodelfile: files containing a list of slip models/afterslipmodel snapshots
+	 * 		slipmodefile, aseismicmodelfile: files containing a list of slip models/aseismicmodel snapshots
 	 * 		model_parameters_file: file containing model parameters
 	 * 		Logfile: log file to be written
 	 * 		seed: seed for random number generator
@@ -202,7 +202,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 					if (slipmodelfile) sscanf(value,"%s",slipmodelfile);
 					break;
 				case 10:
-					if (afterslipmodelfile) sscanf(value,"%s",afterslipmodelfile);
+					if (aseismicmodelfile) sscanf(value,"%s",aseismicmodelfile);
 					break;
 				case 11:
 					if (background_rate_grid) sscanf(value,"%s",background_rate_grid);
@@ -258,7 +258,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		MPI_Bcast(outname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	// [Fahad]: Since all processes now need to write to files.
 		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(afterslipmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(aseismicmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(Tstart, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(Tend, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -361,7 +361,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
 						print_logfile("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
 					}
-					if (afterslipmodelfile) strcpy(afterslipmodelfile,"");
+					if (aseismicmodelfile) strcpy(aseismicmodelfile,"");
 					break;
 				case 11:
 					if (extra_verbose) {
@@ -504,14 +504,14 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 // FIXME: [Fahad] MPI code this this function requires optimization ...
 int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels,
-					   double res, int is_afterslip, int *aseismic_linear, double *t0log, int *flag_multisnap) {
+					   double res, int is_aseismic, int *aseismic_linear, double *t0log, int *flag_multisnap) {
 	/*
 	 * Read a file containing a list of slip models.
 	 *
 	 * input:
 	 * 	input_fname (file name)
 	 * 	reftime: structure containing the value of corresponding to reference time (IssueTime).
-	 * 	is_afterslip: flag indicating whether the file contains coseismic slip models or afterslip (files are organized differently).
+	 * 	is_aseismic: flag indicating whether the file contains coseismic slip models or aseismic slip (files are organized differently).
 	 * 	res: desired slip model resolution
 	 *
 	 * output:
@@ -544,7 +544,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		}
 	}
 
-	if (is_afterslip) *flag_multisnap=-1;	//initial value, meaning not assigned yet. (will change later)
+	if (is_aseismic) *flag_multisnap=-1;	//initial value, meaning not assigned yet. (will change later)
 
 
 	#ifdef _CRS_MPI
@@ -555,7 +555,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		print_screen("Warning read_input: no slip model file found (read_listslipmodel).\n");
 		print_logfile("\nWarning read_input: slip model file %s not found (read_listslipmodel).\n", input_fname);
 		(*allslipmodels).NSM=0;
-		(*allslipmodels).is_afterslip=is_afterslip;
+		(*allslipmodels).is_aseismic=is_aseismic;
 		(*allslipmodels).tmain= NULL;
 		(*allslipmodels).mmain= NULL;
 		(*allslipmodels).disc= NULL;
@@ -572,7 +572,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			if (ferror(fin)) fprintf(stderr, "ERROR reading input data (file: %s) using fgets!\n", input_fname);
 			sscanf(line,"%d", &Nm0);
 			fgets(line,Nchar,fin);
-			if (is_afterslip) {
+			if (is_aseismic) {
 				sscanf(line,"%s %s %lf", &((*allslipmodels).cmb_format), log_evol, t0log);
 				if (!strcmp(log_evol, "log")) {
 					*aseismic_linear=0;
@@ -604,7 +604,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 		#ifdef _CRS_MPI
 			MPI_Bcast(&Nm0, 1, MPI_INT, 0, MPI_COMM_WORLD);
-			if (is_afterslip){
+			if (is_aseismic){
 				MPI_Bcast(&aseismic_log, 1, MPI_INT, 0, MPI_COMM_WORLD);
 				MPI_Bcast(&aseismic_splines, 1, MPI_INT, 0, MPI_COMM_WORLD);
 				MPI_Bcast(aseismic_linear, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -615,9 +615,9 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		#endif
 
 		(*allslipmodels).NSM=Nm0;
-		(*allslipmodels).is_afterslip=is_afterslip;
-		(*allslipmodels).tmain= dvector(0,Nm0-1);	//-1 element to store mainshock time (when afterslip starts).
-		(*allslipmodels).mmain= (is_afterslip)? NULL : dvector(0,Nm0-1);
+		(*allslipmodels).is_aseismic=is_aseismic;
+		(*allslipmodels).tmain= dvector(0,Nm0-1);	//-1 element to store mainshock time (when aseismic slip starts).
+		(*allslipmodels).mmain= (is_aseismic)? NULL : dvector(0,Nm0-1);
 		(*allslipmodels).cut_surf=ivector(0,Nm0-1);
 		(*allslipmodels).disc=dvector(0,Nm0-1);
 		(*allslipmodels).Nfaults=ivector(0,Nm0-1);
@@ -629,7 +629,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			for (int nn=0; nn<Nm0; nn++) {
 				(*allslipmodels).disc[nn] = res;
 				fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-				if (is_afterslip){
+				if (is_aseismic){
 					sscanf(line,"%s %d", time_str, &no_slipmod);	//[Camilla] NB: no_slipmod changes at each nn iteration.
 
 					//check if the number of snapshots is in agreement with flags:
@@ -674,7 +674,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 
 				 (*allslipmodels).no_slipmodels[nn]=no_slipmod;
-				 if (is_afterslip) (*allslipmodels).tsnap= (double *) realloc((*allslipmodels).tsnap, (nsm+1+no_slipmod) * sizeof(double));
+				 if (is_aseismic) (*allslipmodels).tsnap= (double *) realloc((*allslipmodels).tsnap, (nsm+1+no_slipmod) * sizeof(double));
 				 if (nsm+1+no_slipmod>Nm0) {
 					 (*allslipmodels).slipmodels=realloc((*allslipmodels).slipmodels, (nsm+1+no_slipmod) * sizeof(char*));
 					 size_slipmodels = nsm+1+no_slipmod; // [Fahad] Used to bcast the final size
@@ -683,7 +683,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				 for (int n=1; n<=no_slipmod; n++){
 					(*allslipmodels).slipmodels[nsm] = malloc(120 * sizeof(char));
 					fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
-					if (is_afterslip){
+					if (is_aseismic){
 //						(*allslipmodels).Nfaults[nsm]=1; //actual value found later.
 						sscanf(line,"%lf %s", (*allslipmodels).tsnap+nsm, (*allslipmodels).slipmodels[nsm]);
 						(*allslipmodels).tsnap[nsm]+=(*allslipmodels).tmain[nn];
@@ -703,7 +703,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 		#ifdef _CRS_MPI
 				MPI_Bcast(&fileError, 1, MPI_INT, 0, MPI_COMM_WORLD);
-				if (is_afterslip){
+				if (is_aseismic){
 					MPI_Bcast(flag_multisnap, 1, MPI_INT, 0, MPI_COMM_WORLD);
 				}
 		#endif  
@@ -718,14 +718,14 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 			nsm = 0;
 
-			if (!is_afterslip) MPI_Bcast((*allslipmodels).mmain, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			if (!is_aseismic) MPI_Bcast((*allslipmodels).mmain, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 			MPI_Bcast((*allslipmodels).no_slipmodels, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 //			MPI_Bcast(&no_slipmod, 1, MPI_INT, 0, MPI_COMM_WORLD);	//[Camilla] this value changes in each nn loop.
 			MPI_Bcast(&size_slipmodels, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 			if(procId != 0) {
 
-				if (is_afterslip) (*allslipmodels).tsnap= (double *) malloc(size_slipmodels * sizeof(double));
+				if (is_aseismic) (*allslipmodels).tsnap= (double *) malloc(size_slipmodels * sizeof(double));
 
 				// If root did reallocation
 				if(size_slipmodels > Nm0) { //[Camilla] I changed the condition to be in agreement with the one above.
@@ -736,7 +736,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 					(*allslipmodels).disc[nn] = res;
 
 					for(int n = 1; n <= no_slipmod; ++n) {
-						if (is_afterslip){
+						if (is_aseismic){
 							(*allslipmodels).Nfaults[nsm] = 1;       //actual value found later.
 						}
 						(*allslipmodels).slipmodels[nsm] = malloc(120 * sizeof(char));
@@ -747,7 +747,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 			nsm = 0;
 
-			if (is_afterslip) MPI_Bcast((*allslipmodels).tsnap, size_slipmodels, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			if (is_aseismic) MPI_Bcast((*allslipmodels).tsnap, size_slipmodels, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 			for(int nn = 0; nn < Nm0; ++nn) {
 				no_slipmod=(*allslipmodels).no_slipmodels[nn]; // [Camilla] added this line
@@ -760,11 +760,11 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	}
 
 	nsm=0;
-	if (is_afterslip) print_logfile("\nAfterslip input file: %s.\n", input_fname);
+	if (is_aseismic) print_logfile("\nAfterslip input file: %s.\n", input_fname);
 	else print_logfile("\nSlip input file: %s.\n", input_fname);
-	print_logfile("%d %s slip models:\n", (*allslipmodels).NSM, is_afterslip? "aseismic" : "seismic");
+	print_logfile("%d %s slip models:\n", (*allslipmodels).NSM, is_aseismic? "aseismic" : "seismic");
 	for (int m=0; m<(*allslipmodels).NSM; m++){
-		if (is_afterslip){
+		if (is_aseismic){
 			if (m==0) print_logfile("\t time \t name\n");
 			print_logfile("\t%.2lf\t%s\n", (*allslipmodels).tmain[m], (*allslipmodels).slipmodels[m]);
 		}

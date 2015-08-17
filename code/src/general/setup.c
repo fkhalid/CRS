@@ -52,6 +52,7 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
  * nofmcat:	number of focal mechanisms catalogs
  * reftime: IssueTime (times will be calcualted with reference to this time)
  * dDCFS:	min. value for which grid points should be selected for calculating stress changes from source events
+ * Mag_source: min magnitude of earthquakes to be used as sources of stress.
  * Mag_main:	magnitude of mainshocks (i.e. events which are included as sources also if flags.aftershocks==0)
  * crst:	structure containing domain information
  * flag:	flags structure
@@ -118,15 +119,16 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
 	return (err!=0);
 }
 
-int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, struct eqkfm **eqkfm0res){
+int setup_aseismic_eqkfm(struct slipmodels_list list_slipmodels, struct crust crst, struct eqkfm **eqkfm0res){
 /*
- * Reads afterslip files into eqkfm structure.
+ * Reads aseismic files into eqkfm structure.
  *
  * Input:
  * 	list_slipmodel: list of slip model files
  * 	crst: structure containing crust setup information
- * 	models are the models to be used at a given time (NB: only one model per event).
- *is_afterslip indicates that all models have same geometry: Nfaults and no_slipmodels only have 1 element.
+ *
+ * Output:
+ *  eqkfm0res: contains all slip models for aseismic processes.
  */
 
 	// [Fahad] Variables used for MPI.
@@ -150,7 +152,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     //Find tot. no. of faults by summing over aseismic events:
     for (int N=0; N<list_slipmodels.NSM; N++){
 
-    	//number of snapshots for current afterslip event.
+    	//number of snapshots for current aseismic event.
 		Nm=list_slipmodels.no_slipmodels[N];
 
 		//read the no. of faults from the first snapshot in each aseismic event ('counter'):
@@ -160,7 +162,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 			else {
 				if (!(strcmp(cmb_format,"fsp"))) err+=read_fsp_eqkfm(slipmodels[counter], NULL, Nfaults+N);
 				else {
-					print_logfile("Unknown slip model format %s (setup_afterslip_eqkfm).\n", cmb_format);
+					print_logfile("Unknown slip model format %s (setup_aseismic_eqkfm).\n", cmb_format);
 					return 1;
 				}
 			}
@@ -175,8 +177,8 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
     counter=0;
     totfaults=0;
     for (int N=0; N<list_slipmodels.NSM; N++){
-		Nm=list_slipmodels.no_slipmodels[N];	//number of snapshots for current afterslip event.
-    	err+=setup_afterslip_element(*eqkfm0res+totfaults, slipmodels+counter, cmb_format, Nm, crst.mu, disc[N], tmain[N], tsnap+counter,
+		Nm=list_slipmodels.no_slipmodels[N];	//number of snapshots for current aseismic event.
+    	err+=setup_aseismic_element(*eqkfm0res+totfaults, slipmodels+counter, cmb_format, Nm, crst.mu, disc[N], tmain[N], tsnap+counter,
     			crst.N_allP, crst.list_allP, list_slipmodels.cut_surf[counter], crst.lat0, crst.lon0);
 
 		counter+=Nm;
@@ -187,7 +189,7 @@ int setup_afterslip_eqkfm(struct slipmodels_list list_slipmodels, struct crust c
 }
 
 
-int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_format, int no_snap,
+int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_format, int no_snap,
 						double mu, double disc, double tmain, double *tsnap, int nsel,
 						int *sel_pts, int cuts_surf,
 						double lat0, double lon0) {
@@ -239,8 +241,6 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 		allslip_open_temp[nf]=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 	}
 
-	//allocate tot_slip vectors
-
 	//read in values for slip:
 	for (int m=0; m<no_snap; m++){
 		err=read_eqkfm(slipmodels[m], cmb_format, &eqkfm0, &NF, NULL, mu);
@@ -273,7 +273,7 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 	for (int nf=0; nf<NF; nf++) {
 		eqkfm0[nf].tot_slip=dvector(0,no_snap-1);
 		eqkfm0[nf].ts=dvector(1,no_snap);	//shifted by one element because of indexing in copy_vector function.
-		copy_vector(tsnap-1, &(eqkfm0[nf].ts), no_snap);	//copy afterslip time steps into eqkfm0 structure.
+		copy_vector(tsnap-1, &(eqkfm0[nf].ts), no_snap);	//copy aseismic time steps into eqkfm0 structure.
 		eqkfm0[nf].ts+=1;	//since should start from 0th element (not 1st).
 		eqkfm0[nf].nosnap=no_snap;
 		eqkfm0[nf].t=tmain;
@@ -315,7 +315,6 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 
 		copy_eqkfm_all(eqkfm0[nf], eqkfm0res+nf);
 
-		//setmodels.set_of_eqkfm[nf]=eqkfm0[nf];
 	}
 	
 	return err;
@@ -324,9 +323,30 @@ int setup_afterslip_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cm
 
 
 int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_format, int no_slipmodels,
-						double mu, double disc, double tmain, int nsel,
+						double mu, double tmain, int nsel,
 						int *sel_pts, double *mmain, int cuts_surf,
-						int *NF0, double lat0, double lon0) {
+						int *NF0, double lat0, double lon0, int same_geometry) {
+
+	/* Sets up elements of eqkfm0res corresponding to one earthquake.
+	 * It may contain several slip models, and several subfaults (with each subfault equal to one struct eqkfm element).
+	 *
+	 * Input:
+	 *  slipmodels: list of files, each containing one slip model. Range: [0...no_slipmodels]
+	 *  cmbformat: format of slip model files (pscmp/fsp/farfalle)
+	 *  mu: shear modulus (used to calculate magnitude from the slip)
+	 *  tmain: time of the eartquake
+	 *  nsel: no. of grid points associated with this earthquake.
+	 *  sel_pts: list of grid points associated with this earthquake.
+	 *  cuts_surf: flag indicating if the model should be forced to cut through the surface.
+	 *  lat0, lon0: earthquake coordinates.
+	 *  same_geometry: if multiple slip models are given, flag indicating whether they have the same geometry.
+	 *
+	 * Output:
+	 *  eqkfm0res: slip models structure.
+	 *  mmain: earthquake magnitude.
+	 *  NF0: no. of subfaults (if there are multiple slip models, the largest between them).
+	 *
+	 */
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
@@ -343,6 +363,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 	setmodels.NF_models=ivector(1,no_slipmodels);
 	setmodels.Nmod=no_slipmodels;
 	setmodels.current_model=1;
+	setmodels.same_geometry=same_geometry;
 
 	for (int m=0; m<no_slipmodels; m++){
 		err=read_eqkfm(slipmodels[m], cmb_format, NULL, &NF, NULL, mu);
@@ -390,7 +411,15 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 }
 
 void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
-//sets variables in eqkfm0 to required slip model.
+/* Sets variables in eqkfm0 to required slip model.
+ *
+ * Input:
+ *  eqkfm0: contains the slip models. In particular, eqkfm0[0].parent_set_of_models contains pointers to all the alternative slip models (eqkfm0[0].parent_set_of_models.set_of_eqkfm).
+ *  slipmodel_index: the index of the slip model that should be set.
+ *
+ * Output:
+ *  The required slip model is activated by setting structures inside eqkfm0 to those stored in "parent_set_of_models".
+ */
 
 	// [Fahad] Variables used for MPI.
 	int procId = 0;
@@ -419,11 +448,23 @@ void set_current_slip_model(struct eqkfm *eqkfm0, int slipmodel_index){
 }
 
 int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList **Coefficients_aseismic, struct pscmp **DCFS_out,
-		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults, struct eqkfm *eqkfm_aft, int no_afterslip, int *Nfaults_aft) {
-	/*
-	 *  aftersliptime: event time of the mainshock containing afterslip.
-	 *  int afterslip: flag indicating if afterslip should be used.
-	 */
+		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults, struct eqkfm *eqkfm_aft, int no_aseismic, int *Nfaults_aft) {
+
+/* Setup structures which will contain okada coefficients.
+ * Also matches aseismic slip with seismic slip, and uses pointers to avoid repeating okada calculations if the models have the same geometry (e.g. for afterslip).
+ *
+ *  crst: crust structure needed to initialize DCFS.
+ *  eqkfm0: seismic slip models. Range [0...NFtot-1], where NFtot=sum(Nfaults).
+ *  Nfaults: no. of faults for each of the seismic sources. Range [0...Nm-1].
+ *
+ *  eqkfm_aft: aseismic slip models. Range [0...NFtot-1], where NFtot=sum(Nfaults_aft).
+ *  Nfaults_aft: no. of faults for each of the seismic sources. Range [0...No_aseismic-1].
+ *
+ *
+ * Output:
+ *  Coefficients, Coefficients_aseismic structures are initialized. The actual coefficients will be calculated (and memory allocated) in okadaDCFS.c.
+ *  DCFS (which will contain stresses from seismic sources) is initialized.
+ */
 
 	// [Fahad] Variables used for MPI
 	int procId = 0;
@@ -434,9 +475,10 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
 
 	struct pscmp *DCFS;
     struct Coeff_LinkList *AllCoeff, *temp, *temp2, *AllCoeff_aseismic;
+    struct set_of_models som_tmp;
     int Nsel, NFtot, NFtotaft;
     int mainshock_withafterslip, same_geometry;
-    int afterslip= (eqkfm_aft==NULL) ? 0 : 1;
+    int aseismic= (eqkfm_aft==NULL) ? 0 : 1;
     double M0;
 
     //----------set up Coefficients----------------//
@@ -446,7 +488,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
     	AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
 		temp= AllCoeff;
 		for(int i=0; i<Nm; i++) {
-			temp->borrow_coeff_from=NULL;	//since coefficients will be calculated for all seismic sources.
+			temp->borrow_coeff_from=NULL;	// coefficients must be be calculated for all seismic sources.
 			temp->which_main=i;
 			if (i<Nm-1) {
 				temp->next= malloc(sizeof(struct Coeff_LinkList));
@@ -498,13 +540,13 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
     //--------------associates afterslip with mainshocks-------------------//
 	// uses a ~1 sec tolerance
 
-    if (afterslip){
+    if (aseismic){
 
     	AllCoeff_aseismic= malloc( sizeof(struct Coeff_LinkList));
     	temp=AllCoeff_aseismic;
 
 		NFtot=NFtotaft=0;
-    	for (int a=0; a<no_afterslip; a++){
+    	for (int a=0; a<no_aseismic; a++){
     		//check whether the aseismic slip is associated with coseismic slip.
     		//this is done so that the same okada coefficients are used: less memory/computations are needed.
     		mainshock_withafterslip=closest_element(timesfrompscmp(DCFS, Nm), Nm, eqkfm_aft[NFtotaft].t, 0.000011575);
@@ -513,13 +555,18 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
     		if (mainshock_withafterslip!=-1){
     			NFtot=0;
 				for (int i=0; i<mainshock_withafterslip; i++) NFtot+=Nfaults[i];
-				same_geometry=check_same_geometry(eqkfm0+NFtot, Nfaults[mainshock_withafterslip], eqkfm_aft+NFtotaft, Nfaults_aft[a]);
+				//if multiple slip models have different geometries, should use its own set of coefficients. Otherwise, check if the geometry is the same as afterslip.
+				som_tmp= *(eqkfm0[NFtot].parent_set_of_models);
+
+				if (som_tmp.same_geometry==0 && som_tmp.Nmod>1) {
+					same_geometry= 0;
+				}
+				else{
+					same_geometry= check_same_geometry(eqkfm0+NFtot, Nfaults[mainshock_withafterslip], eqkfm_aft+NFtotaft, Nfaults_aft[a]);
+				}
     		}
 
 			if (mainshock_withafterslip==-1 || !same_geometry){
-
-				//fixme here should create a model anyways.
-				//be very careful with indices, also check them for the other condition!
 
 				for (int nf=0; nf<Nfaults_aft[a]; nf++){
 					eqkfm_aft[NFtotaft+nf].co_aft_pointer=NULL;
@@ -553,7 +600,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
 		}
 
 		*Coefficients_aseismic=AllCoeff_aseismic;
-		print_logfile("Okada Coefficients structure set up for %d aseismic sources.\n", no_afterslip);
+		print_logfile("Okada Coefficients structure set up for %d aseismic sources.\n", no_aseismic);
 
     }
 
@@ -562,6 +609,15 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
 
 int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 		struct crust crst, struct eqkfm *eqkfm0, int Nm, int *Nfaults) {
+
+	/* Calculates Okada coefficients.
+	 * It should be called once at the beginning for each Coeff_LinkList structure, and also after switching slip models in eqkfm0.
+	 *
+	 * Input:
+	 *  eqkfm0: uses slip model geometry to calculate the Okada coefficients. Range [0...NFtot-1], where NFtot=sum(Nfaults).
+	 *  		Nfaults: no. of faults for each of the seismic sources. Range [0...Nm-1].
+	 */
+
 
 	// [Fahad] Variables used for MPI
 	int procId = 0, numProcs = 1;
@@ -583,7 +639,7 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 
 			if (eqkfm0[NFsofar].is_slipmodel) {
 				// coefficients should only calculated if more than one slip model is provided (switch_slipmodel):
-				// for afterslip, multiple slip models are now allowed: parent_set_of_models=NULL
+				// for aseismic slip, multiple slip models are not allowed: parent_set_of_models=NULL
 				if (eqkfm0[NFsofar].parent_set_of_models){
 					tmp_setofmodels=*(eqkfm0[NFsofar].parent_set_of_models);
 					switch_slipmodel= (tmp_setofmodels.Nmod > 1);
@@ -629,6 +685,7 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 			}
 		}
 
+		// This is used to avoid calculating the Okada coefficients multiple times if two model (e.g. seismic/aseismic) have the same geometry.
 		else{
 			temp2=temp->borrow_coeff_from;
 			temp->NF=temp2->NF;				// tot. no of faults;

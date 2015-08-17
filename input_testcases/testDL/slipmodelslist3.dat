@@ -10,8 +10,10 @@
 # ...
 # ...
 2
-pscmp	0	
-2004-09-28T17:05:20Z    6.0     1
+pscmp	1
+2004-09-28T17:05:20Z    6.0     2
 1 input_testcases/emptymodel.inp
-2005-09-28T17:15:24Z	6.0	1
+1 input_testcases/emptymodel.inp
+2005-09-28T17:15:24Z	6.0	2
+1 input_testcases/emptymodel.inp
 1 input_testcases/emptymodel.inp

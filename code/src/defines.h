@@ -14,7 +14,7 @@
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
-#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
+//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 9				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 33	// No. of scalar variables in 'struct BCast_Model_Parameters'
@@ -62,8 +62,8 @@ struct flags{
 	int err_recfault;
 	int err_gridpoints;
 	int OOPs;
-	//afterslip:
-	int afterslip;
+	//aseismic slip:
+	int aseismic;
 	int aseismic_linear;
 	int aseismic_multisnap;
 	//control way aftershocks are treated:
@@ -78,10 +78,12 @@ struct set_of_models{
 	int *NF_models;	//no. of faults for each model;
 	int NFmax;
 	int current_model;
+	int same_geometry;	//flag indicating if all models have same geometry.
 	struct eqkfm *set_of_eqkfm; //contains all models. indices: [0...sum(NF_models)-1].
 };
 
 //Linked list with okada coefficients between fault patches and cells. Each element represents one earthquake (also with multiple faults).
+//It must be updated every time a new set of slip model is used (if multiple slip models per earthquake are used).
 struct Coeff_LinkList{
 	int NF;				// tot. no of faults;
 	int which_main;		// index of pscmp DCFS to which earthquake refer;
@@ -202,13 +204,13 @@ struct crust{
 
 struct slipmodels_list{
 	int constant_geometry;
-	int is_afterslip;
+	int is_aseismic;
 	int NSM;	//no. of events.
 	int *Nfaults;
 	int *no_slipmodels;
 	int *cut_surf;	//flags indicating is free surface should be assumed at the top.
 	double *tmain;	//times of mainshocks;
-	double *tsnap;	//times for afterslip snapshots
+	double *tsnap;	//times for aseismic snapshots
 	double *mmain;	//magnitudes.
 	double *disc;
 	char **slipmodels;
@@ -222,7 +224,7 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	int whichfm;		//index of foc. mec. to use (0=both;1;2).
 	int nsel;			//no. of cell points affected by this event.
 	int cuts_surf;	// boolean indicating if slip model should be assumed to cut through the surface.
-	int nosnap;	//no. of snapshots (afterslip)
+	int nosnap;	//no. of snapshots (aseismic)
 	double t;		//time of event.
 	double lat;		//0_lat in Wang input file;
 	double lon; 	//0_lat in Wang input file;
@@ -230,7 +232,7 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	double top;		//depth of the shallowest point of the entire slip model (also across multiple elements of eqkfm[]).
 	double x;		//eastwards coordinate in local system;
 	double y;		//northward coordinate in local system.
-	double mag;		//magnitude (for afterslip, magnitude of last snapshot).
+	double mag;		//magnitude (for aseismic, magnitude of last snapshot).
 	double *tot_slip;	//tot. slip on the fault (sum of scalar value of slip for each patch), at each time ts (not used for coseismic slip).
 	double L;		//fault length
 	double W;		//fault width
@@ -243,14 +245,14 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	double rake2;
 	//vector containing one element per patch:
 	//NB: by convention, slip_xxx[2] contains the slip for second foc mech (for single patch events only!)
-	double *ts;		//time steps (afterslip);
-	double *tevol;	//time evolution of afterslip (if nosnap=1).
+	double *ts;		//time steps (aseismic slip);
+	double *tevol;	//time evolution of aseismic slip (if nosnap=1).
 	double *slip_str;	//slip along strike
 	double *slip_dip;	//slip along dip
 	double *open;		//opening
-	double **allslip_str;	//for all time steps (afterslip)
-	double **allslip_dip;	//for all time steps (afterslip)
-	double **allslip_open;	//for all time steps (afterslip)
+	double **allslip_str;	//for all time steps (aseismic slip)
+	double **allslip_dip;	//for all time steps (aseismic slip)
+	double **allslip_open;	//for all time steps (aseismic slip)
 //	double *strikes;	//strike of patch (not used)
 //	double *dips;		//dip of patch (not used)
     double *pos_s;		//along strike distance from point: lat,lon (0 for single patch events);

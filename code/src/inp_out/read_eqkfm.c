@@ -187,9 +187,9 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 			print_logfile("Using slip model %s for large event at t=%.5e, mag=%.2lf\n", all_slipmodels.slipmodels[nsm], eqfm1[i].t, eqfm1[i].mag);
 
 			err += setup_eqkfm_element((*eqfm_comb)+c3, all_slipmodels.slipmodels+nsm, all_slipmodels.cmb_format,
-									   all_slipmodels.no_slipmodels[j], crst.mu, all_slipmodels.disc[j],
+									   all_slipmodels.no_slipmodels[j], crst.mu,
 									   all_slipmodels.tmain[j],crst.N_allP, crst.list_allP,
-									   all_slipmodels.mmain+j, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0);
+									   all_slipmodels.mmain+j, all_slipmodels.cut_surf[j], NULL, crst.lat0, crst.lon0, all_slipmodels.constant_geometry);
 
 			if (nfout)(*nfout)[*Ncomb]=nf2[which_slipmod[i]];
 			for (int cc3=c3; cc3<c3+nf2[which_slipmod[i]]; cc3++) {

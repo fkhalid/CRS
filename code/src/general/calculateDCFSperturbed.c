@@ -35,7 +35,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 /* Input:
  * 
- * eqkfmAf contains afterslip snapshots;
+ * eqkfmAf contains aseismic slip snapshots;
  * eqkfm0 contains seismic sources;
  * times: times to which elements of tevol correspond: S(t=times[j])=S0*tevol[j], where S=slip, S0 is the slip contained in eqkfmAf.
  * NTScont is the total number of time steps for continuous process;
@@ -47,7 +47,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
  * tdata0, tdata1: start and end time for which data should be used;
  * refresh: flag to be set to 1 if the slip models have changed from previous function call;
  * flag contains various flags, including:
- * 		afterslip and aftershocks are flags indicating if these processes should be included.
+ * 		aseismic and aftershocks are flags indicating if these processes should be included.
  * 		vary_recfault is a flag indicating which received faults to use. 0: use fix planes; 1: vary foc. mec. (use which_fm, or if which_fm==0, choose random one); 2: use OOPs.
  * which_recfault gives index of foc.mec to select; if set to 0, choose random one (useful if NFM>>nsur). if vary_recfault=0, this is meaningless.
  *
@@ -68,7 +68,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	#endif
 
 	//flags:
-	int	afterslip=flag.afterslip, \
+	int	aseismic=flag.aseismic, \
 		vary_recfault=flag.err_recfault, \
 		gridpoints_err=flag.err_gridpoints, \
 		multisnap=flag.aseismic_multisnap, \
@@ -159,7 +159,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		//					Afterslip (initial setup)					   //
 		//-----------------------------------------------------------------//
 
-		if (afterslip!=0){
+		if (aseismic!=0){
 
 			NTSeff=(multisnap)? NTScont : 1;
 			DCFS_Af_size= NTSeff*NA;
@@ -220,7 +220,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	//-----------------------------------------------------------------//
 
 	if (time_in==1 || refresh){
-		if (afterslip!=2){
+		if (aseismic!=2){
 			NFsofar=0;
 			temp=AllCoeff;
 			for (int i=0; i<Nmain; i++){
@@ -261,7 +261,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 							break;
 						case 2:
-							DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from afterslip, assuming that stresses from mainshocks are much larger.
+							DCFScmbopt(DCFS, temp->which_main, crst);	//NB this does not take into account stress from aseismic slip, assuming that stresses from mainshocks are much larger.
 							break;
 						default:
 							break;
@@ -299,10 +299,10 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	//----------------------------------------------------------------------//
 
 
-	//At the moment afterslip and OOPs at the same time are not implemented.
-	if (afterslip==1 && vary_recfault==2) {
-		print_screen("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when afterslip is included!!*\n");
-		print_logfile("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when afterslip is included!!*\n");
+	//At the moment aseismic slip and OOPs at the same time are not implemented.
+	if (aseismic==1 && vary_recfault==2) {
+		print_screen("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when aseismic slip is included!!*\n");
+		print_logfile("*Error: function calculateDCFSperturbed doesn't know how to calculate OOPS when aseismic slip is included!!*\n");
 		return;
 	}
 
@@ -329,11 +329,11 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 	}
 
-	//------------------------------------------//
-	//	calculated stress field from afterslip: //
-	//------------------------------------------//
+	//----------------------------------------------//
+	//	calculated stress field from aseismic slip: //
+	//----------------------------------------------//
 
-	if (afterslip==0){
+	if (aseismic==0){
 		for (int l=0; l<NTScont; l++){
 			if (times[l] <tdata0 || times[l]>tdata1) continue;
 			for (int n=1; n<=NgridT; n++) if (DCFSrand) DCFSrand[l][n]=0.0;
@@ -350,7 +350,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				for (int l=0; l<NTScont; l++) {
 					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
 
-					//loop over events with afterslip:
+					//loop over events with aseismic slip:
 					for (int n=1; n<=NgridT; n++) DCFSrand[l][n]=eqkfmAf[i].tevol[l]*DCFS_Af[a].cmb[n];
 				}
 				i+=DCFS_Af[a].NF;
@@ -392,7 +392,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		}
 
 		else{
-			if (afterslip==2){
+			if (aseismic==2){
 				for (int n=1; n<=NgridT; n++) DCFS[temp->which_main].cmb[n]=0.0;	//don't need to fill in tensor.
 			temp=temp->next;
 			}

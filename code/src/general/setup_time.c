@@ -153,7 +153,7 @@ int timesteps_lin(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfa
 	return 0;
 }
 
-int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
+int setup_aseismic_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 						 int NA, int *Nfaults, int *L, double **times2){
 
 /* Combines all stressing histories for all elements in eqk_aft, and rewrites them referred to combined time steps.
@@ -248,7 +248,7 @@ int setup_afterslip_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 
 }
 
-int setup_afterslip_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
+int setup_aseismic_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 						 int NA, int *Nfaults, int *L, double **times2) {
 
 /* Combines all stressing histories for all elements in eqk_aft, and rewrites them referred to combined time steps.
@@ -285,7 +285,7 @@ int setup_afterslip_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 
 	temp_tevol=dmatrix(1,1,0,*L-1);
 
-	// Temporal evolution of afterslip.//
+	// Temporal evolution of aseismic slip.//
 	nfaults=0;
 
 	for (int nev=0; nev<NA; nev++){
@@ -310,7 +310,7 @@ int setup_afterslip_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	return(err!=0);
 }
 
-int setup_afterslip_splines(double t0, double t1, struct eqkfm **eqk_aft,
+int setup_aseismic_splines(double t0, double t1, struct eqkfm **eqk_aft,
 						 int NA, int *Nfaults, int *L, double **times2,
 						 long *seed) {
 
@@ -337,7 +337,7 @@ int setup_afterslip_splines(double t0, double t1, struct eqkfm **eqk_aft,
 	struct eqkfm *eq_aft;
 
 	double Teq;
-	double *t_afterslip;
+	double *t_aseismic;
 	int Nas=(*eqk_aft)[0].nosnap;
 	int nfaults;
 
@@ -375,16 +375,16 @@ int setup_afterslip_splines(double t0, double t1, struct eqkfm **eqk_aft,
 		}
 	}
 
-	// Temporal evolution of afterslip.//
+	// Temporal evolution of aseismic slip.//
 	nfaults=0;
 	for (int nev=0; nev<NA; nev++){
 		Teq=(*eqk_aft)[nfaults].t;
-		t_afterslip=(*eqk_aft)[nfaults].ts;
+		t_aseismic=(*eqk_aft)[nfaults].ts;
 		Nas=(*eqk_aft)[nfaults].nosnap;
-		for (int i=0; i<Nas; i++) t_afterslip[i]-=Teq;	//since functions below start from t=0;
+		for (int i=0; i<Nas; i++) t_aseismic[i]-=Teq;	//since functions below start from t=0;
 		for (int i=0; i<=*L; i++) (*times2)[i]-=Teq;	//since functions below start from t=0;
 
-		splines_eqkfm(&eq_aft, Nas, Nfaults[nev], t_afterslip-1, (*times2)-1, *L+1, seed);
+		splines_eqkfm(&eq_aft, Nas, Nfaults[nev], t_aseismic-1, (*times2)-1, *L+1, seed);
 		//at this point eq_aft[f].allslip_str[l][p] contains cumulative slip on patch [p] at time times2[l].
 
 		for (int f=0; f<Nfaults[nev]; f++) {
@@ -392,7 +392,7 @@ int setup_afterslip_splines(double t0, double t1, struct eqkfm **eqk_aft,
 			for (int p=1; p<=eq_aft[f].np_di*eq_aft[f].np_st; p++) {
 				for (int l=*L; l>=0; l--) {
 					if ((*times2)[l]<0.0){
-						//no afterslip before its start time:
+						//no aseismic slip before its start time:
 						if (eq_aft[f].allslip_str) eq_aft[f].allslip_str[l][p]=0.0;
 						if (eq_aft[f].allslip_dip) eq_aft[f].allslip_dip[l][p]=0.0;
 						if (eq_aft[f].allslip_open) eq_aft[f].allslip_open[l][p]=0.0;
@@ -416,7 +416,7 @@ int setup_afterslip_splines(double t0, double t1, struct eqkfm **eqk_aft,
 			eq_aft[f].tevol=NULL;
 		}
 
-		for (int i=0; i<Nas; i++) t_afterslip[i]+=Teq;	//revert shift from before;
+		for (int i=0; i<Nas; i++) t_aseismic[i]+=Teq;	//revert shift from before;
 		for (int i=0; i<=*L; i++) (*times2)[i]+=Teq;	//revert shift from before;
 		nfaults+=Nfaults[nev];
 		eq_aft+=Nfaults[nev];	//gets shifted every time so 0th element is the one of the new nev.
@@ -449,7 +449,7 @@ int setup_afterslip_splines(double t0, double t1, struct eqkfm **eqk_aft,
 	return(err!=0);
 }
 
-int setup_afterslip_single_log(double t0, double t1, double ts,
+int setup_aseismic_single_log(double t0, double t1, double ts,
 						 struct eqkfm **eqk_aft,
 						 int NA, int *Nfaults, int *L, double **times2,
 						 long *seed) {
@@ -474,7 +474,7 @@ int setup_afterslip_single_log(double t0, double t1, double ts,
 	double TAU=200000, dtau=7000, timeTAU=183;
 	double smallstepstime=12;
 	double now, prev, norm, curr;
-	double Tendaft;	//Time to which cumulative afterslip snapshot refers.
+	double Tendaft;	//Time to which cumulative aseismic slip snapshot refers.
 	struct eqkfm *eq_aft;
 
 	double Teq;
@@ -487,7 +487,7 @@ int setup_afterslip_single_log(double t0, double t1, double ts,
 
 	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime, TAU, dtau, timeTAU);
 
-	// Temporal evolution of afterslip.//
+	// Temporal evolution of aseismic slip.//
 	nfaults=0;
 	for (int nev=0; nev<NA; nev++){
 		Tendaft=(*eqk_aft)[nfaults].ts[(*eqk_aft)[nfaults].nosnap-1];

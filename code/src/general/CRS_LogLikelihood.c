@@ -40,13 +40,13 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	 *
 	 * Nsur= no. of iterations
 	 * DCFS= array containing stress steps.
-	 * eqkfm_aft= array of afterslip:
+	 * eqkfm_aft= array of aseismic slip:
 	 * eqkfm0= array of mainshocks;
 	 * crst= general model info.
 	 * AllCoeff= Okada Coefficients for all mainshock slip models;
 	 * NTScont=no. of continuous time steps (size of times2)
 	 * Nm=no. of mainshocks;	size of eqkfm0
-	 * Na= no. of events with afterslip
+	 * Na= no. of events with aseismic slip
 	 * focmec= array of focal mechanisms parameters.
 	 * fmzonelim= indices used to determine areas with the same receiver fault.
 	 * NFM= no. of focal mechanisms
@@ -122,8 +122,8 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	if (all_gammas0==NULL)	uniform_bg_rate=1;
 
 	//Initialize stress fields:
-	DCFSrand= (flags.afterslip) ? dmatrix(0,NTScont,1,NgridT) : NULL;
-	if (flags.afterslip){
+	DCFSrand= (flags.aseismic) ? dmatrix(0,NTScont,1,NgridT) : NULL;
+	if (flags.aseismic){
 		DCFSrand= dmatrix(0,NTScont,1,NgridT);
 		for (int i=0; i<NTScont; i++){
 			for (int j=1; j<=NgridT; j++){
@@ -247,7 +247,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 		if (print_cmb) {
 			sprintf(print_cmb,"%s.dat", print_cmb0);
-			if (flags.afterslip) sprintf(print_cmbpost,"%s_post.dat", print_cmb0);
+			if (flags.aseismic) sprintf(print_cmbpost,"%s_post.dat", print_cmb0);
 
 		}
 		if (print_forex0) {
@@ -384,11 +384,11 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 		if(print_cmb || printall_cmb) {
 			sum_DCFS(DCFS, &cmb, Nm, NgridT);
-			if (flags.afterslip) sum_DCFSrand(DCFSrand, &cmbpost, NTScont, NgridT);
+			if (flags.aseismic) sum_DCFSrand(DCFSrand, &cmbpost, NTScont, NgridT);
 			if(print_cmb) {
 				for (int i=1; i<=NgridT; i++) {
 					cmb_avg[i]+=cmb[i]*(1.0/Nsur);
-					if (flags.afterslip) cmbpost_avg[i]+=cmbpost[i]*(1.0/Nsur);
+					if (flags.aseismic) cmbpost_avg[i]+=cmbpost[i]*(1.0/Nsur);
 				}
 			}
 
@@ -550,7 +550,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			convert_geometry(crst, cmb_avg, &ev_x_new, 0, 0);
 			if(procId == 0) {
 				csep_cmbmap(print_cmb, crst, ev_x_new, 0);
-				if (flags.afterslip) csep_cmbmap(print_cmbpost, crst, cmbpost_avg, 0);
+				if (flags.aseismic) csep_cmbmap(print_cmbpost, crst, cmbpost_avg, 0);
 			}
 		}
 		if (print_LL || LL){
@@ -575,7 +575,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 	}
 
-	if (flags.afterslip) free_dmatrix(DCFSrand, 0,NTScont,1,NgridT);
+	if (flags.aseismic) free_dmatrix(DCFSrand, 0,NTScont,1,NgridT);
 	free_dvector(dumrate,1,cat.Z);
 	free_dvector(rate, 1,cat.Z);
 	free_dvector(gammas, 1,NgridT);
@@ -612,13 +612,13 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	 *
 	 * Nsur= no. of iterations
 	 * DCFS= array containing stress steps.
-	 * eqkfm_aft= array of afterslip.
+	 * eqkfm_aft= array of aseismic slip.
 	 * eqkfm0= array of mainshocks;
 	 * crst= general model info.
 	 * AllCoeff= Okada Coefficients for all mainshock slip models;
 	 * NTScont=no. of continuous time steps (size of times2)
 	 * Nm=no. of mainshocks;	size of eqkfm0
-	 * Na= no. of events with afterslip
+	 * Na= no. of events with aseismic slip
 	 * focmec= array of focal mechanisms parameters.
 	 * fmzonelim= indices used to determine areas with the same receiver fault.
 	 * NFM= no. of focal mechanisms
@@ -697,8 +697,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		#endif
 
 		//Initialize stress fields:
-		DCFSrand= (flags.afterslip) ? dmatrix(0,NTScont,1,NgridT) : NULL;
-		if (flags.afterslip){
+		DCFSrand= (flags.aseismic) ? dmatrix(0,NTScont,1,NgridT) : NULL;
+		if (flags.aseismic){
 			DCFSrand= dmatrix(0,NTScont,1,NgridT);
 			for (int i=0; i<NTScont; i++){
 				for (int j=1; j<=NgridT; j++){
