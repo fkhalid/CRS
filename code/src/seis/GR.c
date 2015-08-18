@@ -8,9 +8,12 @@
 #include "GR.h"
 
 double *assign_GRnorm(double *mags, int N, double b, int Minf){
-/* mags are vector containing the center of sorted, equally spaced magnitude bins. Indices: [1...N].
- * GRpar={a,b} of GR distrib: N(M>=m)=10^(a-b*m).
- * Minf is flag indicating if last bin is open *
+/* Calculates normalized weights of seismicity within magnitude bins mags, based on a Gutenberg-Richter distribution.
+ *
+ * Input:
+ *  mags: vector containing the center of sorted, equally spaced magnitude bins. Indices: [1...N].
+ *  b: b-value of GR distrib: N(M>=m)=10^(a-b*m).
+ *  Minf: flag indicating if last bin is open.
  */
 
 	double dm;
@@ -44,9 +47,12 @@ double *assign_GRnorm(double *mags, int N, double b, int Minf){
 }
 
 double Mc_maxcurv(double *mags, int N){
-//find magnitude of completeness using maximum curvature method; events are
-//binned so that each bin has same no of counts, and normalized by bin size.
-//vector mags has indices [0...N-1].
+/* Returns magnitude of completeness using maximum curvature method;
+ * NB: events are binned so that each bin has same no of counts, and normalized by bin size.
+ *
+ * Input:
+ *  mags: list of magnitudes. Range [0...N-1].
+ */
 
 	double *bin_c, *bin_h;
 	double f=0.0;
@@ -54,10 +60,13 @@ double Mc_maxcurv(double *mags, int N){
 	int Nbin=floor(sqrt(N)), ind;
 
 	mags2=dvector(0,N-1);
-	for (int i=0; i<N; i++) mags2[i]=mags[i];	//since next function sorts array.
+	for (int i=0; i<N; i++) mags2[i]=mags[i];	//since next function sorts (and overwrites) array.
 
+	// Bin events so that each magnitude bin has the same no. of events:
+	// To get a pdf, bin_h is the bin count normalized by bin width.
 	bin_equnumber(mags2,N, Nbin, &bin_c, &bin_h);
 
+	//find value with largest count:
 	for (int i=0; i<Nbin; i++){
 		if (f<=bin_h[i]){
 			f=bin_h[i];
@@ -70,6 +79,16 @@ double Mc_maxcurv(double *mags, int N){
 }
 
 double calculatebvalue(double *mags, int N, double Mc){
+/* Calculates the Gutenberg-Richter b-value for a distribution of magnitudes, selecting only events above completeness Mc.
+ *
+ * Input:
+ *  mag: list of magnitudes (Range: [0...N-1])
+ *  Mc: completeness magnitude.
+ *
+ * Returns:
+ *  b-value.
+ */
+
   double  *mags2;
   double dM, dum, mean, b, db;
   int Z;
@@ -104,7 +123,16 @@ double calculatebvalue(double *mags, int N, double Mc){
 }
 
 int bin_equnumber(double *v, int N, int Nbin, double **bin_c, double **norm_count){
-//norm_count is the no of events per bin divided by bin size.
+/* Bins a sample into Nbin, such that each bin has the same no. of elements. Outputs normalized count and bin center.
+ *
+ * Input:
+ *  v: sample. Range [0...N-1].
+ *  Nbin: no. of bins.
+ *
+ * Output:
+ *  bin_c: center of each bin.
+ *  norm_count: the no. of events per bin divided by bin size.
+ */
 
 	double bot, top;
 	int Nel, Nellast;
@@ -114,7 +142,6 @@ int bin_equnumber(double *v, int N, int Nbin, double **bin_c, double **norm_coun
 
 	*bin_c=dvector(0,Nbin-1);
 	*norm_count=dvector(0,Nbin-1);
-
 
 	for (int i=0; i<Nbin-1; i++){
 
@@ -135,8 +162,9 @@ int bin_equnumber(double *v, int N, int Nbin, double **bin_c, double **norm_coun
 
 }
 
-int compare (const void * a, const void * b)
-{
+int compare (const void * a, const void * b){
+	/* Compares two numbers and returns [-1 0 1] depending on which number is larger.
+	 */
 	if (*(double*)a==*(double*)b) return 0;
 	else if (*(double*)a>*(double*)b) return 1;
 	else return -1;

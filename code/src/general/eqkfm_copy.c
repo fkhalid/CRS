@@ -8,6 +8,10 @@
 #include "eqkfm_copy.h"
 
 void empty_eqkfm(struct eqkfm *eqkfm0){
+/*
+ * Sets eqkfm0 to an empty slip model.
+ */
+
 	(*eqkfm0).np_st=(*eqkfm0).np_di=0;
 	(*eqkfm0).nsel=0;
 	(*eqkfm0).nosnap=0;
@@ -29,7 +33,10 @@ void empty_eqkfm(struct eqkfm *eqkfm0){
 }
 
 void copy_eqkfm_nolocation_noindex_notime(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
-//slightly wasteful, but at least don't need to change it if new variables are added to structure (junk change copy_eqkfm_all).
+/*
+ * Copies eqkfm1 into eqkfm2, but preserves time, location and index_cat.
+ */
+
 
 	double lat, lon, depth, t;
 	int i;
@@ -51,8 +58,9 @@ void copy_eqkfm_nolocation_noindex_notime(struct eqkfm eqkfm1, struct eqkfm *eqk
 }
 
 void copy_eqkfm_noindex_notime(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
-//slightly wasteful, but at least don't need to change it if new variables are added to structure (junk change copy_eqkfm_all).
-
+/*
+ * Copies eqkfm1 into eqkfm2, but preserves time and index_cat.
+ */
 	double lat, lon, depth, t;
 	int i;
 
@@ -66,6 +74,9 @@ void copy_eqkfm_noindex_notime(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 }
 
 void copy_eqkfm_attributes(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
+/*
+ * Copies various properties of eqkfm1 into eqkfm2 (not focal mechanisms and slip models).
+ */
 
 	//general properties:
 	(*eqkfm2).is_slipmodel=eqkfm1.is_slipmodel;
@@ -94,6 +105,9 @@ void copy_eqkfm_attributes(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 }
 
 void copy_eqkfm_focmec(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
+/*
+ * Copies focal mechanisms of eqkfm1 into eqkfm2.
+ */
 
 	//focal mechanism:
 	(*eqkfm2).whichfm=eqkfm1.whichfm;
@@ -109,7 +123,9 @@ void copy_eqkfm_focmec(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 }
 
 void copy_eqkfm_slipmodel(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
-
+/*
+ * Copies slip model of eqkfm1 into eqkfm2.
+ */
 	//slipmodel properties:
 	(*eqkfm2).tot_slip=eqkfm1.tot_slip;
 	(*eqkfm2).L=eqkfm1.L;
@@ -130,6 +146,9 @@ void copy_eqkfm_slipmodel(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 }
 
 void copy_eqkfm_all(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
+/*
+ * Copies all properties of eqkfm1 into eqkfm2.
+ */
 
 	copy_eqkfm_attributes(eqkfm1, eqkfm2);
 	copy_eqkfm_focmec(eqkfm1, eqkfm2);
@@ -140,6 +159,9 @@ void copy_eqkfm_all(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
 
 
 void copy_eqkfm_noslipmodel(struct eqkfm eqkfm1, struct eqkfm *eqkfm2){
+/*
+ * Copies eqkfm1 into eqkfm2, preserving slip model.
+ */
 
 	copy_eqkfm_attributes(eqkfm1, eqkfm2);
 	copy_eqkfm_focmec(eqkfm1, eqkfm2);

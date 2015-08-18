@@ -11,22 +11,27 @@
 #include "../util/nrutil.h"
 
 void prestress(double s1, double s2, double s3, double strike, double dip, double rake, double p,double f, double ***s){
-//	determine regional stress tensor using the known principal
-//	stresses and master fault mechanism, assuming that the master
-//	fault follows the Coulomb failure criterion.
-//    input:
-//	principal stresses, master fault strike, dip and rake,
-//	pore pressure, friction coefficient
-//    output
-//	max. preseismic Coulomb stress, prestress tensor
+/*
+ * Determines regional stress tensor using the known principal stresses and master fault mechanism, assuming that the master
+ * fault follows the Coulomb failure criterion.
+ *
+ *
+ * Input:
+ *
+ * s1, s2, s3: principal stresses.
+ * strike, dip, rake: mechanism of optimally oriented planes.
+ * p, f: pore pressure, friction coefficient
+ *
+ * Output:
+ * 	s : stress tensor Range [1...3][1...3].
+ */
 
 //	local memories:
-//	
   
       double  alpha,st,di,ra,cmb1,cmb2,cmb3, cmb;
       double  ns[3],ts[3],rst[3],rdi[3];
       double  sig[3],rot[3][3];
-//
+
       *s=dmatrix(1,3,1,3);	//TODO deallocate at the end
       if(s1==0.0 && s2==0.0 && s3==0.0) return;
 
@@ -99,7 +104,12 @@ void prestress(double s1, double s2, double s3, double strike, double dip, doubl
 }
 
 double **prestress_eigen(double *s, double *str, double *dip){
-	//calculates stress tensor knowing magnitude and orientation of principal stresses (s[X], str[X], dip[X], X=0,1,2).
+	/* Calculates stress tensor knowing magnitude and orientation of principal stresses.
+	 *
+	 * Input:
+	 *  s[1...3]: principal axis
+	 *  str, dip: strike and dips of principal stresses axis. Range [1...3]
+	 */
 
 	double **Q, **QT, **L, **S, **ST;
 

@@ -87,6 +87,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
 	int start, end, partitionSize;
+	int use_catalog=  cat.Z>0;//flag.
 
 	#ifdef _CRS_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
@@ -134,8 +135,13 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 	else DCFSrand=NULL;
 
-	dumrate=dvector(1,cat.Z);
-	rate=dvector(1,cat.Z);
+	if (use_catalog){
+		dumrate=dvector(1,cat.Z);
+		rate=dvector(1,cat.Z);
+	}
+	else{
+		dumrate=rate=NULL;
+	}
 	gammas=dvector(1,NgridT);
 	ev_x=dvector(1,NgridT);
 	ev_x_avg=dvector(1,NgridT);
@@ -180,7 +186,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	for(int i=1;i<=cat.Z;i++) if(cat.t[i]>=tt0 && cat.t[i]<=tt1) N+=1;
 
 	integral=0.0;
-	for(int i=1;i<=cat.Z;i++) dumrate[i]=rate[i]=0.0;
+	if (use_catalog){
+		for(int i=1;i<=cat.Z;i++) dumrate[i]=rate[i]=0.0;
+	}
 
 	err=0;
 
@@ -302,7 +310,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 //		#endif
 
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
-		for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
+		if (use_catalog){
+			for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
+		}
 
 		if (all_snapshots){
 			for (int t=0; t<Ntts; t++){
@@ -367,12 +377,12 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				}
 			}
 		}
-//		for(int i=1; i<=NgridT; i++) {
-//			ev_x[i]=ev_x_dum[i];
-//		}
-		for(int i=1;i<=cat.Z;i++) {
-			if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
-				rate[i]+=dumrate[i]/(1.0*Nsur);
+
+		if (use_catalog){
+			for(int i=1;i<=cat.Z;i++) {
+				if(cat.t[i]>=tt0 && cat.t[i]<tt1) {
+					rate[i]+=dumrate[i]/(1.0*Nsur);
+				}
 			}
 		}
 
@@ -456,20 +466,22 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 	#ifdef _CRS_MPI
 		double *recv_rate, *recv_nev_avg, *recv_rev_avg, *recv_cmb_avg, *recv_ev_x_avg;
-		recv_rate = dvector(1, cat.Z);
+		if (use_catalog) recv_rate = dvector(1, cat.Z);
 		recv_nev_avg = dvector(1, Ntts);
 		recv_rev_avg = dvector(1, Ntts);
 		recv_cmb_avg = dvector(1,NgridT);
 		recv_ev_x_avg = dvector(1, NgridT);
 
-		MPI_Allreduce(rate, recv_rate, cat.Z+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+		if (use_catalog) MPI_Allreduce(rate, recv_rate, cat.Z+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		MPI_Allreduce(nev_avg, recv_nev_avg, Ntts+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		MPI_Allreduce(rev_avg, recv_rev_avg, Ntts+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		MPI_Allreduce(cmb_avg, recv_cmb_avg, NgridT+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		MPI_Allreduce(ev_x_avg, recv_ev_x_avg, NgridT+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
-		free_dvector(rate, 1, cat.Z);
-		rate = recv_rate;
+		if (use_catalog) {
+			free_dvector(rate, 1, cat.Z);
+			rate = recv_rate;
+		}
 		free_dvector(nev_avg, 1, Ntts);
 		nev_avg = recv_nev_avg;
 		free_dvector(rev_avg, 1, Ntts);
@@ -554,30 +566,40 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			}
 		}
 		if (print_LL || LL){
-			Ldum=0.0;
 
-			for(int j=1;j<=cat.Z;j++) if(cat.t[j]>=tt0 && cat.t[j]<tt1) {
-				Ldum+=log(r0*rate[j]);
+			if (use_catalog){
+				Ldum=0.0;
+
+				for(int j=1;j<=cat.Z;j++) if(cat.t[j]>=tt0 && cat.t[j]<tt1) {
+					Ldum+=log(r0*rate[j]);
+					if(procId == 0) {
+						if (print_LL) fprintf(fLLev,"%.10e \t%.5e \t%.5e \t%.5e \t %.5e\n",cat.t[j], cat.lat0[j], cat.lon0[j], cat.depths0[j], log(r0*rate[j]));
+					}
+				}
+
 				if(procId == 0) {
-					if (print_LL) fprintf(fLLev,"%.10e \t%.5e \t%.5e \t%.5e \t %.5e\n",cat.t[j], cat.lat0[j], cat.lon0[j], cat.depths0[j], log(r0*rate[j]));
+					if (print_LL) fclose(fLLev);
+				}
+
+				if (LL){
+					integral=0.0;
+					for (int t=1; t<=Ntts; t++) integral+= nev_avg[t];
+					*LL=Ldum-integral*r0/(1.0*NgridT);
 				}
 			}
 
-			if(procId == 0) {
-				if (print_LL) fclose(fLLev);
-			}
-
-			if (LL){
-				integral=0.0;
-				for (int t=1; t<=Ntts; t++) integral+= nev_avg[t];
-				*LL=Ldum-integral*r0/(1.0*NgridT);
+			else{
+				print_screen("\nWarning: can not calculate Log-Likelihood without a catalog.\n");
+				print_logfile("Warning: can not calculate Log-Likelihood without a catalog.\n");
 			}
 		}
 	}
 
 	if (flags.aseismic) free_dmatrix(DCFSrand, 0,NTScont,1,NgridT);
-	free_dvector(dumrate,1,cat.Z);
-	free_dvector(rate, 1,cat.Z);
+	if (use_catalog) {
+		free_dvector(dumrate,1,cat.Z);
+		free_dvector(rate, 1,cat.Z);
+	}
 	free_dvector(gammas, 1,NgridT);
 	free_dvector(ev_x,1,NgridT);
 	free_dvector(ev_x_avg,1,NgridT);
@@ -950,11 +972,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		tnow=tt0;
 		j0=1;
 
-		FILE *fout;
-		if(procId == 0) {
-			fout = fopen("LLs.dat","w");
-		}
-
 		while (current_main<Nm && eqkfm0[current_main].t<tt0 && eqkfm0[current_main].mag<Mag_main) current_main++;
 		while (current_main<Nm && eqkfm0[current_main].t<tt1){
 			if (tnow<=eqkfm0[current_main].t){
@@ -963,9 +980,6 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 					if(cat.t[j0]>=tnow) {
 						N+=1;
 						Ldum0+=log(rate[j0]);
-						if(procId == 0) {
-							fprintf(fout,"%lf\t%lf\t%10e\n", cat.t[j0], cat.mag[j0], rate[j0]);
-						}
 					}
 					j0+=1;
 				}
@@ -979,15 +993,9 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			for(int j=j0;j<=cat.Z;j++) if(cat.t[j]>=tnow && cat.t[j]<tt1) {
 				N+=1;
 				Ldum0+=log(rate[j]);
-				if(procId == 0) {
-					fprintf(fout,"%lf\t%lf\t%10e\n", cat.t[j],cat.mag[j], rate[j]);
-				}
 			}
 		}
 
-		if(procId == 0) {
-			fclose(fout);
-		}
 
 		Ntot= (Nev) ? N+*Nev : N;
 		Itot= (I)? integral/NgridT + *I : integral/NgridT;

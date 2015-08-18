@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <sys/param.h>
 #include <time.h>
 
 #include "src/defines.h"
@@ -301,11 +300,28 @@ int main (int argc, char **argv) {
 		flags.aseismic=1;
 	}
 
+	if ((strcmp(catname,"")==0)) {
+		if (LLinversion){
+			error_quit("Error: flag LLinversion set to 1 in parameter file (%s), but InputCatalogFile not given in input file (%s): can not perform LL inversion.\n",
+					modelparametersfile, infile);
+		}
+		else{
+			print_screen("InputCatalogFile not given: will not use catalog. No seismic sources will be used (even if a slip model is provided).\n");
+			print_logfile("InputCatalogFile not given: will not use catalog. No seismic sources will be used (even if a slip model is provided).\n");
+		}
+	}
+
+
 	if (strcmp(background_rate_grid,"")==0)	use_bg_rate_grid=0;
 	else use_bg_rate_grid=1;
 
 	if (strcmp(background_rate_cat,"")==0)	use_bg_rate_cat=0;
 	else use_bg_rate_cat=1;
+
+	if (LLinversion && isnan(tstartLL)){
+		error_quit("Error: flag LLinversion set to 1 in parameter file (%s), but InversionStartDate not given in input file (%s): can not perform LL inversion.\n",
+					modelparametersfile, infile);
+	}
 
 
 //----------- Copy input and parameters file to log file -------//
@@ -825,12 +841,12 @@ int main (int argc, char **argv) {
 				}
 			}
 		}
-		else {
-			if(procId == 0) {
-				fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig,maxta,maxr,0.0,0.0, mod);
-				fflush(fout);
-			}
-		}
+//		else {
+//			if(procId == 0) {
+//				fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d \n",maxAsig,maxta,maxr,0.0,0.0, mod);
+//				fflush(fout);
+//			}
+//		}
 
 		print_logfile("\nFinal values of background rate: Mw>=%.2lf\t r=%.5lf\n", cat.Mc, maxr);
 		maxr*=pow(10,-cat.b*(crst.mags[1]-0.5*crst.dmags-cat.Mc));	//adjust rate to forecast magnitude range.

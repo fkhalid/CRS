@@ -422,41 +422,41 @@ int test_nth_index(){
 	return 1;
 }
 
-int test_read_inputfiles(){
-
-	char *file="input/testinput.txt";
-	char outname[120], reftime_str[120], fore_template[120], catname[120], focmeccat[120], \
-		background_rate_grid[120], slipmodelfile[120], afterslipmodelfile[120];
-	struct tm reftime;
-	double tstart, tend;
-	struct slipmodels_list slip_list;
-	int nfm, j;
-
-	read_inputfile(file, outname, reftime_str, fore_template, catname, focmeccat, background_rate_grid, NULL, NULL,
-			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
-
-	printf("outname=%s\n", outname);
-	printf("reftime_str=%s\n", reftime_str);
-	printf("fore_template=%s\n", fore_template);
-	printf("catname=%s\n", catname);
-	printf("focmeccat=%s\n", focmeccat);
-	printf("background_rate_grid=%s\n", background_rate_grid);
-	printf("slipmodelfile=%s\n", slipmodelfile);
-	printf("afterslipmodelfile=%s\n", afterslipmodelfile);
-	printf("reftime=%d-%d-%dT%d:%d:%dZ\n", reftime.tm_year+1900, reftime.tm_mon+1, reftime.tm_mday, reftime.tm_hour, reftime.tm_min, reftime.tm_sec);
-	printf("tstart=%.3lf\n", tstart);
-	printf("tend=%.3lf\n", tend);
-
-	read_listslipmodel(slipmodelfile, reftime, &slip_list, 3.0, 0, NULL, NULL, NULL);
-	printf("\nslipmodels:\n NSM=%d, is_aft=%d\n", slip_list.NSM, slip_list.is_afterslip);
-	for (int n=0; n<slip_list.NSM; n++) printf("t=%.3lf, m=%.3lf, d=%.3lf, file=%s, Nf=%d, no_mod=%d\n", slip_list.tmain[n], slip_list.mmain[n], slip_list.disc[n], slip_list.slipmodels[n], slip_list.Nfaults[n], slip_list.no_slipmodels[n]);
-
-	read_listslipmodel(afterslipmodelfile, reftime, &slip_list, 3.0, 1, &j, &j, &j);
-	printf("\nafterslip:\nNSM=%d, is_aft=%d\n", slip_list.NSM, slip_list.is_afterslip);
-	for (int n=0; n<slip_list.NSM; n++) printf("t=%.3lf, d=%.3lf, file=%s, Nf=%d, no_mod=%d\n", slip_list.tmain[n], slip_list.disc[0], slip_list.slipmodels[n], slip_list.Nfaults[0], slip_list.no_slipmodels[0]);
-
-	return 0;
-}
+//int test_read_inputfiles(){
+//
+//	char *file="input/testinput.txt";
+//	char outname[120], reftime_str[120], fore_template[120], catname[120], focmeccat[120], \
+//		background_rate_grid[120], slipmodelfile[120], afterslipmodelfile[120];
+//	struct tm reftime;
+//	double tstart, tend;
+//	struct slipmodels_list slip_list;
+//	int nfm, j;
+//
+//	read_inputfile(file, outname, reftime_str, fore_template, catname, focmeccat, background_rate_grid, NULL, NULL,
+//			slipmodelfile, afterslipmodelfile, NULL, NULL, &reftime, &tstart, &tend, NULL, NULL, &nfm);
+//
+//	printf("outname=%s\n", outname);
+//	printf("reftime_str=%s\n", reftime_str);
+//	printf("fore_template=%s\n", fore_template);
+//	printf("catname=%s\n", catname);
+//	printf("focmeccat=%s\n", focmeccat);
+//	printf("background_rate_grid=%s\n", background_rate_grid);
+//	printf("slipmodelfile=%s\n", slipmodelfile);
+//	printf("afterslipmodelfile=%s\n", afterslipmodelfile);
+//	printf("reftime=%d-%d-%dT%d:%d:%dZ\n", reftime.tm_year+1900, reftime.tm_mon+1, reftime.tm_mday, reftime.tm_hour, reftime.tm_min, reftime.tm_sec);
+//	printf("tstart=%.3lf\n", tstart);
+//	printf("tend=%.3lf\n", tend);
+//
+//	read_listslipmodel(slipmodelfile, reftime, &slip_list, 3.0, 0, NULL, NULL, NULL);
+//	printf("\nslipmodels:\n NSM=%d, is_aft=%d\n", slip_list.NSM, slip_list.is_afterslip);
+//	for (int n=0; n<slip_list.NSM; n++) printf("t=%.3lf, m=%.3lf, d=%.3lf, file=%s, Nf=%d, no_mod=%d\n", slip_list.tmain[n], slip_list.mmain[n], slip_list.disc[n], slip_list.slipmodels[n], slip_list.Nfaults[n], slip_list.no_slipmodels[n]);
+//
+//	read_listslipmodel(afterslipmodelfile, reftime, &slip_list, 3.0, 1, &j, &j, &j);
+//	printf("\nafterslip:\nNSM=%d, is_aft=%d\n", slip_list.NSM, slip_list.is_afterslip);
+//	for (int n=0; n<slip_list.NSM; n++) printf("t=%.3lf, d=%.3lf, file=%s, Nf=%d, no_mod=%d\n", slip_list.tmain[n], slip_list.disc[0], slip_list.slipmodels[n], slip_list.Nfaults[0], slip_list.no_slipmodels[0]);
+//
+//	return 0;
+//}
 
 //int test_background_rate2(){
 //
@@ -2502,7 +2502,7 @@ void tests_eqkfm_addslipmodels(){
 	crst.list_allP=pts-1;
 
 
-	all_slipmodels.is_afterslip=0;
+	all_slipmodels.is_aseismic=0;
 	all_slipmodels.tmain=tmain2;
 	all_slipmodels.mmain=mmain2;
 	all_slipmodels.Nfaults=Nfaults2;

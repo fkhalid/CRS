@@ -24,15 +24,9 @@
 /* C*****   IRET        : RETURN CODE  ( =0....NORMAL,   =1....SINGULAR )   */
 
 #include <math.h>
-//#include <stdio.h>
 
 #include "../defines.h"
 #include "../util/error.h"
-
-//#include "nrutil.h"
-#ifdef _CRS_MPI
-	#include "mpi.h"
-#endif
 
 void UA(double XI, double ET, double Q, double DISL1, double DISL2, double DISL3, double *U, double Y11, double X11, double ALP2, double ALP1, double TT, double R, double ALE, double XI2, double Y32, double Q2, double SD, double R3,
 		double FY, double D, double EY, double CD, double FZ, double Y, double EZ, double ALX, double GY, double GZ, double HY, double HZ) {
@@ -55,8 +49,6 @@ void UA(double XI, double ET, double Q, double DISL1, double DISL2, double DISL3
 
 	F2 = 2.0;
 	PI2 = 6.283185307179586;
-
-	//DU=dvector(1,12);
 
 	for (i = 1; i <= 12; i++)
 		U[i] = 0.0;
@@ -129,7 +121,6 @@ void UA(double XI, double ET, double Q, double DISL1, double DISL2, double DISL3
 		for (i = 1; i <= 12; i++)
 			U[i] = U[i] + dum1 * DU[i];
 	}
-	//free_dvector(DU,1,12);
 }
 
 void UB(double XI, double ET, double Q, double DISL1, double DISL2, double DISL3, double *U, double R, double D, double Y, double CD, double XI2, double Q2, double CDCD, double SDCD, double SD, double ALE, double Y11, double X11,
@@ -154,8 +145,6 @@ void UB(double XI, double ET, double Q, double DISL1, double DISL2, double DISL3
 	F1 = 1.0;
 	F2 = 2.0;
 	PI2 = 6.283185307179586;
-
-	//DU=dvector(1,12);
 
 	RD = R + D;
 	D11 = F1 / (R * RD);
@@ -258,7 +247,6 @@ void UB(double XI, double ET, double Q, double DISL1, double DISL2, double DISL3
 		for (i = 1; i <= 12; i++)
 			U[i] = U[i] + dum3 * DU[i];
 	}
-	//free_dvector(DU,1,12);
 }
 
 void UC(double XI, double ET, double Q, double Z, double DISL1, double DISL2, double DISL3, double *U, double D, double R2, double R, double XI2, double X11, double Y11, double ET2, double CD, double SD, double R3, double Y32, double R5,
@@ -284,8 +272,6 @@ void UC(double XI, double ET, double Q, double Z, double DISL1, double DISL2, do
 	F2 = 2.0;
 	F3 = 3.0;
 	PI2 = 6.283185307179586;
-
-	//DU=dvector(1,12);
 
 	C = D + Z;
 	X53 = (8.0 * R2 + 9.0 * R * XI + F3 * XI2) * X11 * X11 * X11 / R2;
@@ -379,7 +365,6 @@ void UC(double XI, double ET, double Q, double Z, double DISL1, double DISL2, do
 		for (i = 1; i <= 12; i++)
 			U[i] = U[i] + dum1 * DU[i];
 	}
-	//free_dvector(DU,1,12);
 }
 
 void DCCON0(double ALPHA, double DIP, double *ALP1, double *ALP2, double *ALP3, double *ALP4, double *ALP5, double *SD, double *CD, double *SDSD, double *CDCD, double *SDCD, double *S2D, double *C2D) {
@@ -502,24 +487,6 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 	double XI2, ET2, Q2, R, R2, R3, R5, D, TT, ALX, ALE, X11, Y11, X32, Y32, EY, EZ, FY, FZ, GY, GZ, HY, HZ;
 	static int warning_notprintedyet=1;
 
-	// [Camilla] Variables used for MPI
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
-	//  XI  = dvector(1,2);
-	//  ET  = dvector(1,2);
-	//  KXI = dvector(1,2);
-	//  KET = dvector(1,2);
-	//
-	//  U   = dvector(1,12);
-	//  DU  = dvector(1,12);
-	//  DUA = dvector(1,12);
-	//  DUB = dvector(1,12);
-	//  DUC = dvector(1,12);
-
 	EPS = 1e-6;
 
 	if (Z > 0.0) {
@@ -537,7 +504,6 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 	AALPHA = ALPHA;
 	DDIP = DIP;
 
-	//DCCON0(AALPHA,DDIP);
 	DCCON0(AALPHA, DDIP, &ALP1, &ALP2, &ALP3, &ALP4, &ALP5, &SD, &CD, &SDSD, &CDCD, &SDCD, &S2D, &C2D);
 
 	ZZ = Z;
@@ -579,9 +545,7 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 
 	for (k = 1; k <= 2; k++) {
 		for (j = 1; j <= 2; j++) {
-			//DCCON2(XI[j],ET[k],Q,KXI[k],KET[j]);
 			DCCON2(XI[j], ET[k], Q, KXI[k], KET[j], SD, CD, &XI2, &ET2, &Q2, &R2, &R, &R3, &R5, &Y, &D, &TT, &ALX, &X11, &X32, &ALE, &Y11, &Y32, &EY, &EZ, &FY, &FZ, &GY, &GZ, &HY, &HZ);
-			//UA(XI[j],ET[k],Q,DD1,DD2,DD3,DUA);
 			UA(XI[j], ET[k], Q, DD1, DD2, DD3, DUA, Y11, X11, ALP2, ALP1, TT, R, ALE, XI2, Y32, Q2, SD, R3, FY, D, EY, CD, FZ, Y, EZ, ALX, GY, GZ, HY, HZ);
 
 			for (i = 1; i <= 10; i += 3) {
@@ -631,13 +595,9 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 
 	for (k = 1; k <= 2; k++) {
 		for (j = 1; j <= 2; j++) {
-			//      DCCON2(XI[j],ET[k],Q,KXI[k],KET[j]);
 			DCCON2(XI[j], ET[k], Q, KXI[k], KET[j], SD, CD, &XI2, &ET2, &Q2, &R2, &R, &R3, &R5, &Y, &D, &TT, &ALX, &X11, &X32, &ALE, &Y11, &Y32, &EY, &EZ, &FY, &FZ, &GY, &GZ, &HY, &HZ);
-			//UA(XI[j],ET[k],Q,DD1,DD2,DD3,DUA);
 			UA(XI[j], ET[k], Q, DD1, DD2, DD3, DUA, Y11, X11, ALP2, ALP1, TT, R, ALE, XI2, Y32, Q2, SD, R3, FY, D, EY, CD, FZ, Y, EZ, ALX, GY, GZ, HY, HZ);
-			//UB(XI[j],ET[k],Q,DD1,DD2,DD3,DUB);
 			UB(XI[j], ET[k], Q, DD1, DD2, DD3, DUB, R, D, Y, CD, XI2, Q2, CDCD, SDCD, SD, ALE, Y11, X11, ALP3, TT, Y32, R3, FY, EY, FZ, EZ, GY, GZ, HY, HZ, SDSD);
-			//UC(XI[j],ET[k],Q,ZZ,DD1,DD2,DD3,DUC);
 			UC(XI[j], ET[k], Q, ZZ, DD1, DD2, DD3, DUC, D, R2, R, XI2, X11, Y11, ET2, CD, SD, R3, Y32, R5, Y, ALP4, ALP5, X32, Q2, SDSD, SDCD, CDCD);
 
 			for (i = 1; i <= 10; i += 3) {
@@ -671,16 +631,6 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 	*UZZ = U[12];
 	*IRET = 0;
 
-	//  free_dvector(XI,1,2);
-	//  free_dvector(ET,1,2);
-	//  free_dvector(KXI,1,2);
-	//  free_dvector(KET,1,2);
-	//
-	//  free_dvector(U,1,12);
-	//  free_dvector(DU,1,12);
-	//  free_dvector(DUA,1,12);
-	//  free_dvector(DUB,1,12);
-	//  free_dvector(DUC,1,12);
 	return;
 
 	/* C=========================================== */
@@ -701,16 +651,6 @@ void DC3D(double ALPHA, double X, double YY, double Z, double DEPTH, double DIP,
 	*UZZ = 0.0;
 	*IRET = 1;
 
-//	free_dvector(XI, 1, 2);
-//	free_dvector(ET, 1, 2);
-//	free_dvector(KXI, 1, 2);
-//	free_dvector(KET, 1, 2);
-//
-//	free_dvector(U, 1, 12);
-//	free_dvector(DU, 1, 12);
-//	free_dvector(DUA, 1, 12);
-//	free_dvector(DUB, 1, 12);
-//	free_dvector(DUC, 1, 12);
 	return;
 
 }

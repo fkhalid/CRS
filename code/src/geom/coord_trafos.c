@@ -15,6 +15,16 @@
 void latlon2localcartesian(double lat, double lon, double lat0, double lon0,
                            double *northern, double *eastern) {
 
+/* Transforms geographical coordinates (lat, lon) into cartesian coordinates in a system centered at (lat0, lon0).
+ *
+ * Input:
+ * 	lat, lon: original coordinates, in degrees.
+ * 	lat0, lon0: reference coordinates.
+ *
+ * Output:
+ *  northern, eastern: cartesian coordinates, in km.
+ */
+
   double e, e2, N, T, C, A, M, M0;
   double phi, lambda, phi0, lambda0, dlambda;
 

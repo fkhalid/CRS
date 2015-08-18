@@ -314,7 +314,7 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 		eqkfm0[nf].allslip_open=allslip_open_temp[nf];
 
 		copy_eqkfm_all(eqkfm0[nf], eqkfm0res+nf);
-
+		eqkfm0res[nf].parent_set_of_models=NULL;
 	}
 	
 	return err;

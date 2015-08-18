@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <nan.h>
 
 #include "../defines.h"
 #include "../util/error.h"
@@ -316,6 +317,15 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 					}
 					if (outname) strcpy(outname,"output");
 					break;
+
+				case 4:
+					if (extra_verbose) {
+						print_screen("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+						print_logfile("Warning: parameter %s not given in %s.\n", keys[n], input_fname);
+					}
+					if (catname) strcpy(catname,"");
+					break;
+
 				case 5:
 					if (nofm){
 						if (extra_verbose) {
@@ -379,9 +389,13 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 					break;
 				case 16:
 					if (background_rate_cat) strcpy(background_rate_cat,"");
-					print_logfile("InversionEndDate not given in %s, will use IssueTime as end of LL inversion period.\n", input_fname);
+					break;
+				case 17:
+					if (tstartLL) *tstartLL= NAN;	//this is used later (will give error if LLinversion=1 in parameter file).
 					break;
 				case 18:
+					print_logfile("InversionEndDate not given in %s, will use IssueTime as end of LL inversion period.\n", input_fname);
+					if (tendLL) *tendLL=0.0;
 					break;
 
 				default:
@@ -414,11 +428,12 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 /* Read a file containing a list of focal mechanism catalogs files (corresponding to different areas).
  *
- * input: inputfile
+ * input:
+ *  inputfile
  *
  * output:
- * listfiles, a list of filenames;
- * nflies, the number of files.
+ *  listfiles, a list of filenames;
+ *  nfiles, the number of files.
  *
  */
 
@@ -537,6 +552,21 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	struct tm times;
 	int Nm0, nsm, no_slipmod;
 
+	//if input_fname=="", this was not given in the input file. Variables should be set to NULL.
+	if (strcmp(input_fname,"")==0){
+		print_screen("Warning: no slip model file given input file.\n");
+		print_logfile("\nWarning no slip model file given input file.\n");
+		(*allslipmodels).NSM=0;
+		(*allslipmodels).is_aseismic=is_aseismic;
+		(*allslipmodels).tmain= NULL;
+		(*allslipmodels).mmain= NULL;
+		(*allslipmodels).disc= NULL;
+		(*allslipmodels).Nfaults=NULL;
+		(*allslipmodels).no_slipmodels=NULL;
+		(*allslipmodels).cut_surf=NULL;
+		return 0;
+	}
+
 	if(procId == 0) {
 		fin = fopen(input_fname, "r");
 		if(fin == NULL) {
@@ -552,8 +582,8 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	#endif
 
 	if(fileError) {
-		print_screen("Warning read_input: no slip model file found (read_listslipmodel).\n");
-		print_logfile("\nWarning read_input: slip model file %s not found (read_listslipmodel).\n", input_fname);
+		print_screen("Warning: slip model file %s not found (read_listslipmodel).\n", input_fname);
+		print_logfile("\nWarning: slip model file %s not found (read_listslipmodel).\n", input_fname);
 		(*allslipmodels).NSM=0;
 		(*allslipmodels).is_aseismic=is_aseismic;
 		(*allslipmodels).tmain= NULL;

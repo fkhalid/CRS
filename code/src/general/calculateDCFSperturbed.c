@@ -57,6 +57,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
  * DCFSrand[i][j] contains the ith stress change at gridpoint j due to continuous processes (modeled linearly between time steps).
  * DCFS[k].cmp[j] contains the stress change due to kth event at gridpoint j (modeled as a step).
  *
+ * NB: if fixed receiver faults are used, it will still choose the optimal rake. This can be changed with a flag below.
  *
  */
 
@@ -73,6 +74,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		gridpoints_err=flag.err_gridpoints, \
 		multisnap=flag.aseismic_multisnap, \
 		full_field=(flag.sources_without_focmec==2);
+
+	int optimal_rake=1;
 
 	static double *strike0, *dip0, *rake0;	//strike0, dip0, rake0 are focal mechanism that will change at each iteration.
 	double slip;
@@ -198,8 +201,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					}
 					okadaCoeff2DCFS(Coeffs_st, Coeffs_dip, Coeffs_open, DCFS_Af[a_ev+i], eqkfmAf+nfaults);
 					if (vary_recfault==0) {
-						resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
-						//resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);	//fixme one line or the other
+						if (optimal_rake) resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
+						else resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);
 						free_d3tensor(DCFS_Af[a_ev+i].S, 1,NgridT,1,3,1,3);
 						if (multisnap && i<NTSeff){
 							for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[a_ev+i].cmb[n];
@@ -242,8 +245,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					//resolve coefficients if receiver faults don't change between iterations:
 					switch (vary_recfault){
 						case 0:
-							resolve_DCFS(DCFS[temp->which_main], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);	//fixme choose one
-							//resolve_DCFS(DCFS[temp->which_main], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);
+							if (optimal_rake) resolve_DCFS(DCFS[temp->which_main], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
+							else resolve_DCFS(DCFS[temp->which_main], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);
 							if (gridpoints_err){
 								int eq1=temp->which_main;
 
@@ -345,8 +348,11 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			if (multisnap==0){
 
-				if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, NULL, 1);
-				//if (vary_recfault==1) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, rake0, 0);	//fixme choose a line
+				if (vary_recfault==1) {
+					if (optimal_rake) resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, NULL, 1);
+					else resolve_DCFS(DCFS_Af[a], crst, strike0, dip0, rake0, 0);
+				}
+
 				for (int l=0; l<NTScont; l++) {
 					if ((l>0 && times[l-1]) <tdata0 || (l<NTScont-1 && times[l+1]>tdata1)) continue;
 
@@ -360,8 +366,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				if (vary_recfault==1){
 					for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]=0.0;
 					for (int l=0; l<NTScont; l++) {
-						resolve_DCFS(DCFS_Af[a*NTScont+l], crst, strike0, dip0, NULL, 1); //fixme choose one
-						//resolve_DCFS(DCFS_Af[a*NTScont+l], crst, strike0, dip0, rake0, 0);
+						if (optimal_rake) resolve_DCFS(DCFS_Af[a*NTScont+l], crst, strike0, dip0, NULL, 1);
+						else resolve_DCFS(DCFS_Af[a*NTScont+l], crst, strike0, dip0, rake0, 0);
 						if (l<NTScont-1) for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]+=DCFS_Af[a*NTScont+l].cmb[n];
 					}
 				}
@@ -399,8 +405,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			else{
 				if (eqkfm0[NFsofar].is_slipmodel){
 					if (vary_recfault==1){	// In this case stress tensor has to be resolved on a different plane at each iteration:
-						resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1); //fixme choose a line
-						//resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, rake0, 0);
+						if (optimal_rake) resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, NULL, 1);
+						else resolve_DCFS(DCFS[temp->which_main], crst, strike0, dip0, rake0, 0);
 					}
 					if (gridpoints_err==1) {
 						//if vary_recfault==0, the field hasn't changed and cmb0 should be used.

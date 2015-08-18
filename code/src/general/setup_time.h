@@ -10,7 +10,7 @@
 
 #include "../defines.h"
 
-int timesteps_log(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults, int *L, double **times2, double smallstepstime, double TAU, double dtau, double timeTAU);
+int timesteps_log(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults, int *L, double **times2, double smallstepstime);
 
 int timesteps_lin(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults, int *L, double **times2, int ***allind);
 

@@ -1,29 +1,41 @@
 #include "pscokada.h"
 
 #include <math.h>
-//#include <stdio.h>
 
 #include "../defines.h"
 #include "../util/nrutil.h"
 #include "dc3d.h"
 
 
-/************************************************/
-/*			pscokada						    */
-/*												*/
-/* x2, y2, z2: receiver coords					*/
-/* x1, y1, z1: patch coords						*/
-/************************************************/
+void pscokada(double x1, double y1, double z1, double strike1, double dip1, double L, double W, double slip_strike, double slip_dip, double open,
+		double x2, double y2, double z2, double *sxx, double *syy, double *szz, double *sxy, double *syz, double *szx,
+		double lambda, double mu) {
 
-void pscokada(double x1, double y1, double z1, double strike1, double dip1, double L, double W, double slip_strike, double slip_dip, double open, double x2, double y2, double z2, double *sxx, double *syy, double *szz, double *sxy, double *syz, double *szx, double alpha, double lambda, double mu, double friction) {
-//slip, strike in radians.
-//x is northward, y is eastward, and z is downward.
-//x1, y1, z1 are coordinates of center top of the patch:  -------X-------
-//														   \             \
-//														    \             \
-//														     \             \
-//															  ---------------
+/*
+ * Input:
+ *  strike, dip: patch strike and dip, in radians.
+ *  L, W: patch length and width
+ *  slip_strike, slip_dip, open: slip along strike, along dip, and opening.
+ *
+ *  x1, y1, z1 are coordinates of center top of the patch:  -------X-------
+ * 														   \             \
+ *														    \             \
+ *														     \             \
+ *														      ---------------
+ *
+ *  x2, y2, z2: receiver coordinates.
+ *  lambda, mu: lame' parameters.
+ *
+ *
+ * Output:
+ *  sxx, sxy, ... : components of the stress tensor.
 
+ *
+ * NB: x is northward, y is eastward, and z is downward.
+ *
+ */
+
+	double alpha = (lambda+mu)/(lambda + 2*mu);
 	double depth, stk, sin_stk, cos_stk, sin_2stk, di, csdi, ssdi;
 	double DISL1, DISL2, DISL3, AL1, AL2, AW1, AW2, X, Y, Z, UX, UY, UZ, UXX, UYX, UZX, UXY, UYY, UZY, UXZ, UYZ, UZZ;
 	double strain1, strain2, strain3, strain4, strain5, strain6, eii, dum1, dum2;
@@ -56,8 +68,6 @@ void pscokada(double x1, double y1, double z1, double strike1, double dip1, doub
 	// neg und pos Werte? sind das nicht alongdip und againstdip längen?
 	AL1 = -0.5 * L;
 	AL2 =  0.5 * L;
-//	AW1 = -0.5 * W;
-//	AW2 =  0.5 * W;
 	AW1=-W;		//top of patch is passed to function.
 	AW2=0;
 
@@ -90,9 +100,4 @@ void pscokada(double x1, double y1, double z1, double strike1, double dip1, doub
 	*sxy =        dum2 * strain4;
 	*syz =        dum2 * strain5;
 	*szx =        dum2 * strain6;
-
-	//p = 0.0;
-	//cmbfix(sxx, syy, szz, sxy, syz, szx, p, friction, &cmb, &sig, strike2, dip2, rake2);
-
-	//*DCFS = cmb;
 }

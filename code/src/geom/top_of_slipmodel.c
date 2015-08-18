@@ -5,7 +5,6 @@
 
 #include "../defines.h"
 
-
 void top_of_slipmodel(struct eqkfm* eqkfm, int N){
 	/* Finds the top of a slip model (eqkfm) and writes into eqkfm.top
 	 *

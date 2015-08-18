@@ -79,6 +79,24 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			*dAgrid=crst.dAgrid;
 	int N=crst.N_allP;
 
+
+	//If there is no file given:
+	if (strcmp(file,"")==0){
+		if (cat){
+			(*cat).Z = 0;
+			//by convention, Mc>20 means that it should be calculated from the catalog. Bu there is no catalog, hence assume it is complete:
+			if ((*cat).Mc>20) (*cat).Mc=-100;
+			(*cat).b=1.0;
+		}
+
+		if (eqfm) *eqfm=NULL;
+		if (Ntot) *Ntot=0;
+		return 0;
+	}
+
+
+
+
 	if(procId == 0) {
 		Z = countline(file)+1;
 	}
@@ -326,8 +344,8 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	if (!eq1 && !eq2) {
 		if (cat) (*cat).Z=0;
 		if (Ntot) *Ntot=0;
-		print_logfile("No events found as sources or for LL inversion. Exiting.\n");
-		print_screen("No events found as sources or for LL inversion. Exiting.\n");
+		print_logfile("No events found in catalog, either as sources or for LL inversion. Exiting.\n");
+		print_screen("No events found in catalog, either as sources or for LL inversion. Exiting.\n");
 		return 1;
 	}
 
@@ -457,7 +475,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 	return (errP!=0);
 }
-
 
 int read_firstlineZMAP(char *file, struct tm reftime, double *stime){
 /*

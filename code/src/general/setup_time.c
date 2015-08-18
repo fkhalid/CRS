@@ -18,8 +18,7 @@
 #include "find_timesteps.h"
 #include "lin_interp_eqkfm.h"
 
-int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults, int *L, double **times2,
-		double smallstepstime, double TAU, double dtau, double timeTAU){
+int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfaults, int *L, double **times2, double smallstepstime){
 
 /* Calculates time steps based on the information in eqk_aft.
  * To obtain time steps with an increasing spacing, a function of the form t_{i}=t_{i-1}+K(t+c-teq)^p is used: for p=1 and a logarithmic stressing history,
@@ -29,9 +28,7 @@ int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *N
  *  t0, t1: start and end time.
  *  eqk_aft: array containing all the events to be considered.	Range [0...NFtot-1], where NFtot=sum(Nfaults);
  *  Nfaults:  number of faults per event. Range [0...NA-1].
- *
  *  smallstepstime: initial period during which smaller time steps are used (uses 0.3K instead of K).
- *	 K: parameter describing how closely spaced time steps are: t_{i}=t_{i-1}+K(t+c-teq)^p
  *
  * Output:
  *  times2: time steps. Memory is allocated here and the arrays is populated. Range [0...*L].
@@ -42,7 +39,7 @@ int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *N
 	int nev, nfaults;
 	double Teq, tend;
 	int err=0;
-	double K=0.6;
+	double K=0.6;	//parameter describing how closely spaced time steps are: t_{i}=t_{i-1}+K(t+c-teq)^p
 
 	//Dry run: find total no. of time steps, without filling out times2 (not allocated yet):
 	offset=1;
@@ -332,7 +329,6 @@ int setup_aseismic_splines(double t0, double t1, struct eqkfm **eqk_aft,
 
 
 	int err=0;
-	double TAU=200000, dtau=7000, timeTAU=183;
 	double smallstepstime=12;
 	struct eqkfm *eq_aft;
 
@@ -347,7 +343,7 @@ int setup_aseismic_splines(double t0, double t1, struct eqkfm **eqk_aft,
 
 	eq_aft= *eqk_aft;
 
-	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime, TAU, dtau, timeTAU);
+	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime);
 
 	print_screen("Aseismic slip: will fit splines.\n");
 	print_logfile("Aseismic slip: will fit splines.\n");
@@ -471,7 +467,6 @@ int setup_aseismic_single_log(double t0, double t1, double ts,
  */
 
 	int err=0;
-	double TAU=200000, dtau=7000, timeTAU=183;
 	double smallstepstime=12;
 	double now, prev, norm, curr;
 	double Tendaft;	//Time to which cumulative aseismic slip snapshot refers.
@@ -485,7 +480,7 @@ int setup_aseismic_single_log(double t0, double t1, double ts,
 	print_screen("Aseismic slip: will fit a logarithmic function: s(t)~log(1+t/%.3lf)\n", ts);
 	print_logfile("Aseismic slip: will fit a logarithmic function: s(t)~log(1+t/%.3lf)\n", ts);
 
-	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime, TAU, dtau, timeTAU);
+	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime);
 
 	// Temporal evolution of aseismic slip.//
 	nfaults=0;

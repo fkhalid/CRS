@@ -2,9 +2,15 @@
 
 
 int sum_DCFS(struct pscmp *DCFS, double **cmb, int N, int Ntot){
-//adds up all DCFS[0...N-1], and returns vector cmb containing cumulative field.
-//Ntot: total no. of grid points.
-//if *cmb==NULL memory is allocated, otherwise not (make sure vector has correct no. of elements).
+/* Adds up all DCFS[0...N-1], and returns vector cmb containing cumulative field.
+ *
+ * Input:
+ *  Ntot: total no. of grid points.
+ *
+ * Output:
+ *  cmb: array containing the sum of stresses from DCFS[x].cmb.
+ *  if *cmb==NULL memory is allocated, otherwise not (make sure vector has correct no. of elements).
+ */
 
 	int i;
 
@@ -26,6 +32,12 @@ int sum_DCFS(struct pscmp *DCFS, double **cmb, int N, int Ntot){
 }
 
 int sum_DCFSrand(double **DCFSrand, double **cmb, int TS, int N){
+
+	/* Sums elements in DCFSrand[0...TS-1][0...N-1]
+	 * Returns them in array cmb[1...N]
+	 *
+	 * Memory for cmb will be allocated if *cmb==NULL.
+	 */
 
 	if (*cmb==NULL) *cmb=dvector(1,N);
 	for (int k=1; k<=N; k++) (*cmb)[k]=0.0;

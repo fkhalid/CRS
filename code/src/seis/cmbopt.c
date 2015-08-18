@@ -9,9 +9,9 @@
 
 
 void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
-	/* Calculates OOPs in a stress field given by the sum of background stress field (crst.S) and stress steps contained in DCFS.
+	/* Calculates optimally oriented planes in a stress field given by the sum of background stress field (crst.S) and stress steps contained in DCFS.
 	 * Also calculates Coulomb stress change due to DCFS[ind] on these planes.
-	 * ind gives the index of last element of DCFS that should be included in stress field calculation; (e.g. if 0, only one element).
+	 * ind: gives the index of last element of DCFS that should be included in stress field calculation; (e.g. if 0, only one element).
 	 *
 	 * Results stored in: DCFS[ind].st1, di1, ra1[2]; largest stress changes from DCFS[ind] stored in DCFS[ind].cmb
 	 */
@@ -70,19 +70,20 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 
 }
 
-void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double szx, double p, double f, double st0, double di0, double ra0, double *cmb,double *st1, double *di1, double *ra1, double *st2, double *di2, double *ra2){
+void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double szx, double p, double f, double st0, double di0, double ra0,
+		double *cmb,double *st1, double *di1, double *ra1, double *st2, double *di2, double *ra2){
 /*  Calculates coulomb stress with the optimal orientation. Taken from Ronjiang fortran function in pscmp program.
  *
- * 	input:
-	stress tensor components
-	p=pore pressure
-	f=friction coefficient
-	str0, di0, rake0: a reference focal mechanism: output focal mechanisms str1, di1, rake1 refer to mechanism closer to this.
-
- *  output:
-	cmb: max. Coulomb stress at the two optimally oriented fault planes
-	st1, di1, ra1, [2]: strike, dip, rake of the two OOPs.
-*/
+ * 	Input:
+ * 	 sxx, sxy, ...: stress tensor components
+ * 	 p=pore pressure
+ * 	 f=friction coefficient
+ * 	 str0, di0, rake0: a reference focal mechanism: output focal mechanisms str1, di1, rake1 refer to mechanism closer to this.
+ *
+ * 	Output:
+ * 	 cmb: max. Coulomb stress at the two optimally oriented fault planes
+ * 	 st1, di1, ra1, [2]: strike, dip, rake of the two OOPs.
+ */
 
       int j0,j1,j2,jmin,jmax;
       double b,c,d,s1,s2,s3,snn,alpha,am,swap, sig;

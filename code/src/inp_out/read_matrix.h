@@ -28,8 +28,6 @@
 //              rows       :  Zeilenzahl
 //-----------------------------------------------------------------------------
 int read_matrix(char *infile,int columns, int headerlines, double **data, long *rows);
-int read_matrix_transpose(char *infile, int columns, int headerlines, double **data, long *rows);
-int read_matrixT(char *infile,int columns, int headerlines, double **data, char**files, long *rows);
 int countline(char *filename);
 int countcol_header(char *filename, int headerlines);
 

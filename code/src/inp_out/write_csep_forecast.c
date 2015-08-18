@@ -1,8 +1,14 @@
 #include "write_csep_forecast.h"
 
 void csep_forecast_general(char *filename, struct crust crst, double *rates, int calculation_grid, int use_mags){
-	/* use_mags is a flag: is set to 0, will not use magnitude bins (e.g. for printing out cmb field).
+	/*
+	 * Writes a gridded forecast to a file.
 	 *
+	 * Input:
+	 *  filename: name of the file
+	 *  crst: contains grid information (coordinates).
+	 *  rates: array containing the forecast, or whichever value should be in the 9th column of the file.
+	 *  use_mags (flag): if set to 0, will not use magnitude bins.
 	 */
 
 	double *lats, *lons, *deps, *mags, *magGR;
@@ -49,13 +55,16 @@ void csep_forecast_general(char *filename, struct crust crst, double *rates, int
 
 void write_csep_forecast(char *filename, double *lats, double *lons, double *deps, double dlat, double dlon, double ddep,
 		double *mags, double dmag, double *rates, double *mag_fact, int NG, int Nmag){
-
-	//input:
-	//lats, lons, deps [1...NG]: central point of cells.
-	//dlat, dlon, ddep, dmag: cell sizes.
-	//rates [1...NG]: rate at each cell (sum over all magnitude bins).
-	//mags [1...Nmag]: center of magnitude bins.
-	//mag_fact [1...Nmag]: factor by which rate should be scaled in each magnitude bin (they should add up to 1).
+	/*
+	 * Writes a gridded forecast to a file.
+	 *
+	 * Input:
+	 *  lats, lons, deps [1...NG]: central point of cells.
+	 *  dlat, dlon, ddep, dmag: cell sizes.
+	 *  rates [1...NG]: rate at each cell (sum over all magnitude bins).
+	 *  mags [1...Nmag]: center of magnitude bins.
+	 *  mag_fact [1...Nmag]: factor by which rate should be scaled in each magnitude bin (they should add up to 1).
+	 */
 
 
 	double Lat1,Lat2,Lon1,Lon2, D1, D2, M1, M2;

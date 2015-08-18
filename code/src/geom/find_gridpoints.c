@@ -18,10 +18,30 @@
 int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, double y, double x, double SD, double Depth, double SDd,
 		int cut_sd, int *ngridj0, int **ngridpointj, double **weightsj, int inside, int d3){
 
+	/* Selects the grid points associated with a given source.
+	 * Events are weighted according to a radial Gaussian distribution with a cutoff at SD*cut_sd (SDd*cut_sd vertically).
+	 * If the source events is close to a boundary, the sum of the weights is <1,since part of the area affected by the earthquake is outside the domain.
+	 * In this case the sum of the weights equal the ratio between the total grid point area (sum(dAs)) and the area comprised in the cutoff radius.
+	 *
+	 * Input:
+	 *  ys, xs, depths: arrays with grid points coordinates. Range [1...N]
+	 *  inside: flag indicating whether the sum of the weights should be set to 1.
+	 *  d3: flag indicating if the 3D distance should be used.
+	 *  y,x: earthquake coordinates
+	 *  SD: standard deviation (horizontal)
+	 *  Depth: earthquake depth
+	 *  SDd: standard deviation (depth)
+	 *
+	 * Output:
+	 *  ngridj0: no. of selected points
+	 *  ngridpointj: list of indices of selected points
+	 *  weightsj: weights of each point
+	 *
+	 */
+
 	double r, rmin=1e30, dz, probCum, *prob;
 	int *ngridpointj_temp;
 	int p,p2;
-	int K, Kd;
 	int closestp;
 	int ngridj;
 	double y1, y2, x1, x2, D1, D2, A, Vfrac=1;
@@ -34,18 +54,14 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	ngridj=0;
 	probCum=0;
 
-// K, Kd determine cutoff radius/depth.
-	K=cut_sd;
-	Kd=cut_sd;
+	y1=y-cut_sd*SD;
+	y2=y+cut_sd*SD;
+	x1=x-cut_sd*SD;
+	x2=x+cut_sd*SD;
+	D1=Depth-cut_sd*SDd;
+	D2=Depth+cut_sd*SDd;
 
-	y1=y-K*SD;
-	y2=y+K*SD;
-	x1=x-K*SD;
-	x2=x+K*SD;
-	D1=Depth-Kd*SDd;
-	D2=Depth+Kd*SDd;
-
-	A=0;
+	A=0;	//total area occupied by selected grid points
 
 	for (p=1; p<=N; p++){
 		r= (d3)? sqrt(pow(ys[p]-y,2)+pow(xs[p]-x,2)+pow(depths[p]-Depth,2)) : sqrt(pow(ys[p]-y,2)+pow(xs[p]-x,2));
@@ -56,7 +72,7 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 		if (ys[p]>=y1 && ys[p]<=y2 && xs[p]>=x1 && xs[p]<=x2 && (!d3 || (depths[p]>=D1 && depths[p]<=D2))){
 			dz= (d3) ? depths[p]-Depth : 0.0;
 
-			if (r<=K*SD && dz<=Kd*SDd)
+			if (r<=cut_sd*SD && dz<=cut_sd*SDd)
 			{
 				ngridj+=1;
 				ngridpointj_temp[ngridj]=p;
@@ -80,7 +96,7 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 // Vfrac is fraction of area inside selected area.
 	switch (inside) {
 	case 0:
-	  Vfrac=fabs(A/(pi*(K*SD)*(K*SD)));
+	  Vfrac=fabs(A/(pi*(cut_sd*SD)*(cut_sd*SD)));
 	  break;
 	case 1:
 	  Vfrac=1;
@@ -116,14 +132,26 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 
 int find_gridpoints_d(double *ys, double *xs, double *depths, int *already_selected, int Nsel0, int N, double y_eq, double x_eq, double Depth, double m,
 		double dDCFS, int *ngridj, int **ngridpointj){
-// xs, ys: eastwards, northwards.
-// this function finds gridpoints within given distance(without weighting them as in find_gridpoints).
-// already_selected are the points selected as possible location of earthquake (should all be included). There are Nsel0 of them.
+
+/* Similar to find_gridpoints, with two differences: (1) it selects all points in the array already_selected, and it does not calculate weights.
+ * The selection radius is magnitude dependent: R~pow(M0/dDCFS), with M0=seismic moment. Exact form was found empirically.
+ *
+ * Input:
+ * 	 ys, xs, depths: arrays with grid points coordinates. Range [1...N]
+ * 	 already_selected: sorted indices of points that must be selected. Range [1...Nsel0]
+ * 	 y_eq,x_eq, Depth: earthquake coordinates
+ *   m: earthquake magnitude.
+ *   dDCFS: minimum stress chance that should be resolved (smaller values -> more points selected).
+ *
+ * Output:
+ * 	 ngridj: no of grid points selected.
+ * 	 ngridpointj: list of grid points selected.
+ */
 
 	int *points_temp;
 	double r, rmin=1e30;
 	double y1, y2, x1, x2, D1, D2;
-	double k=0.85, R;	//k found empirically looking at distrib. of DCFS(r,m). dcfs_min is threshold for coulomb stress value, in Pa (used to select points: points that are furhter than distance corresp. to this are ignored).
+	double k=0.85, R;	//k found empirically looking at distrib. of DCFS(r,m).
 	int counter=1, closestp;
 
 	points_temp=ivector(1,N);
@@ -176,11 +204,30 @@ int find_gridpoints_d(double *ys, double *xs, double *depths, int *already_selec
 int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, double dy, double dz, int N, int Nselmax, double y, double x,
 		double SD, double Depth, double SDd, int cut_sd, int *ngridj, int **ngridpointj, double **weightsj, int inside, int d3){
 
-/* Instead of simply using center point, integrates over each cell.
- * d3= use 3d distance (as opposed to horizontal).
- * if inside==1, sum of weights is 1; otherwise, is can be smaller than 1 if part of the gaussian is outside of the domain of xs, ys, depths.
+/* Similar to find_gridpoints, but instead of simply using center point, integrates over each cell to calculate exact weights.
+ * Events are weighted according to a radial Gaussian distribution with a cutoff at SD*cut_sd (SDd*cut_sd vertically).
+ * If the source events is close to a boundary, the sum of the weights is <1,since part of the area affected by the earthquake is outside the domain.
+ * In this case the sum of the weights equal the ratio between the total grid point area (sum(dAs)) and the area comprised in the cutoff radius.
  *
- * ngridj=no. of points selected. Ignored if NULL is passed.
+ *
+ * Input:
+ *  ys, xs, depths: arrays with grid points coordinates. Range [1...N]
+ *  dx, dy, dz: size of cells.
+ *  Nselmax: size of ngridpointj, if pre-allocated.
+ *  Can also set to *ngridpointj=NULL, so it will be allocated here with right size (in that case set Nselmax>=N to avoid error below).
+ *
+ *  inside: flag indicating whether the sum of the weights should be set to 1.
+ *  d3: flag indicating if the 3D distance should be used.
+ *  y,x: earthquake coordinates
+ *  SD: standard deviation (horizontal)
+ *  Depth: earthquake depth
+ *  SDd: standard deviation (depth)
+ *
+ * Output:
+ *  ngridj: no. of selected points
+ *  ngridpointj: list of indices of selected points
+ *  weightsj: weights of each point
+ *
  */
 
 	double r, rmin=1e30, probCum, prob[N+1];
@@ -283,9 +330,16 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 }
 
 double exact_prob_1d(double r, double dr, double sd){
-/* r= distance of cell center to central point of gaussian; \
- * dr= cell size;
- * sd= st.dev. of gaussian.
+
+/* Integrates a Gaussian distribution between r-0.5dr and r+0.5dr.
+ *
+ * Input:
+ *  r= distance of cell center to central point of gaussian;
+ *  dr= cell size;
+ *  sd= st.dev. of gaussian.
+ *
+ * Output:
+ *  returns value of integral.
  */
 
 	double 	rmin = r-0.5*dr,	\
@@ -295,14 +349,20 @@ double exact_prob_1d(double r, double dr, double sd){
 
 }
 
-
 double exact_prob(double rx, double ry, double rz, double dx, double dy, double dz, double sdx, double sdy, double sdz, int d3){
-	/* fod each dimension:
-	 * rX= distance of cell center to central point of gaussian; \
-	 * dX= cell size;
-	 * sdX= st.dev. of gaussian.
-	 * d3= flag to indicate is 3D distance should be used (otherwise, ignore vertical coordinate).
-	 */
+/*
+ * Integrates a 3D Gaussian distribution within a cell.
+ *
+ * Input:
+ *  for each dimension:
+ *  rX= distance of cell center to central point of gaussian; \
+ *  dX= cell size;
+ *  sdX= st.dev. of gaussian.
+ *  d3= flag to indicate is 3D distance should be used (otherwise, ignore vertical coordinate).
+ *
+ * Output:
+ *   returns value of integral.
+ */
 
 	double 	xmin = rx-0.5*dx,	\
 			xmax = rx+0.5*dx,	\
@@ -324,10 +384,19 @@ double exact_prob(double rx, double ry, double rz, double dx, double dy, double 
 }
 
 int all_nearestneighbours(double *x, double *y, int N, int **pts, double **dist){
-	/* x, y: coordinates (indices: [1...N]);
-	 * pts: index of nearest neighbour;
-	 * dist: distance to nearest neighbour;
-	 * pts, dist are pointers to 1D arrays. If NULL, ignored; if they point to NULL, memory will be allocated. Otherwise, arrays of the correct size should be passed.
+	/*
+	 * Given a list of points in 2D space, it finds all nearest neighbors.
+	 *
+	 * Input:
+	 *  x, y: coordinates (indices: [1...N]);
+	 *  pts: index of nearest neighbour;
+	 *
+	 * Output:
+	 *  dist: distance to nearest neighbour;
+	 *  pts, dist are pointers to 1D arrays. If NULL, ignored; if they point to NULL, memory will be allocated. Otherwise, arrays of the correct size should be passed.
+	 *
+	 * Returns:
+	 *  no. of operations (used to test efficiency).
 	 */
 
 	double *xs=NULL;	//sorted copies of x,y, (will be sorted).
@@ -398,12 +467,20 @@ int all_nearestneighbours(double *x, double *y, int N, int **pts, double **dist)
 	return n_op;
 }
 
-
 int all_2ndnearestneighbours(double *x, double *y, int N, int **pts, double **dist){
-	/* x, y: coordinates (indices: [1...N]);
-	 * pts: index of nearest neighbour;
-	 * dist: distance to nearest neighbour;
-	 * pts, dist are pointers to 1D arrays. If NULL, ignored; if they point to NULL, memory will be allocated. Otherwise, arrays of the correct size should be passed.
+	/*
+	 * Given a list of points in 2D space, it finds all 2nd nearest neighbors.
+	 *
+	 * Input:
+	 *  x, y: coordinates (indices: [1...N]);
+	 *  pts: index of nearest neighbour;
+	 *
+	 * Output:
+	 *  dist: distance to nearest neighbour;
+	 *  pts, dist are pointers to 1D arrays. If NULL, ignored; if they point to NULL, memory will be allocated. Otherwise, arrays of the correct size should be passed.
+	 *
+	 * Returns:
+	 *  no. of operations (used to test efficiency).
 	 */
 
 	double *xs=NULL;	//sorted copies of x,y, (will be sorted).

@@ -13,20 +13,18 @@
 
 int findtimestepsomori(double te, double t0, double t1, double K, double p, double c, double *t, double *K0, int *L) {
 /*
- * To obtain time steps with an increasing spacing, a function of the form dt~(t+c)^p is used: for p=1 and a logarithmic stressing history,
+ * Calculates time steps with an increasing spacing, a function of the form dt~(t+c)^p is used: for p=1 and a logarithmic stressing history,
  * this gives equal stresses within each time step. (NB: t refers to the start of each aseismic event).
  *
  * Input:
  * 	te: earthquake time (or in general, start time of the aseismic event).
- * 	tstart, tend: start and end time of the measured value tau0.
  * 	t0,t1: start and end time of the period for which time steps are calculated.
  *
- * 	tau0, Dtau, p, c: parameters controlling the shape of the function used to estimate time steps:
- * 	  		dtau controls the size of the time steps (dt~dtau), and TAU is the integral of the omori function between tstart, tend.
+ * 	K, p, c: parameters controlling the shape of the function used to estimate time steps: *
  *
  * Output:
  *  t is populated with the time steps (NB must be allocated beforehand).
- *  K: value such that t_{i}=t_{i-1}+K(t+c-teq)^p. Ignored if NULL.
+ *  K0: value such that t_{i}=t_{i-1}+K(t+c-teq)^p. Ignored if NULL.
  *  L: number of time steps.
  */
 

@@ -17,6 +17,7 @@ basefile="input_testcases/testDL/input.txt"
 parafile="input_testcases/parameters.txt"
 temppara="input_testcases/testDL/temp_par.txt"
 
+
 #no afterslip:
 ln1="OutputForecastFile=output_testcases/testDL0"
 ln2="Logfile=output_testcases/testDL0.log"
@@ -151,5 +152,18 @@ if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL8
 cp Coverage/code/src/*/*.gc* coverage/testDL8
+fi
+
+#Input file contains no catalog, slip models, start/end LLinversion time. Should be same as testDL7,8
+ln1="OutputForecastFile=output_testcases/testDL9"
+ln2="Logfile=output_testcases/testDL9.log"
+
+sed "1s+.*+$ln1+" input_testcases/testDL/input9.txt | sed "2s+.*+$ln2+" > temp_inputDL
+cp input_testcases/testDL/para9.txt $temppara
+$Build/CRS_3.0 temp_inputDL
+if [ $Build == "Coverage" ]
+then
+mkdir coverage/testDL9
+cp Coverage/code/src/*/*.gc* coverage/testDL9
 fi
 

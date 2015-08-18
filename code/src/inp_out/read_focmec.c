@@ -396,6 +396,15 @@ int readfocmec(char *focmecfile, struct crust crst,
 }
 
 void select_fm_time(double **focmec, int *NFM, double Tstart){
+	/* Selects focal mechanisms occuring before Tstart.
+	 *
+	 * Input:
+	 *  focmec[1...*NFM]: array with focal mechanisms.
+	 *
+	 * Output:
+	 *  overwrites focmec with selected elements. Final Range: [1...*NFM]
+	 *  *NFM also overwritten.
+	 */
 
 	int ntot=0;
 

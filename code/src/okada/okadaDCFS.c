@@ -128,7 +128,6 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	double len, width, depth; //for individual patches.
 	double depth0; //to differentiate between blind fault (depth0=0) or fault cutting through surface.
 	double strike, dip, rake;
-	double alpha;
 	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
 	int Nsel = eqkfm1[0].nsel;
 	int NP_tot=0, p1, i;
@@ -141,7 +140,6 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 		NP_tot+=eqkfm1[j].np_di*eqkfm1[j].np_st;
 	}
 
-	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
 	depth0=eqkfm1[0].cuts_surf ? eqkfm1[0].top : 0.0;
 
 	print_logfile("Depth of surface: %.3lf km.\n", depth0);
@@ -279,7 +277,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 				if (!noslip_str) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0,
 							north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
-							alpha, crst.lambda, crst.mu, crst.fric);
+							 crst.lambda, crst.mu);
 
 					index = (p * Nsel * 6) + (i0 * 6);
 
@@ -294,7 +292,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 				if (!noslip_dip) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0,
 							 north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
-							 alpha, crst.lambda, crst.mu, crst.fric);
+							 crst.lambda, crst.mu);
 
 					index = (p * Nsel * 6) + (i0 * 6);
 
@@ -309,7 +307,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 				if (!noopen) {
 					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, 0.0, 1.0,
 							 north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,
-							 alpha, crst.lambda, crst.mu, crst.fric);
+							 crst.lambda, crst.mu);
 
 					index = (p * Nsel * 6) + (i0 * 6);
 
@@ -404,7 +402,6 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	double len, width, depth; //for individual patches.
 	double depth0; //to differentiate between blind fault (depth0=0) or fault cutting through surface.
 	double strike, dip, rake;
-	double alpha;
 	double Sxx, Syy, Szz, Sxy, Syz, Sxz;
 	int Nsel=eqkfm1[0].nsel;
 	int NP_tot=0, p1, i, noslip_str, noslip_dip, noopen;
@@ -414,8 +411,6 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 
 	for (int j=0; j<NF; j++) NP_tot+=eqkfm1[j].np_di*eqkfm1[j].np_st;
 
-
-	alpha = (crst.lambda + crst.mu)/(crst.lambda + 2*crst.mu);
 	depth0=eqkfm1[0].cuts_surf ? eqkfm1[0].top : 0.0;
 
 	print_logfile("Depth of surface: %.3lf km.\n", depth0);
@@ -489,7 +484,8 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 				noopen= (eqkfm1[j].open==NULL && (afslip==NULL || (*afslip).allslip_open==NULL));
 
 				if (!noslip_str) {
-					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0, north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth-depth0,  strike,  dip, len, width, 1.0, 0.0, 0.0, north, east, crst.depth[i]-depth0,
+							&Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz,  crst.lambda, crst.mu);
 
 					(*Coeffs_st)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_st)[p1][i0][2]+=1e6*Syy;
@@ -500,7 +496,8 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 				}
 
 				if (!noslip_dip) {
-					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0, north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, -1.0, 0.0, north, east, crst.depth[i]-depth0,
+							&Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, crst.lambda, crst.mu);
 
 					(*Coeffs_dip)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_dip)[p1][i0][2]+=1e6*Syy;
@@ -511,7 +508,8 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 				}
 
 				if (!noopen) {
-					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, 0.0, 1.0, north, east, crst.depth[i]-depth0, &Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, alpha, crst.lambda, crst.mu, crst.fric);
+					pscokada(eqnorth, eqeast, depth-depth0,  strike, dip, len, width, 0.0, 0.0, 1.0, north, east, crst.depth[i]-depth0,
+							&Sxx, &Syy, &Szz, &Sxy, &Syz, &Sxz, crst.lambda, crst.mu);
 
 					(*Coeffs_open)[p1][i0][1]+=1e6*Sxx;
 					(*Coeffs_open)[p1][i0][2]+=1e6*Syy;
