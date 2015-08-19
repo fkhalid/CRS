@@ -29,19 +29,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: CRS_3.0
+all: run_crs
 
 # Tool invocations
-CRS_3.0: $(OBJS) $(USER_OBJS)
+run_crs: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -lm -lgomp -o "CRS_3.0" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -lm -lgomp -o "run_crs" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) CRS_3.0
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) run_crs
 	-@echo ' '
 
 .PHONY: all clean dependents

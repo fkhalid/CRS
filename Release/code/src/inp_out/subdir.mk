@@ -5,8 +5,6 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../code/src/inp_out/print_output.c \
-../code/src/inp_out/propagate_results.c \
-../code/src/inp_out/read_RS.c \
 ../code/src/inp_out/read_crust.c \
 ../code/src/inp_out/read_csep_template.c \
 ../code/src/inp_out/read_eqkfm.c \
@@ -20,8 +18,6 @@ C_SRCS += \
 
 OBJS += \
 ./code/src/inp_out/print_output.o \
-./code/src/inp_out/propagate_results.o \
-./code/src/inp_out/read_RS.o \
 ./code/src/inp_out/read_crust.o \
 ./code/src/inp_out/read_csep_template.o \
 ./code/src/inp_out/read_eqkfm.o \
@@ -35,8 +31,6 @@ OBJS += \
 
 C_DEPS += \
 ./code/src/inp_out/print_output.d \
-./code/src/inp_out/propagate_results.d \
-./code/src/inp_out/read_RS.d \
 ./code/src/inp_out/read_crust.d \
 ./code/src/inp_out/read_csep_template.d \
 ./code/src/inp_out/read_eqkfm.d \
@@ -53,7 +47,7 @@ C_DEPS += \
 code/src/inp_out/%.o: ../code/src/inp_out/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -O3 -c -fmessage-length=0 -std=c99 -fopenmp -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	gcc -I/home/des/camcat/masterdes_sec21/NumericalRecipes/2.11/C_211/other -I/home/des/camcat/masterdes_sec21/NumericalRecipes/2.11/C_211/recipes -O3 -c -fmessage-length=0 -std=c99 -fopenmp -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
