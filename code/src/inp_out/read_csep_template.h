@@ -1,9 +1,22 @@
-/*
- * read_txttemplate.h
+
+/*   Copyright (C) 2015 by Camilla Cattania and Fahad Khalid.
  *
- *  Created on: Oct 4, 2013
- *      Author: camcat
+ *   This file is part of CRS.
+ *
+ *   CRS is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   CRS is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #ifndef READ_TXTTEMPLATE_H_
 #define READ_TXTTEMPLATE_H_
@@ -13,7 +26,7 @@
 #include "../defines.h"
 #include "../geom/convert_geometry.h"
 #include "../util/moreutil.h"
-#include "../util/nrutil.h"
+#include "nrutil.h"
 #include "read_matrix.h"
 
 int read_rate(struct crust crst, char *fname, double **bg_rate, double *r0, double *minmag);

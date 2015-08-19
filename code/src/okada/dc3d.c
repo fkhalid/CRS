@@ -1,3 +1,16 @@
+
+/*   Original author (fortran code):
+ *
+ *   Yoshimitsu Okada, Natl.Res.Inst. for Earth Sci. & Disas.Prev, Tsukuba, Japan
+ *   Reference: Okada, Y., 1992, Internal deformation due to shear and tensile faults in a half-space,
+ * 		Bull. Seism. Soc. Am., 82, 1018-1040.
+ *   Swq
+ *   ource code available at: http://www.bosai.go.jp/study/application/dc3d/download/DC3Dfortran.txt
+ *
+ *   Translated in C by Christoph Bach (2010).
+ */
+
+
 /* C********************************************************************   */
 /* C*****                                                          *****   */
 /* C*****    DISPLACEMENT AND STRAIN AT DEPTH                      *****   */

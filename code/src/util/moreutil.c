@@ -1,21 +1,35 @@
-/*
- * moreutils.c
+
+/*   Copyright (C) 2015 by Camilla Cattania and Fahad Khalid.
  *
- *  Created on: Feb 9, 2012
- *      Author: camcat
+ *   This file is part of CRS.
+ *
+ *   CRS is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   CRS is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "moreutil.h"
 
 #include <math.h>
+#include <nrutil.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "nrutil.h"
-
 #define SWAP(a,b) temp=(a);(a)=(b);(b)=temp;
 #define NSTACK 50
+#define FREE_ARG char*
+#define NR_END 1
 
 int closest_element(double *v, int N, double value, double toll){
 	/*
@@ -50,7 +64,6 @@ int *nth_index(int i, int Ndim, int *dim){
 
 	return res;
 }
-
 
 // error handling w/o exiting code (hence "soft")
 void nrerrorsoft(char error_text[])
@@ -87,7 +100,6 @@ void copy_vector(double *m1, double **m2, int a){
 
 	return;
 }
-
 
 void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 	/*
@@ -288,17 +300,6 @@ double vdotv(double *v1, double *v2, int D){
 	return temp2;
 }
 
-//void statistics(double *data, int L, double *mean, double *SD){
-//	int j;
-//	*mean=0.0;
-//	double SD2=0.0;
-//
-//	for (j=1; j<=L; j++){*mean+=data[j]*(1.0/L);}
-//	for (j=1; j<=L; j++){SD2+=pow((data[j]-*mean),2);}
-//	*SD=pow(SD2*(1.0/L),0.5);
-//	return;
-//}
-
 void normv (double *v, int D){
 // normalizes vector v (so that the sum of its elements is 1).
 
@@ -424,18 +425,6 @@ void interp_nn(int NP, int D1, int D2, int D3, double *values, double **allvalue
 
 	if (nn0== (int **)0) free_imatrix(nn,1,NP,1,6);
 }
-
-//double *** duplicate_d3tensor(double ***S, long nrl, long nrh, long ncl, long nch, long ndl, long ndh){
-//	double *** Snew=d3tensor(nrl, nrh, ncl, nch, ndl, ndh);
-//	for (int r=nrl; r<=nrh; r++){
-//		for (int c=ncl; c<=nch; c++){
-//			for (int d=ndl; d<=ndh; d++){
-//				Snew[r][c][d]=S[r][c][d];
-//			}
-//		}
-//	}
-//	return Snew;
-//}
 
 double * duplicate_dvector(double *v, long nrl, long nrh){
 	double * vnew=dvector(nrl, nrh);

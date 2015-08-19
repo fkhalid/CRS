@@ -1,19 +1,38 @@
-/*
- * fit_splines.c
+
+/*   Copyright (C) 2015 by Camilla Cattania and Fahad Khalid.
  *
- *  Created on: May 14, 2013
- *      Author: camcat
+ *   This file is part of CRS.
+ *
+ *   CRS is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   CRS is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include "fit_splines.h"
 
 #include <math.h>
+#include <nrutil.h>
 
 #include "../defines.h"
 #include "error.h"
 #include "interp_quad.h"
-#include "nr.h"
-#include "nrutil.h"
+
+// Include *.c files from numerical recipes, since including the header file nr.h gives a problem because fmin is defined twice (in nr.h and math.h)
+#include "gaussj.c"
+#include "gasdev.c"
+#include "ran1.c"
+#include "spline.c"
+#include "splint.c"
 
 void fit_splines(double *t, double *t2, int TS, int TS2, int N, double **slip_before, double *slip_before_err, double ***slip_after,
 		int early_inter_mode, long *seed){

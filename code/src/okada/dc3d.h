@@ -1,4 +1,15 @@
 
+/*   Original author (fortran code):
+ *
+ *   Yoshimitsu Okada, Natl.Res.Inst. for Earth Sci. & Disas.Prev, Tsukuba, Japan
+ *   Reference: Okada, Y., 1992, Internal deformation due to shear and tensile faults in a half-space,
+ * 		Bull. Seism. Soc. Am., 82, 1018-1040.
+ *   Source code available at: http://www.bosai.go.jp/study/application/dc3d/download/DC3Dfortran.txt
+ *
+ *   Translated in C by Christoph Bach (2010).
+ */
+
+
 void UA(double XI, double ET, double Q, double DISL1, double DISL2, double DISL3, double *U,
 		double Y11, double X11, double ALP2, double ALP1, double TT, double R, double ALE,
 		double XI2, double Y32, double Q2, double SD, double R3, double FY, double D,

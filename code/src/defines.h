@@ -1,11 +1,22 @@
-/******************************************************************************
-  "defines.h"
 
-  project:  Simulation and parameter estimation using ETAS and shakemaps
-   author:  Christoph Bach
-            Sebastian Hainzl
-     date:  2010-07-30
-******************************************************************************/
+/*   Copyright (C) 2015 by Camilla Cattania and Fahad Khalid.
+ *
+ *   This file is part of CRS.
+ *
+ *   CRS is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   CRS is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 
 #ifndef DEFINES_H
 #define DEFINES_H
@@ -14,7 +25,7 @@
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
-//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
+#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 9				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 33	// No. of scalar variables in 'struct BCast_Model_Parameters'

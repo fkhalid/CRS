@@ -1,14 +1,24 @@
-/*
- * Helmstetter.c
+
+/*   Copyright (C) 2015 by Camilla Cattania and Fahad Khalid.
  *
- *  Created on: Nov 8, 2013
- *      Author: camcat
+ *   This file is part of CRS.
  *
- * Produces smoothed seismicity model as in Helmstetter (2007), using a gaussian kernel.
- * Catalog need to be previously declustered.
+ *   CRS is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   CRS is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Helmstetter.h"
+
+#include "Helmstetter.h" 
 
 double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord){
 /* Calculates background rate from a catalog, using the algorithm from:

@@ -1,9 +1,22 @@
-/*
- * read_param.c
+
+/*   Copyright (C) 2015 by Camilla Cattania and Fahad Khalid.
  *
- *  Created on: Dec 20, 2013
- *      Author: camcat
+ *   This file is part of CRS.
+ *
+ *   CRS is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   CRS is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 
 #include <stdio.h>
 #include <time.h>
@@ -573,7 +586,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		MPI_Address(&(flags->err_recfault),      		&addresses_Flags[0]);
 		MPI_Address(&(flags->err_gridpoints),    		&addresses_Flags[1]);
 		MPI_Address(&(flags->OOPs),      		 		&addresses_Flags[2]);
-		MPI_Address(&(flags->afterslip),         		&addresses_Flags[3]);
+		MPI_Address(&(flags->aseismic),         		&addresses_Flags[3]);
 		MPI_Address(&(flags->aseismic_linear), 		 	&addresses_Flags[4]);
 		MPI_Address(&(flags->aseismic_multisnap),   	&addresses_Flags[5]);
 		MPI_Address(&(flags->sources_all_iso),   		&addresses_Flags[6]);

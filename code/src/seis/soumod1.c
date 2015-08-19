@@ -1,21 +1,25 @@
-// soumod.c reads slip distribution with a certain discretisation step from given file sourceold, 
-// resamples it to the given discretisation step disc and adjust the values that way 
-// that a k²-distribution of slip is obtained. Hence, the low frequency content of the original
-// slip distribution is kept and the high frequency content is varied randomly.
-//
-// if no slip distribution is given, the programm creates a random slip distribution with the parameters given
-//
-// The focal mechanisms of the different fault patches are varied. Variation of strike and dip are chosen, so that 
-// the fault plane assumes the shape of a fractal surface with aspect ratio 0.1 (in respect to the shorter fault edge)
-// Rake is varied by +-10 degree
-//
-//////////////////////////////////////////////// The rupture velocity is varied.
-//
-// Katrin Kieling, august 2010 
-// modified by Camilla Cattania, March 2013
-//
-// last modified: 03/08/2010 (Katrin), 13/03/2013 (Camilla).
-// 
+
+/*   Copyright (C) 2015 by Camilla Cattania and Fahad Khalid.
+ *
+ *   This file is part of CRS.
+ *
+ *   CRS is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   CRS is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
+/* Functions written by Katrin Kieling (2010) and Camilla Cattania (2013)
+ */
 
 #include "soumod1.h"
 
