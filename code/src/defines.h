@@ -25,7 +25,7 @@
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
-#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
+//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 9				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 33	// No. of scalar variables in 'struct BCast_Model_Parameters'
@@ -126,6 +126,7 @@ struct catalog{
 	long Z;
 	double tstart;
 	double tend;
+	int exists;	//flag, set to 0 if catalog not given (but to 1 if given but no event is selected).
 };
 
 struct pscmp{

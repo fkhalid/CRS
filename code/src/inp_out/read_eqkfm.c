@@ -122,7 +122,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 		return 1;
 	}
 
-	//fixme make sure mmain is already assigned here!! (NB: all this may not be needed if clear association b/w cat and foc mec is given).
+	//[check] make sure mmain is already assigned here!! (NB: all this may not be needed if clear association b/w cat and foc mec is given).
 	which_slipmod = combine_cats(all_slipmodels.tmain, timesfromeqkfm(eqfm1, N1, (int *) 0),
 								 all_slipmodels.mmain, magssfromeqkfm(eqfm1, N1, (int *) 0 ),
 								 all_slipmodels.NSM, N1, dt, dmag);

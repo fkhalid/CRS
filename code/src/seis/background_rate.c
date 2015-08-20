@@ -76,7 +76,7 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 	T=cat.tend-cat.tstart;
 
 	for (int i=1; i<=cat.Z; i++) {
-		cat.err[i]=fmax(cat.err[i], min_smoothing);	//values used later (in Helmstetter.c).
+		cat.err[i]=fmax(cat.err[i], min_smoothing);	//values used later (in smoothed_rate_Helmstetter.c).
 		sel_no+=sel[i];
 	}
 
@@ -113,7 +113,7 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 
 		// Depth-average rate on horizontal grid calculated from Helmstetter algorithm;
 		// depth distribution obtained separately.
-		rate_h=Helmstetter_cat(cat, crst, weights, ord);
+		rate_h=smoothed_rate_Helmstetter_cat(cat, crst, weights, ord);
 		rate_v=fit_depth(zlist, zlist[2]-zlist[1], crst.nD, cat.depths0, cat.verr, weights, cat.Z);
 
 		//normalize rate vectors:
@@ -132,7 +132,7 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 
 	else{
 		// Assume vertically homogeneous rate, since can not use depth info (non uniform grid does not necessarily have layers).
-		*rate_grid=Helmstetter_nonuni(crst.x, crst.y, crst.N_allP, cat.x0, cat.y0, cat.err, weights, cat.Z, ord);
+		*rate_grid=smoothed_rate_Helmstetter_nonuni(crst.x, crst.y, crst.N_allP, cat.x0, cat.y0, cat.err, weights, cat.Z, ord);
 		normv(*rate_grid, crst.N_allP);
 		for (int p=1; p<=crst.N_allP; p++) {
 			// by convention, (*rate_grid)[p] add up to crst.N_allP (since for simplicity they are all assumed to be 1 if *rate_grid==NULL)

@@ -11,6 +11,7 @@ C_SRCS += \
 ../code/src/util/merge.c \
 ../code/src/util/moreutil.c \
 ../code/src/util/mscorr.c \
+../code/src/util/ran1.c \
 ../code/src/util/roots3.c \
 ../code/src/util/splines_eqkfm.c 
 
@@ -22,6 +23,7 @@ OBJS += \
 ./code/src/util/merge.o \
 ./code/src/util/moreutil.o \
 ./code/src/util/mscorr.o \
+./code/src/util/ran1.o \
 ./code/src/util/roots3.o \
 ./code/src/util/splines_eqkfm.o 
 
@@ -33,6 +35,7 @@ C_DEPS += \
 ./code/src/util/merge.d \
 ./code/src/util/moreutil.d \
 ./code/src/util/mscorr.d \
+./code/src/util/ran1.d \
 ./code/src/util/roots3.d \
 ./code/src/util/splines_eqkfm.d 
 
@@ -41,7 +44,7 @@ C_DEPS += \
 code/src/util/%.o: ../code/src/util/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	gcc -I/home/des/camcat/masterdes_sec21/NumericalRecipes/2.11/C_211/other -I/home/des/camcat/masterdes_sec21/NumericalRecipes/2.11/C_211/recipes -O3 -c -fmessage-length=0 -std=c99 -fopenmp -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	mpicc -D_CRS_MPI -I/home/des/camcat/masterdes_sec21/NumericalRecipes/2.11/C_211/other -I/home/des/camcat/masterdes_sec21/NumericalRecipes/2.11/C_211/recipes -O3 -c -fmessage-length=0 -std=c99 -fopenmp -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

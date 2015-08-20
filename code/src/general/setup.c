@@ -585,6 +585,9 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
 				}
 
 				temp->borrow_coeff_from=NULL;
+				temp->Coeffs_dip=NULL;
+				temp->Coeffs_st=NULL;
+				temp->Coeffs_open=NULL;
 
 			}
 			else{
@@ -646,9 +649,9 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 
 	//Fill in elements of structure:
 	temp= *Coefficients;
+
 	for(int i=0; i<Nm; i++) {
 		if (temp->borrow_coeff_from==NULL){	//coefficients should be calculated.
-
 			if (eqkfm0[NFsofar].is_slipmodel) {
 				// coefficients should only calculated if more than one slip model is provided (switch_slipmodel):
 				// for aseismic slip, multiple slip models are not allowed: parent_set_of_models=NULL

@@ -20,19 +20,16 @@
 
 #include "fit_splines.h"
 
+#include <gasdev.c>
+#include <gaussj.c>
 #include <math.h>
 #include <nrutil.h>
+#include <spline.c>
+#include <splint.c>
 
 #include "../defines.h"
 #include "error.h"
 #include "interp_quad.h"
-
-// Include *.c files from numerical recipes, since including the header file nr.h gives a problem because fmin is defined twice (in nr.h and math.h)
-#include "gaussj.c"
-#include "gasdev.c"
-#include "ran1.c"
-#include "spline.c"
-#include "splint.c"
 
 void fit_splines(double *t, double *t2, int TS, int TS2, int N, double **slip_before, double *slip_before_err, double ***slip_after,
 		int early_inter_mode, long *seed){

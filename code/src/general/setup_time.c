@@ -184,7 +184,7 @@ int setup_aseismic_multi_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	int nfaults=0;
 	int **allind=NULL;
 	struct eqkfm *eq_aft= *eqk_aft;
-	int printout_history=0, Nas; 	//can set to 1 to check if splines are giving correct stressing history. Will print strike slip, opening or dip slip (hardwired below)
+	int printout_history=0, Nas;
 
 	FILE *fout;
 	char fname[120];

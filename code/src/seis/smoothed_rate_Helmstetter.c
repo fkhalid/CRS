@@ -18,9 +18,9 @@
  */
 
 
-#include "Helmstetter.h" 
+#include "smoothed_rate_Helmstetter.h"
 
-double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord){
+double *smoothed_rate_Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord){
 /* Calculates background rate from a catalog, using the algorithm from:
  * Helmstetter et al (2007) "High-resolution Time-independent Grid-based Forecast for M ≥ 5 Earthquakes in California"
  *
@@ -56,8 +56,8 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 			all_2ndnearestneighbours(xs, ys, N, NULL, &dist);
 			break;
 		default:
-			print_screen("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
-			print_logfile("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_screen("** Error:  illegal value for variable 'ord' in smoothed_rate_Helmstetter.c. \n**");
+			print_logfile("** Error:  illegal value for variable 'ord' in smoothed_rate_Helmstetter.c. \n**");
 			return NULL;
 	}
 
@@ -76,7 +76,7 @@ double *Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngri
 	return rate_tot;
 }
 
-double *Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord){
+double *smoothed_rate_Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord){
 	/* Very similar to Helmstetter function, but for non uniform grid.
 	 * Since cannot use exact integral of Gaussian function in each grid point, will only use value at the grid cell center.
 	 *
@@ -111,8 +111,8 @@ double *Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, 
 			all_2ndnearestneighbours(xs, ys, N, NULL, &dist);
 			break;
 		default:
-			print_screen("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
-			print_logfile("** Error:  illegal value for variable 'ord' in Helmstetter.c. \n**");
+			print_screen("** Error:  illegal value for variable 'ord' in smoothed_rate_Helmstetter_nonuni. \n**");
+			print_logfile("** Error:  illegal value for variable 'ord' in smoothed_rate_Helmstetter_nonuni. \n**");
 			return NULL;
 	}
 
@@ -129,7 +129,7 @@ double *Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, 
 	return rate_tot;
 }
 
-double *Helmstetter_cat(struct catalog cat, struct crust crst, double *weights, int ord) {
+double *smoothed_rate_Helmstetter_cat(struct catalog cat, struct crust crst, double *weights, int ord) {
 	/* Wrapper for applying function Helmstetter to variables in catalog structure.
 	 * Returns background rate on a 2D grid (only uses horizontal distance).
 	 *
@@ -147,7 +147,7 @@ double *Helmstetter_cat(struct catalog cat, struct crust crst, double *weights, 
 	dx=(DEG2RAD*crst.dlon)*Re*cos(DEG2RAD*crst.lat0);
 	dy=(DEG2RAD*crst.dlat)*Re;
 
-	return Helmstetter(crst.x, crst.y, dx, dy, crst.nLon*crst.nLat, cat.x0, cat.y0, cat.err, weights, cat.Z, ord);
+	return smoothed_rate_Helmstetter(crst.x, crst.y, dx, dy, crst.nLon*crst.nLat, cat.x0, cat.y0, cat.err, weights, cat.Z, ord);
 
 }
 

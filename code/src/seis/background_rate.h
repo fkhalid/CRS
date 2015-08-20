@@ -33,7 +33,7 @@
 #include "nrutil.h"
 #include "decluster.h"
 #include "GR.h"
-#include "Helmstetter.h"
+#include "smoothed_rate_Helmstetter.h"
 
 int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 		double Mmain, double *minmag, double *rate, double **rate_grid, double dR, double dZ, double min_smoothing, int ord);

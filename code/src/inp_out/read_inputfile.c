@@ -268,19 +268,18 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	#ifdef _CRS_MPI
 		// [Fahad] The file names are used in conditions in main.c for
 		// 		   setting certain flags. catname is used in setup.c.
-		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(outname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	// [Fahad]: Since all processes now need to write to files.
-		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(aseismicmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+//		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+//		MPI_Bcast(outname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	// [Fahad]: Since all processes now need to write to files.
+//		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
+//		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
+//		MPI_Bcast(aseismicmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+//		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(Tstart, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(Tend, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(tstartLL, 			 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(tendLL, 			 	 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(seed, 				 1,   MPI_LONG,   0, MPI_COMM_WORLD);
 		MPI_Bcast(num_fm, 				 1,   MPI_INT, 	  0, MPI_COMM_WORLD);
-
 		MPI_Bcast(&bCastFocmeccat, 		 1,   MPI_INT, 	  0, MPI_COMM_WORLD);
 		MPI_Bcast(&listfm, 				 1,   MPI_INT, 	  0, MPI_COMM_WORLD);
 
@@ -303,9 +302,6 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	}
 
 	// Print out warnings or errors for missing or redundant parameters:
-	// Camilla [askFahad]: I deleted the procId condition here since the
-	// output functions print_logfile, print_screen already contain the same condition;
-	// and because some of the variables are changed below (e.g. outname, focmeccat), and they were not broadcast.
 	if(procId == 0) {
 
 		if ((value_found[6] + value_found[5] + value_found[15])>1){
@@ -422,6 +418,16 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	}
 
 	#ifdef _CRS_MPI
+
+		// Broadcast file names:
+		// even though the files will only be used by procId=0, all ranks may use them to set flags (e.g. if they are not given).
+		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(outname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	// [Fahad]: Since all processes now need to write to files.
+		MPI_Bcast(slipmodelfile,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(aseismicmodelfile,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(background_rate_grid,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(background_rate_cat,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		MPI_Bcast(fixedmecfile,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 
 		MPI_Bcast(num_fm, 				1, MPI_INT, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&nofm, 				1, MPI_INT, 0, MPI_COMM_WORLD);

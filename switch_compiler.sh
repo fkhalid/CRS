@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# This script switches between the gcc compiler and the mpigcc compiler, and sets flags neede for conditional compilation of the source code.
+# The executables will be called "run_crs" (serial) and "run_mpi_crs" (parallel).
+#
+# Syntax:
+#    switch_compiler gcc2mpicc (to go from serial to parallel)"
+#    switch_compiler mpicc2gcc (to go from parallel to serial)"
+#
+
+
 folder=Release;
 
 if [ $1 == "gcc2mpicc" ]
@@ -8,7 +17,7 @@ then
  old_compiler=gcc;
  new_compiler=mpicc;
  old_name=run_crs;
- new_name=run_crs_mpi;
+ new_name=run_mpi_crs;
 
  # Output message and do nothing if compiler not found:
  if [ $(grep -rl "$old_compiler" $folder | grep -v -x ".*\.py\|.*\.sh" | wc -l) == 0 ];
@@ -30,7 +39,7 @@ then
    grep -rl "$old_name" $folder |  grep -v -x ".*\.py\|.*\.sh" | xargs sed -i "s*$old_name*$new_name*"
 
    #output message
-   echo "Switched compiler gcc with mpicc."
+   echo "Switched compiler: gcc --> mpicc."
  fi
 
 else
@@ -39,7 +48,7 @@ else
 
  old_compiler=mpicc;
  new_compiler=gcc; 
- old_name=run_crs_mpi;
+ old_name=run_mpi_crs;
  new_name=run_crs;
 
 
@@ -53,7 +62,10 @@ else
    grep -rl "$old_compiler" $folder | grep "subdir.mk" | xargs sed -i "s*$old_compiler -D_CRS_MPI*$new_compiler*"
    grep -rl "$old_compiler" $folder | grep -v "subdir.mk" |  grep -v -x ".*\.py\|.*\.sh" | xargs sed -i "s*$old_compiler*$new_compiler*"
 
-   echo "Switched compiler mpicc with gcc."
+   #change name of the executable:
+   grep -rl "$old_name" $folder |  grep -v -x ".*\.py\|.*\.sh" | xargs sed -i "s*$old_name*$new_name*"
+
+   echo "Switched compiler: mpicc --> gcc."
  fi
  
  else

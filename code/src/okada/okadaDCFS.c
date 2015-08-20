@@ -183,10 +183,20 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
 	//todo it may also be better to process each of the 3 tensors (Coeffs_XX) separately: less likely to run out of memory.
 
-	//allocate memory and set to 0 (inside f3tensor).
+	//allocate memory.
 	*Coeffs_st = (flag_sslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
 	*Coeffs_dip= (flag_dslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
 	*Coeffs_open= (flag_open) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
+
+	for (int i=1; i<=NP_tot; i++){
+		for (int j=1; j<=Nsel; j++){
+			for (int k=1; k<=6; k++){
+				if (flag_sslip) (*Coeffs_st)[i][j][k]=0;
+				if (flag_dslip) (*Coeffs_dip)[i][j][k]=0;
+				if (flag_open) (*Coeffs_open)[i][j][k]=0;
+			}
+		}
+	}
 
 	//-----------------------------------------------------------------------------------------//
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
@@ -274,6 +284,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i, afslip, noslip_str, noslip_dip, noopen)
 			for(int i0=0; i0<Nsel; i0++) {	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
 				//todo it may also be better to process each of the 3 tensors (Coeffs_XX) separately: less likely to run out of memory.
+
 
 				i=eqkfm1[0].selpoints[i0+1];	// [Fahad] Added '1' to the index
 				north=crst.y[i];
@@ -458,6 +469,16 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	*Coeffs_st= (flag_sslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
 	*Coeffs_dip= (flag_dslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
 	*Coeffs_open= (flag_open) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
+
+	for (int i=1; i<=NP_tot; i++){
+		for (int j=1; j<=Nsel; j++){
+			for (int k=1; k<=6; k++){
+				if (flag_sslip) (*Coeffs_st)[i][j][k]=0;
+				if (flag_dslip) (*Coeffs_dip)[i][j][k]=0;
+				if (flag_open) (*Coeffs_open)[i][j][k]=0;
+			}
+		}
+	}
 
 	//-----------------------------------------------------------------------------------------//
 	//-----------Calculate Coulomb stress vector for each patch assuming slip=1.---------------//
@@ -779,7 +800,7 @@ double *sum_v(double *v1, double *v2, double *sum, int N){
 }
 
 double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f, double *stress0, double sigma0, int opt_rake){
-//To be called after filling in DCFS.S. (with functions below).
+//Resolves stress tensor S on a mechanism given by strikeR, dipR, rakeR, and calculates the Coulomb stress.
 //total stress should be passed if optimal rake is to be used (opt_rake==1).
 //resolves stress tensor S on mechanisms with dipR, strikeR and rake.
 //sigma0, stress0 are not calculated here for efficiency reasons (they don't change as often as S).

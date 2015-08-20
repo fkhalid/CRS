@@ -103,6 +103,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	//If there is no file given:
 	if (strcmp(file,"")==0){
 		if (cat){
+			(*cat).exists=0;
 			(*cat).Z = 0;
 			//by convention, Mc>20 means that it should be calculated from the catalog. Bu there is no catalog, hence assume it is complete:
 			if ((*cat).Mc>20) (*cat).Mc=-100;
@@ -113,7 +114,9 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		if (Ntot) *Ntot=0;
 		return 0;
 	}
-
+	else{
+		if (cat) (*cat).exists=1;
+	}
 
 
 

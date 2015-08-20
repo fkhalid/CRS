@@ -749,7 +749,7 @@ int main (int argc, char **argv) {
 		int i=0, nn0=0; //counter: slip model names, events which have a slip model.
 		print_logfile("Using slip models:\n");
 		for (int n=0; n<Nco; n++) {
-			//fixme this is wrong is a slip model in the list is not used.
+			//fixme this is wrong if a slip model in the list is not used.
 			if (eqkfm_co[nf].parent_set_of_models->Nmod) {
 				print_logfile("\t%s\n",all_slipmodels.slipmodels[i+Nsm[n]-1]);
 				i+=all_slipmodels.no_slipmodels[nn0];

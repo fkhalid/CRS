@@ -283,6 +283,7 @@ double *mtimesv(double **M, double *v, double *v2, int D1, int D2){
 }
 
 double norm(double *v1, int D){
+//calculates vector norm.
 
 	double r2;
 	r2=vdotv(v1,v1,D);
@@ -291,6 +292,7 @@ double norm(double *v1, int D){
 }
 
 double vdotv(double *v1, double *v2, int D){
+//dot product.
 
 	int k;
 	double temp2=0;

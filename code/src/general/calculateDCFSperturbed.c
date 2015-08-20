@@ -22,21 +22,24 @@
 #include "calculateDCFSperturbed.h"
 
 #include <math.h>
-#include <stddef.h>
+//#include <nrutil.h>
+//#include <stddef.h>
 #include <stdlib.h>
 
 #include "../defines.h"
+//#include "../inp_out/write_csep_forecast.h"
 #include "../okada/okadaDCFS.h"
 #include "../seis/cmbopt.h"
 #include "../util/error.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
-#include "../inp_out/write_csep_forecast.h"
+#include "../util/ran1.h"
 #include "mem_mgmt.h"
 
 #ifdef _CRS_MPI
 	#include "mpi.h"
 #endif
+
+//float ran1(long *);
 
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,
 							struct eqkfm *eqkfm0, struct flags flag,
