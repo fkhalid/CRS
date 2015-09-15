@@ -1,6 +1,6 @@
 #!/bin/bash
 
-Build="mpirun -n 4 Release/"
+Build="mpirun -n 4 Release/run_mpi_crs"
 
 echo "***************************Build="$Build"********************************"
 basefile="input_testcases/testB/input.txt"
@@ -14,7 +14,7 @@ ln2="Logfile=output_testcases/testB1.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "7s+catalog+catalog2+" > temp_inputB
 cp  $parafile $temppara
 
-$Build/CRS_3.0 temp_inputB
+$Build temp_inputB
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testB1
@@ -28,7 +28,7 @@ ln2="Logfile=output_testcases/testB2.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "7s+catalog+catalog3+" > temp_inputB
 cp $parafile $temppara
 
-$Build/CRS_3.0 temp_inputB
+$Build temp_inputB
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testB2

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-Build="mpirun -n 4 Release/"
+Build="mpirun -n 4 Release/run_mpi_crs"
 
 echo "***************************Build="$Build"********************************"
 basefile="input_testcases/testH/input.txt"
@@ -28,7 +28,7 @@ sed '9s+focmecfile+focmecfile0+' temp_inputH > tmp
 mv tmp temp_inputH
 fi
 
-$Build/CRS_3.0 temp_inputH
+$Build temp_inputH
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testH$i

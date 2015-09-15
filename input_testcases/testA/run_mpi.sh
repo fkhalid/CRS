@@ -1,6 +1,6 @@
 #!/bin/bash
 
-Build="mpirun -n 4 Release/"
+Build="mpirun -n 4 Release/run_mpi_crs"
 
 echo "***************************build="$Build"********************************"
 basefile="input_testcases/testA/input.txt"
@@ -25,7 +25,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputA
 sed "57s+.*+focmec+" $parafile > $temppara
 echo "InputCatalogFocMecFile=input_testcases/focmecfile.dat" >> temp_inputA
 
-$Build/CRS_3.0 temp_inputA
+$Build temp_inputA
 if [ $Build == "Coverage" ] 
 then
 mkdir coverage/testA2
@@ -40,7 +40,7 @@ sed "57s+.*+focmec+" $parafile > $temppara
 #sed "43s+0+1+"  $parafile > $temppara
 echo "InputListCatalogFocMecFile=input_testcases/listfocmecfiles.txt" >> temp_inputA
 
-$Build/CRS_3.0 temp_inputA
+$Build temp_inputA
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testA3
@@ -56,7 +56,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputA
 sed "58s+.*+1+" $parafile > $temppara
 echo "InputCatalogFocMecFile=input_testcases/focmecfile.dat" >> temp_inputA
 
-$Build/CRS_3.0 temp_inputA
+$Build temp_inputA
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testA4

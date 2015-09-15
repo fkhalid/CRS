@@ -1,6 +1,6 @@
 #!/bin/bash
 
-Build="mpirun -n 4 Release/"
+Build="mpirun -n 4 Release/run_mpi_crs"
 
 echo "***************************Build="$Build"********************************"
 basefile="input_testcases/testD/input.txt"
@@ -13,7 +13,7 @@ ln2="Logfile=output_testcases/testD0.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputD
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputD
+$Build temp_inputD
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testD0
@@ -28,7 +28,7 @@ ln2="Logfile=output_testcases/testD1.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputD
 echo "InputListAfterslipModels=input_testcases/testD/aslipmodels1.dat" >> temp_inputD
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputD
+$Build temp_inputD
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testD1
@@ -44,7 +44,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputD
 echo "InputListAfterslipModels=input_testcases/testD/aslipmodels2.dat" >> temp_inputD
 cp $parafile $temppara
 
-$Build/CRS_3.0 temp_inputD
+$Build temp_inputD
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testD2
@@ -59,7 +59,7 @@ ln2="Logfile=output_testcases/testD3.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist1*" > temp_inputD
 echo "InputListAfterslipModels=input_testcases/testD/aslipmodels3.dat" >> temp_inputD
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputD
+$Build temp_inputD
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testD3

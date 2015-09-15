@@ -1,6 +1,6 @@
 #!/bin/bash
 
-Build="mpirun -n 4 Release/"
+Build="mpirun -n 4 Release/run_mpi_crs"
 
 echo "***************************Build="$Build"********************************"
 basefile="input_testcases/testI/input.txt"
@@ -27,7 +27,7 @@ then
 sed '9s+focmecfile+focmecfile0+' temp_inputI  > tmp
 mv tmp temp_inputI
 fi
-$Build/CRS_3.0 temp_inputI
+$Build temp_inputI
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testI$i
@@ -44,7 +44,7 @@ ln8="InputListSlipModels=input_testcases/slipmodelslist.dat"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "8s+.*+$ln8+" > temp_inputI
 sed "16s+.*+$m0+"  $parafile | sed '15s+5.95+2.00+'> $temppara
 
-$Build/CRS_3.0 temp_inputI
+$Build temp_inputI
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testIB1
@@ -59,7 +59,7 @@ ln8="InputListSlipModels=input_testcases/testI/slipmodelslist2.dat"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "8s+.*+$ln8+" > temp_inputI
 sed "16s+.*+$m0+"  $parafile | sed '15s+5.95+2.00+'> $temppara
 
-$Build/CRS_3.0 temp_inputI
+$Build temp_inputI
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testIB2
@@ -74,7 +74,7 @@ ln8="InputListSlipModels=input_testcases/testI/slipmodelslist3.dat"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "8s+.*+$ln8+" > temp_inputI
 sed "16s+.*+$m0+"  $parafile | sed '15s+5.95+2.00+'> $temppara
 
-$Build/CRS_3.0 temp_inputI
+$Build temp_inputI
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testIB3
