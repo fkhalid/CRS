@@ -63,7 +63,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 
 	setenv("TZ", "UTC", 1);
 
-	// [Fahad] Variables used for MPI.
+	// Variables used for MPI
 	int procId = 0;
 	int fileError = 0;
 	int bCastFocmeccat = 0;
@@ -111,10 +111,10 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 
 	// NB: arguments 5,6,17 are alternative (different ways to treat receiver faults)
 
-	// [Fahad] If there is a file error, only root will know about it.
-	//		   So it is important that the error is broadcast to all
-	//		   processes, and they all return from the function with
-	//		   the same error code.
+	// If there is a file error, only root will know about it.
+	// So it is important that the error is broadcast to all
+	// processes, and they all return from the function with
+	// the same error code.
 	if(procId == 0) {
 		fin = fopen(input_fname, "r");
 		if(fin == NULL) {
@@ -196,7 +196,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 						(*focmeccat)[0]=malloc(120*sizeof(char));
 						sscanf(value,"%s",(*focmeccat)[0]);
 
-						bCastFocmeccat = 1;	// [Fahad] focmeccat should be broadcast.
+						bCastFocmeccat = 1;	// Flag, indicating that 'focmeccat' should be broadcast.
 					}
 					if (num_fm) *num_fm=1;
 					break;
@@ -266,14 +266,8 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 
 
 	#ifdef _CRS_MPI
-		// [Fahad] The file names are used in conditions in main.c for
-		// 		   setting certain flags. catname is used in setup.c.
-//		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-//		MPI_Bcast(outname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	// [Fahad]: Since all processes now need to write to files.
-//		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
-//		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
-//		MPI_Bcast(aseismicmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-//		MPI_Bcast(fixedmecfile, 		 120, MPI_CHAR,   0, MPI_COMM_WORLD);
+		// The file names are used in conditions in main.c for
+		// setting certain flags. catname is used in setup.c.
 		MPI_Bcast(Tstart, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(Tend, 				 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		MPI_Bcast(tstartLL, 			 1,   MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -422,7 +416,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		// Broadcast file names:
 		// even though the files will only be used by procId=0, all ranks may use them to set flags (e.g. if they are not given).
 		MPI_Bcast(catname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
-		MPI_Bcast(outname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);	// [Fahad]: Since all processes now need to write to files.
+		MPI_Bcast(outname,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(slipmodelfile,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(aseismicmodelfile,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_grid,  			 120, MPI_CHAR,   0, MPI_COMM_WORLD);
@@ -461,6 +455,7 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 	char comment[]="#", comm=comment[0];
 	FILE *fin;
 
+	// Variables used for MPI
 	int fileError = 0;
 	int procId = 0;
 
@@ -510,9 +505,9 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 	#ifdef _CRS_MPI
 		MPI_Bcast(nfiles, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-		// FIXME: [Fahad] The following will generate an error if ferror(fin)
-		//		  was true in any of the iterations of the while loop above.
-		//		  Check with the author and implement the correct code.
+		// The following will generate an error if ferror(fin)
+		// was true in any of the iterations of the while loop above.
+		// The print statements above should help with debugging
 		if(procId != 0) {
 			*listfiles = malloc((*nfiles)*sizeof(char*));
 			for(int i = 0; i < (*nfiles); ++i) {
@@ -536,7 +531,7 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 	return 0;
 }
 
-// FIXME: [Fahad] MPI code this this function requires optimization ...
+// TODO: MPI code this this function requires optimization ...
 int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_list *allslipmodels,
 					   double res, int is_aseismic, int *aseismic_linear, double *t0log, int *flag_multisnap) {
 	/*
@@ -554,7 +549,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	 *
 	 */
 
-	// [Fahad] Variables used for MPI
+	// Variables used for MPI
 	int procId = 0;
 	int fileError = 0, size_slipmodels = 0;
 	int aseismic_log=0, aseismic_splines=0;	//flags.

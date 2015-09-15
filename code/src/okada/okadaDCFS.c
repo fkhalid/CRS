@@ -49,13 +49,6 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	 *
 	 */
 
-	// [Fahad] Variables used for MPI
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
 	double *sigma0s;
 	double **stress0s;
 	double **n, **s;	//normal vectors, slip vectors.
@@ -129,8 +122,6 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	 *  crst: crust structure, containing position of grid points and elastic parameters.
 	 */
 
-
-	// [Fahad] Variables used for MPI.
 	int procId = 0, numProcs = 1;
 	int start, partitionSize;
 
@@ -207,8 +198,8 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 
 	for (int j=0; j<NF; j++) {
 
-		// [Fahad]: MPI -- 	Flag to indicate if the current
-		//				--  fault should be processed in serial.g through surface.
+		// MPI 	-- 	Flag to indicate if the current
+		//		--  fault should be processed in serial.g through surface.
 		double strike, dip, rake;
 		int processFaultSerially = 0;
 
@@ -221,19 +212,18 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 		len   = eqkfm1[j].L*(1.0/eqkfm1[j].np_st);
 		width = eqkfm1[j].W*(1.0/eqkfm1[j].np_di);
 
-		// [Fahad]: Since MPI parallelization is based on the
-		//		  : No. of patches.
+		// Since MPI parallelization is based on the No. of patches.
 		size_t numPatches = eqkfm1[j].np_di*eqkfm1[j].np_st;
 
-		// [Fahad] - Create linearized tensors for all patches within the
-		//		   - current fault, for use in MPI communication routines.
+		// Create linearized tensors for all patches within the current fault,
+		// for use in MPI communication routines.
 		size_t fullTensorSize = ((numPatches) * Nsel * 6);
 		float *coeffs_st  = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
 		float *coeffs_dip = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
 		float *coeffs_open = (float*) malloc((size_t)(fullTensorSize * sizeof(float)));
 
-		// [Fahad]: If the No. of MPI ranks is greater than the number of patches,
-		//		  : serially process all patches in the current fault.
+		// If the No. of MPI ranks is greater than the number of patches,
+		// serially process all patches in the current fault.
 		if(numProcs > numPatches) {
 			processFaultSerially = 1;
 
@@ -247,11 +237,11 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			}
 			print_screen("*** No. of patches is less than the No. of processes. Processing fault in serial ... ***\n",j);
 		}
-		else {	// [Fahad]: Partition the No. of patches for parallel processing by MPI ranks.
+		else {	// Partition the No. of patches for parallel processing by MPI ranks.
 			partitionSize = numPatches / numProcs;
 
-			// [Fahad]: If partionSize is not large enough to hold all patches, increase
-			//		  : the partition size and reallocate the linearized tensors.
+			// If partionSize is not large enough to hold all patches, increase
+			// the partition size and reallocate the linearized tensors.
 			if(partitionSize * numProcs != numPatches) {
 				partitionSize += 1;
 				coeffs_st  = (float*) realloc(coeffs_st,  (size_t)((partitionSize*Nsel*6*numProcs) * sizeof(float)));
@@ -262,9 +252,9 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			start = (procId * partitionSize);
 		}
 
-		// [Fahad] - Create linearized tensors for the partition to be processed
-		//		   - by the current rank. Linearization is required for MPI
-		//		   - communication routines.
+		// Create linearized tensors for the partition to be processed
+		// by the current rank. Linearization is required for MPI
+		// communication routines.
 		size_t partitionedTensorSize = partitionSize * Nsel * 6;
 		float *coeffs_st_partitioned  = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
 		float *coeffs_dip_partitioned = (float*) malloc((size_t)(partitionedTensorSize * sizeof(float)));
@@ -286,7 +276,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 				//todo it may also be better to process each of the 3 tensors (Coeffs_XX) separately: less likely to run out of memory.
 
 
-				i=eqkfm1[0].selpoints[i0+1];	// [Fahad] Added '1' to the index
+				i=eqkfm1[0].selpoints[i0+1];	// Added '+1' to the index
 				north=crst.y[i];
 				east=crst.x[i];
 
@@ -346,9 +336,9 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 		}
 
 		if(processFaultSerially) {
-			// [Fahad]: Concatenate the partition array into the full patch
-			//		  : linearized tensor array, since the fault has been
-			//		  : processed serially.
+			// Concatenate the partition array into the full patch
+			// linearized tensor array, since the fault has been
+			// processed serially.
 			for(size_t k = 0; k < partitionedTensorSize; ++k) {
 				coeffs_st[k]  = coeffs_st_partitioned[k];
 				coeffs_dip[k] = coeffs_dip_partitioned[k];
@@ -373,14 +363,14 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 		free(coeffs_dip_partitioned);
 		free(coeffs_open_partitioned);
 
-		// [Fahad] - Copy data from the linearized tensors to the f3tensors.
+		// Copy data from the linearized tensors to the f3tensors.
 
 		int linearIndex = 0, tensorIndex = 0;
 
 		// Calculate tensorIndex
 		for(size_t fault = 0; fault < j; ++fault) {
-			// [Fahad]: Index should start just after all the patches that
-			//		  : have already been processed for previous faults
+			// Index should start just after all the patches that
+			// have already been processed for previous faults
 			tensorIndex += eqkfm1[fault].np_di*eqkfm1[fault].np_st;
 		}
 
@@ -415,12 +405,6 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 	 *  eqkfm1: structure containing slip models. Range [0...NF-1].
 	 *  crst: crust structure, containing position of grid points and elastic parameters.
 	 */
-
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
 
 	double north, east, eqnorth, eqeast;
 	double len, width, depth; //for individual patches.
@@ -569,15 +553,6 @@ int okadaCoeff2DCFS(float ***Coeffs_st, float ***Coeffs_d, float ***Coeffs_open,
 	 * Output:
 	 *  DCFS: will be populated with stress tensors at each grid point.
 	 */
-
-
-	// [Fahad] Variables used for MPI.
-	int procId = 0, numProcs = 1;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-		MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
-	#endif
 
 	double strike, dip, rake;
 	int p1, p, j;

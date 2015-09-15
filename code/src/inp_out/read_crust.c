@@ -39,13 +39,6 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
  *
  */
 
-	// [Fahad] Variables used for MPI.
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
 	int err=0, err1=0;
 	int NG, ind, NLat, NLon, Nd;
 	int no_subpointsx, no_subpointsy, no_subpointsz;

@@ -86,13 +86,6 @@ int setup_catalogetc(char *catname, char **focmeccat, int nofmcat,
  *
  */
 
-	// [Fahad] Variables used for MPI
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
 	struct eqkfm *eqkfm1fm;
 	double tendS, tendCat;
 	double minmag;
@@ -142,13 +135,6 @@ int setup_aseismic_eqkfm(struct slipmodels_list list_slipmodels, struct crust cr
  * Output:
  *  eqkfm0res: contains all slip models for aseismic processes.
  */
-
-	// [Fahad] Variables used for MPI.
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
 
 	int Nm;
 	double *tmain=list_slipmodels.tmain;	//contains NSM elements (starting time of each aseismic event). NSM=no. of aseismic events.
@@ -226,13 +212,6 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 	 */
 
 	//TODO may also want to allow individual snapshots of allslip_xxx to be NULL (e.g. eqkfm0res[f].allslip_xxx[t]=NULL if there is no slip at time t).
-	// [Fahad] Variables used for MPI.
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
 	int err=0, NF;
 	double 	toll=1e-10;
 	struct eqkfm *eqkfm0;	//used to read individual slip models (one per snapshot), later copied into eqkfm0res structure.
@@ -331,8 +310,6 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 	
 	return err;
 }
-
-
 
 int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_format, int no_slipmodels,
 						double mu, double tmain, int nsel,

@@ -77,7 +77,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
  *
  */
 
-	// [Fahad] Variables used for MPI.
+	// Variables used for MPI.
 	int procId = 0;
 
 	#ifdef _CRS_MPI

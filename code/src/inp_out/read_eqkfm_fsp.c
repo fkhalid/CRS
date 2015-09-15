@@ -46,6 +46,7 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 	int ndi_nst, err=0;
 	double dL, dW;
 
+	// Variables used for MPI
 	int fileError = 0;
 	int procId = 0;
 
@@ -176,13 +177,13 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 			(*eqfm_out)[0].slip_dip=dvector(1,ndi_nst);
 			(*eqfm_out)[0].open=NULL;
 
-			// [Fahad] The following function does not implement any data structure bcast.
-			//		   bcast is used only to implement error conditions.
+			// The following function does not implement any data structure bcast.
+			// bcast is used only to implement error conditions.
 			//Read slip model:
 			err += read_slipvalues(fin, *eqfm_out);
 
 			#ifdef _CRS_MPI
-				// [Fahad] These are updated/populated inside read_slipvalues()
+				// These are updated/populated inside read_slipvalues()
 				MPI_Bcast(&((*eqfm_out)[0].lat), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 				MPI_Bcast(&((*eqfm_out)[0].lon), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 				MPI_Bcast((*eqfm_out)[0].pos_d, ndi_nst+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -244,7 +245,7 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				err += read_slipvalues(fin, (*eqfm_out)+f);
 
 				#ifdef _CRS_MPI
-					// [Fahad] These are updated/populated inside read_slipvalues()
+					// These are updated/populated inside read_slipvalues()
 					MPI_Bcast(&((*eqfm_out)[f].lat), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 					MPI_Bcast(&((*eqfm_out)[f].lon), 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 					MPI_Bcast((*eqfm_out)[f].pos_d, ndi_nst+1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -386,9 +387,8 @@ int scan_nth(char *string, int n, double *result){
 	return 0;
 }
 
-// [Fahad] MPI calls in this function are used merely to ensure that if there is
-//		   an error code to be returned, it is so returned to all processes.
-
+// MPI calls in this function are used merely to ensure that if there is
+// an error code to be returned, it is so returned to all processes.
 int read_slipvalues(FILE *fin, struct eqkfm *eqfm){
 	//stops reading at next comment ("%").
 

@@ -88,6 +88,7 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
  *
  * */
 
+	// Variables used for MPI
 	int procId = 0;
 
 	#ifdef _CRS_MPI

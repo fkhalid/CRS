@@ -97,7 +97,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	 *
 	 */
 
-	// [Fahad] Variables used for MPI.
+	// Variables used for MPI.
 	int procId = 0, numProcs = 1;
 	int start, end, partitionSize;
 	int use_catalog=  cat.exists;//flag.
@@ -311,17 +311,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		end = Nsur + 1;
 	#endif
 
-//	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
-//	// [Fahad]: FIXME - For Test A2, first call ...
-//	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
-
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-//		#ifdef _CRS_MPI
-//			*seed = newSeed * (long)nsur;
-			// [Fahad]: FIXME -- For testing only ...
-//			*seed = seeds[nsur-1];
-//		#endif
-
 		for (int n=1; n<=NgridT; n++) ev_x[n]=0.0;
 		if (use_catalog){
 			for(int i=1;i<=cat.Z;i++) dumrate[i]=0.0;
@@ -420,7 +410,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				#ifdef _CRS_MPI
 					int offset = ((nsur-1)*(NgridT_out)*sizeof(double));
 
-					// [Fahad]: Buffer indices have a '+1' because these are nrutils dvector types.
+					// Buffer indices have a '+1' because these are dvector types.
 					MPI_File_write_at(fhw_cmb, offset, ev_x_new+1, NgridT_out,
 									  MPI_DOUBLE, &status);
 				#else
@@ -440,7 +430,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 				int offset = ((nsur-1)*(NgridT_out)*sizeof(double));
 
-				// [Fahad]: Buffer indices have a '+1' because these are nrutils dvector types.
+				// Buffer indices have a '+1' because these are dvector types.
 				MPI_File_write_at(fhw_forex, offset, ev_x_new+1, NgridT_out,
 								  MPI_DOUBLE, &status);
 			#else
@@ -459,7 +449,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 				int offset = ((nsur-1)*(Ntts)*sizeof(double));
 
-				// [Fahad]: Buffer indices have a '+1' because these are nrutils dvector types.
+				// Buffer indices have a '+1' because these are dvector types.
 				MPI_File_write_at(fhw_foret1, offset, nev+1, Ntts,
 								  MPI_DOUBLE, &status);
 				MPI_File_write_at(fhw_foret2, offset, rev+1, Ntts,
@@ -712,9 +702,9 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	FILE *fforex, *fcmb;
 
 	#ifdef _CRS_MPI
-		// [Fahad]: The dmatrix 'all_new_gammas' has to be linearized for the
-		//		  : MPI communication routine that consolidates values from
-		//		  : all ranks.
+		// The dmatrix 'all_new_gammas' has to be linearized for the
+		// MPI communication routine that consolidates values from
+		// all ranks.
 		size_t allNewGammasSize;
 		size_t localNewGammasSize;
 
@@ -727,7 +717,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	if (first_timein==1){
 		print_logfile("Setting up variables in CRSLogLikelihood...\n");
 		#ifndef _CRS_MPI
-			// [Fahad] Assignment happens at the end of the function when MPI is being used.
+			// Assignment happens at the end of the function when MPI is being used.
 			first_timein=0;
 		#endif
 
@@ -808,19 +798,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		end = Nsur + 1;
 	#endif
 
-//	// [Fahad]: FIXME -- We need to come up with a good seed generation algorithm for the MPI code
-//	// [Fahad]: FIXME - For Test A2, first call ...
-//	long seeds[] = {-956111019, -1383064173, -25303387, -1130426989, -1321121682, -137071578, -1882507103, -1846814569, -78114812};
-
 	for(int nsur = start; nsur < MIN(end, Nsur+1); nsur++) {
-//		#ifdef _CRS_MPI
-			// [Fahad]: FIXME -- For testing only ...
-//			if(first_timein != 1) {
-//				*seed = seeds[nsur-1];
-//			}
-//		#endif
-
-
 		//if (flags.sample_all), each iteration corresponds to a focal mechanism. Otherwise, which_recfault=0 means: choose random one.
 		which_recfault= flags.sample_all? nsur : 0;	//which_recfault=0 means: choose random one.
 
@@ -931,8 +909,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		free_dvector(rate, 1, cat.Z);
 		rate = recv_rate;
 
-		// TODO [Fahad]-- This is way too complicated. Try to come up with a more
-		//				 -- elegant algorithm. Add comments in the meanwhile ...
+		// TODO -- This is way too complicated. Try to come up with a more
+		//		-- elegant algorithm. Add comments in the meanwhile ...
 		if (all_new_gammas) {
 			MPI_Allgather(linearizedLocalNewGammas, localNewGammasSize, MPI_DOUBLE,
 						  linearizedAllNewGammas,   localNewGammasSize, MPI_DOUBLE,

@@ -58,7 +58,7 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
  *
  */
 
-	// [Fahad] Variables used for MPI
+	// Variables used for MPI
 	int fileError = 0;
 	int procId = 0;
 
@@ -128,10 +128,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		MPI_Bcast(&Z, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
 
-	// FIXME: [Fahad] Any 'return' statement other than the one at the end of the function
-	//		   should be prominent enough so that it is not missed by another
-	//		   person looking at the code.
-//	if (Z<=0) return 1;
 	if (Z <= 0) {
 		return 1;
 	}
@@ -512,7 +508,7 @@ int read_firstlineZMAP(char *file, struct tm reftime, double *stime){
  */
 
 
-	// [Fahad] Variables used for MPI
+	// Variables used for MPI
 	int fileError = 0;
 	int procId = 0;
 

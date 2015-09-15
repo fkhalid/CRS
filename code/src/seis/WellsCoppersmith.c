@@ -40,13 +40,6 @@ int WellsCoppersmith(double M, double rake, double *L, double *W, double *S) {
 		   sd_b_RW, a_AD, sd_a_AD, b_AD, sd_b_AD, a_RA, sd_a_RA, \
 		   b_RA, sd_b_RA;
 
-	// [Fahad] Variables used for MPI
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
 	if(rake >=45 && rake <135) {	//reverse
 		a_RLD=-2.42; sd_a_RLD=0.21;
 		b_RLD=0.58; sd_b_RLD=0.03;

@@ -150,7 +150,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 
 
 
-	// [Fahad] Variables used for MPI.
+	// Variables used for MPI.
 
 	int procId = 0;
 	int fileError = 0;
@@ -171,10 +171,10 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 	double st[3];	//regional stress field description;
 	double di[3];	//regional stress field description;
 
-	// [Fahad] If there is a file error, only root will know about it.
-	//		   So it is important that the error is broadcast to all
-	//		   processes, and they all return from the function with
-	//		   the same error code.
+	// If there is a file error, only root will know about it.
+	// So it is important that the error is broadcast to all
+	// processes, and they all return from the function with
+	// the same error code.
 	if(procId == 0) {
 		fin = fopen(modelparametersfile,"r");
 		if(fin == NULL) {
@@ -406,9 +406,6 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 	if(fileError) {
 		return 1;
 	}
-
-	// TODO: [Fahad] Look into how much of the following code can be moved to
-	//		 a separate function ...
 
 	#ifdef _CRS_MPI
 

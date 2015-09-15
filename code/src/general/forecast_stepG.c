@@ -56,7 +56,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	 */
 
 
-	// [Fahad] Variables used for MPI.
+	// Variables used for MPI.
 	int procId = 0;
 
 	#ifdef _CRS_MPI

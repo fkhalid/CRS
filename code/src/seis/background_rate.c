@@ -20,10 +20,6 @@
 
 #include "background_rate.h"
 
-#ifdef _CRS_MPI
-	#include "mpi.h"
-#endif
-
 int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 		double Mmain, double *minmag, double *rate, double **rate_grid, double dR, double dZ, double min_smoothing, int ord) {
 	/*
@@ -44,13 +40,6 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 	 *  *rate: scalar value of seismicity rate (no. of events per day)
 	 *  **rate_grid: array containing the spatial distribution of seismicity (by convention adds up to crst.N_allP). size [1...crst.N_allP]
 	 */
-
-	int procId = 0;
-	int fileError=0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
 
 	struct catalog cat;
 	struct crust crst=*crst_in;

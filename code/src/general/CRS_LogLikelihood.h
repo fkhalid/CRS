@@ -45,8 +45,8 @@ int CRSLogLikelihood (double *LL, double *Ldum0_out, double *Nev, double *I, dou
 		double *gammas0, double **all_new_gammas, int fromstart, int refresh);
 
 #ifdef _CRS_MPI
-// [Fahad] -- Added for use in partition size calculation when using
-//			  MPI enabled code.
+// Added for use in partition size calculation when using
+// MPI enabled code.
 inline int roundUpFrac(double x) {
 	double integralPart, fractionalPart, result;
 

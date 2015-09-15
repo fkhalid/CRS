@@ -25,7 +25,7 @@
 #define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
-//#define _CRS_MPI						// [Fahad]: Set/unset at compile time. Left here only for easier Eclipse support.
+//#define _CRS_MPI						// Set/unset at compile time. Left here only for easier Eclipse support.
 #ifdef _CRS_MPI
 	#define BCAST_FLAGS_SIZE 9				// No. of scalar variables in 'struct flags'
 	#define SIZE_BCAST_MODEL_PARAMETERS 33	// No. of scalar variables in 'struct BCast_Model_Parameters'
@@ -277,11 +277,11 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 
 };
 
-// [Fahad] A complete collection of scalar model parameters used in
-//		   read_modelparmeters(). In terms of communications, it is
-//		   more efficient to pack all the variables in one struct
-//		   and then transport these to the other nodes over the network,
-//		   rather than sending each variable separately.
+// A complete collection of scalar model parameters used in
+// read_modelparmeters(). In terms of communications, it is
+// more efficient to pack all the variables in one struct
+// and then transport these to the other nodes over the network,
+// rather than sending each variable separately.
 #ifdef _CRS_MPI
 	struct BCast_Model_Parameters {
 		int fixr;

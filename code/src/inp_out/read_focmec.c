@@ -62,6 +62,7 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 	int ntotmax=0, err=0, nfm_sofar=0, nfm_sofar2=0;
 	struct eqkfm *eqkfmtemp;
 
+	// Variables used for MPI
 	int fileError = 0;
 	int procId = 0;
 
@@ -164,7 +165,7 @@ int readfocmec(char *focmecfile, struct crust crst,
  *  if focmec=NULL or eqkfm=NULL, they will be ignored.
  */
 
-	// [Fahad] Variables used for MPI
+	// Variables used for MPI
 	int fileError = 0;
 	int procId = 0;
 
@@ -230,10 +231,6 @@ int readfocmec(char *focmecfile, struct crust crst,
 		MPI_Bcast(&NC, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
 
-	// FIXME: [Fahad] Any 'return' statement other than the one at the end of the function
-	//		   should be prominent enough so that it is not missed by another
-	//		   person looking at the code.
-//	if (NFMmax<0) return 1;
 	if(NFMmax < 0) {
 		return 1;
 	}

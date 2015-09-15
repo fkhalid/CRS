@@ -20,10 +20,6 @@
 
 #include "find_timesteps.h"
 
-#ifdef _CRS_MPI
-	#include "mpi.h"
-#endif
-
 int findtimestepsomori(double te, double t0, double t1, double K, double p, double c, double *t, double *K0, int *L) {
 /*
  * Calculates time steps with an increasing spacing, a function of the form dt~(t+c)^p is used: for p=1 and a logarithmic stressing history,
@@ -40,15 +36,6 @@ int findtimestepsomori(double te, double t0, double t1, double K, double p, doub
  *  K0: value such that t_{i}=t_{i-1}+K(t+c-teq)^p. Ignored if NULL.
  *  L: number of time steps.
  */
-
-
-	// [Fahad] Variables used for MPI
-
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
 
 	double dfdt, dt, tnow;
 	int N, j=0, err=0;
@@ -69,8 +56,6 @@ int findtimestepsomori(double te, double t0, double t1, double K, double p, doub
 
 	*L=j;
 	if (K0) *K0= K;	//so that t_{i}=t_{i-1}+K(t+c-teq)^p
-
-
 
 	return err;
 }

@@ -49,9 +49,9 @@ FILE *flog=NULL;
 int extra_verbose, quiet;
 
 int main (int argc, char **argv) {
-	// [Fahad] Variables used by MPI related code.
-	int procId = 0;		// [Fahad] Process rankdifftoll.sh t137Bmpi/testA2_foremap.dat t120Bmpi/testA2_foremap.dat 9
-	int numProcs = 1;	// [Fahad] Total number of MPI processes
+	// Initialization: variables used by MPI related code.
+	int procId = 0;		// Process rank
+	int numProcs = 1;	// Total number of MPI processes
 	double startTime, endTime;
 
 	//Variables for timing:
@@ -61,7 +61,8 @@ int main (int argc, char **argv) {
 	#ifdef _CRS_MPI
 		omp_set_num_threads(2);
 
-		// [Fahad] Initialize MPI and get the rank and the total number of processes.
+		// Initialize MPI and get the rank and the total number of processes from command line
+		// arguments.
 		MPI_Init(&argc, &argv);
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 		MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
@@ -88,8 +89,6 @@ int main (int argc, char **argv) {
 		//test_forecast_stepG2_new();
 		//test_countcolheader();
 		//test_allOkada();
-		// TODO: [Fahad] There should be provision for ignoring MPI
-		//				  when running tests ...
 		print_screen("Done!\n");
 		return (0);
 	}
@@ -201,7 +200,7 @@ int main (int argc, char **argv) {
 	long seed;		//for random number generator
 	int input_file_name_given=0;	//flag to check if used provided master input file.
 
-	// FIXME: [Fahad] For testing purposes only ...
+	// Timing code
 	#ifdef _CRS_MPI
 		startTime = MPI_Wtime();
 	#else
@@ -268,8 +267,8 @@ int main (int argc, char **argv) {
 	}
 
 	#ifdef _CRS_MPI
-		// [Fahad] The file names are used in conditions in main.c for
-		// 		   setting certain flags.
+		// The file names are used in conditions in main.c for
+		// setting certain flags.
 		MPI_Bcast(background_rate_grid,  120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(background_rate_cat,   120, MPI_CHAR,   0, MPI_COMM_WORLD);
 		MPI_Bcast(aseismicmodelfile, 	 120, MPI_CHAR,   0, MPI_COMM_WORLD);
@@ -482,9 +481,10 @@ int main (int argc, char **argv) {
 	}
 
 	if (!flags.err_recfault && !flags.err_gridpoints) Nsur=1;	//since there are not sources of uncertainties.
-	// [Fahad] 	- We need to make sure that the number of iterations is not less
-	//		   	- than the number of MPI processes; so that all processes can
-	//			- contribute to the computations.
+
+	// We need to make sure that the number of iterations is not less
+	// than the number of MPI processes; so that all processes can
+	// contribute to the computations.
 	#ifdef _CRS_MPI
 		if((LLinversion || forecast) && (numProcs > Nsur)) {
 			if(procId == 0) {
@@ -500,18 +500,17 @@ int main (int argc, char **argv) {
 
 	//--------------Setup Coefficients and DCFS struct--------------//
 
+	// Timing code
 	#ifdef _CRS_MPI
 		double coeffsStartTime, coeffsEndTime;
 
 		MPI_Barrier(MPI_COMM_WORLD);
 		coeffsStartTime = MPI_Wtime();
 	#else
-
         #ifdef _MEASURE_TIME
 			tic2=omp_get_wtime();
 		#endif
     #endif
-
 
 	err=setup_CoeffsDCFS(&AllCoeff, &AllCoeff_aseis, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf,
 			all_aslipmodels.Nfaults);
@@ -523,6 +522,7 @@ int main (int argc, char **argv) {
 	update_CoeffsDCFS(&AllCoeff, crst, eqkfm_co, Nco, Nfaults_co);
 	update_CoeffsDCFS(&AllCoeff_aseis, crst, eqkfm_aft, Naf, all_aslipmodels.Nfaults);
 
+	// Timing code
 	#ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
 		coeffsEndTime = MPI_Wtime();
@@ -531,11 +531,10 @@ int main (int argc, char **argv) {
 			printf("\nTime - setup_CoeffsDCFS(): %f seconds\n\n", (coeffsEndTime - coeffsStartTime));
 		}
 	#else
-
         #ifdef _MEASURE_TIME
 			toc2=omp_get_wtime();
 			fprintf(file_time, "setup_Coeff:\t%f\n", (double)(toc2 - tic2));
-                	fflush(file_time);
+			fflush(file_time);
 			tic2=toc2;
 		#endif
     #endif
@@ -695,10 +694,10 @@ int main (int argc, char **argv) {
 	//------------------------------------------------------------------------------------------------------//
 
 	#ifdef _CRS_MPI
-		// [Fahad] Make sure all processes are in sync at this point.
+		// Make sure all processes are in sync at this point.
 		MPI_Barrier(MPI_COMM_WORLD);
 
-		// Timing for benchmarking
+		// Timing code
 		endTime = MPI_Wtime();
 		if(procId == 0) {
 			printf("\nTime - I/O + broadcast: %f seconds\n\n", (endTime - startTime));
@@ -726,7 +725,7 @@ int main (int argc, char **argv) {
 
 	//loop over all slip models:
 	for (int mod=1; mod<=slipmodel_combinations; mod++) {
-		// FIXME: [Fahad] For testing purposes only ...
+		// Timing code
 		#ifdef _CRS_MPI
 			dcfsStartTime = MPI_Wtime();
 		#else
@@ -765,7 +764,7 @@ int main (int argc, char **argv) {
 			}
 		}
 
-		// FIXME: [Fahad] For testing purposes only ...
+		// Timing code
 		#ifdef _CRS_MPI
 			MPI_Barrier(MPI_COMM_WORLD);
 
@@ -784,7 +783,7 @@ int main (int argc, char **argv) {
 		//				Grid Search					//
 		//------------------------------------------//
 
-		// FIXME: [Fahad] For testing purposes only ...
+		// Timing code
 		#ifdef _CRS_MPI
 			gridStartTime = MPI_Wtime();
 		#else
@@ -871,15 +870,15 @@ int main (int argc, char **argv) {
 		//------------------------------------------//
 
 		#ifdef _CRS_MPI
-			// [Fahad] Make sure all processes are in synch at this point.
+			// Make sure all processes are in synch at this point.
 			MPI_Barrier(MPI_COMM_WORLD);
 
+			// Timing code
 			gridEndTime = MPI_Wtime();
 			gridTotalTime += gridEndTime - gridStartTime;
 
 			forecastStartTime = MPI_Wtime();
 		#else
-
 			#ifdef _MEASURE_TIME
 				toc=omp_get_wtime();
 				fprintf(file_time, "Grid Search:\t%f\n", (double)(toc - tic));
@@ -952,7 +951,7 @@ int main (int argc, char **argv) {
 		}
 
 		#ifdef _CRS_MPI
-			// FIXME: [Fahad] For testing purposes only ...
+			// Timing code
 			MPI_Barrier(MPI_COMM_WORLD);
 
 			forecastEndTime = MPI_Wtime();
@@ -960,9 +959,8 @@ int main (int argc, char **argv) {
 
 			print_screen("\nConverting output files from Binary to ASCII ... ");
 
+			// Converting file written using MPI I/O routines from binary to ASCII.
 			if(procId == 0) {
-				// [Fahad]: Converting file written using MPI I/O routines
-				//		  : from binary to ASCII.
 				char binaryToAsciiCmd_cmb[500],
 					 binaryToAsciiCmd_forex[500],
 					 binaryToAsciiCmd_foret_cumu[500],
@@ -1015,7 +1013,7 @@ int main (int argc, char **argv) {
 		#endif
 	}
 
-	// FIXME: [Fahad] For testing purposes only ...
+	// Timing code
 	#ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
 

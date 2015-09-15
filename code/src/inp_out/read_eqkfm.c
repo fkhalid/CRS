@@ -59,13 +59,6 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
  *  Ncomb: no. of earthquake sources. May be smaller than N1 if some events are excluded because they don't have slip model or foc mec (depends on flags).
  */
 
-	// [Fahad] Variables used for MPI
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
 	int *which_slipmod;
 	int N2, N3=0, c_evfound=0;
 	int *nf2, nsm, nfaults;
@@ -108,13 +101,6 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 		}
 		all_slipmodels.Nfaults[i]=nfaults;
 	}
-
-//	// FIXME: Fahad - For debugging purposes only ...
-//	#ifdef _CRS_MPI
-//		MPI_Barrier(MPI_COMM_WORLD);
-//
-//		error_quit("read_eqkfm.c -- Exiting at line 88 \n");
-//	#endif
 
 	if (err){
 		print_screen("Error in reading input files. Exiting.\n");
@@ -344,14 +330,6 @@ int read_eqkfm(char *fname, char *cmb_format, struct eqkfm **eqfm1, int *NF_out,
  * 	mu: chear modulus, used to calculate magnitude.
  */
 
-
-	// [Fahad] Variables used for MPI.
-	int procId = 0;
-
-	#ifdef _CRS_MPI
-		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
-	#endif
-
 	int NF, NP, err=0;
 	double slip, dip_slip=0.0, strike_slip=0.0, M0=0.0;
 
@@ -417,6 +395,7 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 	 *  			It can be passed as NULL, and will be ignored (will just count).
 	 */
 
+	// Variables used for MPI
 	int fileError = 0;
 	int procId = 0;
 
@@ -469,7 +448,6 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 					sscanf(line,"%lf %lf %lf",&(eqfm[f].lat), &(eqfm[f].lon), &(eqfm[f].depth));
 					fgets(line,nchar,fin);
 					fgets(line,nchar,fin);
-	//				eqfm[f].whichfm=1;	// [Fahad] Move it after the following statements for MPI
 					sscanf(line,"%lf %lf",&(eqfm[f].str1), &(eqfm[f].dip1));
 					fgets(line,nchar,fin);
 					fgets(line,nchar,fin);
@@ -583,12 +561,12 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 	// [Fahad] Variables used for MPI.
 	int fileError = 0;
 	int procId = 0;
-	int err=0;
 
 	#ifdef _CRS_MPI
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
+	int err=0;
 	FILE *fin;
 	double junk;
 	int NP, NF, djunk;
