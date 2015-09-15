@@ -25,7 +25,8 @@
 #include <math.h>
 #include <nrutil.h>
 #include <spline.c>
-#include <splint.c>
+//#include <splint.c>
+#include <nr.h>
 
 #include "../defines.h"
 #include "error.h"
