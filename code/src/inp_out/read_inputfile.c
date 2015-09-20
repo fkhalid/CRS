@@ -674,7 +674,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				(*allslipmodels).disc[nn] = res;
 				fgets(line,Nchar,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 				if (is_aseismic){
-					sscanf(line,"%s %d", time_str, &no_slipmod);	//[Camilla] NB: no_slipmod changes at each nn iteration.
+					sscanf(line,"%s %d", time_str, &no_slipmod);	//NB: no_slipmod changes at each nn iteration.
 
 					//check if the number of snapshots is in agreement with flags:
 					if (aseismic_splines==1 & no_slipmod<2){
@@ -701,7 +701,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				}	
 
 				else{
-                    sscanf(line,"%s %lf %d", time_str, (*allslipmodels).mmain+nn, &no_slipmod);     //[Camilla] NB: no_slipmod changes at each nn iteration.
+                    sscanf(line,"%s %lf %d", time_str, (*allslipmodels).mmain+nn, &no_slipmod);     //NB: no_slipmod changes at each nn iteration.
 				}						
 				sscanf(time_str, "%d-%d-%dT%d:%d:%dZ", &(times.tm_year), &(times.tm_mon), &(times.tm_mday), &(times.tm_hour), &(times.tm_min), &(times.tm_sec));
 				times.tm_year-=1900;
@@ -764,7 +764,6 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 
 			if (!is_aseismic) MPI_Bcast((*allslipmodels).mmain, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 			MPI_Bcast((*allslipmodels).no_slipmodels, Nm0, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-//			MPI_Bcast(&no_slipmod, 1, MPI_INT, 0, MPI_COMM_WORLD);	//[Camilla] this value changes in each nn loop.
 			MPI_Bcast(&size_slipmodels, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 			if(procId != 0) {
@@ -772,11 +771,11 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				if (is_aseismic) (*allslipmodels).tsnap= (double *) malloc(size_slipmodels * sizeof(double));
 
 				// If root did reallocation
-				if(size_slipmodels > Nm0) { //[Camilla] I changed the condition to be in agreement with the one above.
+				if(size_slipmodels > Nm0) {
 					(*allslipmodels).slipmodels = realloc((*allslipmodels).slipmodels, size_slipmodels * sizeof(char*));
 				}
 				for(int nn = 0; nn < Nm0; ++nn) {
-					no_slipmod=(*allslipmodels).no_slipmodels[nn]; //[Camilla] added this line
+					no_slipmod=(*allslipmodels).no_slipmodels[nn];
 					(*allslipmodels).disc[nn] = res;
 
 					for(int n = 1; n <= no_slipmod; ++n) {
@@ -794,7 +793,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			if (is_aseismic) MPI_Bcast((*allslipmodels).tsnap, size_slipmodels, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 			for(int nn = 0; nn < Nm0; ++nn) {
-				no_slipmod=(*allslipmodels).no_slipmodels[nn]; // [Camilla] added this line
+				no_slipmod=(*allslipmodels).no_slipmodels[nn]; 
 				for(int n = 1; n <= no_slipmod; ++n) {
 					MPI_Bcast((*allslipmodels).slipmodels[nsm], 120, MPI_CHAR, 0, MPI_COMM_WORLD);
 					nsm++;

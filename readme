@@ -20,6 +20,8 @@ mpicc (MPI compiler, for running MPI code)
 openMP libraries
 numerical recipes (source code in C). http://www.nr.com/
 
+The code was tested with gcc version 4.4.0.
+
 
 Installation
 ------------

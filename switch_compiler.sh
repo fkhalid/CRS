@@ -7,11 +7,11 @@
 #    switch_compiler gcc2mpicc (to go from serial to parallel)"
 #    switch_compiler mpicc2gcc (to go from parallel to serial)"
 #
-
+# script was run with GNU bash version 4.1.5(1).
 
 folder=Release;
 
-if [ $1 == "gcc2mpicc" ]
+if [ "$#" = 1 ] && [ $1 = "gcc2mpicc" ]
 then
 
  old_compiler=gcc;
@@ -20,7 +20,7 @@ then
  new_name=run_mpi_crs;
 
  # Output message and do nothing if compiler not found:
- if [ $(grep -rl "$old_compiler" $folder | grep -v -x ".*\.py\|.*\.sh" | wc -l) == 0 ];
+ if [ $(grep -rl "$old_compiler" $folder | grep -v -x ".*\.py\|.*\.sh" | wc -l) = 0 ];
  then 
 	echo "No files with compiler $old_compiler found.";
 	exit
@@ -43,7 +43,7 @@ then
  fi
 
 else
- if [ $1 == "mpicc2gcc" ]
+ if [ "$#" = 1 ] && [ $1 = "mpicc2gcc" ]
  then
 
  old_compiler=mpicc;
@@ -52,7 +52,7 @@ else
  new_name=run_crs;
 
 
- if [ $(grep -rl "$old_compiler" $folder | grep -v -x ".*\.py\|.*\.sh" | wc -l) == 0 ];
+ if [ $(grep -rl "$old_compiler" $folder | grep -v -x ".*\.py\|.*\.sh" | wc -l) = 0 ];
  then  
         echo "No files with compiler $old_compiler found.";
         exit

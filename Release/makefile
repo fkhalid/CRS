@@ -35,7 +35,7 @@ all: run_mpi_crs
 run_mpi_crs: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	mpicc -lm -lgomp -o "run_mpi_crs" $(OBJS) $(USER_OBJS) $(LIBS)
+	mpicc -o "run_mpi_crs" $(OBJS) $(USER_OBJS) $(LIBS) -lm -lgomp
 	@echo 'Finished building target: $@'
 	@echo ' '
 

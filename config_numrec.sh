@@ -14,7 +14,6 @@
 
 old_numrec_folder="/path/to/NR/"
 new_numrec_folder="/new/path/to/NR/"
-#new_numrec_folder="/home/des/camcat/masterdes_sec21/NumericalRecipes/2.11/C_211/"
 
 if [ $(grep -rl "$old_numrec_folder" Release | wc -l) == 0 ];
  then

@@ -56,7 +56,6 @@ int main (int argc, char **argv) {
 
 	//Variables for timing:
 	double tic, toc, tic2, toc2;
-	FILE * file_time;
 
 	#ifdef _CRS_MPI
 		omp_set_num_threads(2);
@@ -201,12 +200,12 @@ int main (int argc, char **argv) {
 	int input_file_name_given=0;	//flag to check if used provided master input file.
 
 	// Timing code
-	#ifdef _CRS_MPI
-		startTime = MPI_Wtime();
-	#else
-		#ifdef _MEASURE_TIME
-			tic=omp_get_wtime();
-		#endif
+	#ifdef _MEASURE_TIME
+        	#ifdef _CRS_MPI
+        		startTime = MPI_Wtime();
+        	#else
+        		tic=omp_get_wtime();
+        	#endif
 	#endif
 
 
@@ -339,14 +338,6 @@ int main (int argc, char **argv) {
 //----------- Copy input and parameters file to log file -------//
 
 	if(procId == 0) {
-
-		#ifndef _CRS_MPI
-			#ifdef _MEASURE_TIME
-				sprintf(fname,"%s.time",outname);
-				//file_time=fopen(fname,"w");
-				file_time=stdout;
-			#endif
-		#endif
 
 		if (strcmp(logfile,"")!=0){
 			sprintf(syscopy,"date > %s", logfile);
@@ -501,16 +492,16 @@ int main (int argc, char **argv) {
 	//--------------Setup Coefficients and DCFS struct--------------//
 
 	// Timing code
-	#ifdef _CRS_MPI
-		double coeffsStartTime, coeffsEndTime;
-
-		MPI_Barrier(MPI_COMM_WORLD);
-		coeffsStartTime = MPI_Wtime();
-	#else
         #ifdef _MEASURE_TIME
-			tic2=omp_get_wtime();
-		#endif
-    #endif
+            #ifdef _CRS_MPI
+            	double coeffsStartTime, coeffsEndTime;
+
+            	MPI_Barrier(MPI_COMM_WORLD);
+            	coeffsStartTime = MPI_Wtime();
+            #else
+            	tic2=omp_get_wtime();
+            #endif
+        #endif
 
 	err=setup_CoeffsDCFS(&AllCoeff, &AllCoeff_aseis, &DCFS, crst, eqkfm_co, Nco, Nfaults_co, eqkfm_aft, Naf,
 			all_aslipmodels.Nfaults);
@@ -523,21 +514,18 @@ int main (int argc, char **argv) {
 	update_CoeffsDCFS(&AllCoeff_aseis, crst, eqkfm_aft, Naf, all_aslipmodels.Nfaults);
 
 	// Timing code
-	#ifdef _CRS_MPI
+	#ifdef _MEASURE_TIME
+	    #ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
 		coeffsEndTime = MPI_Wtime();
 
-		if(procId == 0) {
-			printf("\nTime - setup_CoeffsDCFS(): %f seconds\n\n", (coeffsEndTime - coeffsStartTime));
-		}
-	#else
-        #ifdef _MEASURE_TIME
-			toc2=omp_get_wtime();
-			fprintf(file_time, "setup_Coeff:\t%f\n", (double)(toc2 - tic2));
-			fflush(file_time);
-			tic2=toc2;
-		#endif
-    #endif
+		print_screen("\nTime - setup_CoeffsDCFS(): %f seconds\n\n", (coeffsEndTime - coeffsStartTime));
+	    #else
+		toc2=omp_get_wtime();
+                print_screen("\nTime - setup_CoeffsDCFS(): %f seconds\n\n", (double)(toc2 - tic2));
+		tic2=toc2;
+	    #endif
+        #endif
 
 
 	//--------------------------------------------------------------//
@@ -693,27 +681,24 @@ int main (int argc, char **argv) {
 	//								  Grid search and forecast												//
 	//------------------------------------------------------------------------------------------------------//
 
-	#ifdef _CRS_MPI
+	#ifdef _MEASURE_TIME
+	    #ifdef _CRS_MPI
 		// Make sure all processes are in sync at this point.
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		// Timing code
 		endTime = MPI_Wtime();
-		if(procId == 0) {
-			printf("\nTime - I/O + broadcast: %f seconds\n\n", (endTime - startTime));
-		}
+		print_screen("\nTime - I/O + broadcast: %f seconds\n\n", (endTime - startTime));
 
 		startTime = MPI_Wtime();
 
 		double dcfsStartTime, dcfsEndTime, dcfsTotalTime = 0.0;
 		double gridStartTime, gridEndTime, gridTotalTime = 0.0;
 		double forecastStartTime, forecastEndTime, forecastTotalTime = 0.0;
-	#else
-		#ifdef _MEASURE_TIME
-			toc=omp_get_wtime();
-			fprintf(file_time, "I/O + broadcast:\t%f\n", (double)(toc - tic));
-			fflush(file_time);
-		#endif
+	    #else
+		toc=omp_get_wtime();
+		print_screen("\nTime - I/O + broadcast: %f seconds\n\n", (double)(toc - tic));
+	    #endif
 	#endif
 
 	dim=ivector(0,Nco-1);
@@ -726,12 +711,12 @@ int main (int argc, char **argv) {
 	//loop over all slip models:
 	for (int mod=1; mod<=slipmodel_combinations; mod++) {
 		// Timing code
-		#ifdef _CRS_MPI
+		#ifdef _MEASURE_TIME
+		    #ifdef _CRS_MPI
 			dcfsStartTime = MPI_Wtime();
-		#else
-			#ifdef _MEASURE_TIME
-				tic=omp_get_wtime();
-			#endif
+		    #else
+			tic=omp_get_wtime();
+		    #endif
 		#endif
 
 
@@ -765,18 +750,17 @@ int main (int argc, char **argv) {
 		}
 
 		// Timing code
-		#ifdef _CRS_MPI
+		#ifdef _MEASURE_TIME
+		    #ifdef _CRS_MPI
 			MPI_Barrier(MPI_COMM_WORLD);
 
 			dcfsEndTime = MPI_Wtime();
 			dcfsTotalTime += dcfsEndTime - dcfsStartTime;
-		#else
-            #ifdef _MEASURE_TIME
-				toc=omp_get_wtime();
-				fprintf(file_time, "DCFS (Okada):\t%f\n", (double)(toc - tic));
-				fflush(file_time);
-				tic=toc;
-            #endif
+		    #else
+			toc=omp_get_wtime();
+			print_screen("DCFS (Okada):\t%f\n", (double)(toc - tic));
+			tic=toc;
+            	    #endif
 		#endif
 
 		//------------------------------------------//
@@ -784,12 +768,12 @@ int main (int argc, char **argv) {
 		//------------------------------------------//
 
 		// Timing code
-		#ifdef _CRS_MPI
+		#ifdef _MEASURE_TIME
+		    #ifdef _CRS_MPI
 			gridStartTime = MPI_Wtime();
-		#else
-			#ifdef _MEASURE_TIME
-				tic=omp_get_wtime();
-			#endif
+		    #else
+			tic=omp_get_wtime();
+		    #endif
 		#endif
 
 		//set default values:
@@ -869,7 +853,8 @@ int main (int argc, char **argv) {
 		//			 	Forecast					//
 		//------------------------------------------//
 
-		#ifdef _CRS_MPI
+		#ifdef _MEASURE_TIME
+		    #ifdef _CRS_MPI
 			// Make sure all processes are in synch at this point.
 			MPI_Barrier(MPI_COMM_WORLD);
 
@@ -878,13 +863,11 @@ int main (int argc, char **argv) {
 			gridTotalTime += gridEndTime - gridStartTime;
 
 			forecastStartTime = MPI_Wtime();
-		#else
-			#ifdef _MEASURE_TIME
-				toc=omp_get_wtime();
-				fprintf(file_time, "Grid Search:\t%f\n", (double)(toc - tic));
-				fflush(file_time);
-				tic=toc;
-			#endif
+		    #else
+			toc=omp_get_wtime();
+			print_screen("Grid Search:\t%f\n", (double)(toc - tic));
+			tic=toc;
+		    #endif
 		#endif
 
 
@@ -951,6 +934,8 @@ int main (int argc, char **argv) {
 		}
 
 		#ifdef _CRS_MPI
+
+		    #ifdef _MEASURE_TIME
 			// Timing code
 			MPI_Barrier(MPI_COMM_WORLD);
 
@@ -958,6 +943,7 @@ int main (int argc, char **argv) {
 			forecastTotalTime += forecastEndTime - forecastStartTime;
 
 			print_screen("\nConverting output files from Binary to ASCII ... ");
+		    #endif
 
 			// Converting file written using MPI I/O routines from binary to ASCII.
 			if(procId == 0) {
@@ -1003,18 +989,16 @@ int main (int argc, char **argv) {
 
 			print_screen("Done.\n");
 		#else
-			#ifndef _CRS_MPI
-				#ifdef _MEASURE_TIME
-					toc=omp_get_wtime();
-					fprintf(file_time, "Forecast:\t%f\n", (double)(toc - tic));
-					fflush(file_time);
-				#endif
+			#ifdef _MEASURE_TIME
+				toc=omp_get_wtime();
+				print_screen("Forecast:\t%f\n", (double)(toc - tic));
 			#endif
 		#endif
 	}
 
 	// Timing code
-	#ifdef _CRS_MPI
+	#ifdef _MEASURE_TIME
+	    #ifdef _CRS_MPI
 		MPI_Barrier(MPI_COMM_WORLD);
 
 		endTime = MPI_Wtime();
@@ -1025,8 +1009,8 @@ int main (int argc, char **argv) {
 			printf("\nTime - Forecast: %f seconds", forecastTotalTime);
 			printf("\nTime - DCFS + Grid Search + Forecast: %f seconds\n\n", (endTime - startTime));
 		}
-        #endif
-
+            #endif
+	#endif
 
 	if(procId == 0) {
 		if (LLinversion) fclose(fout);

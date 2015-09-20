@@ -21,8 +21,9 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-//An file with be produced with execution times.
-#define _MEASURE_TIME
+//Execution times of various blocks in main.c will be printed to screen if this flag is set.
+//Note that the behavior changes slightly dependign on whether _CRS_MPI is set.
+//#define _MEASURE_TIME
 
 // ----- [Fahad] Added for MPI -----
 //#define _CRS_MPI						// Set/unset at compile time. Left here only for easier Eclipse support.
