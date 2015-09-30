@@ -239,8 +239,8 @@ int readfocmec(char *focmecfile, struct crust crst,
 
 	lat_col=3;
 	lon_col=4;
-	dep_col=14;
-	mag_col=12;
+	dep_col=12;
+	mag_col=11;
 	str_col=5;	//str, dip, rake have also columns 8, 9, 10.
 	dip_col=6;
 	rake_col=7;

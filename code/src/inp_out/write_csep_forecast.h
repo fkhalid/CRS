@@ -33,3 +33,5 @@
 void csep_forecast_general(char *filename, struct crust crst, double *rates, int original_resolution,  int use_mags);
 void write_csep_forecast(char *filename, double *lats, double *lons, double *deps, double dlat, double dlon, double ddep,
 		double *mags, double dmag, double *rates, double *mag_fact, int NG, int Nmag);
+void write_csep_forecast_points(char *filename, double *lats, double *lons, double *deps, 
+                double *mags, double dmag, double *rates, double *mag_fact, int NG, int Nmag);

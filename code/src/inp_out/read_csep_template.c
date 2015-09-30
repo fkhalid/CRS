@@ -97,6 +97,8 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 
 	int NC, NL, NH=0, NP;
 	int n1, nmag, err=0;
+	int miss_col=0;	//used to switch between cell/point (9/6 columns) format.
+	int ncolclass=0;
 	long NR;
 	double **data;
 	double lat0=1e30, lat1=-1e30, lon0=1e30, lon1=-1e30, dep0=1e30, dep1=-1e30, mag0, mag1;
@@ -112,7 +114,29 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 	#ifdef _CRS_MPI
 		MPI_Bcast(&NC, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		MPI_Bcast(&NL, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&miss_col, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
+
+	if (NC>=8 && NC<=10) ncolclass=1;	//cells
+	else if (NC>=5 && NC<=7) ncolclass=2;	//points
+
+
+        switch (ncolclass){
+                case 1:
+                        miss_col=0;
+                        if (uni)  *uni=1;
+                        break;
+		case 2:
+                        miss_col=3;
+                        if (uni) *uni=0;
+                        break;
+                
+		default:
+                        print_screen("Wrong number of columns in template file %s. Exiting.\n", fname);
+                        print_logfile("Wrong number of columns in template file %s. Exiting.\n", fname);
+                        return 1;
+        }
+
 
 	if (NL>0 && NC>0) {
 		data = dmatrix(1,NC, 1, NL+1);
@@ -144,73 +168,103 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 	}
 
 	nmag=2;
-	mag0=data[7][1];
-	mag1=data[8][1];
-	while (fabs(data[8][1]-data[8][nmag])>toll) {
-		mag0=fmin(mag0, data[7][nmag]);
-		mag1=fmax(mag0, data[8][nmag]);
+	mag0=data[7-miss_col][1];
+	mag1=data[8-miss_col][1];
+	while (fabs(data[8-miss_col][1]-data[8-miss_col][nmag])>toll) {
+		mag0=fmin(mag0, data[7-miss_col][nmag]);
+		mag1=fmax(mag0, data[8-miss_col][nmag]);
 		nmag++;
 	}
 	nmag-=1;
 
 	NP=NR/nmag;
 	//assume cells have all the same size.
-	dlati=data[4][1]-data[3][1];
-	dloni=data[2][1]-data[1][1];
-	ddepi=data[6][1]-data[5][1];
-	dmagi=data[8][1]-data[7][1];
+	
+	if (NC>=8){
+	  dlati=data[4][1]-data[3][1];
+	  dloni=data[2][1]-data[1][1];
+	  ddepi=data[6][1]-data[5][1];
+	}
+	else{
+	  dlati=dloni=ddepi=0.0;
+	}
+
+	dmagi=data[8-miss_col][1]-data[7-miss_col][1];
 
 	if (lats) *lats=dvector(1,NP);
 	if (lons) *lons=dvector(1,NP);
 	if (deps) *deps=dvector(1,NP);
 	if (rate) *rate=dvector(1,NP);
 
-	closest_lat=1e30;
-	closest_lon=1e30;
-	closest_dep=1e30;
+	//closest_lat=1e30;
+	//closest_lon=1e30;
+	//closest_dep=1e30;
 
 	for (int n=1; n<=NP; n++){
 		n1=nmag*n;
-		if (lats) (*lats)[n]= 0.5*(data[3][n1]+data[4][n1]);
-		if (lons) (*lons)[n]= 0.5*(data[1][n1]+data[2][n1]);
-		if (deps) (*deps)[n]= 0.5*(data[5][n1]+data[6][n1]);
+		if (NC>=8){
+		 	if (lats) (*lats)[n]= 0.5*(data[3][n1]+data[4][n1]);
+			if (lons) (*lons)[n]= 0.5*(data[1][n1]+data[2][n1]);
+		   	if (deps) (*deps)[n]= 0.5*(data[5][n1]+data[6][n1]);
+	                lat0=fmin(lat0, data[3][n1]);
+	                lat1=fmax(lat1, data[4][n1]);
+	                lon0=fmin(lon0, data[1][n1]);
+	                lon1=fmax(lon1, data[2][n1]);
+	                dep0=fmin(dep0, data[5][n1]);
+	                dep1=fmax(dep1, data[6][n1]);
+		}
+		else{
+		        if (lats) (*lats)[n]=data[2][n1];
+                        if (lons) (*lons)[n]=data[1][n1];
+                        if (deps) (*deps)[n]=data[3][n1];
+                        lat0=fmin(lat0, data[2][n1]);
+                        lat1=fmax(lat1, data[2][n1]);
+                        lon0=fmin(lon0, data[1][n1]);
+                        lon1=fmax(lon1, data[1][n1]);
+                        dep0=fmin(dep0, data[3][n1]);
+                        dep1=fmax(dep1, data[3][n1]);
+		}
+		
 		if (rate) {
+			if (NC==8 | NC==5){
+			//rate column is missing. This is ok for template file, but not for background seismicity file.
+				print_screen("Error: not enough columns in file: %s. Exiting.\n", fname);
+				print_logfile("Error: not enough columns in file: %s. Exiting.\n", fname);
+				return 1;
+			}
 			(*rate)[n]=0.0;
-			for (int i=n1-nmag+1; i<=n1; i++)(*rate)[n]+= data[9][i];
+			for (int i=n1-nmag+1; i<=n1; i++)(*rate)[n]+= data[9-miss_col][i];
 		}
 
-		lat0=fmin(lat0, data[3][n1]);
-		lat1=fmax(lat1, data[4][n1]);
-		lon0=fmin(lon0, data[1][n1]);
-		lon1=fmax(lon1, data[2][n1]);
-		dep0=fmin(dep0, data[5][n1]);
-		dep1=fmax(dep1, data[6][n1]);
-
-		if (fabs(data[3][n1]-data[3][1])>toll) closest_lat=fmin(closest_lat,fabs(data[3][n1]-data[3][1]));
-		if (fabs(data[1][n1]-data[1][1])>toll) closest_lon=fmin(closest_lon,fabs(data[1][n1]-data[1][1]));
-		if (fabs(data[5][n1]-data[5][1])>toll) closest_dep=fmin(closest_dep,fabs(data[5][n1]-data[5][1]));
+//		if (fabs(data[3][n1]-data[3][1])>toll) closest_lat=fmin(closest_lat,fabs(data[3][n1]-data[3][1]));
+//		if (fabs(data[1][n1]-data[1][1])>toll) closest_lon=fmin(closest_lon,fabs(data[1][n1]-data[1][1]));
+//		if (fabs(data[5][n1]-data[5][1])>toll) closest_dep=fmin(closest_dep,fabs(data[5][n1]-data[5][1]));
 	}
 
-	if ((dep1-dep0-ddepi)<toll) closest_dep=dep1-dep0;	//there is only one depth layer;
-	if ((lat1-lat0-dlati)<toll) closest_lat=lat1-lat0;	//there is only one lat layer;
-	if ((lon1-lon0-dloni)<toll) closest_lon=lon1-lon0;	//there is only one lon layer;
+//	if ((dep1-dep0-ddepi)<toll) closest_dep=dep1-dep0;	//there is only one depth layer;
+//	if ((lat1-lat0-dlati)<toll) closest_lat=lat1-lat0;	//there is only one lat layer;
+//	if ((lon1-lon0-dloni)<toll) closest_lon=lon1-lon0;	//there is only one lon layer;
+//
+//	//calculated for uniform grid: (toll since casting is same as floor).
+//	//fixme testing for uniform grid gives false positives!
+//	if (fabs(closest_lat-dlati)<toll && fabs(closest_lon-dloni)<toll && fabs(closest_dep-ddepi)<toll) {
+//
+//		if (uni)  *uni=1;
+//		if (nlat) *nlat= (int) (toll+(lat1-lat0)/dlati);
+//		if (nlon) *nlon= (int) (toll+(lon1-lon0)/dloni);
+//		if (ndep) *ndep= (int) (toll+(dep1-dep0)/ddepi);
+//	}
+//
+//	else {
+//		if (uni)  *uni=0;
+//		if (nlat) *nlat= 0;
+//		if (nlon) *nlon= 0;
+//		if (ndep) *ndep= 0;
+//	}
 
-	//calculated for uniform grid: (toll since casting is same as floor).
-	//fixme testing for uniform grid gives false positives!
-	if (fabs(closest_lat-dlati)<toll && fabs(closest_lon-dloni)<toll && fabs(closest_dep-ddepi)<toll) {
-
-		if (uni)  *uni=1;
-		if (nlat) *nlat= (int) (toll+(lat1-lat0)/dlati);
-		if (nlon) *nlon= (int) (toll+(lon1-lon0)/dloni);
-		if (ndep) *ndep= (int) (toll+(dep1-dep0)/ddepi);
-	}
-
-	else {
-		if (uni)  *uni=0;
-		if (nlat) *nlat= 0;
-		if (nlon) *nlon= 0;
-		if (ndep) *ndep= 0;
-	}
+        if (nlat) *nlat= (int) (toll+(lat1-lat0)/dlati);
+        if (nlon) *nlon= (int) (toll+(lon1-lon0)/dloni);
+        if (ndep) *ndep= (int) (toll+(dep1-dep0)/ddepi);
 
 	if (no_magbins) *no_magbins = nmag;
 	if (ng) *ng= NP;

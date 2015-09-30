@@ -60,6 +60,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 
 
 	//The last column of the file contains indices with indices of focal mechanism zones; it should only be read if (vary_focmec)==1.
+	
 	err = read_csep_template(fnametemplate, &no_magbins, &((*crst).nLat_out), &((*crst).nLon_out),
 							 &((*crst).nD_out), &((*crst).N_allP), &((*crst).dlat_out), &((*crst).dlon_out),
 							 &((*crst).ddepth_out), &((*crst).dmags), &olats, &olons, &odeps, (vary_focmec) ? &dumzoneindex : NULL,

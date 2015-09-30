@@ -72,7 +72,6 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	int * old2new;
 	FILE *fin;
 	char line[line_length], *st;
-	int no_expected_columns=13;	//ZMAP format as used by CSEP?
 	int Z;
 	double Mc_offset=0.3, dM=0.9;	//todo don't hardwide Mc_offset; dM should be passed.
 	int cut_sd=3.0;	//no. of s.dev. for cutting off gaussian.
@@ -262,28 +261,24 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 
 				if (lon_out_of_range || lat_out_of_range || date_out_of_range || time_out_of_range || mag_out_of_range || dep_out_of_range) {
 					missing_values+=1;
-					if (hh!=no_expected_columns || missing_values){
 
-						print_screen("** Warning: line %d has following columns out of range:", lines);
-						if (lon_out_of_range) print_screen("lon, ");
-						if (lat_out_of_range) print_screen("lat, ");
-						if (dep_out_of_range) print_screen("dep, ");
-						if (mag_out_of_range) print_screen("mag, ");
-						if (date_out_of_range) print_screen("date, ");
-						if (time_out_of_range) print_screen("time, ");
-						print_screen(" and will be skipped. ** \n");
+					print_screen("** Warning: line %d has following columns out of range:", lines);
+					if (lon_out_of_range) print_screen("lon, ");
+					if (lat_out_of_range) print_screen("lat, ");
+					if (dep_out_of_range) print_screen("dep, ");
+					if (mag_out_of_range) print_screen("mag, ");
+					if (date_out_of_range) print_screen("date, ");
+					if (time_out_of_range) print_screen("time, ");
+					print_screen(" and will be skipped. ** \n");
 
-						print_logfile("Warning: line %d has following columns out of range:", lines);
-						if (lon_out_of_range) print_logfile("lon (%.2lf), ", lon[valid+1]);
-						if (lat_out_of_range) print_logfile("lat (%.2lf), ", lat[valid+1]);
-						if (dep_out_of_range) print_logfile("dep (%.2lf), ", dep[valid+1]);
-						if (mag_out_of_range) print_logfile("mag (%.2lf), ", mag[valid+1]);
-						if (date_out_of_range) print_logfile("date (%2d-%2d-%4.lf), ", day, mon, year);
-						if (time_out_of_range) print_logfile("time (%2d:%2d:%2d). ", hour, min, sec);
-						print_logfile(" and will be skipped.\n");
-
-					}
-					else valid+=1;
+					print_logfile("Warning: line %d has following columns out of range:", lines);
+					if (lon_out_of_range) print_logfile("lon (%.2lf), ", lon[valid+1]);
+					if (lat_out_of_range) print_logfile("lat (%.2lf), ", lat[valid+1]);
+					if (dep_out_of_range) print_logfile("dep (%.2lf), ", dep[valid+1]);
+					if (mag_out_of_range) print_logfile("mag (%.2lf), ", mag[valid+1]);
+					if (date_out_of_range) print_logfile("date (%2d-%2d-%4.lf), ", day, mon, year);
+					if (time_out_of_range) print_logfile("time (%2d:%2d:%2d). ", hour, min, sec);
+					print_logfile(" and will be skipped.\n");
 				}
 				else valid+=1;
 			}

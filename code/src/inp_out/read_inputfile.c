@@ -288,7 +288,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	#endif
 
 	if (focmeccat && listfm) {
-		err = read_slipfocmecfiles(listfocmeccat, focmeccat, num_fm);
+		err = read_focmecfiles(listfocmeccat, focmeccat, num_fm);
 		if (err) {
 			print_screen("Error: could not read file %s.\n", listfocmeccat);
 			print_logfile("Error: could not read file %s.\n", listfocmeccat);
@@ -437,7 +437,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	return (err || fileError);
 }
 
-int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
+int read_focmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 /* Read a file containing a list of focal mechanism catalogs files (corresponding to different areas).
  *
@@ -465,8 +465,8 @@ int read_slipfocmecfiles(char *inputfile, char ***listfiles, int *nfiles) {
 
 	if(procId == 0) {
 		if (!(fin=fopen(inputfile,"r"))) {
-			print_screen("Error: can not open file %s (read_slipfocmecfiles), Exiting.\n", inputfile);
-			print_logfile("Error: can not open file %s (read_slipfocmecfiles), Exiting.\n", inputfile);
+			print_screen("Error: can not open file %s (read_focmecfiles), Exiting.\n", inputfile);
+			print_logfile("Error: can not open file %s (read_focmecfiles), Exiting.\n", inputfile);
 			fileError = 1;
 		}
 	}

@@ -258,9 +258,8 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d %lf", fixr, r0);
 		//the following 2 lines (Asig, ta values) can have 2 alternative forms:
-		//1 Asig0
-		//or:
-		//0 Asig1 Asig2
+		//fixAsig, Asig0: is fixAsig=1 or LLinversion=0, Asig0 is the default value [this option should be used if LLinversion=0]. Unit=Pa.
+		//fixAsig, Asig_min, Asig_max, nAsig, Asig_stepmode: if fixAsig=0, Asig_(min/max) the lower/upper bound of Asig, and nAsig the number of values to be tested.//1 Asig0
 		fgets(line,Nchar_long,fin); if (ferror(fin)) fprintf(stderr, "ERROR reading input data using fgets!\n");
 		sscanf(line,"%d %lf %lf  %d %s", fixAsig, Asig_min, Asig_max, nAsig0, logstep);
 		if (*fixAsig || !*LLinversion){
