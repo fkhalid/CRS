@@ -27,7 +27,8 @@
 #include <math.h>
 
 #include "../defines.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 void reduce_eqkfm_memory(struct eqkfm *eqkfm0, int NF);
 void check_empty_eqkfm(struct eqkfm eqkfm0, double toll, int *is_str, int *is_dip, int *is_open);

@@ -28,7 +28,8 @@
 #include "../geom/convert_geometry.h"
 #include "../inp_out/print_output.h"
 #include "../inp_out/write_csep_forecast.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "calculateDCFSperturbed.h"
 #include "forecast_stepG.h"
 

@@ -23,7 +23,8 @@
 #include "../defines.h"
 #include "../util/error.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, int increase_resolution){
 /* Convert a vector (old_v) between large/small grid in crst.
@@ -106,7 +107,7 @@ int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, 
 		return(1);
 	}
 
-	if (!(*new_v)) *new_v=dvector(1,NPn);
+	if (!(*new_v)) *new_v=darray(1,NPn);
 	for (int i=1; i<=NPn; i++) (*new_v)[i]=0.0;
 
 	for (int i=1; i<=NP; i++){
@@ -183,7 +184,7 @@ int flatten_outgrid(struct crust crst, double *old_v, double **new_v, int *Nfina
 		*Nfinal=N0/crst.nD_out;
 
 		if (!(*new_v)){
-			*new_v=dvector(1,*Nfinal);
+			*new_v=darray(1,*Nfinal);
 		}
 
 		for (int i=1; i<=*Nfinal; i++){

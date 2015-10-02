@@ -23,14 +23,15 @@
 #include "../defines.h"
 #include "../general/eqkfm_copy.h"
 #include "fit_splines.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 void splines_eqkfm(struct eqkfm **eqkfm_aft, int Nas, int NF, double *times1, double *times2, int L, long *seed){
 	double **slipbefore_st, **slipbefore_di, **slip_after_st, **slip_after_di, **slipbefore_op, **slip_after_op;
 	int *NP, NP_tot;
 	int is_str, is_dip, is_open;
 
-	NP=ivector(0,NF-1);
+	NP=iarray(0,NF-1);
 	NP_tot=0;
 
 	for (int f=0; f<NF; f++) {
@@ -38,12 +39,12 @@ void splines_eqkfm(struct eqkfm **eqkfm_aft, int Nas, int NF, double *times1, do
 		NP_tot=MAX(NP_tot,NP[f]);
 	}
 
-	slipbefore_st=dmatrix(1,NP_tot,1,Nas);
-	slip_after_st=dmatrix(1,NP_tot,1,L);
-	slipbefore_di=dmatrix(1,NP_tot,1,Nas);
-	slip_after_di=dmatrix(1,NP_tot,1,L);
-	slipbefore_op=dmatrix(1,NP_tot,1,Nas);
-	slip_after_op=dmatrix(1,NP_tot,1,L);
+	slipbefore_st=d2array(1,NP_tot,1,Nas);
+	slip_after_st=d2array(1,NP_tot,1,L);
+	slipbefore_di=d2array(1,NP_tot,1,Nas);
+	slip_after_di=d2array(1,NP_tot,1,L);
+	slipbefore_op=d2array(1,NP_tot,1,Nas);
+	slip_after_op=d2array(1,NP_tot,1,L);
 
 
 	for (int f=0; f<NF; f++){
@@ -68,20 +69,20 @@ void splines_eqkfm(struct eqkfm **eqkfm_aft, int Nas, int NF, double *times1, do
 		(*eqkfm_aft)[f].nosnap=L;
 		//reallocate memory:
 		if (is_str){
-			free_dmatrix((*eqkfm_aft)[f].allslip_str,0,Nas-1, 1,NP[f]);
-			(*eqkfm_aft)[f].allslip_str=dmatrix(0,L-1,1,NP[f]);
+			free_d2array((*eqkfm_aft)[f].allslip_str,0,Nas-1, 1,NP[f]);
+			(*eqkfm_aft)[f].allslip_str=d2array(0,L-1,1,NP[f]);
 		}
 		if (is_dip){
-			free_dmatrix((*eqkfm_aft)[f].allslip_dip,0,Nas-1, 1,NP[f]);
-			(*eqkfm_aft)[f].allslip_dip=dmatrix(0,L-1,1,NP[f]);
+			free_d2array((*eqkfm_aft)[f].allslip_dip,0,Nas-1, 1,NP[f]);
+			(*eqkfm_aft)[f].allslip_dip=d2array(0,L-1,1,NP[f]);
 		}
 		if (is_open){
-			free_dmatrix((*eqkfm_aft)[f].allslip_open,0,Nas-1, 1,NP[f]);
-			(*eqkfm_aft)[f].allslip_open=dmatrix(0,L-1,1,NP[f]);
+			free_d2array((*eqkfm_aft)[f].allslip_open,0,Nas-1, 1,NP[f]);
+			(*eqkfm_aft)[f].allslip_open=d2array(0,L-1,1,NP[f]);
 		}
 
-		free_dvector((*eqkfm_aft)[f].tot_slip,0,Nas-1);
-		(*eqkfm_aft)[f].tot_slip=dvector(0,L-1);
+		free_darray((*eqkfm_aft)[f].tot_slip,0,Nas-1);
+		(*eqkfm_aft)[f].tot_slip=darray(0,L-1);
 
 		for (int t=0; t<L; t++){
 			for (int pt=1; pt<=NP[f]; pt++){
@@ -92,14 +93,14 @@ void splines_eqkfm(struct eqkfm **eqkfm_aft, int Nas, int NF, double *times1, do
 		}
 	}
 
-	free_ivector(NP,0,NF-1);
+	free_iarray(NP,0,NF-1);
 
-	free_dmatrix(slipbefore_st,1,NP_tot,1,Nas);
-	free_dmatrix(slip_after_st,1,NP_tot,1,L);
-	free_dmatrix(slipbefore_di,1,NP_tot,1,Nas);
-	free_dmatrix(slip_after_di,1,NP_tot,1,L);
-	free_dmatrix(slipbefore_op,1,NP_tot,1,Nas);
-	free_dmatrix(slip_after_op,1,NP_tot,1,L);
+	free_d2array(slipbefore_st,1,NP_tot,1,Nas);
+	free_d2array(slip_after_st,1,NP_tot,1,L);
+	free_d2array(slipbefore_di,1,NP_tot,1,Nas);
+	free_d2array(slip_after_di,1,NP_tot,1,L);
+	free_d2array(slipbefore_op,1,NP_tot,1,Nas);
+	free_d2array(slip_after_op,1,NP_tot,1,L);
 
 }
 

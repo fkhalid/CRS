@@ -30,7 +30,8 @@
 #include "../seis/soumod1.h"
 #include "../seis/WellsCoppersmith.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "mem_mgmt.h"
 
 void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm *eqkfmAf,

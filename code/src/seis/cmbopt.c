@@ -37,12 +37,12 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 	double sxx, syy, szz, sxy, syz, sxz;
 	double MaxDCFS=DCFS_cap;
 
-	DCFS[ind].st1=dvector(1,DCFS[ind].nsel);
-	DCFS[ind].di1=dvector(1,DCFS[ind].nsel);
-	DCFS[ind].ra1=dvector(1,DCFS[ind].nsel);
-	DCFS[ind].st2=dvector(1,DCFS[ind].nsel);
-	DCFS[ind].di2=dvector(1,DCFS[ind].nsel);
-	DCFS[ind].ra2=dvector(1,DCFS[ind].nsel);
+	DCFS[ind].st1=darray(1,DCFS[ind].nsel);
+	DCFS[ind].di1=darray(1,DCFS[ind].nsel);
+	DCFS[ind].ra1=darray(1,DCFS[ind].nsel);
+	DCFS[ind].st2=darray(1,DCFS[ind].nsel);
+	DCFS[ind].di2=darray(1,DCFS[ind].nsel);
+	DCFS[ind].ra2=darray(1,DCFS[ind].nsel);
 
 	#pragma omp parallel for private(j, sxx, sxy, syy, syz, szz, sxz, cmb1, cmb2, k, ev)
 	for (int i=1; i<=DCFS[ind].nsel; i++){
@@ -77,12 +77,12 @@ void DCFScmbopt(struct pscmp *DCFS, int ind, struct crust crst){
 		if (DCFS[ind].cmb[i]<-MaxDCFS) DCFS[ind].cmb[i]=-MaxDCFS;
 	}
 
-	free_dvector(DCFS[ind].st1,1,DCFS[ind].nsel);
-	free_dvector(DCFS[ind].di1,1,DCFS[ind].nsel);
-	free_dvector(DCFS[ind].ra1,1,DCFS[ind].nsel);
-	free_dvector(DCFS[ind].st2,1,DCFS[ind].nsel);
-	free_dvector(DCFS[ind].di2,1,DCFS[ind].nsel);
-	free_dvector(DCFS[ind].ra2,1,DCFS[ind].nsel);
+	free_darray(DCFS[ind].st1,1,DCFS[ind].nsel);
+	free_darray(DCFS[ind].di1,1,DCFS[ind].nsel);
+	free_darray(DCFS[ind].ra1,1,DCFS[ind].nsel);
+	free_darray(DCFS[ind].st2,1,DCFS[ind].nsel);
+	free_darray(DCFS[ind].di2,1,DCFS[ind].nsel);
+	free_darray(DCFS[ind].ra2,1,DCFS[ind].nsel);
 
 }
 
@@ -106,10 +106,10 @@ void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double s
       double cmb1,cmb2,cmb3,det1,det2,det3,detmax,rmax;
       double *s,**r,**ns,**ts;
 
-      s=dvector(1,3);
-      r=dmatrix(1,3,1,3);
-      ns=dmatrix(1,3,1,2);
-      ts=dmatrix(1,3,1,3);
+      s=darray(1,3);
+      r=d2array(1,3,1,3);
+      ns=d2array(1,3,1,2);
+      ts=d2array(1,3,1,3);
 
       if(sxy==0.0 && syz==0.0 && szx==0.0){
         s[1]=sxx;
@@ -293,9 +293,9 @@ them to the 3. eigenvector as well as to each other*/
         *ra2=swap;
       }
 
-      free_dvector(s,1,3);
-      free_dmatrix(r,1,3,1,3);
-      free_dmatrix(ns,1,3,1,2);
-      free_dmatrix(ts,1,3,1,2);
+      free_darray(s,1,3);
+      free_d2array(r,1,3,1,3);
+      free_d2array(ns,1,3,1,2);
+      free_d2array(ts,1,3,1,2);
       return;
 }

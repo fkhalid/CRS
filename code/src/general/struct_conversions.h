@@ -25,7 +25,8 @@
 
 #include "../defines.h"
 #include "../geom/coord_trafos.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "eqkfm_copy.h"
 #include "mem_mgmt.h"
 

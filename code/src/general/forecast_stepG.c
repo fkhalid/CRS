@@ -107,8 +107,8 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 		firsttimein=0;
 
 		//allocate memory:
-		NeXdum=dvector(1,N);	//todo this and the one below are never deallocated.
-		ReX=dvector(1,N);
+		NeXdum=darray(1,N);	//todo this and the one below are never deallocated.
+		ReX=darray(1,N);
 
 		//----------------------------------------------------------------------------------------------//
 		//					Set up list of earthquakes for each grid point								//
@@ -117,10 +117,10 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 		//create a merged set of events from cat and DCFS; this is needed since the both define calculation time steps.
 		events=union_cats2(cat, DCFS, Neqks, &indices, &Neq);
 
-		which_eqk=imatrix(1,N,0,Neq-1);	//list of earthquakes in each grid point
-		num_eqk=ivector(1,N);	//number of earthquakes in each grid point
-		cat_weights=matrix(1,N,0,Neq-1);	//catalog weights
-		DCFS_whichpt=imatrix(1,N,0,Neq-1);	//grid point index in DCFS elements (since they contain stress field for a selection of pts only)
+		which_eqk=i2array(1,N,0,Neq-1);	//list of earthquakes in each grid point
+		num_eqk=iarray(1,N);	//number of earthquakes in each grid point
+		cat_weights=f2array(1,N,0,Neq-1);	//catalog weights
+		DCFS_whichpt=i2array(1,N,0,Neq-1);	//grid point index in DCFS elements (since they contain stress field for a selection of pts only)
 
 		for (int n=1; n<=N; n++) num_eqk[n]=0;
 
@@ -154,12 +154,12 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 
 		//calculate time step duration:
 		if (NTS!=0){
-			dt=dvector(0,NTS-1);
+			dt=darray(0,NTS-1);
 			for (int g=0; g<NTS; g++) dt[g]=times[g+1]-times[g];
 		}
 
 		//find last time step before each earthquake:
-		TS_eqk=ivector(0,Neq-1);
+		TS_eqk=iarray(0,Neq-1);
 		for (int i=0; i<Neq; i++){
 			if (NTS==0) TS_eqk[i]=1;	//this will make t_pre be correct later (j0<NTS condition).
 			else{
@@ -218,7 +218,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
   }
 
   //Rprivate is used for parallelization (a barrier creates a bottleneck and poor performance):
-  Rprivate=dmatrix(0,nthreadstot-1, 0, cat.Z);
+  Rprivate=d2array(0,nthreadstot-1, 0, cat.Z);
   for (int t=0; t<omp_get_max_threads(); t++){
 	  for (int eq=0; eq<=cat.Z; eq++) Rprivate[t][eq]=0.0;
   }
@@ -230,8 +230,8 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
     if (NeT) NeT[i]=0.0;
   }
 
-  NeTprivate=dmatrix(0,nthreadstot-1, 0, nts-1);
-  ReTprivate=dmatrix(0,nthreadstot-1, 0, nts-1);
+  NeTprivate=d2array(0,nthreadstot-1, 0, nts-1);
+  ReTprivate=d2array(0,nthreadstot-1, 0, nts-1);
   for (int t=0; t<omp_get_max_threads(); t++){
 	  if (NeT) for (int i=0; i<nts; i++) NeTprivate[t][i]=0.0;
 	  if (ReT) for (int i=0; i<nts; i++) ReTprivate[t][i]=0.0;
@@ -405,9 +405,9 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 	  }
   }
 
-  free_dmatrix(Rprivate,0,nthreadstot-1, 0, cat.Z);
-  free_dmatrix(NeTprivate,0,nthreadstot-1, 0, nts-1);
-  free_dmatrix(ReTprivate,0,nthreadstot-1, 0, nts-1);
+  free_d2array(Rprivate,0,nthreadstot-1, 0, cat.Z);
+  free_d2array(NeTprivate,0,nthreadstot-1, 0, nts-1);
+  free_d2array(ReTprivate,0,nthreadstot-1, 0, nts-1);
   return(errtot);
 
 }

@@ -28,7 +28,8 @@
 #include "../geom/coord_trafos.h"
 #include "../geom/find_gridpoints.h"
 #include "../seis/WellsCoppersmith.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "../general/eqkfm_copy.h"
 #include "read_matrix.h"
 

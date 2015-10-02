@@ -25,6 +25,7 @@
 #endif /* ROOTS3_H_ */
 
 #include <math.h>
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 void roots3(double b, double c, double d, double *x);

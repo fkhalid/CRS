@@ -41,13 +41,13 @@ int *decluster_catalog(struct catalog cat, double Mmain, double **weights, int d
  */
 
 	double D, T, d, *tnow, *time_missing, dt;
-	int *sel=ivector(1,cat.Z);
+	int *sel=iarray(1,cat.Z);
 	for (int i=1; i<=cat.Z; i++) sel[i]=1;
 
 	if (weights){
-		tnow=dvector(1,cat.Z);
-		time_missing=dvector(1,cat.Z);
-		if (!(*weights)) *weights=dvector(1,cat.Z);
+		tnow=darray(1,cat.Z);
+		time_missing=darray(1,cat.Z);
+		if (!(*weights)) *weights=darray(1,cat.Z);
 		for (int p=1; p<=cat.Z; p++) {
 			tnow[p]=cat.tstart;
 		}
@@ -89,8 +89,8 @@ int *decluster_catalog(struct catalog cat, double Mmain, double **weights, int d
 		// may be too small to extend the seismicity to the entire period. Therefore the rescaling factor is capped to 10.0
 		// (i.e. 90% of the time period is removed by declustering).
 		for (int i=1; i<=cat.Z; i++) (*weights)[i]= (sel[i]==0)? 0.0 : fmin((cat.tend-cat.tstart)/(cat.tend-cat.tstart-time_missing[i]),10.0);
-		free_dvector(time_missing, 1, cat.Z);
-		free_dvector(tnow, 1, cat.Z);
+		free_darray(time_missing, 1, cat.Z);
+		free_darray(tnow, 1, cat.Z);
 	}
 	return sel;
 }

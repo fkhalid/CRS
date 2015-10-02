@@ -27,7 +27,8 @@
 #include <stddef.h>
 #include "../defines.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 void prestress(double s1, double s2, double s3, double strike, double dip, double rake, double p,double f, double ***s){
 /*
@@ -51,7 +52,7 @@ void prestress(double s1, double s2, double s3, double strike, double dip, doubl
       double  ns[3],ts[3],rst[3],rdi[3];
       double  sig[3],rot[3][3];
 
-      *s=dmatrix(1,3,1,3);	//TODO deallocate at the end
+      *s=d2array(1,3,1,3);	//TODO deallocate at the end
       if(s1==0.0 && s2==0.0 && s3==0.0) return;
 
       cmb1=0.5*fabs(s2-s3)*sqrt(1+f*f)+f*(0.5*(s2+s3)+p);
@@ -132,9 +133,9 @@ double **prestress_eigen(double *s, double *str, double *dip){
 
 	double **Q, **QT, **L, **S, **ST;
 
-	Q=dmatrix(1,3,1,3);
-	QT=dmatrix(1,3,1,3);
-	L=dmatrix(1,3,1,3);
+	Q=d2array(1,3,1,3);
+	QT=d2array(1,3,1,3);
+	L=d2array(1,3,1,3);
 
 	for (int i=1; i<=3; i++){
 		for (int j=1; j<=3; j++){
@@ -150,7 +151,7 @@ double **prestress_eigen(double *s, double *str, double *dip){
 	}
 
 	S=mtimesm3(ST=mtimesm3(Q, L, NULL), QT, NULL);
-	free_dmatrix(ST, 1,3,1,3);
+	free_d2array(ST, 1,3,1,3);
 	return S;
 
 }

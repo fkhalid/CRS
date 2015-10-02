@@ -23,7 +23,8 @@
 
 #include "../defines.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, double y, double x, double SD, double Depth, double SDd, int cut_sd, int *ngridj, int **ngridpointj, double **weightsj, int inside, int d3);
 int find_gridpoints_d(double *ys, double *xs, double *depths, int *already_selected, int Nsel0, int N, double y_eq, double x_eq, double Depth, double m, double dDCFS, int *ngridj, int **ngridpointj);

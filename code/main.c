@@ -38,7 +38,8 @@
 #include "src/seis/GR.h"
 #include "src/util/error.h"
 #include "src/util/moreutil.h"
-#include "nrutil.h"
+
+#include "src/util/nrutil_newnames.h"
 
 #ifdef _CRS_MPI
 	#include "mpi.h"
@@ -592,14 +593,14 @@ int main (int argc, char **argv) {
 	print_screen("Setting up variables needed for grid search...");
 
 	if (LLinversion && forecast &&  tendLL<=Tstart) {
-		gammas_new=dmatrix(1,Nsur,1,NgridT);
-		gammas_maxLL=dmatrix(1,Nsur,1,NgridT);
+		gammas_new=d2array(1,Nsur,1,NgridT);
+		gammas_maxLL=d2array(1,Nsur,1,NgridT);
 	}
 
-	LLs=dvector(1,(1+nAsig)*(1+nta));
-	Ldums0=dvector(1,(1+nAsig)*(1+nta));
-	Nev=dvector(1,(1+nAsig)*(1+nta));
-	I=dvector(1,(1+nAsig)*(1+nta));
+	LLs=darray(1,(1+nAsig)*(1+nta));
+	Ldums0=darray(1,(1+nAsig)*(1+nta));
+	Nev=darray(1,(1+nAsig)*(1+nta));
+	I=darray(1,(1+nAsig)*(1+nta));
 
 	dAsig=(nAsig==0)? 0.0 : (asig_log_step ? pow(Asig_max/Asig_min, (1.0/nta)): (Asig_max-Asig_min)/nAsig);	//first case to avoid 0/0 later.
 	dta=(nta==0)? 0.0 : ( ta_log_step ? pow(ta_max/ta_min, (1.0/nta)) : (ta_max-ta_min)/nta);
@@ -671,7 +672,7 @@ int main (int argc, char **argv) {
 	if (forecast){
 		crst.GRmags=assign_GRnorm(crst.mags, crst.nmags, cat.b, 1);
 		Ntts=ceil((Tend-Tstart)/fore_dt);
-		tts=dvector(0,Ntts);
+		tts=darray(0,Ntts);
 		tts[0]=Tstart;
 		for (int t=1; t<=Ntts; t++) tts[t]=Tstart+fore_dt*t;
 	}
@@ -701,7 +702,7 @@ int main (int argc, char **argv) {
 	    #endif
 	#endif
 
-	dim=ivector(0,Nco-1);
+	dim=iarray(0,Nco-1);
 	for (int n=0; n<Nco; n++) {
 		if (eqkfm_co[nf].parent_set_of_models->Nmod) slipmodel_combinations*=eqkfm_co[nf].parent_set_of_models->Nmod;
 		dim[n]=MAX(eqkfm_co[nf].parent_set_of_models->Nmod, 1);

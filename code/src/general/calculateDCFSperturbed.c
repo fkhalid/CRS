@@ -32,7 +32,8 @@
 #include "../seis/cmbopt.h"
 #include "../util/error.h"
 #include "../util/moreutil.h"
-#include "../util/ran1.h"
+//#include "../util/ran1.h"
+#include "../util/nrutil_newnames.h"
 #include "mem_mgmt.h"
 
 #ifdef _CRS_MPI
@@ -135,10 +136,10 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 		//-----calculate neighbouring points--------//
 
 		if (gridpoints_err==1) {
-			nn=imatrix(1,NgridT,1,6);
+			nn=i2array(1,NgridT,1,6);
 			nearest_neighbours(NgridT, crst.nLat,crst.nLon,crst.nD, nn);
-			interp_DCFS=dmatrix(1,NgridT,1,2);
-			mycmb=dvector(1,NgridT);
+			interp_DCFS=d2array(1,NgridT,1,2);
+			mycmb=darray(1,NgridT);
 		}
 
 
@@ -148,9 +149,9 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			//if vary_recfault==1, receiver fault changes at each MC iteration.
 			if (which_recfault==0) {
 			//different focal mechanisms selected if MC iterations of focal mechanism should be used. However, if which_recfault!=0, a single mechanism should be used (focmec[X][which_recfault]).
-				strike0=dvector(0,crst.nofmzones-1);
-				dip0=dvector(0,crst.nofmzones-1);
-				rake0=dvector(0,crst.nofmzones-1);
+				strike0=darray(0,crst.nofmzones-1);
+				dip0=darray(0,crst.nofmzones-1);
+				rake0=darray(0,crst.nofmzones-1);
 			}
 
 			else {
@@ -188,7 +189,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			nfaults=0;	//counter for eqkfmAf
 
 			if (multisnap) {
-				cmb_cumu=dmatrix(0,NA-1,1,NgridT);
+				cmb_cumu=d2array(0,NA-1,1,NgridT);
 				for (int a=0; a<NA; a++){
 					for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]=0.0;
 				}
@@ -198,7 +199,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 				for (int i=0; i<NTSeff; i++){
 					DCFS_Af[a_ev+i].NF=AllCoeffaft->NF;
-					DCFS_Af[a_ev+i].cmb= dvector(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
+					DCFS_Af[a_ev+i].cmb= darray(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
 					DCFS_Af[a_ev+i].S=d3tensor(1,NgridT,1,3,1,3);
 					DCFS_Af[a_ev+i].nsel=eqkfmAf[nfaults].nsel;
 					DCFS_Af[a_ev+i].which_pts=eqkfmAf[nfaults].selpoints;
@@ -270,8 +271,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 								for (int i=1; i<=NgridT; i++) mycmb[i]=0.0;
 								for (int i=1; i<=DCFS[eq1].nsel; i++) mycmb[DCFS[eq1].which_pts[i]]=DCFS[eq1].cmb[i];
 								interp_nn(NgridT,crst.nLat, crst.nLon, crst.nD, mycmb,interp_DCFS,0,nn);
-								DCFS[eq1].cmb0=dvector(1,DCFS[eq1].nsel);
-								DCFS[eq1].Dcmb=dvector(1,DCFS[eq1].nsel);
+								DCFS[eq1].cmb0=darray(1,DCFS[eq1].nsel);
+								DCFS[eq1].Dcmb=darray(1,DCFS[eq1].nsel);
 								for (int i=1; i<=DCFS[eq1].nsel; i++){
 									DCFS[eq1].cmb0[i]=0.5*(interp_DCFS[DCFS[eq1].which_pts[i]][1]+interp_DCFS[DCFS[eq1].which_pts[i]][2]);
 									DCFS[eq1].Dcmb[i]=fabs(interp_DCFS[DCFS[eq1].which_pts[i]][1]-interp_DCFS[DCFS[eq1].which_pts[i]][2]);
@@ -297,8 +298,8 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							for (int i=1; i<=NgridT; i++) mycmb[i]=0.0;
 							for (int i=1; i<=DCFS[eq1].nsel; i++) mycmb[DCFS[eq1].which_pts[i]]=DCFS[eq1].cmb[i];
 							interp_nn(NgridT,crst.nLat, crst.nLon, crst.nD, mycmb,interp_DCFS,0,nn);
-							DCFS[eq1].cmb0=dvector(1,DCFS[eq1].nsel);
-							DCFS[eq1].Dcmb=dvector(1,DCFS[eq1].nsel);
+							DCFS[eq1].cmb0=darray(1,DCFS[eq1].nsel);
+							DCFS[eq1].Dcmb=darray(1,DCFS[eq1].nsel);
 							for (int i=1; i<=DCFS[eq1].nsel; i++){
 								DCFS[eq1].cmb0[i]=0.5*(interp_DCFS[DCFS[eq1].which_pts[i]][1]+interp_DCFS[DCFS[eq1].which_pts[i]][2]);
 								DCFS[eq1].Dcmb[i]=fabs(interp_DCFS[DCFS[eq1].which_pts[i]][1]-interp_DCFS[DCFS[eq1].which_pts[i]][2]);
@@ -465,8 +466,8 @@ void smoothen_DCFS(struct pscmp DCFS, int nlat, int nlon, int nd, long *seed, in
 	int NgridT=nlat*nlon*nd;
 
 	if (!use_cmb0){
-		mycmb=dvector(1,NgridT);
-		interp_DCFS=dmatrix(1,NgridT,1,2);
+		mycmb=darray(1,NgridT);
+		interp_DCFS=d2array(1,NgridT,1,2);
 		for (int i=1; i<=NgridT; i++) mycmb[i]=0.0;
 		for (int i=1; i<=DCFS.nsel; i++) mycmb[DCFS.which_pts[i]]=DCFS.cmb[i];
 
@@ -479,8 +480,8 @@ void smoothen_DCFS(struct pscmp DCFS, int nlat, int nlon, int nd, long *seed, in
 			DCFS.cmb[i]=randcmb;
 		}
 
-		free_dvector(mycmb,1,NgridT);
-		free_dmatrix(interp_DCFS,1,NgridT,1,2);
+		free_darray(mycmb,1,NgridT);
+		free_d2array(interp_DCFS,1,NgridT,1,2);
 	}
 	else{
 		for (int i=1; i<=DCFS.nsel; i++) {

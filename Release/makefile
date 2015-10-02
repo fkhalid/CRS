@@ -29,19 +29,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: run_mpi_crs
+all: run_crs
 
 # Tool invocations
-run_mpi_crs: $(OBJS) $(USER_OBJS)
+run_crs: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	mpicc -o "run_mpi_crs" $(OBJS) $(USER_OBJS) $(LIBS) -lm -lgomp
+	gcc -o "run_crs" $(OBJS) $(USER_OBJS) $(LIBS) -lm -lgomp
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) run_mpi_crs
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) run_crs
 	-@echo ' '
 
 .PHONY: all clean dependents

@@ -26,7 +26,8 @@
 #include "../defines.h"
 #include "../util/merge.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "../util/splines_eqkfm.h"
 #include "find_timesteps.h"
 #include "lin_interp_eqkfm.h"
@@ -75,7 +76,7 @@ int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *N
 	}
 
 	//allocate memory for times2:
-	*times2=dvector(0,Ltot);
+	*times2=darray(0,Ltot);
 
 	//run again, but fill in times2:
 	offset=1;
@@ -127,7 +128,7 @@ int timesteps_lin(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfa
 	int *lens;	//lengths of time steps lists.
 
 	allts=(double **) malloc((size_t)(NA*sizeof(double*)));
-	lens= ivector(0,NA-1);
+	lens= iarray(0,NA-1);
 
 	//populate array containing all time steps:
 	nfaults=0;
@@ -150,7 +151,7 @@ int timesteps_lin(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *Nfa
 	}
 
 	//two extra elements at the start/end:
-	(*times2)=dvector(0,*L+1);
+	(*times2)=darray(0,*L+1);
 	(*times2)[0]=fmin(t0, times2temp[0])-1e-6;
 	(*times2)[*L+1]=fmax(t1, times2temp[*L-1])+1e-6;
 	copy_vector(times2temp-1, times2, *L);
@@ -293,7 +294,7 @@ int setup_aseismic_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	//calculate combined time steps:
 	timesteps_lin(t0, t1, eqk_aft, NA, Nfaults, L, times2, &allind);
 
-	temp_tevol=dmatrix(1,1,0,*L-1);
+	temp_tevol=d2array(1,1,0,*L-1);
 
 	// Temporal evolution of aseismic slip.//
 	nfaults=0;
@@ -306,7 +307,7 @@ int setup_aseismic_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 		fit_lin(times1, *times2, Nas+1, *L, allind[nev], 1, NULL, temp_tevol);
 
 		//assign tevol arrays:
-		(*eqk_aft)[nfaults].tevol=dvector(0,*L-1);
+		(*eqk_aft)[nfaults].tevol=darray(0,*L-1);
 		for (int i=0; i<*L; i++) (*eqk_aft)[nfaults].tevol[i]=temp_tevol[1][i];
 
 		for (int f=1; f<Nfaults[nev]; f++) {
@@ -316,7 +317,7 @@ int setup_aseismic_single_linear(double t0, double t1, struct eqkfm **eqk_aft,
 	}
 
 
-	free_dmatrix(temp_tevol, 1, 1, 0, *L-1);
+	free_d2array(temp_tevol, 1, 1, 0, *L-1);
 	return(err!=0);
 }
 
@@ -502,7 +503,7 @@ int setup_aseismic_single_log(double t0, double t1, double ts,
 		Teq=(*eqk_aft)[nfaults].t;
 
 		//allocate tevol vector:
-		(*eqk_aft)[nfaults].tevol=dvector(0,*L-1);
+		(*eqk_aft)[nfaults].tevol=darray(0,*L-1);
 
 		norm=log(1+(Tendaft-Teq)/ts);
 		now=0.0;

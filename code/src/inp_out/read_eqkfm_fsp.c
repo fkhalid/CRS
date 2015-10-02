@@ -171,10 +171,10 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 			(*eqfm_out)[0].lat=lat0;
 			(*eqfm_out)[0].lon=lon0;
 
-			(*eqfm_out)[0].pos_d=dvector(1,ndi_nst);
-			(*eqfm_out)[0].pos_s=dvector(1,ndi_nst);
-			(*eqfm_out)[0].slip_str=dvector(1,ndi_nst);
-			(*eqfm_out)[0].slip_dip=dvector(1,ndi_nst);
+			(*eqfm_out)[0].pos_d=darray(1,ndi_nst);
+			(*eqfm_out)[0].pos_s=darray(1,ndi_nst);
+			(*eqfm_out)[0].slip_str=darray(1,ndi_nst);
+			(*eqfm_out)[0].slip_dip=darray(1,ndi_nst);
 			(*eqfm_out)[0].open=NULL;
 
 			// The following function does not implement any data structure bcast.
@@ -230,10 +230,10 @@ int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				//np_di, np_st are also given in the file (Nx, Nz), but only once -> what about models in which each subfault has different no of patches?
 				(*eqfm_out)[f].np_di=(int) ((*eqfm_out)[f].W/dW);
 				(*eqfm_out)[f].np_st=(int) ((*eqfm_out)[f].L/dL);
-				(*eqfm_out)[f].pos_d=dvector(1,ndi_nst);
-				(*eqfm_out)[f].pos_s=dvector(1,ndi_nst);
-				(*eqfm_out)[f].slip_str=dvector(1,ndi_nst);
-				(*eqfm_out)[f].slip_dip=dvector(1,ndi_nst);
+				(*eqfm_out)[f].pos_d=darray(1,ndi_nst);
+				(*eqfm_out)[f].pos_s=darray(1,ndi_nst);
+				(*eqfm_out)[f].slip_str=darray(1,ndi_nst);
+				(*eqfm_out)[f].slip_dip=darray(1,ndi_nst);
 				(*eqfm_out)[f].open=NULL;
 
 				if ((*eqfm_out)[f].np_st*(*eqfm_out)[f].np_di!=ndi_nst){

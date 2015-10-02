@@ -58,7 +58,8 @@
 #include "../util/merge.h"
 #include "../util/moreutil.h"
 //#include "nr.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 char *testfolder="test";
 
@@ -99,12 +100,12 @@ double DCFS_cap=1e7;
 //	FILE *fout;
 //
 //	NL=countline(infile);
-//	data=dmatrix(1,NL,1,1);
+//	data=d2array(1,NL,1,1);
 //
 //	read_matrix(infile, 1, 1, data, NULL);
 //
-//	times_stress=dvector(0,NL+1);
-//	stress=dvector(0,NL);
+//	times_stress=darray(0,NL+1);
+//	stress=darray(0,NL);
 //	for (int t=0; t<=NL; t++) {
 //		times_stress[t]=Delta_t*t;
 //		if (t>0) stress[t]=1e6*data[t][1];
@@ -142,12 +143,12 @@ int test_Flaminia(){
 	printf("Asig=%.3f MPa, ta=%.3f d, taudot=%.3f MPa/d, t_shad~%.3f\n", Asigma*1e-6, ta, taudot_ref*1e-6, (-40E6/Asigma)*ta);
 
 	NL=countline(infile);
-	data=dmatrix(1,NL,1,1);
+	data=d2array(1,NL,1,1);
 
 	read_matrix(infile, 1, 1, data, NULL);
 
-	times_stress=dvector(0,NL+1);
-	stress=dvector(0,NL+1);
+	times_stress=darray(0,NL+1);
+	stress=darray(0,NL+1);
 	for (int t=0; t<=NL; t++) {
 		times_stress[t]=Delta_t*t;
 		if (t>0) stress[t]=-1e6*data[t][1];
@@ -194,9 +195,9 @@ int forecast_simple(double Asig, double ta, double r0, double *stress, double *t
 	double gamma;
 	int ntot=NTS0*Nsub;
 
-	if (ts) *ts=dvector(1,ntot);
-	if (R) *R=dvector(1,ntot);
-	if (N) *N=dvector(1,ntot);
+	if (ts) *ts=darray(1,ntot);
+	if (R) *R=darray(1,ntot);
+	if (N) *N=darray(1,ntot);
 
 	int i=0;
 	for (int n=1; n<=NTS0; n++){
@@ -261,7 +262,7 @@ int test_merge_multiple(){
 
 	for (int n=0; n<5; n++) {
 		tempv=NULL;
-		vs[n]=dvector(0,lens[n]-1);
+		vs[n]=darray(0,lens[n]-1);
 		for (int j=0; j<lens[n]; j++) vs[n][j]=ran1(&seed);
 		mysort((unsigned long)lens[n], vs[n]-1, NULL, &tempv);
 		for (int j=0; j<lens[n]; j++) {
@@ -538,7 +539,7 @@ int test_nth_index(){
 //	}
 //
 //	cat.Mc=Mcut;
-//	crst.GRmags=dvector(1,1);
+//	crst.GRmags=darray(1,1);
 //	crst.GRmags[1]=1.0;
 //	readZMAP(&cat, NULL, NULL, cat_file, crst, reftime, 0.0, 0.0, -1e30, 0.0, 10, 0.0, 0.0, 0.0, 0.0, 0);
 //
@@ -578,7 +579,7 @@ int test_nth_index(){
 //	background_rate(cat_file, &crst, reftime, Mcut, Mmain, -1e30, 1e30,  dR, dZ, ord);
 //
 //	cat.Mc=Mcut;
-//	crst.GRmags=dvector(1,1);
+//	crst.GRmags=darray(1,1);
 //	crst.GRmags[1]=1.0;
 //	readZMAP(&cat, NULL, NULL, cat_file, crst, reftime, 0.0, 0.0, -1e30, 0.0, 10, 0.0, 0.0, 0.0, 0.0, 0);
 //
@@ -635,7 +636,7 @@ int test_nth_index(){
 //	//read_crust(crust_file, fore_file, NULL, &crst, res, 100.0);
 //	cat.Mc=0.0;
 //	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
-//	weights=dvector(1,cat.Z);
+//	weights=darray(1,cat.Z);
 //
 //
 //	//old declustering method (rescales rates after calculating them):
@@ -700,12 +701,12 @@ int test_fit_depth(){
 	cat.Mc=0.0;
 	readZMAP(&cat, NULL, NULL, cat_file, crst, tt, 0.0, 0.0, -1e30, 1e30, 10, 0.0, 0.0, 0.0, 0.0, 0);
 
-	depths=dvector(1,crst.nD);
+	depths=darray(1,crst.nD);
 	for (int i=1; i<=crst.nD; i++) {
 		depths[i]=crst.depth[1+(i-1)*crst.nLat*crst.nLon];
 	}
 
-	verr=dvector(1,cat.Z);
+	verr=darray(1,cat.Z);
 	for (int i=1; i<=cat.Z; i++) verr[i]=10;
 
 	p=fit_depth(depths, crst.ddepth, crst.nD, cat.depths0, verr, NULL, cat.Z);
@@ -779,9 +780,9 @@ int test_Helmstetter(){
 	double *xs, *ys, *rate;
 	double dx=1.0/(1.0*N), dy=dx;
 
-	xs=dvector(1,N3);
-	ys=dvector(1,N3);
-	err=dvector(1,N3);
+	xs=darray(1,N3);
+	ys=darray(1,N3);
+	err=darray(1,N3);
 	for (int i=1; i<=N; i++) {
 		for (int j=1; j<=N; j++) {
 			xs[(i-1)*N+j]=(i-1.0)*dx;
@@ -790,8 +791,8 @@ int test_Helmstetter(){
 		}
 	}
 
-	xe=dvector(1,N);
-	ye=dvector(1,N);
+	xe=darray(1,N);
+	ye=darray(1,N);
 	for (int i=1; i<=N; i++) {
 		xe[i]=ran1(&seed);
 		seed*=1.0;
@@ -838,8 +839,8 @@ int test_all_2ndnearestneighbours(){
 
 	sprintf(fname, "%s/nearest_neighbour_2nd_sparse.dat",testfolder);
 
-	xs=dvector(1,N);
-	ys=dvector(1,N);
+	xs=darray(1,N);
+	ys=darray(1,N);
 
 	for (int i=1; i<=N; i++) {
 		xs[i]=ran1(&seed);
@@ -870,8 +871,8 @@ int test_all_nearestneighbours(){
 
 	sprintf(fname, "%s/nearest_neighbour_sparse.dat",testfolder);
 
-	xs=dvector(1,N);
-	ys=dvector(1,N);
+	xs=darray(1,N);
+	ys=darray(1,N);
 
 	for (int i=1; i<=N; i++) {
 		xs[i]=ran1(&seed);
@@ -907,13 +908,13 @@ int test_find_gridpoints_exact(){
 	double sd=0.001;
 	double xe=0.55, ye=0.55, ze=0;
 
-	xs=dvector(1,N3);
-	ys=dvector(1,N3);
-	zs=dvector(1,N3);
-	dAs=dvector(1,N3);
-	points=ivector(1,N3);
-	weights=dvector(1,N3);
-	weights0=dvector(1,N3);
+	xs=darray(1,N3);
+	ys=darray(1,N3);
+	zs=darray(1,N3);
+	dAs=darray(1,N3);
+	points=iarray(1,N3);
+	weights=darray(1,N3);
+	weights0=darray(1,N3);
 
 	for (int i=1; i<=N; i++) {
 		for (int j=1; j<=N; j++) {
@@ -942,13 +943,13 @@ int test_find_gridpoints_exact(){
 	fclose(fout);
 	fclose(fout0);
 
-	free_dvector(xs, 1, N3);
-	free_dvector(ys, 1, N3);
-	free_dvector(zs, 1, N3);
-	free_dvector(dAs, 1, N3);
-	free_dvector(weights0, 1, N3);
-	free_dvector(weights, 1, N3);
-	free_ivector(points, 1, N3);
+	free_darray(xs, 1, N3);
+	free_darray(ys, 1, N3);
+	free_darray(zs, 1, N3);
+	free_darray(dAs, 1, N3);
+	free_darray(weights0, 1, N3);
+	free_darray(weights, 1, N3);
+	free_iarray(points, 1, N3);
 
 	return 0;
 
@@ -966,10 +967,10 @@ int test_exact_prob(){
 	double **p, p_tot=0;
 	double **p0, p0_tot=0;
 
-	xs=dvector(1,N);
+	xs=darray(1,N);
 	ys=xs;
-	p=dmatrix(1,N,1,N);
-	p0=dmatrix(1,N,1,N);
+	p=d2array(1,N,1,N);
+	p0=d2array(1,N,1,N);
 
 	for (int i=1; i<=N; i++) xs[i]=(i-1.0)*dx;
 
@@ -997,9 +998,9 @@ int test_exact_prob(){
 	fclose(fout);
 	fclose(fout0);
 
-	free_dvector(xs, 1, N);
-	free_dmatrix(p, 1, N,1,N);
-	free_dmatrix(p0, 1, N,1,N);
+	free_darray(xs, 1, N);
+	free_d2array(p, 1, N,1,N);
+	free_d2array(p0, 1, N,1,N);
 
 	return 0;
 
@@ -1056,8 +1057,8 @@ int test_forecast_stepG2_new(){
 	double Asig=15000, ta=10000;
 	double cmb_step=2000000;
 	double *gamma0;
-	double *Nend=dvector(1,n_samples);
-	double *Rend=dvector(1,n_samples);
+	double *Nend=darray(1,n_samples);
+	double *Rend=darray(1,n_samples);
 	double t0=0, t1=100;
 	double dt=(t1-t0)/n_samples;
 	int *points;
@@ -1066,16 +1067,16 @@ int test_forecast_stepG2_new(){
 	double now, curr, prev, norm;	//used for afterslip time evol.
 	FILE *fout;
 
-	points=ivector(1,NP);
+	points=iarray(1,NP);
 	for (int j=1; j<=NP; j++) points[j]=j;
 
 	//find time steps:
-	times_aft=dvector(0,NTS);
+	times_aft=darray(0,NTS);
 	//findtimestepsomori(0.0, t0, t1, 0, 183, cmb_step, dtau, 0.6, 0.001, times_aft+1, NULL, &NTS);
 	times_aft[0]=-1e-4;
 
 	//setup afterslip evolution:
-	cmpdata=dmatrix(0,NTS,1,NP);
+	cmpdata=d2array(0,NTS,1,NP);
 	norm=log(1+(t1-t0)/t_aft);	//normalizing factor.
 	curr=0.0;
 
@@ -1094,13 +1095,13 @@ int test_forecast_stepG2_new(){
 		DCFS[i].m=3.0;
 		DCFS[i].nsel=NP;
 		DCFS[i].which_pts=points;
-		DCFS[i].cmb=dvector(1,NP);
+		DCFS[i].cmb=darray(1,NP);
 		for (int j=1; j<=NP; j++) DCFS[i].cmb[j]=f0*cmb_step;
 	}
 
 	cat.Z=0;
 
-	gamma0=dvector(1,NP);
+	gamma0=darray(1,NP);
 	for (int j=1; j<=NP; j++) gamma0[j]=ta/Asig;
 
 	//uses linear approx. between time steps:
@@ -1147,12 +1148,12 @@ int test_readtxttemplate(){
 int test_pointers(){
 
 	double *a, *b;
-	a=dvector(1,10);
+	a=darray(1,10);
 
 	for (int i=1; i<=10; i++) a[i]=i;
 	b=a;
 
-	a=dvector(1,10);
+	a=darray(1,10);
 
 	for (int i=1; i<=10; i++) a[i]=i*i;
 
@@ -1208,12 +1209,12 @@ int test_allOkada_simple_multiplerec(){
 	double strikes[nofm], dips[nofm], rakes[nofm];
 	time_t time1, time2;
 
-	latgrid=dvector(1,NP);
-	longrid=dvector(1,NP);
-	depgrid=dvector(1,NP);
-	allp=ivector(1,NP);
-	crst.x=dvector(1,NP);
-	crst.y=dvector(1,NP);
+	latgrid=darray(1,NP);
+	longrid=darray(1,NP);
+	depgrid=darray(1,NP);
+	allp=iarray(1,NP);
+	crst.x=darray(1,NP);
+	crst.y=darray(1,NP);
 
 	double strikes0[]={90, 90, 90, 90, 90, 90};
 	double dips0[]={90, 90, 45, 15, 15, 15};
@@ -1242,7 +1243,7 @@ int test_allOkada_simple_multiplerec(){
 	eqfm.whichfm=1;
 
 	dcfs.NF=1;
-	crst.fmzone=ivector(1,NP);
+	crst.fmzone=iarray(1,NP);
 	for (int i=1; i<=NP; i++) crst.fmzone[i]=(int) (nofm-1)*ran1(&seed);
 	crst.nLat=Nlat;
 	crst.nLon=Nlon;
@@ -1284,7 +1285,7 @@ int test_allOkada_simple_multiplerec(){
 		dcfs.which_pts=eqfm.selpoints=allp;
 		printf("%d\n",dcfs.nsel);
 		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
-		dcfs.cmb=dvector(1,dcfs.nsel);
+		dcfs.cmb=darray(1,dcfs.nsel);
 
 		// 1) using okadaDCFS:
 
@@ -1341,10 +1342,10 @@ int test_allOkada_simple_multiplerec(){
 		//sprintf(fname, "%s/okadaCoeff4%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
 
-		free_dvector(dcfs.cmb,1,dcfs.nsel);
+		free_darray(dcfs.cmb,1,dcfs.nsel);
 		free_d3tensor(dcfs.S,1,dcfs.nsel,1,3,1,3);
-		free_f3tensor(coeffs.Coeffs_dip,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
-		free_f3tensor(coeffs.Coeffs_st,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
+		free_f3array(coeffs.Coeffs_dip,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
+		free_f3array(coeffs.Coeffs_st,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
 		free_matrix(resCoeff_st, 1,coeffs.NP, 1, coeffs.NgridT);
 		free_matrix(resCoeff_di, 1,coeffs.NP, 1, coeffs.NgridT);
 	}
@@ -1353,12 +1354,12 @@ int test_allOkada_simple_multiplerec(){
 	time(&time2);
 	printf("Execution time: %.3lf seconds.\n", difftime(time2, time1));
 
-	free_dvector(latgrid,1,NP);
-	free_dvector(longrid,1,NP);
-	free_dvector(depgrid,1,NP);
-	free_dvector(crst.x,1,NP);
-	free_dvector(crst.y,1,NP);
-	free_ivector(allp,1,NP);
+	free_darray(latgrid,1,NP);
+	free_darray(longrid,1,NP);
+	free_darray(depgrid,1,NP);
+	free_darray(crst.x,1,NP);
+	free_darray(crst.y,1,NP);
+	free_iarray(allp,1,NP);
 
 	return 0;
 
@@ -1389,12 +1390,12 @@ int test_allOkada_simple(){
 	double dlat=1.2, dlon=1.2, ddep=4.0;
 	time_t time1, time2;
 
-	latgrid=dvector(1,NP);
-	longrid=dvector(1,NP);
-	depgrid=dvector(1,NP);
-	allp=ivector(1,NP);
-	crst.x=dvector(1,NP);
-	crst.y=dvector(1,NP);
+	latgrid=darray(1,NP);
+	longrid=darray(1,NP);
+	depgrid=darray(1,NP);
+	allp=iarray(1,NP);
+	crst.x=darray(1,NP);
+	crst.y=darray(1,NP);
 
 	double strikes[]={90, 90, 90, 90, 90, 90};
 	double dips[]={90, 90, 45, 15, 15, 15};
@@ -1455,7 +1456,7 @@ int test_allOkada_simple(){
 		dcfs.which_pts=eqfm.selpoints=allp;
 		printf("%d\n",dcfs.nsel);
 		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
-		dcfs.cmb=dvector(1,dcfs.nsel);
+		dcfs.cmb=darray(1,dcfs.nsel);
 
 		// 1) using okadaDCFS:
 
@@ -1507,10 +1508,10 @@ int test_allOkada_simple(){
 		//sprintf(fname, "%s/okadaCoeff4%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
 
-		free_dvector(dcfs.cmb,1,dcfs.nsel);
+		free_darray(dcfs.cmb,1,dcfs.nsel);
 		free_d3tensor(dcfs.S,1,dcfs.nsel,1,3,1,3);
-		free_f3tensor(coeffs.Coeffs_dip,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
-		free_f3tensor(coeffs.Coeffs_st,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
+		free_f3array(coeffs.Coeffs_dip,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
+		free_f3array(coeffs.Coeffs_st,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
 		free_matrix(resCoeff_st, 1,coeffs.NP, 1, coeffs.NgridT);
 		free_matrix(resCoeff_di, 1,coeffs.NP, 1, coeffs.NgridT);
 	}
@@ -1519,12 +1520,12 @@ int test_allOkada_simple(){
 	time(&time2);
 	printf("Execution time: %.3lf seconds.\n", difftime(time2, time1));
 
-	free_dvector(latgrid,1,NP);
-	free_dvector(longrid,1,NP);
-	free_dvector(depgrid,1,NP);
-	free_dvector(crst.x,1,NP);
-	free_dvector(crst.y,1,NP);
-	free_ivector(allp,1,NP);
+	free_darray(latgrid,1,NP);
+	free_darray(longrid,1,NP);
+	free_darray(depgrid,1,NP);
+	free_darray(crst.x,1,NP);
+	free_darray(crst.y,1,NP);
+	free_iarray(allp,1,NP);
 
 	return 0;
 
@@ -1555,12 +1556,12 @@ int test_allOkada(){
 	double dlat=1.2, dlon=1.2, ddep=4.0;
 	time_t time1, time2;
 
-	latgrid=dvector(1,NP);
-	longrid=dvector(1,NP);
-	depgrid=dvector(1,NP);
-	allp=ivector(1,NP);
-	crst.x=dvector(1,NP);
-	crst.y=dvector(1,NP);
+	latgrid=darray(1,NP);
+	longrid=darray(1,NP);
+	depgrid=darray(1,NP);
+	allp=iarray(1,NP);
+	crst.x=darray(1,NP);
+	crst.y=darray(1,NP);
 
 	double strikes[]={90, 90, 90, 90, 90, 90};
 	double dips[]={90, 90, 45, 15, 15, 15};
@@ -1601,8 +1602,8 @@ int test_allOkada(){
 	crst.dlat=dlat/Nlat;
 	crst.dlon=dlon/Nlon;
 	crst.ddepth=ddep/Ndep;
-	crst.x=dvector(1,NP);
-	crst.y=dvector(1,NP);
+	crst.x=darray(1,NP);
+	crst.y=darray(1,NP);
 	for (int i=1; i<=NP; i++) latlon2localcartesian(latgrid[i], longrid[i], lat0, lon0, crst.y+i, crst.x+i);
 	latlon2localcartesian(eqfm.lat, eqfm.lon, crst.lat0, crst.lon0, &(eqfm.y), &(eqfm.x));
 
@@ -1627,7 +1628,7 @@ int test_allOkada(){
 		dcfs.which_pts=eqfm.selpoints;
 		printf("%d\n",dcfs.nsel);
 		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
-		dcfs.cmb=dvector(1,dcfs.nsel);
+		dcfs.cmb=darray(1,dcfs.nsel);
 		sprintf(fname, "%s/okada/slipmodel%d.dat",testfolder, n);
 		//print_slipmodel(fname, &eqfm, 1);
 
@@ -1683,11 +1684,11 @@ int test_allOkada(){
 		sprintf(fname, "%s/okada/okadaCoeff_fix_B%d.dat",testfolder, n);
 		print_grid(fname, dcfs, crst, NULL);
 
-		free_dvector(dcfs.cmb,1,dcfs.nsel);
-		free_ivector(dcfs.which_pts,1,dcfs.nsel);
+		free_darray(dcfs.cmb,1,dcfs.nsel);
+		free_iarray(dcfs.which_pts,1,dcfs.nsel);
 		free_d3tensor(dcfs.S,1,dcfs.nsel,1,3,1,3);
-		free_f3tensor(coeffs.Coeffs_dip,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
-		free_f3tensor(coeffs.Coeffs_st,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
+		free_f3array(coeffs.Coeffs_dip,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
+		free_f3array(coeffs.Coeffs_st,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
 		free_matrix(resCoeff_st, 1,coeffs.NP, 1, coeffs.NgridT);
 		free_matrix(resCoeff_di, 1,coeffs.NP, 1, coeffs.NgridT);
 
@@ -1698,12 +1699,12 @@ int test_allOkada(){
 	time(&time2);
 	printf("Execution time: %.3lf seconds.\n", difftime(time2, time1));
 
-	free_dvector(latgrid,1,NP);
-	free_dvector(longrid,1,NP);
-	free_dvector(depgrid,1,NP);
-	free_dvector(crst.x,1,NP);
-	free_dvector(crst.y,1,NP);
-	free_ivector(allp,1,NP);
+	free_darray(latgrid,1,NP);
+	free_darray(longrid,1,NP);
+	free_darray(depgrid,1,NP);
+	free_darray(crst.x,1,NP);
+	free_darray(crst.y,1,NP);
+	free_iarray(allp,1,NP);
 
 	return 0;
 
@@ -1778,7 +1779,7 @@ int test_latlon2localcartesian(){
 //		for (int p=1; p<=NP; p++) fprintf(fout1, "%lf\t%lf\t%lf\t%lf\n", lats[p], lons[p], deps[p], d[p]);
 //		fclose(fout1);
 //
-//		free_dvector(d,1,NP);
+//		free_darray(d,1,NP);
 //	}
 //
 //	printf("done.\n");
@@ -1939,7 +1940,7 @@ int test_matrix(){
 	int j;
 	double cmb, st1, st2, di1, di2, ra1, ra2;
 
-	sigma=dvector(0,2);
+	sigma=darray(0,2);
 	v=matrix(1,3,1,3);
 	Sf=matrix(1,3,1,3);
 	S=prestress_eigen(s, st, di);
@@ -2151,7 +2152,7 @@ int test_Mc_maxcurv(){
 
 	r=countline(inputfile)+1;
 
-	data=dmatrix(1,c,1,r);
+	data=d2array(1,c,1,r);
 	mags=data[6];
 	read_matrix(inputfile, c, 0, data, &r);
 
@@ -2186,8 +2187,8 @@ int test_Mc_maxcurv(){
 //
 //	read_xmltemplate(inputfile, NULL, NULL, NULL, &nobins, &Minf, &crst, &m0, &m1);
 //
-//	rates=dvector(1,crst.N_allP);
-//	GR=dvector(1,nobins);
+//	rates=darray(1,crst.N_allP);
+//	GR=darray(1,nobins);
 //
 //	for (int i=1; i<=crst.N_allP; i++) rates[i]=10.0*i;
 //	for (int i=1; i<=nobins; i++) GR[i]=(double)i;
@@ -2214,10 +2215,10 @@ void test_convertgeometry(){
 	//broken (no crust_file anymore)
 	//read_crust("input/inCan.dat", "input/darf_temp.txt", NULL, &cr, 3.0,5.0);
 	d=pscmp_arrayinit(cr, 0,0);	//used for output.
-	d[0].which_pts=ivector(1,cr.N_allP);
+	d[0].which_pts=iarray(1,cr.N_allP);
 
-	o=dvector(1,cr.N_allP);
-	n1=dvector(1,cr.N_allP);
+	o=darray(1,cr.N_allP);
+	n1=darray(1,cr.N_allP);
 
 	nsub[0]=cr.nLat/cr.nLat_out;
 	nsub[1]=cr.nLon/cr.nLon_out;
@@ -2245,9 +2246,9 @@ void test_convertgeometry(){
 	cr1.nLat=cr.nLat_out;
 	cr1.nLon=cr.nLon_out;
 	cr1.N_allP=cr.nLat_out*cr.nLon_out*cr.nD_out;
-	cr1.lat=dvector(1,cr1.N_allP);
-	cr1.lon=dvector(1,cr1.N_allP);
-	cr1.depth=dvector(1,cr1.N_allP);
+	cr1.lat=darray(1,cr1.N_allP);
+	cr1.lon=darray(1,cr1.N_allP);
+	cr1.depth=darray(1,cr1.N_allP);
 	cr1.dlat=cr.dlat_out;
 	cr1.dlon=cr.dlon_out;
 	cr1.ddepth=cr.ddepth_out;
@@ -2265,7 +2266,7 @@ void test_convertgeometry(){
 
 	d1=pscmp_arrayinit(cr1, 0,0);
 	d1[0].nsel=cr1.N_allP;
-	d1[0].which_pts=ivector(1,cr1.N_allP);
+	d1[0].which_pts=iarray(1,cr1.N_allP);
 	for (int i=1; i<=cr1.N_allP; i++) d1[0].which_pts[i]=i;
 
 	sprintf(fname, "%s/new_grid2910.dat", testfolder);
@@ -2314,13 +2315,13 @@ int testspeed_coeff(){
 	ndep=(int) -(Ddep/ddep);
 
 	eqkfm0.nsel=nlat*nlon*ndep;
-	eqkfm0.selpoints=ivector(1,eqkfm0.nsel);
+	eqkfm0.selpoints=iarray(1,eqkfm0.nsel);
 	for (int i=1; i<=eqkfm0.nsel; i++) eqkfm0.selpoints[i]=i;
 
 
-	lats=dvector(1,nlat*nlon*ndep);
-	lons=dvector(1,nlat*nlon*ndep);
-	deps=dvector(1,nlat*nlon*ndep);
+	lats=darray(1,nlat*nlon*ndep);
+	lons=darray(1,nlat*nlon*ndep);
+	deps=darray(1,nlat*nlon*ndep);
 
 	for (int d=1; d<=ndep; d++)	{
 		for (int lo=1; lo<=nlon; lo++){
@@ -2527,8 +2528,8 @@ void tests_eqkfm_addslipmodels(){
 	all_slipmodels.mmain=mmain2;
 	all_slipmodels.Nfaults=Nfaults2;
 	all_slipmodels.NSM=5;
-	all_slipmodels.no_slipmodels=ivector(0,all_slipmodels.NSM-1);
-	all_slipmodels.disc=dvector(0,all_slipmodels.NSM-1);
+	all_slipmodels.no_slipmodels=iarray(0,all_slipmodels.NSM-1);
+	all_slipmodels.disc=darray(0,all_slipmodels.NSM-1);
 	all_slipmodels.slipmodels=	malloc((all_slipmodels.NSM-1) * sizeof(char*));
 	for (int nn=0; nn<all_slipmodels.NSM; nn++) {
 		all_slipmodels.slipmodels[nn] = malloc(120 * sizeof(char));

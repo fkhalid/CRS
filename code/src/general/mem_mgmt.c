@@ -26,8 +26,9 @@
 
 #include "../defines.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
-#include "nrutil.c"
+
+#include "../util/nrutil_newnames.h"
+//#include "nrutil.c"
 
 void reduce_eqkfm_memory(struct eqkfm *eqkfm0, int NF){
 /* Frees empty arrays in eqkfm0 structure.
@@ -48,15 +49,15 @@ void reduce_eqkfm_memory(struct eqkfm *eqkfm0, int NF){
 		//free memory if elements are all 0.
 		if (is_str==0){
 			//if condition needed since the element may have been freed before:
-			if (eqkfm0[nf].slip_str) free_dvector(eqkfm0[nf].slip_str,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			if (eqkfm0[nf].slip_str) free_darray(eqkfm0[nf].slip_str,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			eqkfm0[nf].slip_str=NULL;
 		}
 		if (is_dip==0){
-			if (eqkfm0[nf].slip_dip) free_dvector(eqkfm0[nf].slip_dip,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			if (eqkfm0[nf].slip_dip) free_darray(eqkfm0[nf].slip_dip,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			eqkfm0[nf].slip_dip=NULL;
 		}
 		if (is_open==0){
-			if (eqkfm0[nf].open) free_dvector(eqkfm0[nf].open,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			if (eqkfm0[nf].open) free_darray(eqkfm0[nf].open,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			eqkfm0[nf].open=NULL;
 		}
 	}
@@ -97,9 +98,9 @@ void init_crst(struct crust *crst){
 	(*crst).lon_out=NULL;
 	(*crst).depth_out=NULL;
 	(*crst).dAgrid=NULL;
-	(*crst).str0=dvector(0,0);
-	(*crst).dip0=dvector(0,0);
-	(*crst).rake0=dvector(0,0);
+	(*crst).str0=darray(0,0);
+	(*crst).dip0=darray(0,0);
+	(*crst).rake0=darray(0,0);
 	(*crst).x=NULL;
 	(*crst).y=NULL;
 	(*crst).rate0=NULL;
@@ -116,19 +117,19 @@ void init_cat1(struct catalog *cat, int Zsel){
 /* Initialize variables in catalog structure to default values. */
 
 	(*cat).Z=Zsel;
-	(*cat).t = dvector(1, Zsel);
-	(*cat).mag = dvector(1, Zsel);
-	(*cat).lat0 = dvector(1, Zsel);
-	(*cat).lon0 = dvector(1, Zsel);
-	(*cat).x0 = dvector(1, Zsel);
-	(*cat).y0 = dvector(1, Zsel);
-	(*cat).depths0 = dvector(1, Zsel);
-	(*cat).err = dvector(1, Zsel);
-	(*cat).verr = dvector(1, Zsel);
-	(*cat).ngrid = ivector(1, Zsel);
+	(*cat).t = darray(1, Zsel);
+	(*cat).mag = darray(1, Zsel);
+	(*cat).lat0 = darray(1, Zsel);
+	(*cat).lon0 = darray(1, Zsel);
+	(*cat).x0 = darray(1, Zsel);
+	(*cat).y0 = darray(1, Zsel);
+	(*cat).depths0 = darray(1, Zsel);
+	(*cat).err = darray(1, Zsel);
+	(*cat).verr = darray(1, Zsel);
+	(*cat).ngrid = iarray(1, Zsel);
 	//just allocate first level since subarrays may have different length (and will be initialized later).
-	(*cat).ngridpoints=imatrix_firstlevel(Zsel);
-	(*cat).weights=dmatrix_firstlevel(Zsel);
+	(*cat).ngridpoints=i2array_firstlevel(Zsel);
+	(*cat).weights=d2array_firstlevel(Zsel);
 	(*cat).b=1.0;
 
 }
@@ -159,7 +160,7 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 		v[i].lon=0;
 		v[i].depth=0;
 		v[i].mag=0;
-		v[i].tot_slip=dvector(0,0);	//only need one element for earthquake sources, will reallocate for afterslip.
+		v[i].tot_slip=darray(0,0);	//only need one element for earthquake sources, will reallocate for afterslip.
 		v[i].L=0;
 		v[i].W=0;
 		v[i].str1=0;
@@ -235,18 +236,18 @@ void free_eqkfmarray(struct eqkfm *v, long n1, long n2){
 void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
 
 	for (int f=n1; f<=n2; f++){
-		if (v[f].tot_slip) free_dvector(v[f].tot_slip,0,0);
-		if (v[f].distance) free_dvector(v[f].distance,1,0);
-		if (v[f].pos_s) free_dvector(v[f].pos_s,1,0);
-		if (v[f].pos_d) free_dvector(v[f].pos_d,1,0);
-		if (v[f].slip_str) free_dvector(v[f].slip_str,1,0);
-		if (v[f].slip_dip) free_dvector(v[f].slip_dip,1,0);
-		if (v[f].open) free_dvector(v[f].open,1,0);
-		if (v[f].ts) free_dvector(v[f].ts,0,0);
-		if (v[f].tevol) free_dvector(v[f].tevol,0,0);
-		if (v[f].allslip_str) free_dmatrix(v[f].allslip_str,0,0,1,0);
-		if (v[f].allslip_dip) free_dmatrix(v[f].allslip_dip,0,0,1,0);
-		if (v[f].allslip_open) free_dmatrix(v[f].allslip_open,0,0,1,0);
+		if (v[f].tot_slip) free_darray(v[f].tot_slip,0,0);
+		if (v[f].distance) free_darray(v[f].distance,1,0);
+		if (v[f].pos_s) free_darray(v[f].pos_s,1,0);
+		if (v[f].pos_d) free_darray(v[f].pos_d,1,0);
+		if (v[f].slip_str) free_darray(v[f].slip_str,1,0);
+		if (v[f].slip_dip) free_darray(v[f].slip_dip,1,0);
+		if (v[f].open) free_darray(v[f].open,1,0);
+		if (v[f].ts) free_darray(v[f].ts,0,0);
+		if (v[f].tevol) free_darray(v[f].tevol,0,0);
+		if (v[f].allslip_str) free_d2array(v[f].allslip_str,0,0,1,0);
+		if (v[f].allslip_dip) free_d2array(v[f].allslip_dip,0,0,1,0);
+		if (v[f].allslip_open) free_d2array(v[f].allslip_open,0,0,1,0);
 
 	}
 }
@@ -256,15 +257,15 @@ void free_cat(struct catalog cat){
  */
 
 	//assumes that elements have been initialized at position 1.
-	free_dvector(cat.t,1, 0);
-	free_dvector(cat.mag,1, 0);
-	free_dvector(cat.lat0,1, 0);
-	free_dvector(cat.lon0,1, 0);
-	free_dvector(cat.x0,1, 0);
-	free_dvector(cat.y0,1, 0);
-	free_dvector(cat.depths0,1, 0);
-	free_ivector(cat.ngrid,1, 0);
-	free_imatrix_firstlevel(cat.ngridpoints,1,cat.Z,1,0); //uses 0 for upper index, since it doesn't matter (check nrutil.c).
-	free_dmatrix_firstlevel(cat.weights,1,cat.Z, 1,0);
+	free_darray(cat.t,1, 0);
+	free_darray(cat.mag,1, 0);
+	free_darray(cat.lat0,1, 0);
+	free_darray(cat.lon0,1, 0);
+	free_darray(cat.x0,1, 0);
+	free_darray(cat.y0,1, 0);
+	free_darray(cat.depths0,1, 0);
+	free_iarray(cat.ngrid,1, 0);
+	free_i2array_firstlevel(cat.ngridpoints,1,cat.Z,1,0); //uses 0 for upper index, since it doesn't matter (check nrutil.c).
+	free_d2array_firstlevel(cat.weights,1,cat.Z, 1,0);
 }
 

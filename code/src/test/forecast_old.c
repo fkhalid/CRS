@@ -82,16 +82,16 @@ int forecast_stepG2_old(struct catalog cat, double *times, double **cmpdata, str
 		firsttimein=0;
 		//todo: use previous information to match DCFS and cat.
 		events=union_cats(cat.t+1, timesfrompscmp(DCFS,Neqks), cat.mag+1, magsfrompscmp(DCFS,Neqks), cat.Z, Neqks, 0.001, 0.3, &indices, &Neq);	//todo parameters should not be hardwired.
-		NeXdum=dvector(1,N);
-		ReX=dvector(1,N);
+		NeXdum=darray(1,N);
+		ReX=darray(1,N);
 
 		//list of all events, total no. of events affecting each point (Neq: from combining DCFS and cat).
-		which_eqk=imatrix(1,N,0,Neq-1);
-		num_eqk=ivector(1,N);
+		which_eqk=i2array(1,N,0,Neq-1);
+		num_eqk=iarray(1,N);
 		cat_weights=matrix(1,N,0,Neq-1);
-		DCFS_whichpt=imatrix(1,N,0,Neq-1);
-		dt=dvector(0,NTS-1);
-		TS_eqk=ivector(0,Neq-1);
+		DCFS_whichpt=i2array(1,N,0,Neq-1);
+		dt=darray(0,NTS-1);
+		TS_eqk=iarray(0,Neq-1);
 
 		for (int n=1; n<=N; n++) num_eqk[n]=0;
 
@@ -183,7 +183,7 @@ int forecast_stepG2_old(struct catalog cat, double *times, double **cmpdata, str
   if (Rate_end) *Rate_end=0;
 
 
-  Rprivate=dmatrix(0,nthreadstot-1, 0, cat.Z);
+  Rprivate=d2array(0,nthreadstot-1, 0, cat.Z);
   for (int t=0; t<omp_get_max_threads(); t++){
 	  for (int eq=0; eq<=cat.Z; eq++) Rprivate[t][eq]=0.0;
   }
@@ -289,7 +289,7 @@ int forecast_stepG2_old(struct catalog cat, double *times, double **cmpdata, str
 	  if (Rate_end) *Rate_end+=ReX[m];
   }
 
-  free_dmatrix(Rprivate,0,nthreadstot-1, 0, cat.Z);
+  free_d2array(Rprivate,0,nthreadstot-1, 0, cat.Z);
   return(errtot);
 
 }

@@ -28,7 +28,8 @@
 
 #include "../defines.h"
 #include "../util/error.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 #ifdef _CRS_MPI
 	#include "mpi.h"
@@ -658,14 +659,22 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			MPI_Bcast(&((*allslipmodels).cmb_format), 120, MPI_CHAR, 0, MPI_COMM_WORLD);
 		#endif
 
+		#ifdef _no_numerical_recipes
+		    if (aseismic_splines){
+			print_logfile(" Error: can not use splines if Numerical Recipes source code is not available.");
+			print_screen(" Error: can not use splines if Numerical Recipes source code is not available.");
+			return(1);
+		    }
+		#endif
+
 		(*allslipmodels).NSM=Nm0;
 		(*allslipmodels).is_aseismic=is_aseismic;
-		(*allslipmodels).tmain= dvector(0,Nm0-1);	//-1 element to store mainshock time (when aseismic slip starts).
-		(*allslipmodels).mmain= (is_aseismic)? NULL : dvector(0,Nm0-1);
-		(*allslipmodels).cut_surf=ivector(0,Nm0-1);
-		(*allslipmodels).disc=dvector(0,Nm0-1);
-		(*allslipmodels).Nfaults=ivector(0,Nm0-1);
-		(*allslipmodels).no_slipmodels=ivector(0,Nm0-1);
+		(*allslipmodels).tmain= darray(0,Nm0-1);	//-1 element to store mainshock time (when aseismic slip starts).
+		(*allslipmodels).mmain= (is_aseismic)? NULL : darray(0,Nm0-1);
+		(*allslipmodels).cut_surf=iarray(0,Nm0-1);
+		(*allslipmodels).disc=darray(0,Nm0-1);
+		(*allslipmodels).Nfaults=iarray(0,Nm0-1);
+		(*allslipmodels).no_slipmodels=iarray(0,Nm0-1);
 		(*allslipmodels).slipmodels = malloc(Nm0*sizeof(char*));
 		(*allslipmodels).tsnap= NULL;	// will allocate if needed later on.
 		nsm=0;

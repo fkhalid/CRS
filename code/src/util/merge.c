@@ -20,7 +20,8 @@
 
 #include <stddef.h>
 
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "merge.h"
 #include "../defines.h"
 
@@ -46,8 +47,8 @@ void merge_multiple(double **vs, int *lens, int N, double **sorted, int *len_fin
 	 lenmax=MAX(lenmax,lens[n]);
  }
 
- if (indices && !(*indices)) *indices=imatrix(0,N-1,0,lenmax-1);
- if (sorted && !(*sorted)) *sorted=dvector(0,lentot-1);
+ if (indices && !(*indices)) *indices=i2array(0,N-1,0,lenmax-1);
+ if (sorted && !(*sorted)) *sorted=darray(0,lentot-1);
 
 
  if (N==1){	//a single episode
@@ -58,11 +59,11 @@ void merge_multiple(double **vs, int *lens, int N, double **sorted, int *len_fin
  }
 
 
- indbool=imatrix(0,N-1,0,lentot-1);
- tempsorted1= (sorted)? *sorted : dvector(0,lentot-1);
- tempsorted0= dvector(0,lentot-1);
- tempind=imatrix(0,N-1,0,lentot-1);
- tempind2=imatrix(0,N-1,0,lentot-1);
+ indbool=i2array(0,N-1,0,lentot-1);
+ tempsorted1= (sorted)? *sorted : darray(0,lentot-1);
+ tempsorted0= darray(0,lentot-1);
+ tempind=i2array(0,N-1,0,lentot-1);
+ tempind2=i2array(0,N-1,0,lentot-1);
 
  templen=0;	//length of temporary array.
  for (int n=0; n<N; n++) {
@@ -115,9 +116,9 @@ void merge_multiple(double **vs, int *lens, int N, double **sorted, int *len_fin
 
 
  }
- free_dvector(tempsorted0,0,lentot-1);
- free_imatrix(tempind,0,N-1,0,lentot-1);
- free_imatrix(tempind2,0,N-1,0,lentot-1);
+ free_darray(tempsorted0,0,lentot-1);
+ free_i2array(tempind,0,N-1,0,lentot-1);
+ free_i2array(tempind2,0,N-1,0,lentot-1);
 
 }
 
@@ -131,9 +132,9 @@ void merge(double a[], int m, double b[], int n, double **sorted, int **ai, int 
   int i, j, k;
 
   //allocate arrays if needed:
-  if (!(*sorted)) *sorted=dvector(0,m+n-1);
-  if (ai && !(*ai)) *ai=ivector(0,m+n-1);
-  if (bi && !(*bi)) *bi=ivector(0,m+n-1);
+  if (!(*sorted)) *sorted=darray(0,m+n-1);
+  if (ai && !(*ai)) *ai=iarray(0,m+n-1);
+  if (bi && !(*bi)) *bi=iarray(0,m+n-1);
 
   j = k = 0;
 

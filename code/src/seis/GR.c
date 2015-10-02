@@ -37,12 +37,12 @@ double *assign_GRnorm(double *mags, int N, double b, int Minf){
 	double a=1;	//doesn't matter since weights are normalized.
 
 	if (N==1) {
-		weights=dvector(1,1);
+		weights=darray(1,1);
 		weights[1]=1;
 	}
 
 	else {
-		weights=dvector(1,N);
+		weights=darray(1,N);
 		dm=mags[2]-mags[1];
 		mmin=mags[1]-0.5*dm;
 		mmax=mags[N]+0.5*dm;
@@ -72,7 +72,7 @@ double Mc_maxcurv(double *mags, int N){
 	double *mags2;
 	int Nbin=floor(sqrt(N)), ind;
 
-	mags2=dvector(0,N-1);
+	mags2=darray(0,N-1);
 	for (int i=0; i<N; i++) mags2[i]=mags[i];	//since next function sorts (and overwrites) array.
 
 	// Bin events so that each magnitude bin has the same no. of events:
@@ -87,7 +87,7 @@ double Mc_maxcurv(double *mags, int N){
 		}
 	}
 
-	free_dvector(mags2, 0, N);
+	free_darray(mags2, 0, N);
 	return bin_c[ind];
 }
 
@@ -106,7 +106,7 @@ double calculatebvalue(double *mags, int N, double Mc){
   double dM, dum, mean, b, db;
   int Z;
 
-  mags2=dvector(0,N-1);
+  mags2=darray(0,N-1);
 
   Z=0;
   mean=0.0;
@@ -153,8 +153,8 @@ int bin_equnumber(double *v, int N, int Nbin, double **bin_c, double **norm_coun
 	qsort (v, N, sizeof(double), &compare);
 	Nel=floor(N/Nbin);
 
-	*bin_c=dvector(0,Nbin-1);
-	*norm_count=dvector(0,Nbin-1);
+	*bin_c=darray(0,Nbin-1);
+	*norm_count=darray(0,Nbin-1);
 
 	for (int i=0; i<Nbin-1; i++){
 

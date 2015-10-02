@@ -28,7 +28,8 @@
 #include "../inp_out/print_output.h"
 #include "../inp_out/write_csep_forecast.h"
 #include "../util/error.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "calculateDCFSperturbed.h"
 #include "forecast_stepG.h"
 
@@ -136,9 +137,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	if (all_gammas0==NULL)	uniform_bg_rate=1;
 
 	//Initialize stress fields:
-	DCFSrand= (flags.aseismic) ? dmatrix(0,NTScont,1,NgridT) : NULL;
+	DCFSrand= (flags.aseismic) ? d2array(0,NTScont,1,NgridT) : NULL;
 	if (flags.aseismic){
-		DCFSrand= dmatrix(0,NTScont,1,NgridT);
+		DCFSrand= d2array(0,NTScont,1,NgridT);
 		for (int i=0; i<NTScont; i++){
 			for (int j=1; j<=NgridT; j++){
 				DCFSrand[i][j]=0;
@@ -149,26 +150,26 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	else DCFSrand=NULL;
 
 	if (use_catalog){
-		dumrate=dvector(1,cat.Z);
-		rate=dvector(1,cat.Z);
+		dumrate=darray(1,cat.Z);
+		rate=darray(1,cat.Z);
 	}
 	else{
 		dumrate=rate=NULL;
 	}
-	gammas=dvector(1,NgridT);
-	ev_x=dvector(1,NgridT);
-	ev_x_avg=dvector(1,NgridT);
- 	ev_x_pre=dvector(1,NgridT);
-	ev_x_dum=dvector(1,NgridT);
-	ev_x_new=dvector(1,NgridT_out);
-	cmb=dvector(1,NgridT);
-	cmbpost=dvector(1,NgridT);
-	cmbpost_avg=dvector(1,NgridT);
-	cmb_avg=dvector(1,NgridT);
-	nev=dvector(1,Ntts);
-	rev=dvector(1,Ntts);
-	nev_avg=dvector(1,Ntts);
-	rev_avg=dvector(1,Ntts);
+	gammas=darray(1,NgridT);
+	ev_x=darray(1,NgridT);
+	ev_x_avg=darray(1,NgridT);
+ 	ev_x_pre=darray(1,NgridT);
+	ev_x_dum=darray(1,NgridT);
+	ev_x_new=darray(1,NgridT_out);
+	cmb=darray(1,NgridT);
+	cmbpost=darray(1,NgridT);
+	cmbpost_avg=darray(1,NgridT);
+	cmb_avg=darray(1,NgridT);
+	nev=darray(1,Ntts);
+	rev=darray(1,Ntts);
+	nev_avg=darray(1,Ntts);
+	rev_avg=darray(1,Ntts);
 
 	if (all_snapshots){
 		if (flatten_allsnaps && !crst.uniform){
@@ -177,9 +178,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			flatten_allsnaps=0;
 		}
 		NgridTsnaps=(flatten_allsnaps)? NgridT_out/crst.nD_out : NgridT_out;
-		flat_grid=dvector(1, NgridTsnaps);
-		nev_allsnapshots= dmatrix(1,Ntts, 1, NgridT);
-		nev_allsnapdum=dmatrix(0,Ntts-1, 1, NgridT);	//indices are like this because of how array is address in rate_state_evolution.
+		flat_grid=darray(1, NgridTsnaps);
+		nev_allsnapshots= d2array(1,Ntts, 1, NgridT);
+		nev_allsnapdum=d2array(0,Ntts-1, 1, NgridT);	//indices are like this because of how array is address in rate_state_evolution.
 	}
 
 	for (int n=1; n<=NgridT; n++) {
@@ -410,7 +411,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				#ifdef _CRS_MPI
 					int offset = ((nsur-1)*(NgridT_out)*sizeof(double));
 
-					// Buffer indices have a '+1' because these are dvector types.
+					// Buffer indices have a '+1' because these are darray types.
 					MPI_File_write_at(fhw_cmb, offset, ev_x_new+1, NgridT_out,
 									  MPI_DOUBLE, &status);
 				#else
@@ -430,7 +431,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 				int offset = ((nsur-1)*(NgridT_out)*sizeof(double));
 
-				// Buffer indices have a '+1' because these are dvector types.
+				// Buffer indices have a '+1' because these are darray types.
 				MPI_File_write_at(fhw_forex, offset, ev_x_new+1, NgridT_out,
 								  MPI_DOUBLE, &status);
 			#else
@@ -449,7 +450,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 				int offset = ((nsur-1)*(Ntts)*sizeof(double));
 
-				// Buffer indices have a '+1' because these are dvector types.
+				// Buffer indices have a '+1' because these are darray types.
 				MPI_File_write_at(fhw_foret1, offset, nev+1, Ntts,
 								  MPI_DOUBLE, &status);
 				MPI_File_write_at(fhw_foret2, offset, rev+1, Ntts,
@@ -469,11 +470,11 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 
 	#ifdef _CRS_MPI
 		double *recv_rate, *recv_nev_avg, *recv_rev_avg, *recv_cmb_avg, *recv_ev_x_avg;
-		if (use_catalog) recv_rate = dvector(1, cat.Z);
-		recv_nev_avg = dvector(1, Ntts);
-		recv_rev_avg = dvector(1, Ntts);
-		recv_cmb_avg = dvector(1,NgridT);
-		recv_ev_x_avg = dvector(1, NgridT);
+		if (use_catalog) recv_rate = darray(1, cat.Z);
+		recv_nev_avg = darray(1, Ntts);
+		recv_rev_avg = darray(1, Ntts);
+		recv_cmb_avg = darray(1,NgridT);
+		recv_ev_x_avg = darray(1, NgridT);
 
 		if (use_catalog) MPI_Allreduce(rate, recv_rate, cat.Z+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		MPI_Allreduce(nev_avg, recv_nev_avg, Ntts+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -482,16 +483,16 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		MPI_Allreduce(ev_x_avg, recv_ev_x_avg, NgridT+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 		if (use_catalog) {
-			free_dvector(rate, 1, cat.Z);
+			free_darray(rate, 1, cat.Z);
 			rate = recv_rate;
 		}
-		free_dvector(nev_avg, 1, Ntts);
+		free_darray(nev_avg, 1, Ntts);
 		nev_avg = recv_nev_avg;
-		free_dvector(rev_avg, 1, Ntts);
+		free_darray(rev_avg, 1, Ntts);
 		rev_avg = recv_rev_avg;
-		free_dvector(cmb_avg, 1, NgridT);
+		free_darray(cmb_avg, 1, NgridT);
 		cmb_avg = recv_cmb_avg;
-		free_dvector(ev_x_avg, 1, NgridT);
+		free_darray(ev_x_avg, 1, NgridT);
 		ev_x_avg = recv_ev_x_avg;
 	#endif
 
@@ -598,22 +599,22 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 	}
 
-	if (flags.aseismic) free_dmatrix(DCFSrand, 0,NTScont,1,NgridT);
+	if (flags.aseismic) free_d2array(DCFSrand, 0,NTScont,1,NgridT);
 	if (use_catalog) {
-		free_dvector(dumrate,1,cat.Z);
-		free_dvector(rate, 1,cat.Z);
+		free_darray(dumrate,1,cat.Z);
+		free_darray(rate, 1,cat.Z);
 	}
-	free_dvector(gammas, 1,NgridT);
-	free_dvector(ev_x,1,NgridT);
-	free_dvector(ev_x_avg,1,NgridT);
-	free_dvector(ev_x_new,1,NgridT_out);
-	free_dvector(cmb,1,NgridT);
-	free_dvector(cmbpost,1,NgridT);
-	free_dvector(cmb_avg,1,NgridT);
-	free_dvector(nev,1,Ntts);
-	free_dvector(rev,1,Ntts);
-	free_dvector(nev_avg,1,Ntts);
-	free_dvector(rev_avg,1,Ntts);
+	free_darray(gammas, 1,NgridT);
+	free_darray(ev_x,1,NgridT);
+	free_darray(ev_x_avg,1,NgridT);
+	free_darray(ev_x_new,1,NgridT_out);
+	free_darray(cmb,1,NgridT);
+	free_darray(cmbpost,1,NgridT);
+	free_darray(cmb_avg,1,NgridT);
+	free_darray(nev,1,Ntts);
+	free_darray(rev,1,Ntts);
+	free_darray(nev_avg,1,Ntts);
+	free_darray(rev_avg,1,Ntts);
 
 	return(err);
 }
@@ -702,7 +703,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 	FILE *fforex, *fcmb;
 
 	#ifdef _CRS_MPI
-		// The dmatrix 'all_new_gammas' has to be linearized for the
+		// The d2array 'all_new_gammas' has to be linearized for the
 		// MPI communication routine that consolidates values from
 		// all ranks.
 		size_t allNewGammasSize;
@@ -722,9 +723,9 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		#endif
 
 		//Initialize stress fields:
-		DCFSrand= (flags.aseismic) ? dmatrix(0,NTScont,1,NgridT) : NULL;
+		DCFSrand= (flags.aseismic) ? d2array(0,NTScont,1,NgridT) : NULL;
 		if (flags.aseismic){
-			DCFSrand= dmatrix(0,NTScont,1,NgridT);
+			DCFSrand= d2array(0,NTScont,1,NgridT);
 			for (int i=0; i<NTScont; i++){
 				for (int j=1; j<=NgridT; j++){
 					DCFSrand[i][j]=0;
@@ -732,10 +733,10 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 			}
 		}
 
-		dumrate=dvector(1,cat.Z);
-		rate=dvector(1,cat.Z);
-		gammas=dvector(1,NgridT);
-		ev_x=dvector(1,NgridT);
+		dumrate=darray(1,cat.Z);
+		rate=darray(1,cat.Z);
+		gammas=darray(1,NgridT);
+		ev_x=darray(1,NgridT);
 	}
 
 	sum=sum1=sum2=0.0;
@@ -900,13 +901,13 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		double temp_integral;
 		double *recv_rate, *recv_rates_x;
 
-		recv_rate = dvector(1, cat.Z);
+		recv_rate = darray(1, cat.Z);
 
 		MPI_Allreduce(&integral, &temp_integral, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 		MPI_Allreduce(rate, recv_rate, cat.Z+1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 		integral = temp_integral;
-		free_dvector(rate, 1, cat.Z);
+		free_darray(rate, 1, cat.Z);
 		rate = recv_rate;
 
 		// TODO -- This is way too complicated. Try to come up with a more
@@ -916,7 +917,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 						  linearizedAllNewGammas,   localNewGammasSize, MPI_DOUBLE,
 						  MPI_COMM_WORLD);
 
-			// Copy values from the linearized matrix to dmatrix
+			// Copy values from the linearized matrix to d2array
 			if(rootPartitionSize) {	// If root has a larger partition size than the other ranks
 				// We need to skip empty portions of NgridT size in the linearized array,
 				// for all non-root ranks.

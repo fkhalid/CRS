@@ -62,7 +62,8 @@
 #include "../util/error.h"
 #include "../util/moreutil.h"
 //#include "nr.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 int test_merge_multiple();
 int testspeed_coeff();

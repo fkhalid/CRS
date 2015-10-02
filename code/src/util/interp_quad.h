@@ -25,6 +25,7 @@
 #endif /* INTERP_QUAD_H_ */
 
 #include <math.h>
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 void interp_quad(double t0, double t1, double y, double y1, double *dts, double *values, int ndts);

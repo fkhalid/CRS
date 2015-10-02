@@ -29,7 +29,8 @@
 
 #include "../defines.h"
 #include "../util/error.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		char *catname, char ***focmeccat, char *background_rate_file, char *background_rate_cat, char *fixedmecfile, char *slipmodelfile, char *afterslipmodelfile,

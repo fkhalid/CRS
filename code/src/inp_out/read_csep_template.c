@@ -25,7 +25,8 @@
 
 #include "../defines.h"
 #include "../geom/convert_geometry.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "read_matrix.h"
 
 #ifdef _CRS_MPI
@@ -139,7 +140,7 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 
 
 	if (NL>0 && NC>0) {
-		data = dmatrix(1,NC, 1, NL+1);
+		data = d2array(1,NC, 1, NL+1);
 
 		if(procId == 0) {
 			print_screen("Reading template file %s\n", fname);
@@ -191,10 +192,10 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 
 	dmagi=data[8-miss_col][1]-data[7-miss_col][1];
 
-	if (lats) *lats=dvector(1,NP);
-	if (lons) *lons=dvector(1,NP);
-	if (deps) *deps=dvector(1,NP);
-	if (rate) *rate=dvector(1,NP);
+	if (lats) *lats=darray(1,NP);
+	if (lons) *lons=darray(1,NP);
+	if (deps) *deps=darray(1,NP);
+	if (rate) *rate=darray(1,NP);
 
 	//closest_lat=1e30;
 	//closest_lon=1e30;
@@ -293,7 +294,7 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 		MPI_Bcast(&NL, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	#endif
 
-	free_dmatrix(data,1,NC, 1, NL+1);
+	free_d2array(data,1,NC, 1, NL+1);
 
 	return (0);
 }

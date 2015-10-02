@@ -97,7 +97,7 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 
 
 	if (crst.uniform){
-		zlist=dvector(1,crst.nD);
+		zlist=darray(1,crst.nD);
 		for (int i=1; i<=crst.nD; i++) zlist[i]=crst.depth[1+(i-1)*NP];
 
 		// Depth-average rate on horizontal grid calculated from Helmstetter algorithm;
@@ -109,7 +109,7 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 		normv(rate_h, NP);
 		normv(rate_v, crst.nD);
 
-		*rate_grid=dvector(1,crst.N_allP);
+		*rate_grid=darray(1,crst.N_allP);
 		for (int p=1; p<=crst.N_allP; p++) {
 			//calculate linear index:
 			h_ind=(p-1)%NP+1;
@@ -130,9 +130,9 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 	}
 
 	free_cat(cat);
-	if (zlist) free_dvector(zlist,1,crst.nD);
-	if (rate_h)	free_dvector(rate_h, 1, NP);
-	if (rate_v) free_dvector(rate_v, 1, crst.nD);
+	if (zlist) free_darray(zlist,1,crst.nD);
+	if (rate_h)	free_darray(rate_h, 1, NP);
+	if (rate_v) free_darray(rate_v, 1, crst.nD);
 
 	return 0;
 

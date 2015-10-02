@@ -37,7 +37,8 @@
 #include "../util/error.h"
 #include "../util/merge.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "../util/splines_eqkfm.h"
 #include "eqkfm_copy.h"
 #include "find_timesteps.h"
@@ -227,9 +228,9 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 	allslip_dip_temp=malloc(NF*sizeof(double **));
 	allslip_open_temp=malloc(NF*sizeof(double **));
 	for (int nf=0; nf<NF; nf++) {
-		allslip_str_temp[nf]=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
-		allslip_dip_temp[nf]=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
-		allslip_open_temp[nf]=dmatrix(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+		allslip_str_temp[nf]=d2array(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+		allslip_dip_temp[nf]=d2array(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+		allslip_open_temp[nf]=d2array(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 	}
 
 	//read in values for slip:
@@ -239,9 +240,9 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 			copy_vector(eqkfm0[nf].slip_str, &(allslip_str_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			copy_vector(eqkfm0[nf].slip_dip, &(allslip_dip_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			copy_vector(eqkfm0[nf].open, &(allslip_open_temp[nf][m]), eqkfm0[nf].np_st*eqkfm0[nf].np_di);
-			free_dvector(eqkfm0[nf].slip_str,1,0);
-			free_dvector(eqkfm0[nf].slip_dip,1,0);
-			free_dvector(eqkfm0[nf].open,1,0);
+			free_darray(eqkfm0[nf].slip_str,1,0);
+			free_darray(eqkfm0[nf].slip_dip,1,0);
+			free_darray(eqkfm0[nf].open,1,0);
 		}
 
 		if (err) return (err);
@@ -249,8 +250,8 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 
 	//Needs to do it this way since eqkfm0[nf].tot_slip is overwritten at each read_eqkfm call.
 	for (int nf=0; nf<NF; nf++){
-		free_dvector(eqkfm0[nf].tot_slip,0,0);
-		eqkfm0[nf].tot_slip=dvector(0,no_snap-1);
+		free_darray(eqkfm0[nf].tot_slip,0,0);
+		eqkfm0[nf].tot_slip=darray(0,no_snap-1);
 		for (int m=0; m<no_snap; m++){
 			eqkfm0[nf].tot_slip[m]=eqkfm0[nf].tot_slip[0];
 		}
@@ -262,8 +263,8 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 	}
 
 	for (int nf=0; nf<NF; nf++) {
-		eqkfm0[nf].tot_slip=dvector(0,no_snap-1);
-		eqkfm0[nf].ts=dvector(1,no_snap);	//shifted by one element because of indexing in copy_vector function.
+		eqkfm0[nf].tot_slip=darray(0,no_snap-1);
+		eqkfm0[nf].ts=darray(1,no_snap);	//shifted by one element because of indexing in copy_vector function.
 		copy_vector(tsnap-1, &(eqkfm0[nf].ts), no_snap);	//copy aseismic time steps into eqkfm0 structure.
 		eqkfm0[nf].ts+=1;	//since should start from 0th element (not 1st).
 		eqkfm0[nf].nosnap=no_snap;
@@ -288,15 +289,15 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 
 		//free memory if elements are all 0.
 		if (is_str==0){
-			free_dmatrix(allslip_str_temp[nf],0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			free_d2array(allslip_str_temp[nf],0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			allslip_str_temp[nf]=NULL;
 		}
 		if (is_dip==0){
-			free_dmatrix(allslip_dip_temp[nf],0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			free_d2array(allslip_dip_temp[nf],0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			allslip_dip_temp[nf]=NULL;
 		}
 		if (is_open==0){
-			free_dmatrix(allslip_open_temp[nf],0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+			free_d2array(allslip_open_temp[nf],0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 			allslip_open_temp[nf]=NULL;
 		}
 
@@ -349,7 +350,7 @@ int setup_eqkfm_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb_fo
 	int err=0, NF, nftot=0, nfmax=0;
 	double 	toll=1e-10;
 
-	setmodels.NF_models=ivector(1,no_slipmodels);
+	setmodels.NF_models=iarray(1,no_slipmodels);
 	setmodels.Nmod=no_slipmodels;
 	setmodels.current_model=1;
 	setmodels.same_geometry=same_geometry;
@@ -512,11 +513,11 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
 			if (DCFS[eq].nsel!=Nsel){
 				if (DCFS[eq].nsel>0){
 					free_d3tensor(DCFS[eq].S,1,DCFS[eq].nsel,1,3,1,3);
-					free_dvector(DCFS[eq].cmb,1,DCFS[eq].nsel);
+					free_darray(DCFS[eq].cmb,1,DCFS[eq].nsel);
 				}
 				DCFS[eq].nsel=Nsel;
 				DCFS[eq].S = d3tensor(1,Nsel,1,3,1,3);
-				DCFS[eq].cmb=dvector(1,Nsel);
+				DCFS[eq].cmb=darray(1,Nsel);
 				for (int i=1; i<=Nsel; i++) DCFS[eq].cmb[i]=0.0;
 			}
 			NFtot+=Nfaults[eq];
@@ -643,9 +644,9 @@ int update_CoeffsDCFS(struct Coeff_LinkList **Coefficients,
 
 				if (first_timein || switch_slipmodel){
 					if (!first_timein){
-						if (temp->Coeffs_st) free_f3tensor(temp->Coeffs_st, 1,0,1,0,1,0);
-						if (temp->Coeffs_dip) free_f3tensor(temp->Coeffs_dip, 1,0,1,0,1,0);
-						if (temp->Coeffs_open) free_f3tensor(temp->Coeffs_open, 1,0,1,0,1,0);
+						if (temp->Coeffs_st) free_f3array(temp->Coeffs_st, 1,0,1,0,1,0);
+						if (temp->Coeffs_dip) free_f3array(temp->Coeffs_dip, 1,0,1,0,1,0);
+						if (temp->Coeffs_open) free_f3array(temp->Coeffs_open, 1,0,1,0,1,0);
 					}
 
 					#ifdef _CRS_MPI

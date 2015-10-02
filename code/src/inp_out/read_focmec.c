@@ -100,9 +100,9 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 	if (fm2) ntotmax*=2;
 
 	if(focmec) {
-		*focmec = dmatrix(1,4,1,ntotmax);
+		*focmec = d2array(1,4,1,ntotmax);
 	}
-	if (firstelements) *firstelements=ivector(0,nofiles);
+	if (firstelements) *firstelements=iarray(0,nofiles);
 	if (eqkfm) *eqkfm=eqkfm_array(0,ntotmax-1);
 
 	for (int n=0; n<nofiles; n++) {
@@ -247,10 +247,10 @@ int readfocmec(char *focmecfile, struct crust crst,
 	time_col=2;
 	H=1;
 
-	focmec0=dmatrix(1,NC,1,NFMmax);
-	selected=ivector(1,NFMmax);
-	selectedsources=ivector(1,NFMmax);
-	times=dvector(1,NFMmax);
+	focmec0=d2array(1,NC,1,NFMmax);
+	selected=iarray(1,NFMmax);
+	selectedsources=iarray(1,NFMmax);
+	times=darray(1,NFMmax);
 
 	if(procId == 0) {
 		err = read_matrix(focmecfile, NC, H, focmec0, &NFM0);
@@ -306,7 +306,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 
 	if (NFM) *NFM= (focmec)? (fm2 ? 2*NFM2 : NFM2) : 0;
 	if (focmec){
-		*focmec=dmatrix(1,4,1,*NFM);
+		*focmec=d2array(1,4,1,*NFM);
 		for (int p0=1; p0<=NFM2; p0++){
 			p=selected[p0];
 			(*focmec)[1][p0]=focmec0[str_col][p];
@@ -354,18 +354,18 @@ int readfocmec(char *focmecfile, struct crust crst,
 			(*eqkfm)[p0].is_slipmodel=1;
 			(*eqkfm)[p0].np_st=1;
 			(*eqkfm)[p0].np_di=1;
-			(*eqkfm)[p0].pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
-			(*eqkfm)[p0].pos_d=dvector(1,1);
+			(*eqkfm)[p0].pos_s=darray(1,1);	//location of patches within fault; [0], [0] for single patch events.
+			(*eqkfm)[p0].pos_d=darray(1,1);
 			(*eqkfm)[p0].pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
 			(*eqkfm)[p0].pos_d[1]=0;
 			if ((*eqkfm)[p0].whichfm){
-				(*eqkfm)[p0].slip_str=dvector(1,1);
-				(*eqkfm)[p0].slip_dip=dvector(1,1);
+				(*eqkfm)[p0].slip_str=darray(1,1);
+				(*eqkfm)[p0].slip_dip=darray(1,1);
 				(*eqkfm)[p0].open=NULL;
 			}
 			else {
-				(*eqkfm)[p0].slip_str=dvector(1,2);
-				(*eqkfm)[p0].slip_dip=dvector(1,2);
+				(*eqkfm)[p0].slip_str=darray(1,2);
+				(*eqkfm)[p0].slip_dip=darray(1,2);
 				(*eqkfm)[p0].open=NULL;
 			}
 			err+=find_gridpoints_d(crst.y, crst.x, crst.depth, (int *) 0, 0, crst.N_allP, (*eqkfm)[p0].y, (*eqkfm)[p0].x, (*eqkfm)[p0].depth,  (*eqkfm)[p0].mag, dDCFS,  &((*eqkfm)[p0].nsel), &((*eqkfm)[p0].selpoints));
@@ -393,10 +393,10 @@ int readfocmec(char *focmecfile, struct crust crst,
 		}
 	}
 
-	free_dmatrix(focmec0,1,NC,1,NFMmax);
-	free_ivector(selected,1,NFMmax);
-	free_ivector(selectedsources,1,NFMmax);
-	free_dvector(times,1,NFMmax);
+	free_d2array(focmec0,1,NC,1,NFMmax);
+	free_iarray(selected,1,NFMmax);
+	free_iarray(selectedsources,1,NFMmax);
+	free_darray(times,1,NFMmax);
 
 	print_screen("done.\n");
 

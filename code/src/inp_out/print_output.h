@@ -24,7 +24,8 @@
 #include <time.h>
 
 #include "../defines.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 int sum_DCFS(struct pscmp *DCFS, double **cmb, int N, int Ntot);
 int sum_DCFSrand(double **DCFSrand, double **cmb, int TS, int N);

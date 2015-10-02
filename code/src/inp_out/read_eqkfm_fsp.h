@@ -32,7 +32,8 @@
 #include "../seis/soumod1.h"
 #include "../seis/WellsCoppersmith.h"
 #include "../util/files.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out);
 void track_position(long *pos, int NP, FILE* fin);

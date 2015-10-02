@@ -30,7 +30,8 @@
 #include "../geom/coord_trafos.h"
 #include "../okada/prestress.h"
 #include "../util/error.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "read_csep_template.h"
 #include "read_matrix.h"
 

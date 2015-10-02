@@ -61,7 +61,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	n=malloc((no_fm_zones)*sizeof(double *));
 	s=malloc((no_fm_zones)*sizeof(double *));
 	stress0s=malloc((no_fm_zones)*sizeof(double *));
-	sigma0s=dvector(0,no_fm_zones-1);
+	sigma0s=darray(0,no_fm_zones-1);
 
 	for (int i=0; i<no_fm_zones; i++) {
 		//calculate normal vector:
@@ -94,14 +94,14 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	}
 
 	for (int i=0; i<no_fm_zones; i++){
-		if (s[i]) free_dvector(s[i],1,3);
-		free_dvector(n[i],1,3);
-		free_dvector(stress0s[i],1,3);
+		if (s[i]) free_darray(s[i],1,3);
+		free_darray(n[i],1,3);
+		free_darray(stress0s[i],1,3);
 	}
 	free(s);
 	free(n);
 	free(stress0s);
-	free_dvector(sigma0s,0,1);
+	free_darray(sigma0s,0,1);
 
 	return(0);
 }
@@ -175,9 +175,9 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 	//todo it may also be better to process each of the 3 tensors (Coeffs_XX) separately: less likely to run out of memory.
 
 	//allocate memory.
-	*Coeffs_st = (flag_sslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
-	*Coeffs_dip= (flag_dslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
-	*Coeffs_open= (flag_open) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
+	*Coeffs_st = (flag_sslip) ? f3array(1,NP_tot,1,Nsel,1,6) : NULL;
+	*Coeffs_dip= (flag_dslip) ? f3array(1,NP_tot,1,Nsel,1,6) : NULL;
+	*Coeffs_open= (flag_open) ? f3array(1,NP_tot,1,Nsel,1,6) : NULL;
 
 	for (int i=1; i<=NP_tot; i++){
 		for (int j=1; j<=Nsel; j++){
@@ -363,7 +363,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 		free(coeffs_dip_partitioned);
 		free(coeffs_open_partitioned);
 
-		// Copy data from the linearized tensors to the f3tensors.
+		// Copy data from the linearized tensors to the f3arrays.
 
 		int linearIndex = 0, tensorIndex = 0;
 
@@ -449,10 +449,10 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 
 	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
 
-	//allocate memory and set to 0 (inside f3tensor).	//todo could use array of pointers for smarter memory allocation...
-	*Coeffs_st= (flag_sslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
-	*Coeffs_dip= (flag_dslip) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
-	*Coeffs_open= (flag_open) ? f3tensor(1,NP_tot,1,Nsel,1,6) : NULL;
+	//allocate memory and set to 0 (inside f3array).	//todo could use array of pointers for smarter memory allocation...
+	*Coeffs_st= (flag_sslip) ? f3array(1,NP_tot,1,Nsel,1,6) : NULL;
+	*Coeffs_dip= (flag_dslip) ? f3array(1,NP_tot,1,Nsel,1,6) : NULL;
+	*Coeffs_open= (flag_open) ? f3array(1,NP_tot,1,Nsel,1,6) : NULL;
 
 	for (int i=1; i<=NP_tot; i++){
 		for (int j=1; j<=Nsel; j++){
@@ -713,7 +713,7 @@ double *normal_vector(double strikeR, double dipR){
 //calculates normal vector to a plane from its strike, dip.
 	double *n;
 
-	n=dvector(1,3);
+	n=darray(1,3);
 	n[1]=-sin(strikeR*DEG2RAD)*sin(dipR*DEG2RAD);
 	n[2]=cos(strikeR*DEG2RAD)*sin(dipR*DEG2RAD);
 	n[3]=-cos(dipR*DEG2RAD);
@@ -725,7 +725,7 @@ double *slip_vector(double strikeR, double dipR, double rakeR){
 //calculates slip vector from its strike, dip, rake.
 
 	double *s;
-	s=dvector(1,3);
+	s=darray(1,3);
 	s[1]=cos(rakeR*DEG2RAD)*cos(strikeR*DEG2RAD)+sin(rakeR*DEG2RAD)*sin(strikeR*DEG2RAD)*cos(dipR*DEG2RAD);
 	s[2]=cos(rakeR*DEG2RAD)*sin(strikeR*DEG2RAD)-sin(rakeR*DEG2RAD)*cos(strikeR*DEG2RAD)*cos(dipR*DEG2RAD);
 	s[3]=-sin(rakeR*DEG2RAD)*sin(dipR*DEG2RAD);
@@ -745,7 +745,7 @@ double *opt_s(double *stress, double sigma, double *n, double *result){
 	double s_temp[4], *s;
 	double s_tempM;
 
-	s= (result) ? result : dvector(1,3);
+	s= (result) ? result : darray(1,3);
 
 	for (int g=1; g<4; g++) s_temp[g]=stress[g]+sigma*n[g];
 	s_tempM=norm(s_temp,3);
@@ -763,7 +763,7 @@ double *sum_v(double *v1, double *v2, double *sum, int N){
 	if (!v2) return v1;
 	if (!v1) return v2;
 
-	v3= (sum) ? sum : dvector(1,N);
+	v3= (sum) ? sum : darray(1,N);
 	if (v1 && v2) {
 		for (int n=1; n<=N; n++) v3[n]=v1[n]+v2[n];
 	}
@@ -789,8 +789,8 @@ double resolve_S(double **S, double strikeR, double dipR, double rakeR, double f
 
 	cmb=resolve_n(S, n, f, stress0, sigma0, s);
 
-	free_dvector(n,1,3);
-	if (s) free_dvector(s,1,3);
+	free_darray(n,1,3);
+	if (s) free_darray(s,1,3);
 
 	return cmb;
 }
@@ -805,8 +805,8 @@ double resolve_n(double **S, double *n, double fric, double *stress0, double sig
 	double sigma, tau;
 	int optrake= !slip_v;
 
-	s=dvector(1,3);
-	stress=dvector(1,3);
+	s=darray(1,3);
+	stress=darray(1,3);
 
 	mtimesv(S,n,stress,3,3);
 	sigma=-1.0*vdotv(stress,n,3);	// compression is positive (rock mechanics convention).
@@ -817,9 +817,9 @@ double resolve_n(double **S, double *n, double fric, double *stress0, double sig
 	}
 	else tau=vdotv(stress,slip_v,3);
 
-	free_dvector(s,1,3);
-	free_dvector(stress,1,3);
-	if (optrake) free_dvector(stress_tot,1,3);
+	free_darray(s,1,3);
+	free_darray(stress,1,3);
+	if (optrake) free_darray(stress_tot,1,3);
 
 	return tau-fric*sigma;
 

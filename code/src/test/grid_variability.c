@@ -38,7 +38,8 @@
 #include "../okada/okadaDCFS.h"
 #include "../seis/soumod1.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 int grid_variability(){
 
@@ -79,13 +80,13 @@ int grid_variability(){
 
 
 	//low res grid:
-	latgrid=dvector(1,NP);
-	longrid=dvector(1,NP);
-	depgrid=dvector(1,NP);
-	allp=ivector(1,NP);
-	crst.x=dvector(1,NP);
-	crst.y=dvector(1,NP);
-	interp_DCFS=dmatrix(1,NP, 1,2);
+	latgrid=darray(1,NP);
+	longrid=darray(1,NP);
+	depgrid=darray(1,NP);
+	allp=iarray(1,NP);
+	crst.x=darray(1,NP);
+	crst.y=darray(1,NP);
+	interp_DCFS=d2array(1,NP, 1,2);
 
 	for (int i=1; i<=NP; i++) allp[i]=i;
 
@@ -116,12 +117,12 @@ int grid_variability(){
 
 	//high res grid:
 	NP2=NP*pow(res_ratio,3);
-	latgrid2=dvector(1,NP2);
-	longrid2=dvector(1,NP2);
-	depgrid2=dvector(1,NP2);
-	allp2=ivector(1,NP2);
-	crst2.x=dvector(1,NP2);
-	crst2.y=dvector(1,NP2);
+	latgrid2=darray(1,NP2);
+	longrid2=darray(1,NP2);
+	depgrid2=darray(1,NP2);
+	allp2=iarray(1,NP2);
+	crst2.x=darray(1,NP2);
+	crst2.y=darray(1,NP2);
 
 	for (int i=1; i<=NP2; i++) allp2[i]=i;
 
@@ -152,7 +153,7 @@ int grid_variability(){
 
 	//---------map between low, high res:
 
-	map=imatrix(1,NP, 1, pow(res_ratio,3));
+	map=i2array(1,NP, 1, pow(res_ratio,3));
 
 	//no. of grid points between high resolution geometry and low resolution geometry (per dimension);
 	nsub[0]=res_ratio;
@@ -213,7 +214,7 @@ int grid_variability(){
 		dcfs.nsel=eqfm.nsel=NP;
 		dcfs.which_pts=eqfm.selpoints=allp;
 		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
-		dcfs.cmb=dvector(1,dcfs.nsel);
+		dcfs.cmb=darray(1,dcfs.nsel);
 
 //		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 0);
 		cmb0=dcfs.cmb;
@@ -225,7 +226,7 @@ int grid_variability(){
 		dcfs.nsel=eqfm.nsel=NP2;
 		dcfs.which_pts=eqfm.selpoints=allp2;
 		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
-		dcfs.cmb=dvector(1,dcfs.nsel);
+		dcfs.cmb=darray(1,dcfs.nsel);
 
 //		okadaDCFS(dcfs, &eqfm, 1, crst2, &eqfm.str1, &eqfm.dip1, 0);
 		sprintf(fname, "%s/cmb_%d_highres.dat",testfolder, n);

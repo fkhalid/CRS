@@ -25,7 +25,8 @@
 #include "../defines.h"
 #include "../util/error.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 
 int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, double y, double x, double SD, double Depth, double SDd,
@@ -59,8 +60,8 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	int ngridj;
 	double y1, y2, x1, x2, D1, D2, A, Vfrac=1;
 
-	prob=dvector(0,N+1);
-	ngridpointj_temp=ivector(0,N+1);	//temporary array to store indices of selected points.
+	prob=darray(0,N+1);
+	ngridpointj_temp=iarray(0,N+1);	//temporary array to store indices of selected points.
 	if (!dAs) inside=1; 	//can't calculate total area, so assume it's all inside.
 
 
@@ -98,9 +99,9 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 
 	// allocate memory to *ngridpointj, unless it was allocated before:
 	if (!(*ngridpointj)) {
-		*ngridpointj=ivector(1,MAX(ngridj,1)+1);
+		*ngridpointj=iarray(1,MAX(ngridj,1)+1);
 	}
-	if (!(*weightsj)) *weightsj=dvector(0,MAX(ngridj,1)+1);
+	if (!(*weightsj)) *weightsj=darray(0,MAX(ngridj,1)+1);
 	for (p=1; p<=ngridj; p++){
 		(*ngridpointj)[p]=ngridpointj_temp[p];
 	}
@@ -138,8 +139,8 @@ int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, 
 	}
 
 	if (ngridj0) *ngridj0=ngridj;
-	free_dvector(prob, 0, N+1);
-	free_ivector(ngridpointj_temp, 0, N+1);
+	free_darray(prob, 0, N+1);
+	free_iarray(ngridpointj_temp, 0, N+1);
 	return(0);
 }
 
@@ -167,7 +168,7 @@ int find_gridpoints_d(double *ys, double *xs, double *depths, int *already_selec
 	double k=0.85, R;	//k found empirically looking at distrib. of DCFS(r,m).
 	int counter=1, closestp;
 
-	points_temp=ivector(1,N);
+	points_temp=iarray(1,N);
 	*ngridj=0;
 
 	R=pow(k*pow(10.0,3.0*m/2.0)/dDCFS,1.0/3.0);
@@ -201,15 +202,15 @@ int find_gridpoints_d(double *ys, double *xs, double *depths, int *already_selec
 
 	if (*ngridj==0){
 		*ngridj=1;
-		*ngridpointj=ivector(1,(*ngridj));
+		*ngridpointj=iarray(1,(*ngridj));
 		(*ngridpointj)[1]=closestp;
 	}
 
 	else{
-		*ngridpointj=ivector(1,(*ngridj));
+		*ngridpointj=iarray(1,(*ngridj));
 		for (int p2=1; p2<=*ngridj; p2++) (*ngridpointj)[p2]= points_temp[p2];
 	}
-	free_ivector(points_temp,1,N);
+	free_iarray(points_temp,1,N);
 
 	return(0);
 }
@@ -251,7 +252,7 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 	int closestp, ngridj_int=0;
 	double y1, y2, x1, x2, D1, D2, A, Vfrac=1;
 
-	ngridpointj_temp=ivector(0,N+1);	//temporary array to store indices of selected points.
+	ngridpointj_temp=iarray(0,N+1);	//temporary array to store indices of selected points.
 
 	if (ngridj) *ngridj=0;
 	probCum=0;
@@ -295,10 +296,10 @@ int find_gridpoints_exact(double *ys, double *xs, double *depths, double dx, dou
 
 	// allocate memory to *ngridpointj, unless it was allocated before:
 	if (!(*ngridpointj)) {
-		*ngridpointj=ivector(1,MAX(ngridj_int,1));
+		*ngridpointj=iarray(1,MAX(ngridj_int,1));
 	}
 	if (!(*weightsj)) {
-		*weightsj=dvector(0,MAX(ngridj_int,1));
+		*weightsj=darray(0,MAX(ngridj_int,1));
 	}
 	for (p=1; p<=ngridj_int; p++){
 		(*ngridpointj)[p]=ngridpointj_temp[p];
@@ -425,11 +426,11 @@ int all_nearestneighbours(double *x, double *y, int N, int **pts, double **dist)
 	if (pts) ind=*pts;
 	if (dist) dmin=*dist;
 	if (!dmin) {
-		dmin=dvector(1,N);
+		dmin=darray(1,N);
 		if (dist) *dist=dmin;
 	}
 	if (!ind) {
-		ind=ivector(1,N);
+		ind=iarray(1,N);
 		if (pts) *pts=ind;
 	}
 	for (int i=1; i<=N; i++) dmin[i]=1e30;
@@ -437,7 +438,7 @@ int all_nearestneighbours(double *x, double *y, int N, int **pts, double **dist)
 	// sort element by x;
 
 	mysort(N, x, &x_ind, &xs);
-	x_order=ivector(1,N);
+	x_order=iarray(1,N);
 	for (int i=1; i<=N; i++) x_order[x_ind[i]]=i;
 
 	for (int i=1; i<=N; i++){
@@ -506,14 +507,14 @@ int all_2ndnearestneighbours(double *x, double *y, int N, int **pts, double **di
 	int indp0, indp;
 	int n_op=0;	//no. of times distance is computed.
 
-	dmin=dmatrix(1,2,1,N);
-	ind=imatrix(1,2,1,N);
+	dmin=d2array(1,2,1,N);
+	ind=i2array(1,2,1,N);
 
 	for (int i=1; i<=N; i++) dmin[1][i]=dmin[2][i]=1e30;
 
 	// sort element by x;
 	mysort(N, x, &x_ind, &xs);
-	x_order=ivector(1,N);
+	x_order=iarray(1,N);
 	for (int i=1; i<=N; i++) x_order[x_ind[i]]=i;
 
 	for (int i=1; i<=N; i++){

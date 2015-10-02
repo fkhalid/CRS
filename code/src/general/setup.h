@@ -36,7 +36,8 @@
 #include "../okada/okadaDCFS.h"
 #include "../seis/soumod1.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "../util/splines_eqkfm.h"
 #include "eqkfm_copy.h"
 #include "find_timesteps.h"

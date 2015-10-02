@@ -35,7 +35,8 @@
 #include "../general/struct_conversions.h"
 #include "../seis/soumod1.h"
 #include "../seis/WellsCoppersmith.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "read_eqkfm_fsp.h"
 
 int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb,
@@ -74,7 +75,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 
 	N2=all_slipmodels.NSM;
 	nf2=all_slipmodels.Nfaults;
-	all_pts=ivector(1,crst.N_allP);
+	all_pts=iarray(1,crst.N_allP);
 	for (int i=1; i<=crst.N_allP; i++) all_pts[i]=i;
 
 	*Ncomb=0;
@@ -119,7 +120,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	}
 
 	*eqfm_comb=eqkfm_array(0,N3-1);
-	if (nfout) *nfout=ivector(0,N1-1);
+	if (nfout) *nfout=iarray(0,N1-1);
 
 	//todo speed up this loop (try to parallelize?)
 	for(int i=0; i<N1; i++) {
@@ -247,11 +248,11 @@ int focmec2slipmodel(struct crust crst, struct eqkfm *eqfm1, double res, int ref
 	(*eqkfmP).is_slipmodel=1;
 	(*eqkfmP).np_st=1;
 	(*eqkfmP).np_di=1;
-	(*eqkfmP).slip_str=dvector(1,1);
-	(*eqkfmP).slip_dip=dvector(1,1);
+	(*eqkfmP).slip_str=darray(1,1);
+	(*eqkfmP).slip_dip=darray(1,1);
 	(*eqkfmP).open=NULL;
-	(*eqkfmP).pos_s=dvector(1,1);	//location of patches within fault; [0], [0] for single patch events.
-	(*eqkfmP).pos_d=dvector(1,1);
+	(*eqkfmP).pos_s=darray(1,1);	//location of patches within fault; [0], [0] for single patch events.
+	(*eqkfmP).pos_d=darray(1,1);
 	(*eqkfmP).pos_s[1]=0;	//location of patches within fault; [0], [0] for single patch events.
 	(*eqkfmP).pos_d[1]=0;
 
@@ -474,18 +475,18 @@ int read_farfalle_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out) {
 				MPI_Bcast(&(eqfm[f].np_di), 1, MPI_INT, 0, MPI_COMM_WORLD);
 			#endif
 				NP=eqfm[f].np_st*eqfm[f].np_di;
-				eqfm[f].pos_s=dvector(1,NP);
-				eqfm[f].pos_d=dvector(1,NP);
-				eqfm[f].slip_str=dvector(1,NP);
-				eqfm[f].slip_dip=dvector(1,NP);
+				eqfm[f].pos_s=darray(1,NP);
+				eqfm[f].pos_d=darray(1,NP);
+				eqfm[f].slip_str=darray(1,NP);
+				eqfm[f].slip_dip=darray(1,NP);
 				eqfm[f].open=NULL;
 				if ((f==0) | (NP>eqfm[f-1].np_st*eqfm[f-1].np_di)){
 					if (f!=0){
-						free_dvector(slips, 1,1);
-						free_dvector(rakes, 1,1);
+						free_darray(slips, 1,1);
+						free_darray(rakes, 1,1);
 					}
-					slips=dvector(1,NP);
-					rakes=dvector(1,NP);
+					slips=darray(1,NP);
+					rakes=darray(1,NP);
 				}
 				if(procId == 0) {
 					fgets(line,nchar,fin);
@@ -640,11 +641,11 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 			eqfm1[f].str2=eqfm1[f].str1; eqfm1[f].dip2=eqfm1[f].dip1;	//in this case there is no ambiguity (correct plane is known).
 			eqfm1[f].whichfm=1;
 			NP=eqfm1[f].np_st*eqfm1[f].np_di;
-			eqfm1[f].pos_s=dvector(1,NP);
-			eqfm1[f].pos_d=dvector(1,NP);
-			eqfm1[f].slip_str=dvector(1,NP);
-			eqfm1[f].slip_dip=dvector(1,NP);
-			eqfm1[f].open=dvector(1,NP);
+			eqfm1[f].pos_s=darray(1,NP);
+			eqfm1[f].pos_d=darray(1,NP);
+			eqfm1[f].slip_str=darray(1,NP);
+			eqfm1[f].slip_dip=darray(1,NP);
+			eqfm1[f].open=darray(1,NP);
 			if(procId == 0) {
 				for (int p=1; p<=NP; p++) {
 					err+=(sscanf(line, "%lf   %lf    %lf   %lf   %lf",

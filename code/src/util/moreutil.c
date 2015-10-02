@@ -55,7 +55,7 @@ int *nth_index(int i, int Ndim, int *dim){
 //given linear index and N dimensions with indices [1...dim[0]], [1...dim[1]], ..., [1...dim[Ndim-1]], returns array with indices of each dimension.
 
 	int f=1;
-	int *res=ivector(0,Ndim-1);
+	int *res=iarray(0,Ndim-1);
 
 	for (int d=0; d<Ndim; d++) {
 		res[d]=((i-1)%(f*dim[d]))/f+1;
@@ -78,7 +78,7 @@ void copy_matrix( double **m1, double ***m2, int a, int b){
 	 * if *m2==NULL, memory allocated. Otherwise, m2 must have correct no. of elements.
 	 */
 
-	if (!(*m2)) *m2=dmatrix(1,a,1,b);
+	if (!(*m2)) *m2=d2array(1,a,1,b);
 
 	for (int ns=1; ns<=a; ns++){
 		for (int n=1; n<=b; n++) (*m2)[ns][n]=m1[ns][n];
@@ -92,7 +92,7 @@ void copy_vector(double *m1, double **m2, int a){
 	 * if *m2==NULL, memory allocated. Otherwise, m2 must have correct no. of elements.
 	 */
 
-	if (!(*m2)) *m2=dvector(1,a);
+	if (!(*m2)) *m2=darray(1,a);
 
 	for (int ns=1; ns<=a; ns++){
 		(*m2)[ns]=m1[ns];
@@ -113,15 +113,15 @@ void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 	int *ind= (ind_out)? *ind_out : NULL;
 	double *arr= *arr_out;
 
-	if (!ind) ind=ivector(1,n);
-	if (!arr) arr=dvector(1,n);
+	if (!ind) ind=iarray(1,n);
+	if (!arr) arr=darray(1,n);
 
 	for (i=1; i<=n; i++){
 		ind[i]=i;
 		arr[i]=old_arr[i];
 	}
 
-	istack=lvector(1,NSTACK);
+	istack=larray(1,NSTACK);
 	for (;;) {
 		if (ir-l < M) {
 			for (j=l+1;j<=ir;j++) {
@@ -182,7 +182,7 @@ void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 			}
 		}
 	}
-	free_lvector(istack,1,NSTACK);
+	free_larray(istack,1,NSTACK);
 
 	if (ind_out) *ind_out=ind;
 	if (arr_out) *arr_out=arr;
@@ -190,7 +190,7 @@ void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 	return;
 }
 
-int **imatrix_firstlevel(long nrh)
+int **i2array_firstlevel(long nrh)
 /* allocate a int matrix with subscript range m[0..nrh]; columns will be allocated later. */
 {
 	int **m;
@@ -205,7 +205,7 @@ int **imatrix_firstlevel(long nrh)
 	return m;
 }
 
-double **dmatrix_firstlevel(long nrh)
+double **d2array_firstlevel(long nrh)
 /* allocate a double matrix with subscript range m[nrl..nrh];  columns will be allocated later. */
 {
 	double **m;
@@ -220,17 +220,17 @@ double **dmatrix_firstlevel(long nrh)
 	return m;
 }
 
-void free_imatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
-/* free an int matrix allocated by imatrix_firstlevel() */
+void free_i2array_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
+/* free an int matrix allocated by i2array_firstlevel() */
 {
-	for (int i=nrl; i<=nrh; i++) if (m[i]) free_ivector(m[i], ncl, nch);
+	for (int i=nrl; i<=nrh; i++) if (m[i]) free_iarray(m[i], ncl, nch);
 	free((FREE_ARG) (m+nrl-NR_END));
 }
 
-void free_dmatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
-/* free an int matrix allocated by dmatrix_firstlevel() */
+void free_d2array_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
+/* free an int matrix allocated by d2array_firstlevel() */
 {
-	for (int i=nrl; i<=nrh; i++) if (m[i]) free_dvector(m[i], ncl, nch);
+	for (int i=nrl; i<=nrh; i++) if (m[i]) free_darray(m[i], ncl, nch);
 	free((FREE_ARG) (m+nrl-NR_END));
 }
 
@@ -249,7 +249,7 @@ double **mtimesm3(double **m1, double **m2, double ***m30){
 
 	double **m3;
 
-	m3= (m30) ? *m30 : dmatrix(1,3,1,3);
+	m3= (m30) ? *m30 : d2array(1,3,1,3);
 
 	for (int i=1; i<=3; i++){
 		for (int j=1; j<=3; j++){
@@ -270,7 +270,7 @@ double *mtimesv(double **M, double *v, double *v2, int D1, int D2){
 	double temp;
 	double *v2int;
 
-	v2int=(v2)? v2 : dvector(1,D2);
+	v2int=(v2)? v2 : darray(1,D2);
 
 	for (i=1; i<=D2; i++){
 		temp=0;
@@ -331,19 +331,19 @@ double ***d3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh)
 
 	/* allocate pointers to pointers to rows */
 	t=(double ***) malloc((size_t)((nrow+NR_END)*sizeof(double**)));
-	if (!t) nrerror("allocation failure 1 in f3tensor()");
+	if (!t) nrerror("allocation failure 1 in f3array()");
 	t += NR_END;
 	t -= nrl;
 
 	/* allocate pointers to rows and set pointers to them */
 	t[nrl]=(double **) malloc((size_t)((nrow*ncol+NR_END)*sizeof(double*)));
-	if (!t[nrl]) nrerror("allocation failure 2 in f3tensor()");
+	if (!t[nrl]) nrerror("allocation failure 2 in f3array()");
 	t[nrl] += NR_END;
 	t[nrl] -= ncl;
 
 	/* allocate rows and set pointers to them */
 	t[nrl][ncl]=(double *) malloc((size_t)((nrow*ncol*ndep+NR_END)*sizeof(double)));
-	if (!t[nrl][ncl]) nrerror("allocation failure 3 in f3tensor()");
+	if (!t[nrl][ncl]) nrerror("allocation failure 3 in f3array()");
 	t[nrl][ncl] += NR_END;
 	t[nrl][ncl] -= ndl;
 
@@ -360,7 +360,7 @@ double ***d3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh)
 
 void free_d3tensor(double ***t, long nrl, long nrh, long ncl, long nch,
 	long ndl, long ndh)
-/* free a double f3tensor allocated by f3tensor() */
+/* free a double f3array allocated by f3array() */
 {
 	free((FREE_ARG) (t[nrl][ncl]+ndl-NR_END));
 	free((FREE_ARG) (t[nrl]+ncl-NR_END));
@@ -402,7 +402,7 @@ void interp_nn(int NP, int D1, int D2, int D3, double *values, double **allvalue
 	int **nn;
 
 	if (!nn0) {
-		nn=imatrix(1,NP,1,6);
+		nn=i2array(1,NP,1,6);
 		nearest_neighbours(NP,D1,D2,D3,nn);
 	}
 	else nn=nn0;
@@ -425,11 +425,11 @@ void interp_nn(int NP, int D1, int D2, int D3, double *values, double **allvalue
 		}
 	}
 
-	if (nn0== (int **)0) free_imatrix(nn,1,NP,1,6);
+	if (nn0== (int **)0) free_i2array(nn,1,NP,1,6);
 }
 
-double * duplicate_dvector(double *v, long nrl, long nrh){
-	double * vnew=dvector(nrl, nrh);
+double * duplicate_darray(double *v, long nrl, long nrh){
+	double * vnew=darray(nrl, nrh);
 	for (int r=nrl; r<=nrh; r++){
 		vnew[r]=v[r];
 	}

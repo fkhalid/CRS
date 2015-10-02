@@ -21,7 +21,8 @@
 #include "pscokada.h"
 #include <math.h>
 #include "../defines.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "dc3d.h"
 
 

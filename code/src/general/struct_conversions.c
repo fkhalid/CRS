@@ -63,8 +63,8 @@ int *combine_eqkfm(struct eqkfm *eqkfm1, struct eqkfm *eqkfm2, int N1, int N2,
 		return NULL;
 	}
 
-	sel=ivector(0,N2-1);
-	sel1=ivector(0,N1-1);
+	sel=iarray(0,N2-1);
+	sel1=iarray(0,N1-1);
 	for (int n=0; n<N1; n++) sel1[n]=0;
 
 	for (int n2=0; n2<N2; n2++){
@@ -157,13 +157,13 @@ int *combine_cats(double *t1, double *t2, double *m1, double *m2, int N1, int N2
 
 	if (!N2) return NULL;
 	if (!N1) {
-		sel= ivector(0,N2-1);
+		sel= iarray(0,N2-1);
 		for (int n=0; n<N2; n++) sel[n]=-1;
 		return sel;
 	}
 
-	sel= ivector(0,N2-1);
-	sel1= ivector(0,N1-1);
+	sel= iarray(0,N2-1);
+	sel1= iarray(0,N1-1);
 	for (int n=0; n<N1; n++) sel1[n]=0;
 
 	for (int n2=0; n2<N2; n2++){
@@ -224,8 +224,8 @@ double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int 
 	double dist2, dist20;
 	double **res;
 
-	if (ind) *ind=imatrix(1,2,0,N1+N2);
-	res=dmatrix(1,2,0,N1+N2);
+	if (ind) *ind=i2array(1,2,0,N1+N2);
+	res=d2array(1,2,0,N1+N2);
 
 	if (!N1){
 		if (tot) *tot=N2;
@@ -254,8 +254,8 @@ double **union_cats(double *t1, double *t2, double *m1, double *m2, int N1, int 
 	}
 
 
-	sel=ivector(0,N2-1);
-	sel1=ivector(0,N1-1);
+	sel=iarray(0,N2-1);
+	sel1=iarray(0,N1-1);
 
 	for (int n=0; n<N1; n++) sel1[n]=0;
 
@@ -361,8 +361,8 @@ double **union_cats2(struct catalog cat, struct pscmp *DCFS, int N2, int ***ind,
 	int N1=cat.Z;
 	int c1, c2, k;
 
-	if (ind) *ind=imatrix(1,2,0,N1+N2);
-	res=dmatrix(1,2,0,N1+N2);
+	if (ind) *ind=i2array(1,2,0,N1+N2);
+	res=d2array(1,2,0,N1+N2);
 
 	if (!N1){
 		if (tot) *tot=N2;
@@ -490,7 +490,7 @@ double *timesfromeqkfm(struct eqkfm *eqkfm1, int N, int *NF){
 	 */
 
 
-	double *times=dvector(0,N-1);
+	double *times=darray(0,N-1);
 	int counter=0;
 
 	for (int i=0; i<N; i++) {
@@ -514,7 +514,7 @@ double *magssfromeqkfm(struct eqkfm *eqkfm1, int N, int *NF){
 	 */
 
 
-	double *mags=dvector(0,N-1);
+	double *mags=darray(0,N-1);
 	int counter=0, NF_i;
 	double M0;
 	for (int i=0; i<N; i++) {
@@ -540,7 +540,7 @@ double *timesfrompscmp(struct pscmp *DCFS, int N){
 	 *  returns array of events times; range [0...N-1].
 	 */
 
-double *times=dvector(0,N-1);
+double *times=darray(0,N-1);
 for (int i=0; i<N; i++) times[i]=DCFS[i].t;
 return times;
 
@@ -557,7 +557,7 @@ double *magsfrompscmp(struct pscmp *DCFS, int N){
 	 *  returns array of events magnitudes; range [0...N-1].
 	 */
 
-double *mags=dvector(0,N-1);
+double *mags=darray(0,N-1);
 for (int i=0; i<N; i++) mags[i]=DCFS[i].m;
 return mags;
 
@@ -579,8 +579,8 @@ void eqkfm2dist(struct eqkfm *eqkfm1, double *lats, double *lons, double *depths
 	double lat0, lon0;
 	int nsel, pt;
 
-	ys=dvector(1,N);
-	xs=dvector(1,N);
+	ys=darray(1,N);
+	xs=darray(1,N);
 	lat0=0.5*(lats[N]+lats[1]);
 	lon0=0.5*(lons[N]+lons[1]);
 	for (int k0=1; k0<=N;k0++) latlon2localcartesian(lats[k0], lons[k0], lat0, lon0, ys+k0, xs+k0);
@@ -592,7 +592,7 @@ void eqkfm2dist(struct eqkfm *eqkfm1, double *lats, double *lons, double *depths
 
 			latlon2localcartesian(eqkfm1[i].lat, eqkfm1[i].lon, lat0, lon0, &y, &x);
 			Depth=eqkfm1[i].depth;
-			eqkfm1[i].distance=dvector(1,nsel);	//TODO deallocate.
+			eqkfm1[i].distance=darray(1,nsel);	//TODO deallocate.
 
 			for (int p=1; p<=nsel; p++) {
 				pt=eqkfm1[i].selpoints[p];

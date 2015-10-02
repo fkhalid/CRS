@@ -32,7 +32,8 @@
 #include "../geom/coord_trafos.h"
 #include "../geom/find_gridpoints.h"
 #include "../seis/GR.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "read_matrix.h"
 
 int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *, char *file, struct crust crst, struct tm reftime, double t0s, double t1s,

@@ -17,7 +17,6 @@
  *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define _no_numericalrecipes
 #include "fit_splines.h" 
 #include "../defines.h"
 #include "error.h"
@@ -61,7 +60,7 @@
     double grenz0=1.5, grenz, dum;
     float *tf, *t2f, *sp, *sp2, **s2f, **ds2dt2, sp_value, sp_value2; //same as t, but floats(needed by spline function).
     
-    if ((*slip_after)==(double **) 0) (*slip_after)=dmatrix(1,N,1,TS2);
+    if ((*slip_after)==(double **) 0) (*slip_after)=d2array(1,N,1,TS2);
     
     float **a, **b;
     int n=3;
@@ -72,8 +71,8 @@
     yp1=1e30;
     ypn=1e30;
     
-    e = dvector(1,N);
-    et = dvector(1,TS);
+    e = darray(1,N);
+    et = darray(1,TS);
     tf=vector(0,TS);
     sp = vector(0,TS);
     sp2 = vector(1,TS2);
@@ -159,7 +158,7 @@
     			print_screen("* Warning: all time steps are earlier than first input step, spline information not used*\n");
     			print_logfile("* Warning: all time steps are earlier than first input step, spline information not used*\n");
     		}
-    		sp_values=dvector(1,early_fit);
+    		sp_values=darray(1,early_fit);
     
     		switch (early_inter_mode){
     			case 1:

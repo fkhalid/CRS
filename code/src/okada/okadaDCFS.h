@@ -27,7 +27,8 @@
 
 #include "../defines.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "pscokada.h"
 
 //----------------top level functions----------------//

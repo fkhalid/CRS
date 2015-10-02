@@ -33,7 +33,7 @@ int sum_DCFS(struct pscmp *DCFS, double **cmb, int N, int Ntot){
 
 	int i;
 
-	if (*cmb==NULL) *cmb=dvector(1,Ntot);
+	if (*cmb==NULL) *cmb=darray(1,Ntot);
 	for (int k=1; k<=Ntot; k++) (*cmb)[k]=0.0;
 
 
@@ -58,7 +58,7 @@ int sum_DCFSrand(double **DCFSrand, double **cmb, int TS, int N){
 	 * Memory for cmb will be allocated if *cmb==NULL.
 	 */
 
-	if (*cmb==NULL) *cmb=dvector(1,N);
+	if (*cmb==NULL) *cmb=darray(1,N);
 	for (int k=1; k<=N; k++) (*cmb)[k]=0.0;
 
 	for (int n=0; n<N; n++){

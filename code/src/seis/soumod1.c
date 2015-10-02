@@ -99,10 +99,10 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc){
 	#endif
 
     ns=eqkfm1.np_st*eqkfm1.np_di;
-    REslipo= dvector(1,ns);
-    rake_v= dvector(1,ns);
-    strike_v= dvector(1,ns);
-    dip= dvector(1,ns);
+    REslipo= darray(1,ns);
+    rake_v= darray(1,ns);
+    strike_v= darray(1,ns);
+    dip= darray(1,ns);
 	reflat=eqkfm1.lat;
 	reflon=eqkfm1.lon;
 	refdepth=eqkfm1.depth;
@@ -166,14 +166,14 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc){
 	  ndiscy=oydim/nsy;
 	  start_x=minox-0.5*odiscx+0.5*ndiscx;
 	  start_y=minoy-0.5*odiscy+0.5*ndiscy;
-	  REold    = dvector(1,nns);
-	  IMold    = dvector(1,nns);
-	  dipold   = dvector(1,nns);
-	  rakeold   = dvector(1,nns);
-	  strikeold   = dvector(1,nns);
-	  nx       = dvector(1,nns);
-	  ny       = dvector(1,nns);
-      slip=dvector(1,nns);
+	  REold    = darray(1,nns);
+	  IMold    = darray(1,nns);
+	  dipold   = darray(1,nns);
+	  rakeold   = darray(1,nns);
+	  strikeold   = darray(1,nns);
+	  nx       = darray(1,nns);
+	  ny       = darray(1,nns);
+      slip=darray(1,nns);
 
       	  i=1;
 	  for (k=1; k<=nsy; k++)
@@ -230,10 +230,10 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc){
  	(*eqkfm2).W=oydim;
 	(*eqkfm2).np_st=nsx;
 	(*eqkfm2).np_di=nsy;
-	(*eqkfm2).pos_s=dvector(1,nns);
-	(*eqkfm2).pos_d=dvector(1,nns);
-	(*eqkfm2).slip_str=dvector(1,nns);
-	(*eqkfm2).slip_dip=dvector(1,nns);
+	(*eqkfm2).pos_s=darray(1,nns);
+	(*eqkfm2).pos_d=darray(1,nns);
+	(*eqkfm2).slip_str=darray(1,nns);
+	(*eqkfm2).slip_dip=darray(1,nns);
 
 	for (int p=1; p<=nns; p++) {
 		(*eqkfm2).pos_s[p]=nx[p];
@@ -254,22 +254,22 @@ int suomod1_resample(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double disc){
 
   //----------------Free memory----------------------//
 
-  free_dvector(REold,1,nns);
-  free_dvector(REslipo,1,ns);
-  free_dvector(rake_v,1,ns);
-  free_dvector(strike_v,1,ns);
-  free_dvector(dip,1,ns);
-  free_dvector(IMold,1,nns);
-  free_dvector(strikeold,1,nns);
-  free_dvector(dipold,1,nns);
-  free_dvector(rakeold,1,nns);
-  free_dvector(slip,1,nns);
-  free_dvector(nx,1,nns);
-  free_dvector(ny,1,nns);
+  free_darray(REold,1,nns);
+  free_darray(REslipo,1,ns);
+  free_darray(rake_v,1,ns);
+  free_darray(strike_v,1,ns);
+  free_darray(dip,1,ns);
+  free_darray(IMold,1,nns);
+  free_darray(strikeold,1,nns);
+  free_darray(dipold,1,nns);
+  free_darray(rakeold,1,nns);
+  free_darray(slip,1,nns);
+  free_darray(nx,1,nns);
+  free_darray(ny,1,nns);
 //  if (ndiscx>odiscx && ndiscy>odiscy){
-//	  free_dvector(lat,1,nns);
-//	  free_dvector(lon,1,nns);
-//	  free_dvector(z,1,nns);
+//	  free_darray(lat,1,nns);
+//	  free_darray(lon,1,nns);
+//	  free_darray(z,1,nns);
 //  }
 
   return(0);
@@ -319,13 +319,13 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
     	return 0;
     }
 
-	REslipo=dvector(1,ns);
-	rakes=dvector(1,ns);
-	taper=dvector(1,ns);
-	start_x = dvector(1,ns);
-	nx = dvector(1,nns);
-	ny = dvector(1,nns);
-	slip = dvector(1,nns);
+	REslipo=darray(1,ns);
+	rakes=darray(1,ns);
+	taper=darray(1,ns);
+	start_x = darray(1,ns);
+	nx = darray(1,nns);
+	ny = darray(1,nns);
+	slip = darray(1,nns);
 
     if (printout) sprintf(outname2, "source_tap%d%d%d%d.out",top, bottom, right, left);
 
@@ -411,8 +411,8 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
 	(*eqkfm2).np_di=nsy;
 	(*eqkfm2).pos_s=eqkfm1.pos_s;
 	(*eqkfm2).pos_d=eqkfm1.pos_d;
-	if ((*eqkfm2).slip_str==NULL) (*eqkfm2).slip_str=dvector(1,nns);
-	if ((*eqkfm2).slip_dip==NULL) (*eqkfm2).slip_dip=dvector(1,nns);
+	if ((*eqkfm2).slip_str==NULL) (*eqkfm2).slip_str=darray(1,nns);
+	if ((*eqkfm2).slip_dip==NULL) (*eqkfm2).slip_dip=darray(1,nns);
 
   }
 
@@ -436,13 +436,13 @@ int suomod1_taper(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, int top, int bottom
 
   //--------------Free memory-------------------//
 
-  free_dvector(slip,1,ns);
-  free_dvector(REslipo,1,ns);
-  free_dvector(start_x,1,ns);
-  free_dvector(nx,1,ns);
-  free_dvector(ny,1,ns);
-  free_dvector(taper,1,ns);
-  free_dvector(rakes,1,ns);
+  free_darray(slip,1,ns);
+  free_darray(REslipo,1,ns);
+  free_darray(start_x,1,ns);
+  free_darray(nx,1,ns);
+  free_darray(ny,1,ns);
+  free_darray(taper,1,ns);
+  free_darray(rakes,1,ns);
   return 0;
 
 }

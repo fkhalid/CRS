@@ -111,7 +111,7 @@ void background_rates(){
 	sprintf(fname,"test/bgrate_tohoB.dat");
 	err=background_rate(cat_file, &crst, reftime, Mmain, &Mc, NULL, &rategrid, dR, dZ, smoothing, ord);
 	crst.nmags=1;
-	crst.GRmags=dvector(1,1);
+	crst.GRmags=darray(1,1);
 	crst.GRmags[1]=1.0;
 	csep_forecast(fname, crst, rategrid, 0);
 

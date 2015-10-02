@@ -30,7 +30,8 @@
 #include "../inp_out/read_matrix.h"
 #include "../inp_out/read_zmap.h"
 #include "../util/moreutil.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 #include "decluster.h"
 #include "GR.h"
 #include "smoothed_rate_Helmstetter.h"

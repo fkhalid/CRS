@@ -39,13 +39,13 @@ void intersect_lists(int *l1, int *l2, int **l3, int **, int **, int N1, int N2,
 void nearest_neighbours(int NP, int D1, int D2, int D3, int **nn);
 void interp_nn(int NP, int D1, int D2, int D3, double *values, double **allvalues, int all6, int **);
 double *** duplicate_d3tensor(double ***S, long nrl, long nrh, long ncl, long nch, long ndl, long ndh);
-double * duplicate_dvector(double *v, long nrl, long nrh);
+double * duplicate_darray(double *v, long nrl, long nrh);
 double min_v(double *v, int N);
 double max_v(double *v, int N);
-int **imatrix_firstlevel(long nrh);
-double **dmatrix_firstlevel(long nrh);
-void free_imatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
-void free_dmatrix_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
+int **i2array_firstlevel(long nrh);
+double **d2array_firstlevel(long nrh);
+void free_i2array_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
+void free_d2array_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
 
 
 

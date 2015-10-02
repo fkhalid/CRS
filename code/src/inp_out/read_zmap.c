@@ -141,15 +141,15 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 			dep0=crst.depmin, \
 			dep1=crst.depmax;
 
-	double 	*lat=dvector(1,Z), \
-			*lon=dvector(1,Z), \
-			*mag=dvector(1,Z), \
-			*mag2=dvector(1,Z), \
-			*dep=dvector(1,Z), \
-			*herr=dvector(1,Z), \
-			*verr=dvector(1,Z), \
-			*merr=dvector(1,Z), \
-			*times=dvector(1,Z);  //days from start of catalog (t1c)?
+	double 	*lat=darray(1,Z), \
+			*lon=darray(1,Z), \
+			*mag=darray(1,Z), \
+			*mag2=darray(1,Z), \
+			*dep=darray(1,Z), \
+			*herr=darray(1,Z), \
+			*verr=darray(1,Z), \
+			*merr=darray(1,Z), \
+			*times=darray(1,Z);  //days from start of catalog (t1c)?
 
 	setenv("TZ", "UTC", 1);
 	
@@ -326,10 +326,10 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 	dep1l=dep1+extra_d;
 
 	//count points in catalog, and sources:
-	seleq1=ivector(0,valid);
-	catindex=ivector(0,valid);
-	seleq2=ivector(0,valid);
-	old2new=ivector(0,valid);
+	seleq1=iarray(0,valid);
+	catindex=iarray(0,valid);
+	seleq2=iarray(0,valid);
+	old2new=iarray(0,valid);
 	t_last_large=-1e30;
 	for (int i=1; i<=valid; i++){
 		SD=f*herr[i];

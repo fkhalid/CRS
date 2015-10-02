@@ -32,7 +32,8 @@
 #include "../general/find_timesteps.h"
 #include "../general/forecast_stepG.h"
 #include "../general/mem_mgmt.h"
-#include "nrutil.h"
+
+#include "../util/nrutil_newnames.h"
 
 /* Compare numerical solution based on piecewise linear equation to analytical solution for logarithmic stress.
  * Analytical solution based on Dieterich (1994).
@@ -70,8 +71,8 @@ void log_afterslip(){
 	DCFS.m=9.0;
 	DCFS.nsel=1;
 	DCFS.t=0.0;
-	DCFS.which_pts=ivector(1,1);
-	DCFS.cmb=dvector(1,1);
+	DCFS.which_pts=iarray(1,1);
+	DCFS.cmb=darray(1,1);
 	DCFS.which_pts[1]=1;
 	DCFS.cmb[1]=tau_coseismic;
 
@@ -115,8 +116,8 @@ void log_afterslip(){
 				cat.t[i]=times[i];
 			}
 
-			rate=dvector(0,L);
-			DCFScont=dmatrix(0,L, 1,1);
+			rate=darray(0,L);
+			DCFScont=d2array(0,L, 1,1);
 			for (int i=1; i<=L; i++) {
 				DCFScont[i][1]= afterslip? u*(log(w*times[i]+1)-log(w*times[i-1]+1)) : 0;
 				fprintf(fout,"%.5e\t", DCFScont[i][1]);

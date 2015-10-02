@@ -42,9 +42,9 @@ double *smoothed_rate_Helmstetter(double *xgrid, double *ygrid, double dx, doubl
 	int *ind, no_ind;
 	double *rate, *rate_tot;
 
-	ind=ivector(1,Ngrid);
-	rate=dvector(0,Ngrid);
-	rate_tot=dvector(1,Ngrid);
+	ind=iarray(1,Ngrid);
+	rate=darray(0,Ngrid);
+	rate_tot=darray(1,Ngrid);
 	for (int i=1; i<=Ngrid; i++) rate_tot[i]=0.0;
 
 	switch (ord){
@@ -70,8 +70,8 @@ double *smoothed_rate_Helmstetter(double *xgrid, double *ygrid, double dx, doubl
 		}
 	}
 
-	free_ivector(ind,1,Ngrid);
-	free_dvector(rate,0,Ngrid);
+	free_iarray(ind,1,Ngrid);
+	free_darray(rate,0,Ngrid);
 
 	return rate_tot;
 }
@@ -98,9 +98,9 @@ double *smoothed_rate_Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid
 	int *ind, no_ind;
 	double *rate, *rate_tot;
 
-	ind=ivector(1,Ngrid);
-	rate=dvector(1,Ngrid);
-	rate_tot=dvector(1,Ngrid);
+	ind=iarray(1,Ngrid);
+	rate=darray(1,Ngrid);
+	rate_tot=darray(1,Ngrid);
 	for (int i=1; i<=Ngrid; i++) rate_tot[i]=0.0;
 
 	switch (ord){
@@ -172,8 +172,8 @@ double *fit_depth(double *zgrid, double dz, int Ngrid, double *zs, double *err, 
 	double probCum;
 	double rz, w;
 
-	prob0=dvector(1,Ngrid);
-	prob=dvector(1,Ngrid);
+	prob0=darray(1,Ngrid);
+	prob=darray(1,Ngrid);
 
 	for (int n=1; n<=Ngrid; n++) prob[n]=0;
 
@@ -189,7 +189,7 @@ double *fit_depth(double *zgrid, double dz, int Ngrid, double *zs, double *err, 
 		for (int n=1; n<=Ngrid; n++) prob[n]+=w*prob0[n];
 	}
 
-	free_dvector(prob0,1,Ngrid);
+	free_darray(prob0,1,Ngrid);
 
 	return prob;
 }
