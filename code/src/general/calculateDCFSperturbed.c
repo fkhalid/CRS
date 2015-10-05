@@ -32,7 +32,6 @@
 #include "../seis/cmbopt.h"
 #include "../util/error.h"
 #include "../util/moreutil.h"
-//#include "../util/ran1.h"
 #include "../util/nrutil_newnames.h"
 #include "mem_mgmt.h"
 

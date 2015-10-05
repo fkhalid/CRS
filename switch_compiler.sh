@@ -20,7 +20,7 @@ then
  new_name=run_mpi_crs;
 
  # Output message and do nothing if compiler not found:
- if [ $(grep -rl "$old_compiler" $folder | grep -v -x ".*\.py\|.*\.sh" | wc -l) = 0 ];
+ if [ $(grep -rl "$old_compiler" $folder | grep "makefile\|subdir" | wc -l) = 0 ];
  then 
 	echo "No files with compiler $old_compiler found.";
 	exit
@@ -28,15 +28,14 @@ then
 
    # All subdir.mk files are used for compiling, and not linking.
    # Therefore, the -D_CRS_MPI flag should be added.
-   grep -rl "$old_compiler" $folder | grep "subdir.mk" | xargs sed -i "s*$old_compiler*$new_compiler -D_CRS_MPI*"
+   grep -rl "$old_compiler" $folder | grep "subdir" | xargs sed -i "s*$old_compiler*$new_compiler -D_CRS_MPI*"
   
    # makefile is used for linking only. Therefore, the -D_CRS_MPI
    # should not be added.
-   #  grep -v -x ".*\.py\|.*\.sh" to avoid changing variables in scripts.
-   grep -rl "$old_compiler" $folder | grep -v "subdir.mk" |  grep -v -x ".*\.py\|.*\.sh" | xargs sed -i "s*$old_compiler*$new_compiler*"
+   sed -i "s*$old_compiler*$new_compiler*" $folder/makefile
 
    #change name of the executable:
-   grep -rl "$old_name" $folder |  grep -v -x ".*\.py\|.*\.sh" | xargs sed -i "s*$old_name*$new_name*"
+   sed -i "s*$old_name*$new_name*" $folder/makefile
 
    #output message
    echo "Switched compiler: gcc --> mpicc."
@@ -52,18 +51,18 @@ else
  new_name=run_crs;
 
 
- if [ $(grep -rl "$old_compiler" $folder | grep -v -x ".*\.py\|.*\.sh" | wc -l) = 0 ];
+ if [ $(grep -rl "$old_compiler" $folder | grep "makefile\|subdir" |  wc -l) = 0 ];
  then  
         echo "No files with compiler $old_compiler found.";
         exit
  else 
 
-   # The _CRS_MPI should not be set when compiling serial code. 
-   grep -rl "$old_compiler" $folder | grep "subdir.mk" | xargs sed -i "s*$old_compiler -D_CRS_MPI*$new_compiler*"
-   grep -rl "$old_compiler" $folder | grep -v "subdir.mk" |  grep -v -x ".*\.py\|.*\.sh" | xargs sed -i "s*$old_compiler*$new_compiler*"
+   # The _CRS_MPI flag should not be set when compiling serial code.
+   grep -rl "$old_compiler" $folder | grep "subdir" | xargs sed -i "s* -D_CRS_MPI**"
+   grep -rl "$old_compiler" $folder | grep "subdir\|makefile" | xargs sed -i "s*$old_compiler*$new_compiler*" 
 
    #change name of the executable:
-   grep -rl "$old_name" $folder |  grep -v -x ".*\.py\|.*\.sh" | xargs sed -i "s*$old_name*$new_name*"
+   sed -i "s*$old_name*$new_name*" $folder/makefile
 
    echo "Switched compiler: mpicc --> gcc."
  fi
