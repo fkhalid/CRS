@@ -9,4 +9,4 @@ InputListSlipModels=input_testcases/testNA/slipmodelslist2.dat
 ForecastTemplate=input_testcases/template.dat
 RandomSeedValue=-37284630
 InversionStartDate=2004-09-28T17:15:24Z
-InputListAfterslipModels=input_testcases/testNA/aslipmodels4.dat
+InputListAseismicModels=input_testcases/testNA/aslipmodels4.dat

@@ -6,4 +6,4 @@ ForecastStartDate=2004-09-30T17:15:24Z
 ForecastEndDate=2005-10-15T17:15:24Z
 ForecastTemplate=input_testcases/template.dat
 RandomSeedValue=-37284630
-InputListAfterslipModels=input_testcases/testDL/aslipmodels7.dat
+InputListAseismicModels=input_testcases/testDL/aslipmodels7.dat

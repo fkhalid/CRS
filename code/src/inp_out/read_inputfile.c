@@ -98,7 +98,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	/*7*/	"ForecastTemplate", \
 	/*8*/	"", \
 	/*9*/	"InputListSlipModels", \
-	/*10*/	"InputListAfterslipModels", \
+	/*10*/	"InputListAseismicModels", \
 	/*11*/	"InputBackgroundRateGrid",\
 	/*12*/	"InputModelParametersFile",\
 	/*13*/	"RandomSeedValue",\
