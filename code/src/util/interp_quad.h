@@ -26,6 +26,6 @@
 
 #include <math.h>
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 void interp_quad(double t0, double t1, double y, double y1, double *dts, double *values, int ndts);

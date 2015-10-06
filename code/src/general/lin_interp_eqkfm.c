@@ -22,7 +22,7 @@
 
 #include "../defines.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 void lin_interp_eqkfm(struct eqkfm **eqkfm_aft, int NF, int L, double *times2, int *ind){
 

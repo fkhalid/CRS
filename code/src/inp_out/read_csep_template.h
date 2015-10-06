@@ -27,7 +27,7 @@
 #include "../geom/convert_geometry.h"
 #include "../util/moreutil.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "read_matrix.h"
 
 int read_rate(struct crust crst, char *fname, double **bg_rate, double *r0, double *minmag);

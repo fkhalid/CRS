@@ -33,7 +33,7 @@
 #include "../seis/WellsCoppersmith.h"
 #include "../util/files.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 int read_fsp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF_out);
 void track_position(long *pos, int NP, FILE* fin);

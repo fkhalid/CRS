@@ -37,7 +37,7 @@
 #include "../seis/soumod1.h"
 #include "../util/moreutil.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "../util/splines_eqkfm.h"
 #include "eqkfm_copy.h"
 #include "find_timesteps.h"

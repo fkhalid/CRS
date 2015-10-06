@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 double *assign_GRnorm(double *mags, int N, double b, int Minf);
 int compare (const void * a, const void * b);

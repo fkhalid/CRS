@@ -59,7 +59,7 @@
 #include "../util/moreutil.h"
 //#include "nr.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 char *testfolder="test";
 
@@ -1284,7 +1284,7 @@ int test_allOkada_simple_multiplerec(){
 		dcfs.nsel=eqfm.nsel=NP;
 		dcfs.which_pts=eqfm.selpoints=allp;
 		printf("%d\n",dcfs.nsel);
-		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
+		dcfs.S=d3array(1,dcfs.nsel, 1,3,1,3);
 		dcfs.cmb=darray(1,dcfs.nsel);
 
 		// 1) using okadaDCFS:
@@ -1343,7 +1343,7 @@ int test_allOkada_simple_multiplerec(){
 		print_grid(fname, dcfs, crst, NULL);
 
 		free_darray(dcfs.cmb,1,dcfs.nsel);
-		free_d3tensor(dcfs.S,1,dcfs.nsel,1,3,1,3);
+		free_d3array(dcfs.S,1,dcfs.nsel,1,3,1,3);
 		free_f3array(coeffs.Coeffs_dip,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
 		free_f3array(coeffs.Coeffs_st,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
 		free_matrix(resCoeff_st, 1,coeffs.NP, 1, coeffs.NgridT);
@@ -1455,7 +1455,7 @@ int test_allOkada_simple(){
 		dcfs.nsel=eqfm.nsel=NP;
 		dcfs.which_pts=eqfm.selpoints=allp;
 		printf("%d\n",dcfs.nsel);
-		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
+		dcfs.S=d3array(1,dcfs.nsel, 1,3,1,3);
 		dcfs.cmb=darray(1,dcfs.nsel);
 
 		// 1) using okadaDCFS:
@@ -1509,7 +1509,7 @@ int test_allOkada_simple(){
 		print_grid(fname, dcfs, crst, NULL);
 
 		free_darray(dcfs.cmb,1,dcfs.nsel);
-		free_d3tensor(dcfs.S,1,dcfs.nsel,1,3,1,3);
+		free_d3array(dcfs.S,1,dcfs.nsel,1,3,1,3);
 		free_f3array(coeffs.Coeffs_dip,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
 		free_f3array(coeffs.Coeffs_st,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
 		free_matrix(resCoeff_st, 1,coeffs.NP, 1, coeffs.NgridT);
@@ -1627,7 +1627,7 @@ int test_allOkada(){
 		dcfs.nsel=eqfm.nsel;
 		dcfs.which_pts=eqfm.selpoints;
 		printf("%d\n",dcfs.nsel);
-		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
+		dcfs.S=d3array(1,dcfs.nsel, 1,3,1,3);
 		dcfs.cmb=darray(1,dcfs.nsel);
 		sprintf(fname, "%s/okada/slipmodel%d.dat",testfolder, n);
 		//print_slipmodel(fname, &eqfm, 1);
@@ -1686,7 +1686,7 @@ int test_allOkada(){
 
 		free_darray(dcfs.cmb,1,dcfs.nsel);
 		free_iarray(dcfs.which_pts,1,dcfs.nsel);
-		free_d3tensor(dcfs.S,1,dcfs.nsel,1,3,1,3);
+		free_d3array(dcfs.S,1,dcfs.nsel,1,3,1,3);
 		free_f3array(coeffs.Coeffs_dip,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
 		free_f3array(coeffs.Coeffs_st,1,coeffs.NP, 1, coeffs.NgridT, 1,6);
 		free_matrix(resCoeff_st, 1,coeffs.NP, 1, coeffs.NgridT);
@@ -1866,7 +1866,7 @@ void jacobi(float **a, int n, float d[], float **v, int *nrot)
 			z[ip]=0.0;
 		}
 	}
-	nrerror("Too many iterations in routine jacobi");
+	error_quit_fun("Too many iterations in routine jacobi");
 }
 
 int test_oops(){

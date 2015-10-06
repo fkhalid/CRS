@@ -22,7 +22,7 @@
 #include <math.h>
 #include "../defines.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "dc3d.h"
 
 

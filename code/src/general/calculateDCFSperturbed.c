@@ -22,7 +22,6 @@
 #include "calculateDCFSperturbed.h"
 
 #include <math.h>
-//#include <nrutil.h>
 //#include <stddef.h>
 #include <stdlib.h>
 
@@ -32,7 +31,7 @@
 #include "../seis/cmbopt.h"
 #include "../util/error.h"
 #include "../util/moreutil.h"
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "mem_mgmt.h"
 
 #ifdef _CRS_MPI
@@ -199,7 +198,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 				for (int i=0; i<NTSeff; i++){
 					DCFS_Af[a_ev+i].NF=AllCoeffaft->NF;
 					DCFS_Af[a_ev+i].cmb= darray(1,NgridT);	//only allocated stuff needed by OkadaCoeff2....
-					DCFS_Af[a_ev+i].S=d3tensor(1,NgridT,1,3,1,3);
+					DCFS_Af[a_ev+i].S=d3array(1,NgridT,1,3,1,3);
 					DCFS_Af[a_ev+i].nsel=eqkfmAf[nfaults].nsel;
 					DCFS_Af[a_ev+i].which_pts=eqkfmAf[nfaults].selpoints;
 				}
@@ -219,7 +218,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					if (vary_recfault==0) {
 						if (optimal_rake) resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, NULL, 1);
 						else resolve_DCFS(DCFS_Af[a_ev+i], crst, crst.str0+fm_offset, crst.dip0+fm_offset, crst.rake0+fm_offset, 0);
-						free_d3tensor(DCFS_Af[a_ev+i].S, 1,NgridT,1,3,1,3);
+						free_d3array(DCFS_Af[a_ev+i].S, 1,NgridT,1,3,1,3);
 						if (multisnap && i<NTSeff){
 							for (int n=1; n<=NgridT; n++) cmb_cumu[a_ev/NTSeff][n]+=DCFS_Af[a_ev+i].cmb[n];
 						}

@@ -27,7 +27,7 @@
 #include "../defines.h"
 #include "../geom/find_gridpoints.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 double *smoothed_rate_Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord);
 double *smoothed_rate_Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord);

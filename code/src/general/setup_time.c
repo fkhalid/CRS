@@ -27,7 +27,7 @@
 #include "../util/merge.h"
 #include "../util/moreutil.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "../util/splines_eqkfm.h"
 #include "find_timesteps.h"
 #include "lin_interp_eqkfm.h"

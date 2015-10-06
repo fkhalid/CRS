@@ -31,7 +31,7 @@
 #include "../okada/prestress.h"
 #include "../util/error.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "read_csep_template.h"
 #include "read_matrix.h"
 

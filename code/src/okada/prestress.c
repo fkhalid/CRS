@@ -28,7 +28,7 @@
 #include "../defines.h"
 #include "../util/moreutil.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 void prestress(double s1, double s2, double s3, double strike, double dip, double rake, double p,double f, double ***s){
 /*

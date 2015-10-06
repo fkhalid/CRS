@@ -1,7 +1,21 @@
-//TODO add header (also to .c file) and change name.
+/*   Copyright (C) 2015 by Camilla Cattania and Fahad Khalid.
+ *
+ *   This file is part of CRS.
+ *
+ *   CRS is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   CRS is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-#define NR_END 1
-#define FREE_ARG char*
 
 #define IA 16807
 #define IM 2147483647
@@ -14,7 +28,6 @@
 #define RNMX (1.0-EPS)
 
 float ran1(long *);
-void nrerror(char error_text[]);
 int *iarray(long nl, long nh);
 double *darray(long nl, long nh);
 unsigned long *larray(long nl, long nh);

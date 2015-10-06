@@ -32,7 +32,7 @@
 #include "../geom/coord_trafos.h"
 #include "../inp_out/print_output.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 //#include "nr.h"
 
 int scale_to_mag(struct eqkfm eqkfm1, struct eqkfm *eqkfm2, double * slips, double *rakes);

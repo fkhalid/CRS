@@ -26,7 +26,7 @@
 #include "../defines.h"
 
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 int findtimestepsomori(double te, double t0,double t1, double K, double p, double c, double *times, double *K_over_tau0, int *L);
 

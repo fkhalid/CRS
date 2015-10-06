@@ -27,8 +27,9 @@
 #include "../defines.h"
 #include "../util/moreutil.h"
 
-#include "../util/nrutil_newnames.h"
-//#include "nrutil.c"
+#include "../util/util1.h"
+
+#define offset 1
 
 void reduce_eqkfm_memory(struct eqkfm *eqkfm0, int NF){
 /* Frees empty arrays in eqkfm0 structure.
@@ -137,9 +138,9 @@ void init_cat1(struct catalog *cat, int Zsel){
 struct eqkfm *eqkfm_array(long n1, long n2){
 /* Allocate memory to array of eqkfm. */
 	struct eqkfm *v;
-	v= (struct eqkfm *) malloc((size_t) ((n2-n1+1+NR_END)*sizeof(struct eqkfm)));
+	v= (struct eqkfm *) malloc((size_t) ((n2-n1+1+offset)*sizeof(struct eqkfm)));
 
-	for (int i=NR_END; i<=n2-n1+NR_END; i++){
+	for (int i=offset; i<=n2-n1+offset; i++){
 		v[i].slip_str= NULL;
 		v[i].slip_dip= NULL;
 		v[i].open= NULL;
@@ -174,15 +175,15 @@ struct eqkfm *eqkfm_array(long n1, long n2){
 		v[i].co_aft_pointer=NULL;
 
 	}
-	return v-n1+NR_END;
+	return v-n1+offset;
 }
 
 struct pscmp *pscmp_array(long n1, long n2){
 /* Allocate memory to array of pscmp. */
 	struct pscmp *v;
-	v= (struct pscmp *) malloc((size_t) ((n2-n1+1+NR_END)*sizeof(struct pscmp)));
+	v= (struct pscmp *) malloc((size_t) ((n2-n1+1+offset)*sizeof(struct pscmp)));
 
-	for (int i=NR_END; i<=n2-n1+NR_END; i++){
+	for (int i=offset; i<=n2-n1+offset; i++){
 		v[i].t=0.0;
 		v[i].fdist=NULL;	//distance to fault
 		v[i].S=NULL;
@@ -199,16 +200,16 @@ struct pscmp *pscmp_array(long n1, long n2){
 	    v[i].index_cat=0;
 	    v[i].NF=0;
 	}
-	return v-n1+NR_END;
+	return v-n1+offset;
 }
 
 struct pscmp *pscmp_arrayinit(struct crust v0, long n1, long n2){
 /* Allocate memory to array of pscmp, and initialize variables copied from v0. */
 
 		struct pscmp *v;
-		v= (struct pscmp *) malloc((size_t) ((n2-n1+1+NR_END)*sizeof(struct pscmp)));
+		v= (struct pscmp *) malloc((size_t) ((n2-n1+1+offset)*sizeof(struct pscmp)));
 
-		for (int i=NR_END; i<=n2-n1+NR_END; i++){
+		for (int i=offset; i<=n2-n1+offset; i++){
 			v[i].t=0.0;
 			v[i].fdist=NULL;	//distance to fault
 			v[i].S=NULL;
@@ -225,32 +226,10 @@ struct pscmp *pscmp_arrayinit(struct crust v0, long n1, long n2){
 		    v[i].index_cat=0;
 		    v[i].NF=0;
 		}
-		return v-n1+NR_END;;
+		return v-n1+offset;;
 }
 
-void free_eqkfmarray(struct eqkfm *v, long n1, long n2){
-/* free a eqkfm vector allocated with eqkfm_array() */
-	free((FREE_ARG) (v+n1-NR_END));
-}
 
-void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2){
-
-	for (int f=n1; f<=n2; f++){
-		if (v[f].tot_slip) free_darray(v[f].tot_slip,0,0);
-		if (v[f].distance) free_darray(v[f].distance,1,0);
-		if (v[f].pos_s) free_darray(v[f].pos_s,1,0);
-		if (v[f].pos_d) free_darray(v[f].pos_d,1,0);
-		if (v[f].slip_str) free_darray(v[f].slip_str,1,0);
-		if (v[f].slip_dip) free_darray(v[f].slip_dip,1,0);
-		if (v[f].open) free_darray(v[f].open,1,0);
-		if (v[f].ts) free_darray(v[f].ts,0,0);
-		if (v[f].tevol) free_darray(v[f].tevol,0,0);
-		if (v[f].allslip_str) free_d2array(v[f].allslip_str,0,0,1,0);
-		if (v[f].allslip_dip) free_d2array(v[f].allslip_dip,0,0,1,0);
-		if (v[f].allslip_open) free_d2array(v[f].allslip_open,0,0,1,0);
-
-	}
-}
 
 void free_cat(struct catalog cat){
 /* Deallocates memory from variables in catalog structure.
@@ -265,7 +244,7 @@ void free_cat(struct catalog cat){
 	free_darray(cat.y0,1, 0);
 	free_darray(cat.depths0,1, 0);
 	free_iarray(cat.ngrid,1, 0);
-	free_i2array_firstlevel(cat.ngridpoints,1,cat.Z,1,0); //uses 0 for upper index, since it doesn't matter (check nrutil.c).
+	free_i2array_firstlevel(cat.ngridpoints,1,cat.Z,1,0); //uses 0 for upper index, since it doesn't matter.
 	free_d2array_firstlevel(cat.weights,1,cat.Z, 1,0);
 }
 

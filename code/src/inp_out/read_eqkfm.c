@@ -36,7 +36,7 @@
 #include "../seis/soumod1.h"
 #include "../seis/WellsCoppersmith.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "read_eqkfm_fsp.h"
 
 int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmodels, struct eqkfm **eqfm_comb,

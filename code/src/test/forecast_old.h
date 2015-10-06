@@ -32,7 +32,7 @@
 #include <omp.h>
 #include "../defines.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "../general/struct_conversions.h"
 
 //void forecast_stepG(double *times, double **cmpdata, double tt0, double tt1, double Asig, double ta, int points[], double *NeX, double *NeT, int N, int NTS, double *gamma_init, int last);

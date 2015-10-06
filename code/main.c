@@ -39,7 +39,7 @@
 #include "src/util/error.h"
 #include "src/util/moreutil.h"
 
-#include "src/util/nrutil_newnames.h"
+#include "src/util/util1.h"
 
 #ifdef _CRS_MPI
 	#include "mpi.h"

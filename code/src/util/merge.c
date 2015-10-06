@@ -21,7 +21,7 @@
 #include <stddef.h>
 
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "merge.h"
 #include "../defines.h"
 

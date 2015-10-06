@@ -29,7 +29,7 @@
 #include "../defines.h"
 #include "../util/error.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 #ifdef _CRS_MPI
 	#include "mpi.h"

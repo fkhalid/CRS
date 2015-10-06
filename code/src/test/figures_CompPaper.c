@@ -33,7 +33,7 @@
 #include "../general/forecast_stepG.h"
 #include "../general/mem_mgmt.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 /* Compare numerical solution based on piecewise linear equation to analytical solution for logarithmic stress.
  * Analytical solution based on Dieterich (1994).

@@ -29,7 +29,7 @@
 #include "../geom/find_gridpoints.h"
 #include "../seis/WellsCoppersmith.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "../general/eqkfm_copy.h"
 #include "read_matrix.h"
 

@@ -26,7 +26,7 @@
 #include "../defines.h"
 #include "../geom/convert_geometry.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "read_matrix.h"
 
 #ifdef _CRS_MPI

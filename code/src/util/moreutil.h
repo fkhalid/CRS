@@ -20,7 +20,7 @@
 
 int closest_element(double *v, int N, double value, double toll);
 int *nth_index(int i, int Ndim, int *dim);
-void nrerrorsoft(char error_text[]);
+void error_quit_funsoft(char error_text[]);
 void copy_matrix( double **m1, double ***m2, int a, int b);
 void copy_vector(double *m1, double **m2, int a);
 void mysort(unsigned long n, double *old_arr, int **ind, double **arr);
@@ -33,12 +33,12 @@ double vdotv(double *v1, double *v2, int D);
 void normv (double *v, int D);
 void unitv (double *v, int D);
 void statistics (double *, int, double *, double *);
-double ***d3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh);
-void free_d3tensor(double ***t, long nrl, long nrh, long ncl, long nch,	long ndl, long ndh);
+double ***d3array(long nrl, long nrh, long ncl, long nch, long ndl, long ndh);
+void free_d3array(double ***t, long nrl, long nrh, long ncl, long nch,	long ndl, long ndh);
 void intersect_lists(int *l1, int *l2, int **l3, int **, int **, int N1, int N2, int *N3);
 void nearest_neighbours(int NP, int D1, int D2, int D3, int **nn);
 void interp_nn(int NP, int D1, int D2, int D3, double *values, double **allvalues, int all6, int **);
-double *** duplicate_d3tensor(double ***S, long nrl, long nrh, long ncl, long nch, long ndl, long ndh);
+double *** duplicate_d3array(double ***S, long nrl, long nrh, long ncl, long nch, long ndl, long ndh);
 double * duplicate_darray(double *v, long nrl, long nrh);
 double min_v(double *v, int N);
 double max_v(double *v, int N);

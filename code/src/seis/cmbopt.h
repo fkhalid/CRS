@@ -31,7 +31,7 @@
 #include "../okada/okadaDCFS.h"
 #include "../util/mscorr.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "../util/roots3.h"
 
 void cmbopt(double sxx, double syy, double szz, double sxy, double syz, double szx, double p, double f, double st0, double di0, double ra0, double *cmb,double *st1, double *di1, double *ra1, double *st2, double *di2, double *ra2);

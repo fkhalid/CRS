@@ -25,7 +25,7 @@
 
 #include "../defines.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 int *decluster_catalog_rescalegrid(struct catalog cat, struct crust crst, double Mmain, double **time_missing, int d3);
 int * decluster_catalog(struct catalog cat, double Mmain, double **time_missing, int d3);

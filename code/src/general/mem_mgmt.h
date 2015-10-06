@@ -28,7 +28,7 @@
 
 #include "../defines.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 void reduce_eqkfm_memory(struct eqkfm *eqkfm0, int NF);
 void check_empty_eqkfm(struct eqkfm eqkfm0, double toll, int *is_str, int *is_dip, int *is_open);
@@ -39,8 +39,6 @@ struct set_of_models *set_of_models_array(long n1, long n2);
 struct eqkfm *eqkfm_array(long n1, long n2);
 struct pscmp *pscmp_array(long n1, long n2);
 struct pscmp *pscmp_arrayinit(struct crust v0, long n1, long n2);
-void free_eqkfmarray(struct eqkfm *v, long n1, long n2);
-void freefull_eqkfmarray(struct eqkfm *v, long n1, long n2);
 void freefull_pscmparray(struct pscmp *v, long n1, long n2);
 void free_cat(struct catalog cat);
 

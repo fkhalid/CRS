@@ -31,7 +31,7 @@
 #include "../inp_out/read_zmap.h"
 #include "../util/moreutil.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "decluster.h"
 #include "GR.h"
 #include "smoothed_rate_Helmstetter.h"

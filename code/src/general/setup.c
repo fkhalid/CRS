@@ -38,7 +38,7 @@
 #include "../util/merge.h"
 #include "../util/moreutil.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "../util/splines_eqkfm.h"
 #include "eqkfm_copy.h"
 #include "find_timesteps.h"
@@ -512,11 +512,11 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
 			DCFS[eq].NF=Nfaults[eq];
 			if (DCFS[eq].nsel!=Nsel){
 				if (DCFS[eq].nsel>0){
-					free_d3tensor(DCFS[eq].S,1,DCFS[eq].nsel,1,3,1,3);
+					free_d3array(DCFS[eq].S,1,DCFS[eq].nsel,1,3,1,3);
 					free_darray(DCFS[eq].cmb,1,DCFS[eq].nsel);
 				}
 				DCFS[eq].nsel=Nsel;
-				DCFS[eq].S = d3tensor(1,Nsel,1,3,1,3);
+				DCFS[eq].S = d3array(1,Nsel,1,3,1,3);
 				DCFS[eq].cmb=darray(1,Nsel);
 				for (int i=1; i<=Nsel; i++) DCFS[eq].cmb[i]=0.0;
 			}

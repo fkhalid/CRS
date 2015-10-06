@@ -25,7 +25,7 @@
 
 #include "../defines.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 int convert_geometry(struct crust crst, double *old_v, double **new_v, int sum, int increase_resolution);
 int flatten_outgrid(struct crust crst, double *old_v, double **new_v, int *Nfinal);

@@ -39,7 +39,7 @@
 #include "../seis/soumod1.h"
 #include "../util/moreutil.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 int grid_variability(){
 
@@ -213,7 +213,7 @@ int grid_variability(){
 
 		dcfs.nsel=eqfm.nsel=NP;
 		dcfs.which_pts=eqfm.selpoints=allp;
-		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
+		dcfs.S=d3array(1,dcfs.nsel, 1,3,1,3);
 		dcfs.cmb=darray(1,dcfs.nsel);
 
 //		okadaDCFS(dcfs, &eqfm, 1, crst, &eqfm.str1, &eqfm.dip1, 0);
@@ -225,7 +225,7 @@ int grid_variability(){
 
 		dcfs.nsel=eqfm.nsel=NP2;
 		dcfs.which_pts=eqfm.selpoints=allp2;
-		dcfs.S=d3tensor(1,dcfs.nsel, 1,3,1,3);
+		dcfs.S=d3array(1,dcfs.nsel, 1,3,1,3);
 		dcfs.cmb=darray(1,dcfs.nsel);
 
 //		okadaDCFS(dcfs, &eqfm, 1, crst2, &eqfm.str1, &eqfm.dip1, 0);

@@ -24,7 +24,7 @@
 #include "../general/eqkfm_copy.h"
 #include "fit_splines.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 void splines_eqkfm(struct eqkfm **eqkfm_aft, int Nas, int NF, double *times1, double *times2, int L, long *seed){
 	double **slipbefore_st, **slipbefore_di, **slip_after_st, **slip_after_di, **slipbefore_op, **slip_after_op;

@@ -26,6 +26,6 @@
 
 #include <math.h>
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 
 void roots3(double b, double c, double d, double *x);

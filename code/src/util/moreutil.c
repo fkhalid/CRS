@@ -21,7 +21,6 @@
 #include "moreutil.h"
 
 #include <math.h>
-#include <nrutil.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,13 +64,6 @@ int *nth_index(int i, int Ndim, int *dim){
 	return res;
 }
 
-// error handling w/o exiting code (hence "soft")
-void nrerrorsoft(char error_text[])
-/* Numerical Recipes standard error handler */
-{
-	fprintf(stderr,"Numerical Recipes run-time error...");
-	fprintf(stderr,"%s\n",error_text);
-}
 
 void copy_matrix( double **m1, double ***m2, int a, int b){
 	/* m1: original matrix; *m2: new matrix. indices: [1...a, 1...b]
@@ -170,7 +162,7 @@ void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 			ind[l+1]=ind[j];
 			ind[j]=ii;
 			jstack += 2;
-			if (jstack > NSTACK) nrerror("NSTACK too small in sort.");
+			if (jstack > NSTACK) error_quit_fun("NSTACK too small in sort.");
 			if (ir-i+1 >= j-l) {
 				istack[jstack]=ir;
 				istack[jstack-1]=i;
@@ -188,58 +180,6 @@ void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 	if (arr_out) *arr_out=arr;
 
 	return;
-}
-
-int **i2array_firstlevel(long nrh)
-/* allocate a int matrix with subscript range m[0..nrh]; columns will be allocated later. */
-{
-	int **m;
-
-	/* allocate pointers to rows */
-	m=(int **) malloc((size_t)((nrh+1)*sizeof(int*)));
-
-	/* set rows to NULL (so that later it will be recognized that memory should be allocated).*/
-	for (int i=0; i<=nrh; i++) m[i]=NULL;
-
-	/* return pointer to array of pointers to rows */
-	return m;
-}
-
-double **d2array_firstlevel(long nrh)
-/* allocate a double matrix with subscript range m[nrl..nrh];  columns will be allocated later. */
-{
-	double **m;
-
-	/* allocate pointers to rows */
-	m=(double **) malloc((size_t)((nrh+1)*sizeof(double*)));
-
-	/* set rows to NULL (so that later it will be recognized that memory should be allocated).*/
-	for (int i=0; i<=nrh; i++) m[i]=NULL;
-
-	/* return pointer to array of pointers to rows */
-	return m;
-}
-
-void free_i2array_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
-/* free an int matrix allocated by i2array_firstlevel() */
-{
-	for (int i=nrl; i<=nrh; i++) if (m[i]) free_iarray(m[i], ncl, nch);
-	free((FREE_ARG) (m+nrl-NR_END));
-}
-
-void free_d2array_firstlevel(int **m, long nrl, long nrh, long ncl, long nch)
-/* free an int matrix allocated by d2array_firstlevel() */
-{
-	for (int i=nrl; i<=nrh; i++) if (m[i]) free_darray(m[i], ncl, nch);
-	free((FREE_ARG) (m+nrl-NR_END));
-}
-
-void free_tmatrix(char ***m, long nrl, long nrh, long ncl, long nch, long length)
-/* free a char* matrix allocated by matrix() */
-{
-	free((FREE_ARG) (m[nrl][ncl]+length-1-NR_END));
-	free((FREE_ARG) (m[nrl]+ncl-NR_END));
-	free((FREE_ARG) (m+nrl-NR_END));
 }
 
 double **mtimesm3(double **m1, double **m2, double ***m30){
@@ -323,49 +263,6 @@ void unitv (double *v, int D){
 	return;
 }
 
-double ***d3tensor(long nrl, long nrh, long ncl, long nch, long ndl, long ndh)
-/* allocate a double 3tensor with range t[nrl..nrh][ncl..nch][ndl..ndh] */
-{
-	long i,j,nrow=nrh-nrl+1,ncol=nch-ncl+1,ndep=ndh-ndl+1;
-	double ***t;
-
-	/* allocate pointers to pointers to rows */
-	t=(double ***) malloc((size_t)((nrow+NR_END)*sizeof(double**)));
-	if (!t) nrerror("allocation failure 1 in f3array()");
-	t += NR_END;
-	t -= nrl;
-
-	/* allocate pointers to rows and set pointers to them */
-	t[nrl]=(double **) malloc((size_t)((nrow*ncol+NR_END)*sizeof(double*)));
-	if (!t[nrl]) nrerror("allocation failure 2 in f3array()");
-	t[nrl] += NR_END;
-	t[nrl] -= ncl;
-
-	/* allocate rows and set pointers to them */
-	t[nrl][ncl]=(double *) malloc((size_t)((nrow*ncol*ndep+NR_END)*sizeof(double)));
-	if (!t[nrl][ncl]) nrerror("allocation failure 3 in f3array()");
-	t[nrl][ncl] += NR_END;
-	t[nrl][ncl] -= ndl;
-
-	for(j=ncl+1;j<=nch;j++) t[nrl][j]=t[nrl][j-1]+ndep;
-	for(i=nrl+1;i<=nrh;i++) {
-		t[i]=t[i-1]+ncol;
-		t[i][ncl]=t[i-1][ncl]+ncol*ndep;
-		for(j=ncl+1;j<=nch;j++) t[i][j]=t[i][j-1]+ndep;
-	}
-
-	/* return pointer to array of pointers to rows */
-	return t;
-}
-
-void free_d3tensor(double ***t, long nrl, long nrh, long ncl, long nch,
-	long ndl, long ndh)
-/* free a double f3array allocated by f3array() */
-{
-	free((FREE_ARG) (t[nrl][ncl]+ndl-NR_END));
-	free((FREE_ARG) (t[nrl]+ncl-NR_END));
-	free((FREE_ARG) (t+nrl-NR_END));
-}
 
 void nearest_neighbours(int NP, int D1, int D2, int D3, int **nn){
 // points change along D1, then along D2, then along D3 (DX is no of points in each dimension).

@@ -26,7 +26,7 @@
 #include <omp.h>
 #include "../defines.h"
 
-#include "../util/nrutil_newnames.h"
+#include "../util/util1.h"
 #include "struct_conversions.h"
 
 int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, struct pscmp *DCFS, double tt0, double tt1,
