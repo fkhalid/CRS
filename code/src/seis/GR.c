@@ -118,6 +118,7 @@ double calculatebvalue(double *mags, int N, double Mc){
 		  Z+=1;
 	  }
   }
+  if (Z) Z-=1;
   mean*=(1.0/Z);
 
   qsort (mags2, Z, sizeof(double), &compare);

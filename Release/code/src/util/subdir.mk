@@ -4,7 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../code/src/util/nrutil_newnames.c \
+../code/src/util/util1.c \
 ../code/src/util/error.c \
 ../code/src/util/files.c \
 ../code/src/util/fit_splines.c \
@@ -16,7 +16,7 @@ C_SRCS += \
 ../code/src/util/splines_eqkfm.c 
 
 OBJS += \
-./code/src/util/nrutil_newnames.o \
+./code/src/util/util1.o \
 ./code/src/util/error.o \
 ./code/src/util/files.o \
 ./code/src/util/fit_splines.o \
@@ -28,7 +28,7 @@ OBJS += \
 ./code/src/util/splines_eqkfm.o 
 
 C_DEPS += \
-./code/src/util/nrutil_newnames.d \
+./code/src/util/util1.d \
 ./code/src/util/error.d \
 ./code/src/util/files.d \
 ./code/src/util/fit_splines.d \

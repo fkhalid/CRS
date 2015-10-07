@@ -228,13 +228,17 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 		
 		if (rate) {
 			if (NC==8 | NC==5){
-			//rate column is missing. This is ok for template file, but not for background seismicity file.
-				print_screen("Error: not enough columns in file: %s. Exiting.\n", fname);
-				print_logfile("Error: not enough columns in file: %s. Exiting.\n", fname);
-				return 1;
+			   //rate column is missing. This is ok for template file, but not for background seismicity file.
+			    if (n==1){
+				print_screen("Warning: last column not given in file: %s.\n", fname);
+				print_logfile("Warning: last column not given in file: %s.\n", fname);
+				(*rate)[n]=0.0;
+			   }
 			}
-			(*rate)[n]=0.0;
-			for (int i=n1-nmag+1; i<=n1; i++)(*rate)[n]+= data[9-miss_col][i];
+			else{
+				(*rate)[n]=0.0;
+				for (int i=n1-nmag+1; i<=n1; i++)(*rate)[n]+= data[9-miss_col][i];
+			}
 		}
 
 //		if (fabs(data[3][n1]-data[3][1])>toll) closest_lat=fmin(closest_lat,fabs(data[3][n1]-data[3][1]));

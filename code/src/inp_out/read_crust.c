@@ -251,7 +251,7 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 			//convert indices to refined grid:
 			err+=convert_geometry(*crst, dumzoneindex, &zoneindex, 1, 1);
 			//indices are in range [0...nofmzones-1]:
-			for (int n=1; n<=(*crst).N_allP; n++) (*crst).fmzone[n]= (int)zoneindex[n] -1;
+			for (int n=1; n<=(*crst).N_allP; n++) (*crst).fmzone[n]= max((int)zoneindex[n],1) -1;	//max ... needed value is set to 0.0 is the column is missing.
 			//the number of zones is equal to the largest index:
 			(*crst).nofmzones=(int) max_v(zoneindex+1,(*crst).N_allP);
 			//free arrays:

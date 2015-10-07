@@ -671,7 +671,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		(*allslipmodels).is_aseismic=is_aseismic;
 		(*allslipmodels).tmain= darray(0,Nm0-1);	//-1 element to store mainshock time (when aseismic slip starts).
 		(*allslipmodels).mmain= (is_aseismic)? NULL : darray(0,Nm0-1);
-		(*allslipmodels).cut_surf=iarray(0,Nm0-1);
+		(*allslipmodels).cut_surf=malloc(Nm0*sizeof(int));// iarray(0,Nm0-1);
 		(*allslipmodels).disc=darray(0,Nm0-1);
 		(*allslipmodels).Nfaults=iarray(0,Nm0-1);
 		(*allslipmodels).no_slipmodels=iarray(0,Nm0-1);
@@ -730,7 +730,8 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 				 if (is_aseismic) (*allslipmodels).tsnap= (double *) realloc((*allslipmodels).tsnap, (nsm+1+no_slipmod) * sizeof(double));
 				 if (nsm+1+no_slipmod>Nm0) {
 					 (*allslipmodels).slipmodels=realloc((*allslipmodels).slipmodels, (nsm+1+no_slipmod) * sizeof(char*));
-					 size_slipmodels = nsm+1+no_slipmod; // [Fahad] Used to bcast the final size
+					(*allslipmodels).cut_surf=realloc((*allslipmodels).cut_surf, (nsm+1+no_slipmod) * sizeof(int)); 
+					size_slipmodels = nsm+1+no_slipmod; // [Fahad] Used to bcast the final size
 				 }
 
 				 for (int n=1; n<=no_slipmod; n++){
