@@ -20,6 +20,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include "util1.h"
+#include "../defines.h"
+#include "error.h"
 
 #define offset 1
 
@@ -29,7 +31,7 @@ int *iarray(long x1, long xN)
 	int *v;
 
 	v=(int *)malloc((size_t) ((xN-x1+1+offset)*sizeof(int)));
-	if (!v) error_quit_fun("Could not allocate memory (iarray)\n");
+	if (!v) error_quit("Could not allocate memory (iarray)\n");
 	return v-x1+offset;
 }
 
@@ -40,7 +42,7 @@ unsigned long *larray(long x1, long xN)
 	unsigned long *v;
 
 	v=(unsigned long *)malloc((size_t) ((xN-x1+1+offset)*sizeof(long)));
-	if (!v) error_quit_fun("Could not allocate memory (larray)\n");
+	if (!v) error_quit("Could not allocate memory (larray)\n");
 	return v-x1+offset;
 }
 
@@ -50,7 +52,7 @@ double *darray(long x1, long xN)
 	double *v;
 
 	v=(double *)malloc((size_t) ((xN-x1+1+offset)*sizeof(double)));
-	if (!v) error_quit_fun("Could not allocate memory (darray)\n");
+	if (!v) error_quit("Could not allocate memory (darray)\n");
 	return v-x1+offset;
 }
 
@@ -62,13 +64,13 @@ float **f2array(long x1, long xN, long y1, long yN)
 
 	/* Set pointers to rows */
 	m=(float **) malloc((size_t)((nx+offset)*sizeof(float*)));
-	if (!m) error_quit_fun("Could not allocate memory (matrix)\n");
+	if (!m) error_quit("Could not allocate memory (matrix)\n");
 	m += offset;
 	m -= x1;
 
 	/* Allocate rows and set pointers */
 	m[x1]=(float *) malloc((size_t)((nx*ny+offset)*sizeof(float)));
-	if (!m[x1]) error_quit_fun("Could not allocate memory (matrix)\n");
+	if (!m[x1]) error_quit("Could not allocate memory (matrix)\n");
 	m[x1] += offset;
 	m[x1] -= y1;
 
@@ -86,13 +88,13 @@ double **d2array(long x1, long xN, long y1, long yN)
 
 	/* Set pointers to rows */
 	m=(double **) malloc((size_t)((nx+offset)*sizeof(double*)));
-	if (!m) error_quit_fun("Could not allocate memory (matrix)\n");
+	if (!m) error_quit("Could not allocate memory (matrix)\n");
 	m += offset;
 	m -= x1;
 
 	/* Allocate rows and set pointers */
 	m[x1]=(double *) malloc((size_t)((nx*ny+offset)*sizeof(double)));
-	if (!m[x1]) error_quit_fun("Could not allocate memory (matrix)\n");
+	if (!m[x1]) error_quit("Could not allocate memory (matrix)\n");
 	m[x1] += offset;
 	m[x1] -= y1;
 
@@ -110,19 +112,19 @@ double ***d3array(long x1, long xN, long y1, long yN, long z1, long zN)
 
 	/* Set pointers to pointers to rows */
 	t=(double ***) malloc((size_t)((nx+offset)*sizeof(double**)));
-	if (!t) error_quit_fun("Could not allocate memory (f3array)\n");
+	if (!t) error_quit("Could not allocate memory (f3array)\n");
 	t += offset;
 	t -= x1;
 
 	/* Set pointers to rows and set pointers */
 	t[x1]=(double **) malloc((size_t)((nx*ny+offset)*sizeof(double*)));
-	if (!t[x1]) error_quit_fun("Could not allocate memory (f3array)\n");
+	if (!t[x1]) error_quit("Could not allocate memory (f3array)\n");
 	t[x1] += offset;
 	t[x1] -= y1;
 
 	/* Allocate rows and set pointers */
 	t[x1][y1]=(double *) malloc((size_t)((nx*ny*nz+offset)*sizeof(double)));
-	if (!t[x1][y1]) error_quit_fun("Could not allocate memory (f3array)\n");
+	if (!t[x1][y1]) error_quit("Could not allocate memory (f3array)\n");
 	t[x1][y1] += offset;
 	t[x1][y1] -= z1;
 
@@ -145,14 +147,14 @@ int **i2array(long x1, long xN, long y1, long yN)
 
 	/* Set pointers to rows */
 	m=(int **) malloc((size_t)((nx+offset)*sizeof(int*)));
-	if (!m) error_quit_fun("Could not allocate memory (matrix)\n");
+	if (!m) error_quit("Could not allocate memory (matrix)\n");
 	m += offset;
 	m -= x1;
 
 
 	/* Allocate rows and set pointers */
 	m[x1]=(int *) malloc((size_t)((nx*ny+offset)*sizeof(int)));
-	if (!m[x1]) error_quit_fun("Could not allocate memory (matrix)\n");
+	if (!m[x1]) error_quit("Could not allocate memory (matrix)\n");
 	m[x1] += offset;
 	m[x1] -= y1;
 
@@ -171,19 +173,19 @@ float ***f3array(long x1, long xN, long y1, long yN, long z1, long zN){
 
 	/* Set pointers to pointers to rows */
 	t=(float ***) malloc((size_t)((nx+offset)*sizeof(float**)));
-	if (!t) error_quit_fun("Could not allocate memory (f3array)\n");
+	if (!t) error_quit("Could not allocate memory (f3array)\n");
 	t += offset;
 	t -= x1;
 
 	/* Set pointers to rows and set pointers */
 	t[x1]=(float **) malloc((size_t)((nx*ny+offset)*sizeof(float*)));
-	if (!t[x1]) error_quit_fun("Could not allocate memory (f3array)\n");
+	if (!t[x1]) error_quit("Could not allocate memory (f3array)\n");
 	t[x1] += offset;
 	t[x1] -= y1;
 
 	/* Allocate rows and set pointers */
 	t[x1][y1]=(float *) malloc((size_t)((nx*ny*nz+offset)*sizeof(float)));
-	if (!t[x1][y1]) error_quit_fun("Could not allocate memory (f3array)\n");
+	if (!t[x1][y1]) error_quit("Could not allocate memory (f3array)\n");
 	t[x1][y1] += offset;
 	t[x1][y1] -= z1;
 
@@ -235,7 +237,7 @@ void free_i2array_firstlevel(int **m, long x1, long xN, long y1, long yN)
 	free((char *) (m+x1-offset));
 }
 
-void free_d2array_firstlevel(int **m, long x1, long xN, long y1, long yN)
+void free_d2array_firstlevel(double **m, long x1, long xN, long y1, long yN)
 /* free an int matrix allocated by d2array_firstlevel() */
 {
 	for (int i=x1; i<=xN; i++) if (m[i]) free_darray(m[i], y1, yN);

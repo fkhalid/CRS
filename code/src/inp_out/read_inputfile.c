@@ -617,6 +617,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 			if (ferror(fin)) fprintf(stderr, "ERROR reading input data (file: %s) using fgets!\n", input_fname);
 			sscanf(line,"%d", &Nm0);
 			fgets(line,Nchar,fin);
+//			(*allslipmodels).cmb_format=(char *)malloc(120*sizeof(char));
 			if (is_aseismic) {
 				sscanf(line,"%s %s %lf", &((*allslipmodels).cmb_format), log_evol, t0log);
 				if (!strcmp(log_evol, "log")) {

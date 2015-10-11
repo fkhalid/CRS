@@ -17,7 +17,11 @@
  *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+//#include "../defines.h"
+#include "error.h"
 
+int search_string(char *str1, char *str2);
+int scan_nth(char *string, int n, double *result);
 int closest_element(double *v, int N, double value, double toll);
 int *nth_index(int i, int Ndim, int *dim);
 void error_quit_funsoft(char error_text[]);
@@ -45,7 +49,7 @@ double max_v(double *v, int N);
 int **i2array_firstlevel(long nrh);
 double **d2array_firstlevel(long nrh);
 void free_i2array_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
-void free_d2array_firstlevel(int **m, long nrl, long nrh, long ncl, long nch);
+void free_d2array_firstlevel(double **m, long nrl, long nrh, long ncl, long nch);
 
 
 

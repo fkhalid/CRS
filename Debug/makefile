@@ -9,7 +9,6 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include code/src/util/subdir.mk
--include code/src/test/subdir.mk
 -include code/src/seis/subdir.mk
 -include code/src/okada/subdir.mk
 -include code/src/inp_out/subdir.mk
@@ -30,19 +29,19 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: CRS_3.0
+all: run_crs
 
 # Tool invocations
-CRS_3.0: $(OBJS) $(USER_OBJS)
+run_crs: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -lm -lgomp -pg -o"CRS_3.0" $(OBJS) $(USER_OBJS) $(LIBS)
+	 gcc -g -pg -Wall -o "run_crs" $(OBJS) $(USER_OBJS) $(LIBS) -lm -lgomp
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) CRS_3.0
+	-$(RM) $(OBJS)$(C_DEPS)$(EXECUTABLES) run_crs
 	-@echo ' '
 
 .PHONY: all clean dependents

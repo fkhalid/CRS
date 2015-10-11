@@ -122,7 +122,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	double *cmb, *cmb_avg, *cmbpost, *cmbpost_avg;
 	int N, NgridT_out= crst.uniform ? (crst.nLat_out*crst.nLon_out*crst.nD_out) : NgridT;
 	int err;
-	int msnap;
 	int uniform_bg_rate=0;
 	int current_main, which_recfault;
 	int NgridTsnaps;
@@ -267,7 +266,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			sprintf(fname, "%s.dat",print_LL);
 			fLLev=fopen(fname,"w");
 		}
-		if (print_cmb) {
+		if (print_cmb0) {
 			sprintf(print_cmb,"%s.dat", print_cmb0);
 			if (flags.aseismic) sprintf(print_cmbpost,"%s_post.dat", print_cmb0);
 
@@ -396,10 +395,10 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			ev_x_avg[i]+=ev_x[i]/(1.0*Nsur);
 		}
 
-		if(print_cmb || printall_cmb) {
+		if(print_cmb0 || printall_cmb) {
 			sum_DCFS(DCFS, &cmb, Nm, NgridT);
 			if (flags.aseismic) sum_DCFSrand(DCFSrand, &cmbpost, NTScont, NgridT);
-			if(print_cmb) {
+			if(print_cmb0) {
 				for (int i=1; i<=NgridT; i++) {
 					cmb_avg[i]+=cmb[i]*(1.0/Nsur);
 					if (flags.aseismic) cmbpost_avg[i]+=cmbpost[i]*(1.0/Nsur);
@@ -552,7 +551,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 
 
-		if (print_forex) {
+		if (print_forex0) {
 			convert_geometry(crst, ev_x_avg, &ev_x_new, 1, 0);
 			for(int n=1; n<=NgridT_out; n++) {
 				ev_x_new[n]*=r0/NgridT;
@@ -562,7 +561,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 			}
 		}
 
-		if (print_cmb) {
+		if (print_cmb0) {
 			convert_geometry(crst, cmb_avg, &ev_x_new, 0, 0);
 			if(procId == 0) {
 				csep_cmbmap(print_cmb, crst, ev_x_new, 0);

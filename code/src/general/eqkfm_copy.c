@@ -17,7 +17,7 @@
  *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
+#include "../util/util1.h"
 #include "eqkfm_copy.h"
 
 void empty_eqkfm(struct eqkfm *eqkfm0){

@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <time.h>
 #include "../defines.h"
+//#include "../general/mem_mgmt.h"
+#include "../okada/prestress.h"
 
 #ifdef _CRS_MPI
 	#include "mpi.h"
@@ -165,7 +167,7 @@ int read_modelparameters(char *modelparametersfile, struct crust *crst, struct t
 	char line[Nchar_long];
 	char sourcemode_fm[10], sourcemode_nofm[10], logstep[10];
 	char recfault[10];
-	struct tm times;
+	struct tm;
 	char regstress_mode[120];
 	double s[3];	//regional stress field description;
 	double st[3];	//regional stress field description;

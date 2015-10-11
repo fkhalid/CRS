@@ -21,7 +21,7 @@
 #include <stddef.h>
 
 #include "../defines.h"
-
+#include "lin_interp_eqkfm.h"
 #include "../util/util1.h"
 
 void lin_interp_eqkfm(struct eqkfm **eqkfm_aft, int NF, int L, double *times2, int *ind){

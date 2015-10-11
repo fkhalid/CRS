@@ -105,7 +105,6 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 	double lat0=1e30, lat1=-1e30, lon0=1e30, lon1=-1e30, dep0=1e30, dep1=-1e30, mag0, mag1;
 	double dlati, dloni, ddepi, dmagi;
 	double toll=1e-6;
-	double closest_lat, closest_lon, closest_dep;
 
 	if(procId == 0) {
 		NC = countcol(fname);

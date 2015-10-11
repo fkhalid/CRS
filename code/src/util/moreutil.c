@@ -19,16 +19,34 @@
 
 
 #include "moreutil.h"
+#include "util1.h"
 
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define SWAP(a,b) temp=(a);(a)=(b);(b)=temp;
 #define NSTACK 50
 #define FREE_ARG char*
 #define NR_END 1
+
+int search_string(char *str1, char *str2){
+/* Check if str2 is contained in str1.
+ */
+
+	int nchar=strlen(str2), off=0;
+
+	while(off+nchar<=strlen(str1)){
+		if (strncmp(str1+off,str2,nchar)==0) {
+			return 1;
+		}
+		off++;
+	}
+
+	return 0;
+}
 
 int closest_element(double *v, int N, double value, double toll){
 	/*
@@ -162,7 +180,7 @@ void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
 			ind[l+1]=ind[j];
 			ind[j]=ii;
 			jstack += 2;
-			if (jstack > NSTACK) error_quit_fun("NSTACK too small in sort.");
+			if (jstack > NSTACK) error_quit_fun(__func__, "NSTACK too small in sort.");
 			if (ir-i+1 >= j-l) {
 				istack[jstack]=ir;
 				istack[jstack-1]=i;

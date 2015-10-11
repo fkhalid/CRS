@@ -17,7 +17,6 @@
  *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "background_rate.h"
 
 int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
@@ -47,7 +46,7 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 	double t0;
 	int NP= crst.uniform? (crst.nLat*crst.nLon) : crst.N_allP;
 	double T, *rate_h=NULL, *rate_v=NULL;
-	int ne, h_ind, v_ind, *sel, sel_no=0, err;
+	int h_ind, v_ind, *sel, sel_no=0, err;
 	double *weights=NULL;
 	cat.Mc=20.0;	//by convention, this value will make readZMAP find completeness magnitude.
 
@@ -123,10 +122,6 @@ int background_rate(char *catfile, struct crust *crst_in, struct tm reftime,
 		// Assume vertically homogeneous rate, since can not use depth info (non uniform grid does not necessarily have layers).
 		*rate_grid=smoothed_rate_Helmstetter_nonuni(crst.x, crst.y, crst.N_allP, cat.x0, cat.y0, cat.err, weights, cat.Z, ord);
 		normv(*rate_grid, crst.N_allP);
-		for (int p=1; p<=crst.N_allP; p++) {
-			// by convention, (*rate_grid)[p] add up to crst.N_allP (since for simplicity they are all assumed to be 1 if *rate_grid==NULL)
-			(*rate_grid)[p]=rate_h[h_ind]*rate_v[v_ind]*crst.N_allP;
-		}
 	}
 
 	free_cat(cat);

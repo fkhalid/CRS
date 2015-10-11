@@ -352,22 +352,6 @@ int find_key(FILE *fin, char *string, double *value){
 	return found;
 }
 
-int search_string(char *str1, char *str2){
-/* Check if str2 is contained in str1.
- */
-
-	int nchar=strlen(str2), off=0;
-
-	while(off+nchar<=strlen(str1)){
-		if (strncmp(str1+off,str2,nchar)==0) {
-			return 1;
-		}
-		off++;
-	}
-
-	return 0;
-}
-
 int scan_nth(char *string, int n, double *result){
 
 	int numread=1;

@@ -19,6 +19,7 @@
 
 
 #include "error.h"
+#include "../util/moreutil.h"
 #include "../defines.h"
 #include <stdarg.h>
 #include <stdio.h>
@@ -30,7 +31,7 @@
 #endif
 
 
-void error_quit_fun(char *fun, const char * format, ...){
+void error_quit_fun(const char *fun, const char * format, ...){
     char buffer[3000];
     va_list args;
     va_start (args, format);
@@ -69,7 +70,7 @@ void error_quit_fun(char *fun, const char * format, ...){
 	exit(EXIT_FAILURE);
 }
 
-void print_logfile_fun(char *fun, const char * format, ...){
+void print_logfile_fun(const char *fun, const char * format, ...){
 /*
  *  Print message to log file.
  *  If flag: extra_verbose=1, also print out name of the calling function.
@@ -100,7 +101,7 @@ void print_logfile_fun(char *fun, const char * format, ...){
   	va_end (args);
 }
 
-void print_screen_fun(char *fun, const char * format, ...){
+void print_screen_fun(const char *fun, const char * format, ...){
 /*
  *  Print message to screen.
  *  If flag: extra_verbose=1, also print out name of the calling function.

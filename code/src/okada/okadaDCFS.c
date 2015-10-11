@@ -66,7 +66,7 @@ int resolve_DCFS(struct pscmp DCFS, struct crust crst, double *strikeRs, double 
 	for (int i=0; i<no_fm_zones; i++) {
 		//calculate normal vector:
 		strikeR=strikeRs[i];
-		dipR=dipRs[i];
+			dipR=dipRs[i];
 		n[i]=normal_vector(strikeR, dipR);
 
 		if (!optrake){

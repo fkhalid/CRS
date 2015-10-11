@@ -569,7 +569,6 @@ int read_pscmp_eqkfm(char *fname, struct eqkfm **eqfm_out, int *NF2){
 
 	int err=0;
 	FILE *fin;
-	double junk;
 	int NP, NF, djunk;
 	int nchar=500;
 	struct eqkfm *eqfm1;

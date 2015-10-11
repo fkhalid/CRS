@@ -17,7 +17,6 @@
  *   along with CRS.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "smoothed_rate_Helmstetter.h"
 
 double *smoothed_rate_Helmstetter(double *xgrid, double *ygrid, double dx, double dy, int Ngrid, double *xs, double *ys, double *err, double *weights, int N, int ord){

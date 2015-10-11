@@ -22,6 +22,7 @@
 
 
 #include "../util/util1.h"
+#include "../util/moreutil.h"
 #include "merge.h"
 #include "../defines.h"
 

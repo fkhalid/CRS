@@ -1,0 +1,127 @@
+../code/src/util/roots3.c: In function ‘roots3’:
+../code/src/util/roots3.c:42: warning: suggest parentheses around comparison in operand of ‘&’
+../code/src/util/roots3.c:54: warning: suggest parentheses around comparison in operand of ‘&’
+../code/src/seis/GR.c: In function ‘assign_GRnorm’:
+../code/src/seis/GR.c:35: warning: unused variable ‘one’
+../code/src/seis/WellsCoppersmith.c: In function ‘WellsCoppersmith’:
+../code/src/seis/soumod1.c: In function ‘suomod1_resample’:
+../code/src/inp_out/read_crust.c: In function ‘read_crust’:
+../code/src/inp_out/read_crust.c:50: warning: unused variable ‘raketmp’
+../code/src/inp_out/read_crust.c: In function ‘read_focmecgridfile’:
+../code/src/inp_out/read_crust.c:282: warning: unused variable ‘fileError’
+../code/src/inp_out/read_csep_template.c: In function ‘read_csep_template’:
+../code/src/inp_out/read_csep_template.c:229: warning: suggest parentheses around comparison in operand of ‘|’
+../code/src/inp_out/read_eqkfm.c: In function ‘eqkfm_addslipmodels’:
+../code/src/inp_out/read_eqkfm.c:93: warning: implicit declaration of function ‘read_fsp_eqkfm’
+../code/src/inp_out/read_eqkfm_fsp.c: In function ‘read_fsp_eqkfm’:
+../code/src/inp_out/read_eqkfm_fsp.c:78: warning: implicit declaration of function ‘next_separator’
+../code/src/inp_out/read_eqkfm_fsp.c:91: warning: implicit declaration of function ‘find_key’
+../code/src/inp_out/read_eqkfm_fsp.c:183: warning: implicit declaration of function ‘read_slipvalues’
+../code/src/inp_out/read_eqkfm_fsp.c: In function ‘scan_nth’:
+../code/src/inp_out/read_eqkfm_fsp.c:365: warning: zero-length gnu_printf format string
+../code/src/inp_out/read_eqkfm_fsp.c: In function ‘read_slipvalues’:
+../code/src/inp_out/read_eqkfm_fsp.c:432: warning: zero-length gnu_printf format string
+../code/src/inp_out/read_inputfile.c: In function ‘read_inputfile’:
+../code/src/inp_out/read_inputfile.c:65: warning: implicit declaration of function ‘setenv’
+../code/src/inp_out/read_inputfile.c:292: warning: implicit declaration of function ‘read_focmecfiles’
+../code/src/inp_out/read_inputfile.c: In function ‘read_listslipmodel’:
+../code/src/inp_out/read_inputfile.c:622: warning: format ‘%s’ expects type ‘char *’, but argument 3 has type ‘char **’
+../code/src/inp_out/read_inputfile.c:647: warning: format ‘%s’ expects type ‘char *’, but argument 3 has type ‘char **’
+../code/src/inp_out/read_inputfile.c:690: warning: suggest parentheses around comparison in operand of ‘&’
+../code/src/inp_out/read_inputfile.c:696: warning: suggest parentheses around comparison in operand of ‘&’
+../code/src/inp_out/read_inputfile.c:703: warning: suggest parentheses around comparison in operand of ‘&’
+../code/src/inp_out/read_inputfile.c:703: warning: suggest parentheses around comparison in operand of ‘&’
+../code/src/inp_out/read_matrix.c: In function ‘read_matrix’:
+../code/src/inp_out/read_param.c: In function ‘read_modelparameters’:
+../code/src/inp_out/read_param.c:199: warning: implicit declaration of function ‘init_crst’
+../code/src/inp_out/read_param.c:214: warning: implicit declaration of function ‘strcmp’
+../code/src/inp_out/read_zmap.c: In function ‘readZMAP’:
+../code/src/inp_out/read_zmap.c:154: warning: implicit declaration of function ‘setenv’
+../code/src/inp_out/read_zmap.c: In function ‘read_firstlineZMAP’:
+../code/src/inp_out/read_zmap.c:562: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:562: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:562: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:562: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:562: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:562: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:562: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:572: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:572: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:572: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:572: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:572: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:572: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/read_zmap.c:572: warning: use of assignment suppression and length modifier together in gnu_scanf format
+../code/src/inp_out/write_csep_forecast.c: In function ‘write_csep_forecast_points’:
+../code/src/inp_out/write_csep_forecast.c:131: warning: unused variable ‘D2’
+../code/src/inp_out/write_csep_forecast.c:131: warning: unused variable ‘Lon2’
+../code/src/inp_out/write_csep_forecast.c:131: warning: unused variable ‘Lat2’
+../code/src/general/CRS_LogLikelihood.c: In function ‘CRSforecast’:
+../code/src/general/CRS_LogLikelihood.c:111: warning: unused variable ‘Nev’
+../code/src/general/CRS_LogLikelihood.c:111: warning: unused variable ‘Ldum_out’
+../code/src/general/CRS_LogLikelihood.c:103: warning: unused variable ‘partitionSize’
+../code/src/general/CRS_LogLikelihood.c:102: warning: unused variable ‘numProcs’
+../code/src/general/CRS_LogLikelihood.c: In function ‘CRSLogLikelihood’:
+../code/src/general/CRS_LogLikelihood.c:702: warning: unused variable ‘fcmb’
+../code/src/general/CRS_LogLikelihood.c:702: warning: unused variable ‘fforex’
+../code/src/general/CRS_LogLikelihood.c:687: warning: unused variable ‘partitionSize’
+../code/src/general/CRS_LogLikelihood.c:686: warning: unused variable ‘numProcs’
+../code/src/general/CRS_LogLikelihood.c:686: warning: unused variable ‘procId’
+../code/src/general/calculateDCFSperturbed.c: In function ‘calculateDCFSperturbed’:
+../code/src/general/calculateDCFSperturbed.c:120: warning: unused variable ‘n_withoutslimodel’
+../code/src/general/calculateDCFSperturbed.c:120: warning: unused variable ‘n_withslimodel’
+../code/src/general/calculateDCFSperturbed.c:114: warning: unused variable ‘NP_max’
+../code/src/general/calculateDCFSperturbed.c:114: warning: unused variable ‘NF_max’
+../code/src/general/calculateDCFSperturbed.c:111: warning: unused variable ‘Coeff_ResD’
+../code/src/general/calculateDCFSperturbed.c:111: warning: unused variable ‘Coeff_ResS’
+../code/src/general/calculateDCFSperturbed.c:109: warning: unused variable ‘temp2’
+../code/src/general/calculateDCFSperturbed.c:108: warning: unused variable ‘eqkfm2A’
+../code/src/general/calculateDCFSperturbed.c:107: warning: unused variable ‘eqkfm2’
+../code/src/general/calculateDCFSperturbed.c:98: warning: unused variable ‘lon0’
+../code/src/general/calculateDCFSperturbed.c:98: warning: unused variable ‘lat0’
+../code/src/general/calculateDCFSperturbed.c:97: warning: unused variable ‘Stemp’
+../code/src/general/calculateDCFSperturbed.c:96: warning: unused variable ‘slip’
+../code/src/general/calculateDCFSperturbed.c:91: warning: unused variable ‘full_field’
+../code/src/general/calculateDCFSperturbed.c:80: warning: unused variable ‘procId’
+../code/src/general/eqkfm_copy.c: In function ‘empty_eqkfm’:
+../code/src/general/eqkfm_copy.c:31: warning: implicit declaration of function ‘darray’
+../code/src/general/eqkfm_copy.c:31: warning: assignment makes pointer from integer without a cast
+../code/src/general/eqkfm_copy.c: In function ‘copy_eqkfm_noindex_notime’:
+../code/src/general/eqkfm_copy.c:77: warning: unused variable ‘depth’
+../code/src/general/eqkfm_copy.c:77: warning: unused variable ‘lon’
+../code/src/general/eqkfm_copy.c:77: warning: unused variable ‘lat’
+../code/src/general/find_timesteps.c: In function ‘findtimestepsomori’:
+../code/src/general/find_timesteps.c:40: warning: unused variable ‘dfdt’
+../code/src/general/forecast_stepG.c: In function ‘rate_state_evolution’:
+../code/src/general/forecast_stepG.c:204: warning: suggest parentheses around comparison in operand of ‘&’
+../code/src/general/forecast_stepG.c:273: warning: suggest parentheses around comparison in operand of ‘&’
+../code/src/general/forecast_stepG.c:365: warning: suggest parentheses around comparison in operand of ‘|’
+../code/src/general/setup.c: In function ‘setup_aseismic_eqkfm’:
+../code/src/general/setup.c:162: warning: implicit declaration of function ‘read_fsp_eqkfm’
+../code/src/general/setup.c:148: warning: unused variable ‘nsm’
+../code/src/general/setup.c: In function ‘setup_eqkfm_element’:
+../code/src/general/setup.c:351: warning: unused variable ‘toll’
+../code/src/general/setup.c:342: warning: unused variable ‘procId’
+../code/src/general/setup.c: In function ‘set_current_slip_model’:
+../code/src/general/setup.c:415: warning: unused variable ‘procId’
+../code/src/general/setup.c: In function ‘setup_CoeffsDCFS’:
+../code/src/general/setup.c:460: warning: unused variable ‘procId’
+../code/src/general/setup.c: In function ‘update_CoeffsDCFS’:
+../code/src/general/setup.c:616: warning: unused variable ‘numProcs’
+../code/src/general/setup.c:616: warning: unused variable ‘procId’
+../code/src/general/struct_conversions.c: In function ‘combine_eqkfm’:
+../code/src/general/struct_conversions.c:60: warning: suggest parentheses around comparison in operand of ‘|’
+../code/src/general/struct_conversions.c:101: warning: implicit declaration of function ‘copy_eqkfm_noindex_notime’
+../code/src/general/struct_conversions.c:57: warning: unused variable ‘fname’
+../code/src/general/struct_conversions.c:97: warning: ‘fout’ may be used uninitialized in this function
+../code/main.c: In function ‘main’:
+../code/main.c:78: warning: implicit declaration of function ‘setenv’
+../code/main.c:282: warning: implicit declaration of function ‘read_modelparameters’
+../code/main.c:98: warning: unused variable ‘fin’
+../code/main.c:59: warning: unused variable ‘toc2’
+../code/main.c:59: warning: unused variable ‘tic2’
+../code/main.c:59: warning: unused variable ‘toc’
+../code/main.c:59: warning: unused variable ‘tic’
+../code/main.c:56: warning: unused variable ‘endTime’
+../code/main.c:56: warning: unused variable ‘startTime’
+../code/main.c:55: warning: unused variable ‘numProcs’
