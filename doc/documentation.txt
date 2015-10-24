@@ -1,0 +1,31 @@
+FixedMecFile contains focal mechanisms for the output grid. Format: strike dip.
+
+Only sources of stress at t>tstartLL (InversionStartTime?) are included.
+
+
+
+
+Background rate
+---------------
+
+The background rate is stored as two variables: 
+(1) seismicity rate over the entire volume (a scalar);
+(2) variations for each grid point (a vector);
+
+The value of (1) can be inverted during the grid search, or it can be fixed.
+This behavior is set in the section "Parameter Inversion" of the parameter file: if LLinversion=1, or if fixr0=1, it will be fixed; otherwise, it will be inverted for.
+
+The fixed value will be r0 (given in parameter file), unless one of the following files is given in the input file: InputBackgroundRateGrid, InputBackgroundRateCatalog.
+If InputBackgroundRateGrid is given, the background rate will be the rate given in the file (sum of 9th column); if InputBackgroundRateCatalog, the backgrounr rate will be estimated from the catalog, using a smoothing algorithm from Helmstetter [??].
+
+Estimation of background rate from catalog
+------------------------------------------
+
+mention:
+1. uniform vs non uniform grid.
+   nonuniform grid uses no depth info (bg rate assumed to be uniform in depth), and not exact calculation of gaussian integral (only use center of cell instead).
+
+2. GK algorithm, and rescaling of rate for events left after declustering.
+
+Declustering only for events above Mag_main (set in parameter file)
+

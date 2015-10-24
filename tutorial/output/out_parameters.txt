@@ -12,7 +12,7 @@
 #    DCFS_min is the smallest Coulomb stress change which should be computed (used to select a subset of grid points for each source and reduce calculations).
 #    DCFS_cap: values of Coulomb stress change with absolute exceeding DCFS_cap will be capped to DCFS_cap (to avoid singularities in Okada solutions). Pa.
 # 5. res_xy, res_z: minimum internal horizontal/vertical model resolution. Will be ignored if larger than the cell size in the ForecastTemplate file.
-5.95	0.0
+4.0	0.0
 fm	iso
 3000
 80      1e6
@@ -57,7 +57,7 @@ fm	iso
 #    options: oops (optimally oriented planes), fixed (uses the uniform reginal field plane given below), focmec (uses the planes from the focal mechanisms catalog, performing Monte Carlo iterations over the available mechanisms).
 # 2. grid_error (0/1): flag indicating if the error due to finite grid size should be calculated.
 # 3. Nsur: number of Monte Carlo iterations.
-fixed
+focmec
 1
 10
 #=============================================#

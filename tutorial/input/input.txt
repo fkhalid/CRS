@@ -6,7 +6,6 @@ ForecastStartDate=2004-10-10T17:15:24Z
 ForecastEndDate=2004-11-10T17:15:24Z
 IssueDate=2004-10-10T17:15:24Z
 InputCatalogFile=tutorial/input/ANSS_Park.dat
-#InputCatalogFile=tutorial/input/Parkfield.dat
 InputListSlipModels=tutorial/input/slipmodels.txt
 ForecastTemplate=tutorial/input/template_grid.dat
 RandomSeedValue=-37284630

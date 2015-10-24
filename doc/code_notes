@@ -1,0 +1,138 @@
+Priorities:
+	provide version without NR.
+	* DONE: work on afterslip structure.
+	* DONE: make code work w/o catalog
+	* DONE: allow non-seismic sources (e.g.dikes)
+	* DONE allow for fixed vs optimal rake (hardwired, but ok).
+	* DONE: allow for stopping stress (no splines)
+	* DONE: allow for aseismic signal without coseismic one
+	* DONE: test multiple stressing histories (merging etc.)
+ 	FIXME: splines give different results when using numerical recipes from outside.
+
+Extra features:
+	* allow externally calculated stress field
+	* DONE linear time evolution between snapshots (no splines)
+	* allow for simpler input files (with a default parameter file)
+------------------------------------------------------------
+extra project to put on github: model conversion scripts
+				dist2fault
+				XML format
+				simple code to make grid file (could also include in CRS)
+------------------------------------------------------------
+
+* DONE change Afterslip to Aseismic (input files).
+config_numrec only works from bash.
+check reading uniform/nonuniform template (t160 vs t161).
+* DONE To test: linear stressing history. Also should be allow to choose it.
+* DONE copyright: check copyright for okada functions.
+* DONE change name of Helmstetter function.
+* DONE remove unused functions readRS, eispak, splines
+* DONE headers for setup.c, defines, main.c
+Implement output of multiple snapshots with MPI
+get rid of printout.c files, tests, etc.
+check fixmes, todos
+
+Documentation:
+------------- 
+
+* grid refinement only with uniform grid (copy from paper).
+* DONE merge example file and formats, and check both files.
+check file called documentation.txt
+change path of numerical recipes in makefiles to a dummy one.
+add tutorial
+add output files format, check none is missing.
+remove left over comments in source code.
+mention that printing out all snapshots is expensive in terms of memory, especially for small time steps and if internal geometry is refined.
+Also not implemented in MPI yet.
+* DONE state that opening is not available in fsp format.
+* DONE explain that all aseismic events must have same general format (either all linear, or all splines, or all single snapshot).
+* DONE first focal mechanism used to create synthetic slip model.
+* DONE only uniform grid can be refined.
+* DONE coseismic+afterslip geometry: less memory used if they are the same (could also put on paper).
+* DONE fixed rec faults: will still optimize rake (flag, but hardwired).
+* WILL NOT DOcatalog is optional but error is given if it is passed but no events are selected.
+* WILL NOT DO document how eqkfm_co looks like for multiple slip models, and explain the mess with slipmodel_combinations loop.
+* DONE explain limitations of non uniform grid for consideration of grid uncertainty.
+* DONE explain: how IssueTime is used, and that it should be larger than the mainshock. 
+
+how OOPS are calculated (stress field from eqks but not afterslip) and chosen (closest to regional mech.)
+
+* DONE Explain cuts surf, and complications (consistency b/w models; all points should be above depth).
+* DONE say somewhere that fault resolution in model par. file only applies to synthetic models (Wells Coppersmith), as it affects tapering.
+list all units
+* WILL NOT DO describe: how is a slip model represented; also: list of slip models and multiple slip models (and list of slip models with multiple slip models) continuos (in time) vs discrete stress fields are treated.
+*WILL NOT DO could change representation of slip models so that instead of using multiple subfaults, each patch is allowed to have itw ons orientation; each earthquake will be a single element in eqkfm_co -> okadaCoeff_mpi would speed up computation for models with many single patches.
+* WILL NOT DO allow for easier grid (inside code).
+* DONE Say which part of the code are by other people!! (DC3D + Bach)
+
+cmbmap_post is output from forecast even if it occurs before -> change this?
+
+* WILL NOT DO Allow events to be selected even if they occur before InversionStartDate (use DataStartDate ?)
+* DONE checked afterslip/coseismic slip geometry agree. Set cuts_surf for afterslip from coseismic slip.
+
+* WILL NOT DO May also want to change cut_surf in code (since current version uses different depths for each event -> not consistent).
+* DONE urf for multiple slip models=? Also: explain it in the input file
+
+may want to avoid using all_gammas if nsur is very high (not enough memory).
+
+* DONE: multiple afterslips not supported. Also: no afterslip with different input slip models.
+* DONE: reorganize parameters file. Also change aftershock flags.
+* WILL NOT DO: add headers to output files.
+* DONE allow for case w/o slip models (no files passed at al -> make InputListSlipModels optional) and w/o catalog.
+* DONE test a case w/o events.
+* DONE tests with different continuous stresses.
+give error if not enough memory available
+* DONE: allow foreshocks
+
+think about formats for:
+* DONE - grid file
+* DONE - foc mec file (for grid)
+* DONE - add mask column for forecast
+- slip model: don't need entire file (pscmp)
+
+* DONE complain if catalog not chronological.
+check: (*eqfm_comb)[c3].selpoints=all_pts; should go before:if(which_slipmod[i]==-1) { in read_eqkfm.c?
+* DONE FIXME refined files are wrong.
+* DONE: IssueDate has to appear before ForecastStartDate, EndDate -> should make it clear or fix it.
+* DONE fix floating point problem when Nsur<Nslipmodels.
+* DONE: uniform formats between slip models and master file.
+* DONE/WILL NOT DO: additional log output (eg list catalogs etc?)
+* DONE: write small description inside each file.
+* DONE/WILL NOT DO: Reorganize a bit across files.
+* DONE: Make sure each function is attributed to right person.
+* WILL NOT DO Output information about tapering.
+* WILL NOT DO why need square patches?
+fix "\n" in log file.
+
+* DONE create parameter InversionStartDate (instead of passing it from parameter file).
+* DONE only output this once per (Asig, ta) point: *Warning: gamma==Inf, must choose larger Asig!*
+
+need to check if char[X] variables are large enough!!
+compilation problems with recent gcc?
+* DONE link nrutil separately?
+valgrind to check memory leaks 
+
+* DONE check consistency of r0, crst.r0 (calculations vs. output). (also: think about calculation of LL in the case in which cat.Mc != crst....)
+* DONE check indices of times2, splines etc.
+* WILL NOT DO make sure coordinates are consistens across files (eg template, slip model, catalog etc).
+* DONE [removed tapering] allow tapering to be set from the outside (only for single subfault events?).
+* DONE don't hardwire crst.mu=26624.
+* DONE Easier output to flog (write function for it).
+
+//---------------simplifications to consider-----------------------//
+
+* WILL NOT DO no splines
+* DONE no search for older mainshock
+* DONE no MC for aftershocks (since they are epistemic).
+avoid adjusting position of patches
+* WILL NOT DO no print out LLevents (and forecast LL)
+* DONE no print out refined
+
+//----------------------other things-------------------------------//
+
+* DONE [decided not to do] non stationary starting background rate?
+* DONE [no refined grid anymore] flag printref in CRSforecast (to print out refined grid).
+* DONE print out cmb for afterslip
+* DONE check out numerical recipes stuff;
+* DONE copyright etc.
+

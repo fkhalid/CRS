@@ -1,0 +1,37 @@
+Description of the columns in the output files
+----------------------------------------------
+
+Output files are named: [OutputForecastFile]_[filetype].dat, where OutputForecastFile is defined by the user in the input file, and filetype refers to the data (gridded seismicity, temporal evolution, stress field etc).
+The content and format of each file are described below.
+
+
+filetype=foremap
+----------------
+Seismicity forecast, binned in space and magnitude.
+The file has the same format as the input template file (ForecastTemplate in input file).
+Seismicity rate (9th/6th column) has units of (earthquakes/day).
+
+
+filetype=cmbmap
+---------------
+Gridded coulomb stress changes. It is the sum of stress changes from seismic source.
+Same format as foremap, with magnitude values set to 0.
+Coulomb stress changes (9th/6th column) have units of Pascals.
+
+filetype=cmbmap_post
+--------------------
+
+
+
+  LLevents
+  LogLikelihood
+  ParamSearch
+X cmbmap
+  cmbmap_all
+  forecast
+  forecast_all_cumu
+  forecast_all_rates
+X foremap
+  foremap_all
+  foremap_allsnaps
+ 
