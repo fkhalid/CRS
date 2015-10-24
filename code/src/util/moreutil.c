@@ -20,8 +20,8 @@
 
 #include "moreutil.h"
 #include "util1.h"
-
-#include <math.h>
+#include "../defines.h"
+//#include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -112,93 +112,136 @@ void copy_vector(double *m1, double **m2, int a){
 }
 
 void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
-	/*
-	 * Like numerical recipes, but returns array containing old element index, and uses doubles.
-	 * ind_out, arr_out are pointers to 1d arrays. If they point to NULL, memory will be allocated. Otherwise, arrays of the correct size should be passed.
-	 */
-
-	unsigned long i,ir=n,j,k,l=1,*istack;
-	int jstack=0, M=7, ii;
-	double a,temp;
+/* 
+*  old_arr[1...n],
+*  *ind_out[1...n],
+*  *arr_out[1...n].
+*/
 	int *ind= (ind_out)? *ind_out : NULL;
 	double *arr= *arr_out;
+	struct value_index *xi;
 
 	if (!ind) ind=iarray(1,n);
 	if (!arr) arr=darray(1,n);
 
-	for (i=1; i<=n; i++){
-		ind[i]=i;
-		arr[i]=old_arr[i];
+	xi=(struct value_index *) malloc(sizeof(struct value_index) * n);
+
+	for (int i=0; i<n; i++){
+		xi[i].value=old_arr[i+1];
+		xi[i].index=i+1;	//indices in old_arr
 	}
 
-	istack=larray(1,NSTACK);
-	for (;;) {
-		if (ir-l < M) {
-			for (j=l+1;j<=ir;j++) {
-				a=arr[j];
-				ii=ind[j];
-				for (i=j-1;i>=l;i--) {
-					if (arr[i] <= a) break;
-					arr[i+1]=arr[i];
-					ind[i+1]=ind[i];
-				}
-				arr[i+1]=a;
-				ind[i+1]=ii;
-			}
-			if (jstack == 0) break;
-			ir=istack[jstack--];
-			l=istack[jstack--];
-		} else {
-			k=(l+ir) >> 1;
-			SWAP(arr[k],arr[l+1])
-			SWAP(ind[k],ind[l+1])
-			if (arr[l] > arr[ir]) {
-				SWAP(arr[l],arr[ir])
-				SWAP(ind[l],ind[ir])
-			}
-			if (arr[l+1] > arr[ir]) {
-				SWAP(arr[l+1],arr[ir])
-				SWAP(ind[l+1],ind[ir])
-			}
-			if (arr[l] > arr[l+1]) {
-				SWAP(arr[l],arr[l+1])
-				SWAP(ind[l],ind[l+1])
-			}
-			i=l+1;
-			j=ir;
-			a=arr[l+1];
-			ii=ind[l+1];
-			for (;;) {
-				do i++; while (arr[i] < a);
-				do j--; while (arr[j] > a);
-				if (j < i) break;
-				SWAP(arr[i],arr[j]);
-				SWAP(ind[i],ind[j]);
-			}
-			arr[l+1]=arr[j];
-			arr[j]=a;
-			ind[l+1]=ind[j];
-			ind[j]=ii;
-			jstack += 2;
-			if (jstack > NSTACK) error_quit_fun(__func__, "NSTACK too small in sort.");
-			if (ir-i+1 >= j-l) {
-				istack[jstack]=ir;
-				istack[jstack-1]=i;
-				ir=j-1;
-			} else {
-				istack[jstack]=j-1;
-				istack[jstack-1]=l;
-				l=i;
-			}
-		}
+	qsort(xi, n, sizeof(struct value_index), compare_valueindex);
+
+	for (int i=0; i<n; i++){
+		(*arr_out)[i+1]=xi[i].value;
+		(*ind_out)[i+1]=xi[i].index;	//indices in old_arr
 	}
-	free_larray(istack,1,NSTACK);
 
-	if (ind_out) *ind_out=ind;
-	if (arr_out) *arr_out=arr;
-
-	return;
+	free(xi);
 }
+
+
+int compare_valueindex (const void * a, const void * b)
+{
+
+  struct value_index *A= (struct value_index *) a;
+  struct value_index *B= (struct value_index *) b;
+
+  if ( A->value  <  B->value ) return -1;
+  if ( A->value  == B->value ) return 0;
+  if ( A->value  >  B->value ) return 1;
+}
+
+
+//void mysort(unsigned long n, double *old_arr, int **ind_out, double **arr_out){
+//	/*
+//	 * Like numerical recipes, but returns array containing old element index, and uses doubles.
+//	 * ind_out, arr_out are pointers to 1d arrays. If they point to NULL, memory will be allocated. Otherwise, arrays of the correct size should be passed.
+//	 */
+//
+//	unsigned long i,ir=n,j,k,l=1,*istack;
+//	int jstack=0, M=7, ii;
+//	double a,temp;
+//	int *ind= (ind_out)? *ind_out : NULL;
+//	double *arr= *arr_out;
+//
+//	if (!ind) ind=iarray(1,n);
+//	if (!arr) arr=darray(1,n);
+//
+//	for (i=1; i<=n; i++){
+//		ind[i]=i;
+//		arr[i]=old_arr[i];
+//	}
+//
+//	istack=larray(1,NSTACK);
+//	for (;;) {
+//		if (ir-l < M) {
+//			for (j=l+1;j<=ir;j++) {
+//				a=arr[j];
+//				ii=ind[j];
+//				for (i=j-1;i>=l;i--) {
+//					if (arr[i] <= a) break;
+//					arr[i+1]=arr[i];
+//					ind[i+1]=ind[i];
+//				}
+//				arr[i+1]=a;
+//				ind[i+1]=ii;
+//			}
+//			if (jstack == 0) break;
+//			ir=istack[jstack--];
+//			l=istack[jstack--];
+//		} else {
+//			k=(l+ir) >> 1;
+//			SWAP(arr[k],arr[l+1])
+//			SWAP(ind[k],ind[l+1])
+//			if (arr[l] > arr[ir]) {
+//				SWAP(arr[l],arr[ir])
+//				SWAP(ind[l],ind[ir])
+//			}
+//			if (arr[l+1] > arr[ir]) {
+//				SWAP(arr[l+1],arr[ir])
+//				SWAP(ind[l+1],ind[ir])
+//			}
+//			if (arr[l] > arr[l+1]) {
+//				SWAP(arr[l],arr[l+1])
+//				SWAP(ind[l],ind[l+1])
+//			}
+//			i=l+1;
+//			j=ir;
+//			a=arr[l+1];
+//			ii=ind[l+1];
+//			for (;;) {
+//				do i++; while (arr[i] < a);
+//				do j--; while (arr[j] > a);
+//				if (j < i) break;
+//				SWAP(arr[i],arr[j]);
+//				SWAP(ind[i],ind[j]);
+//			}
+//			arr[l+1]=arr[j];
+//			arr[j]=a;
+//			ind[l+1]=ind[j];
+//			ind[j]=ii;
+//			jstack += 2;
+//			if (jstack > NSTACK) error_quit_fun(__func__, "NSTACK too small in sort.");
+//			if (ir-i+1 >= j-l) {
+//				istack[jstack]=ir;
+//				istack[jstack-1]=i;
+//				ir=j-1;
+//			} else {
+//				istack[jstack]=j-1;
+//				istack[jstack-1]=l;
+//				l=i;
+//			}
+//		}
+//	}
+//	free_larray(istack,1,NSTACK);
+//
+//	if (ind_out) *ind_out=ind;
+//	if (arr_out) *arr_out=arr;
+//
+//	return;
+//}
 
 double **mtimesm3(double **m1, double **m2, double ***m30){
 //if m30==NULL, m2 will be ignored and new memory wll be allocated; otherwise, m30 is filled (NB memory needs to have been allocated previously!).

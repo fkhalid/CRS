@@ -24,7 +24,7 @@ ln2="Logfile=output_testcases/testDL0.log"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputDL
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL0
@@ -39,7 +39,7 @@ ln2="Logfile=output_testcases/testDL1.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputDL
 echo "InputListAseismicModels=input_testcases/testDL/aslipmodels1.dat" >> temp_inputDL
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL1
@@ -55,7 +55,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputDL
 echo "InputListAseismicModels=input_testcases/testDL/aslipmodels2.dat" >> temp_inputDL
 cp $parafile $temppara
 
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL2
@@ -71,7 +71,7 @@ ln13="InversionStartDate=2004-09-28T17:00:24Z"	#so it's comparable to testDL5
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "13s+.*+$ln13+" | sed "s*slipmodelslist0*slipmodelslist1*" > temp_inputDL
 echo "InputListAseismicModels=input_testcases/testDL/aslipmodels3.dat" >> temp_inputDL
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL3
@@ -89,7 +89,7 @@ ln4="IssueDate=2005-09-30T17:15:24Z"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist2*" | sed "13s+.*+$ln13+" | sed "7s+.*+$ln7+" | sed "6s+.*+$ln6+" | sed "4s+.*+$ln4+" > temp_inputDL
 echo "InputListAseismicModels=input_testcases/testDL/aslipmodels4.dat" >> temp_inputDL
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL4
@@ -103,7 +103,7 @@ ln2="Logfile=output_testcases/testDL5.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist1*" | sed "13s+.*+$ln13+" > temp_inputDL
 echo "InputListAseismicModels=input_testcases/testDL/aslipmodels5.dat" >> temp_inputDL
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL5
@@ -117,7 +117,7 @@ ln2="Logfile=output_testcases/testDL6.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist6*" | sed "13s+.*+$ln13+" | sed "7s+.*+$ln7+"  | sed "6s+.*+$ln6+" | sed "4s+.*+$ln4+" > temp_inputDL
 echo "InputListAseismicModels=input_testcases/testDL/aslipmodels6.dat" >> temp_inputDL
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL6
@@ -132,7 +132,7 @@ ln7="InputCatalogFile=input_testcases/testDL/catalog3.dat"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist3*" | sed "13s+.*+$ln13+" | sed "7s+.*+$ln7+"  | sed "6s+.*+$ln6+" | sed "4s+.*+$ln4+" > temp_inputDL
 echo "InputListAseismicModels=input_testcases/testDL/aslipmodels7.dat" >> temp_inputDL
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL7
@@ -147,7 +147,7 @@ ln7="InputCatalogFile=input_testcases/testDL/catalog4.dat"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "s*slipmodelslist0*slipmodelslist3*" | sed "13s+.*+$ln13+" | sed "7s+.*+$ln7+"  | sed "6s+.*+$ln6+" | sed "4s+.*+$ln4+" > temp_inputDL
 echo "InputListAseismicModels=input_testcases/testDL/aslipmodels7.dat" >> temp_inputDL
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL8
@@ -160,7 +160,7 @@ ln2="Logfile=output_testcases/testDL9.log"
 
 sed "1s+.*+$ln1+" input_testcases/testDL/input9.txt | sed "2s+.*+$ln2+" > temp_inputDL
 cp input_testcases/testDL/para9.txt $temppara
-$Build/CRS_3.0 temp_inputDL
+$Build/run_crs temp_inputDL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testDL9

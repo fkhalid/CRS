@@ -322,5 +322,10 @@ struct eqkfm{	//for events on multiple faults, use a list of these.
 	};
 #endif // _CRS_MPI
 
+//A simple structure to store array indices (used by mysort)
+struct value_index{
+	double value;
+	int index;
+};
 
 #endif //DEFINES_H

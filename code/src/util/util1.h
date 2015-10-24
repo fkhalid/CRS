@@ -27,6 +27,7 @@
 #define EPS 1.2e-7
 #define RNMX (1.0-EPS)
 
+int compare_valueindex (const void * a, const void * b);
 float ran1(long *);
 int *iarray(long nl, long nh);
 double *darray(long nl, long nh);
