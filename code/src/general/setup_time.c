@@ -49,7 +49,7 @@ int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *N
  *  L: largest index in times2.
  */
 
-	int offset, L0, Ltot;
+	int offset, L0, Ltot=0;
 	int nev, nfaults;
 	double Teq, tend;
 	int err=0;
@@ -71,9 +71,11 @@ int timesteps_omori(double t0, double t1, struct eqkfm **eqk_aft, int NA, int *N
 		else{
 			Ltot=offset=*L+offset;
 		}
+
 		nfaults+=Nfaults[nev];
 		nev++;
 	}
+
 
 	//allocate memory for times2:
 	*times2=darray(0,Ltot);
@@ -495,6 +497,9 @@ int setup_aseismic_single_log(double t0, double t1, double ts,
 	print_logfile("Aseismic slip: will fit a logarithmic function: s(t)~log(1+t/%.3lf)\n", ts);
 
 	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime);
+
+//todo delete
+	print_screen("L=%d\n",*L);
 
 	// Temporal evolution of aseismic slip.//
 	nfaults=0;
