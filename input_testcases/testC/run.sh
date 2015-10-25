@@ -38,7 +38,7 @@ sed '9s+focmecfile+focmecfile0+' temp_inputC > tmp
 mv tmp temp_inputC
 fi
 
-$Build/CRS_3.0 temp_inputC
+$Build/run_crs temp_inputC
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testC$i

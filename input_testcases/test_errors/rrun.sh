@@ -25,7 +25,7 @@ ln7="InputCatalogFile=input_testcases/test_errors/catalog.dat"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "7s+.*+$ln7+"> temp_inputA
 cp  $parafile  $temppara
 
-$Build/CRS_3.0 temp_inputA
+$Build/run_crs temp_inputA
 if [ $Build == "Coverage" ] 
 then
 mkdir coverage/test_err1
@@ -40,7 +40,7 @@ ln8="InputListSlipModels=input_testcases/test_errors/slipmodelslist.dat"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  | sed "8s+.*+$ln8+"> temp_inputA
 cp $parafile  $temppara
 
-$Build/CRS_3.0 temp_inputA
+$Build/run_crs temp_inputA
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/test_err2
@@ -54,7 +54,7 @@ ln2="Logfile=output_testcases/test_err3.log"
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputA
 cp $parafile  $temppara
 
-$Build/CRS_3.0 temp_inputA
+$Build/run_crs temp_inputA
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/test_err3
@@ -74,7 +74,7 @@ echo "InputCatalogFocMecFile=input_testcases/focmecfile.dat" >> temp_inputF
 
 sed "57s+.*+focmec+"  $parafile > $temppara
 
-$Build/CRS_3.0 temp_inputF
+$Build/run_crs temp_inputF
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testF3

@@ -37,7 +37,7 @@ sed '9s+focmecfile+focmecfile0+' temp_inputG > tmp
 mv tmp temp_inputG
 fi
 
-$Build/CRS_3.0 temp_inputG
+$Build/run_crs temp_inputG
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testG$i
@@ -57,7 +57,7 @@ sed "16s+.*+$m1+"  $parafile | sed '15s+5.95+2.00+' | sed "17s+.*+3.0+" > $tempp
 sed '9s+focmecfile+focmecfile0+' temp_inputG > tmp
 mv tmp temp_inputG
 
-$Build/CRS_3.0 temp_inputG
+$Build/run_crs temp_inputG
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testGT1

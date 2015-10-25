@@ -824,6 +824,8 @@ int test_mysort(){
 	mysort(N, xs, &ind, &arr);
 
 	for (int i=1; i<=N; i++) printf("%.0lf\t", xs[ind[i]]);
+	for (int i=1; i<=N; i++) printf("%.0lf\t", arr[i]);
+
 
 	return 0;
 }

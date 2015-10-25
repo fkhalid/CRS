@@ -26,7 +26,7 @@ do
 
  sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > conv_temp_input
  sed '59s+.*+'$d'+' $parafile > $temppara
- $Build/CRS_3.0 conv_temp_input
+ $Build/run_crs conv_temp_input
 
 done
 

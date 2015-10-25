@@ -27,7 +27,7 @@ ln11="InversionStartDate=2004-09-24T17:15:24Z"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "4s+.*+$ln4+" | sed "5s+.*+$ln5+" | sed "6s+.*+$ln6+" | sed "11s+.*+$ln11+" > temp_inputNA
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputNA
+$Build/run_crs temp_inputNA
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testNA1
@@ -45,7 +45,7 @@ ln11="InversionStartDate=2004-09-24T17:15:24Z"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "4s+.*+$ln4+" | sed "5s+.*+$ln5+" | sed "6s+.*+$ln6+" | sed "11s+.*+$ln11+" > temp_inputNA
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputNA
+$Build/run_crs temp_inputNA
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testNA2
@@ -63,7 +63,7 @@ ln11="InversionStartDate=2004-09-24T17:15:24Z"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "4s+.*+$ln4+" | sed "5s+.*+$ln5+" | sed "6s+.*+$ln6+" | sed "11s+.*+$ln11+" > temp_inputNA
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputNA
+$Build/run_crs temp_inputNA
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testNA3
@@ -81,7 +81,7 @@ ln11="InversionStartDate=2004-09-24T17:15:24Z"
 
 sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+" | sed "4s+.*+$ln4+" | sed "5s+.*+$ln5+" | sed "6s+.*+$ln6+" | sed "11s+.*+$ln11+" > temp_inputNA
 cp  $parafile $temppara
-$Build/CRS_3.0 temp_inputNA
+$Build/run_crs temp_inputNA
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testNA4

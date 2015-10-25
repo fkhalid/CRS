@@ -25,7 +25,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputF
 cp  $parafile $temppara
 echo "InputCatalogFocMecFile=input_testcases/focmecfile.dat" >>  temp_inputF
 
-$Build/CRS_3.0 temp_inputF
+$Build/run_crs temp_inputF
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testF1
@@ -40,7 +40,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputF
 cp  $parafile $temppara
 echo "FixedMecFile=input_testcases/testF/fixmec1.dat" >>  temp_inputF
 
-$Build/CRS_3.0 temp_inputF
+$Build/run_crs temp_inputF
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testF2
@@ -54,7 +54,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputF
 cp  $parafile $temppara
 echo "FixedMecFile=input_testcases/testF/fixmec2.dat" >>  temp_inputF
 
-$Build/CRS_3.0 temp_inputF
+$Build/run_crs temp_inputF
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testF3
@@ -70,7 +70,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputF
 sed "17s+.*+2.0+" $parafile | sed "19s+.*+2.0    3.0+" > $temppara
 echo "FixedMecFile=input_testcases/testF/fixmec2.dat" >>  temp_inputF
 
-$Build/CRS_3.0 temp_inputF
+$Build/run_crs temp_inputF
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testF4

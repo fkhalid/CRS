@@ -26,7 +26,7 @@ sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputL
 echo "InputListSlipModels=input_testcases/testL/slipmodelslist$i.dat" >> temp_inputL
 cp $parafile $temppara
 
-$Build/CRS_3.0 temp_inputL
+$Build/run_crs temp_inputL
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testL$i

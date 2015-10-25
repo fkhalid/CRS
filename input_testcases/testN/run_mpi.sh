@@ -14,7 +14,7 @@ temppara="input_testcases/testA/temp_par.txt"
 #sed "1s+.*+$ln1+" $basefile | sed "2s+.*+$ln2+"  > temp_inputA
 #sed "43s+0+1+"  $parafile > $temppara
 #echo "InputCatalogFocMecFile=input_testcases/focmecfile.dat" >> temp_inputA
-#$Build/CRS_3.0 temp_inputA
+#$Build/run_crs temp_inputA
 
 #run with vary_fm:
 ln1="OutputForecastFile=output_testcases/testA2"

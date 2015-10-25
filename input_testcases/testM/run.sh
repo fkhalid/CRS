@@ -27,7 +27,7 @@ echo "ForecastTemplate=input_testcases/darf_temp_fake$i.txt" >> temp_inputM
 #sed "58s+.*+0+" $parafile > $temppara
 cp $parafile $temppara
 
-$Build/CRS_3.0 temp_inputM
+$Build/run_crs temp_inputM
 if [ $Build == "Coverage" ]
 then
 mkdir coverage/testM$i
