@@ -45,9 +45,13 @@
 	#include "mpi.h"
 #endif
 
+#include <gsl/gsl_rng.h>
+
 double DCFS_cap;
 FILE *flog=NULL;
 int extra_verbose, quiet;
+gsl_rng * global_rand;
+long global_seed;		//for random number generator
 
 int main (int argc, char **argv) {
 	// Initialization: variables used by MPI related code.
@@ -79,6 +83,10 @@ int main (int argc, char **argv) {
 	int run_tests=0;
 	extra_verbose=0;
 	quiet=0;
+
+	//Initialize random number generator:
+	gsl_rng_env_setup();
+	global_rand = gsl_rng_alloc (gsl_rng_ran1);
 
 	if (run_tests){
 		extra_verbose=1;
@@ -197,7 +205,7 @@ int main (int argc, char **argv) {
 
 	//temporary variables.
 	double minmag;	//minimum magnitude in background_rate_grid file.
-	long seed;		//for random number generator
+	long seed;
 	int input_file_name_given=0;	//flag to check if used provided master input file.
 
 	// Timing code
@@ -261,6 +269,8 @@ int main (int argc, char **argv) {
 	err=read_inputfile(infile, outname, fore_template, catname, &focmeccats, background_rate_grid, background_rate_cat,
 			fixedmecfile, slipmodelfile, aseismicmodelfile, modelparametersfile, logfile, &reftime, &Tstart, &Tend, &tstartLL, &tendLL, &seed,
 			&no_fm_cats);
+
+	global_seed=seed;
 
 	if (err) {
 		error_quit("Error reading input file %s.\n", infile);
@@ -566,6 +576,7 @@ int main (int argc, char **argv) {
 				err=setup_aseismic_single_log(smallest_time, fmax(tendLL, Tend), t0log, &eqkfm_aft,
 					Naf, all_aslipmodels.Nfaults, &L, &times2, &seed);
 			}
+			global_seed=seed;	//for consistency with previous code.
 		}
 
 		if(err) return 1;
@@ -609,7 +620,7 @@ int main (int argc, char **argv) {
 
 	//call these functions once over entire domain to initialize static variables in forecast_stepG2_new.
 	err+=CRSLogLikelihood ((double *) 0, (double *) 0, (double *) 0, (double *)0, (double *) 0, 1, DCFS, eqkfm_aft, eqkfm_co, flags,
-			crst, AllCoeff, AllCoeff_aseis, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat, times2,
+			crst, AllCoeff, AllCoeff_aseis, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, cat, times2,
 			fmin(tstartLL,Tstart), tstartLL, fmax(tendLL, Tend), tw, 0.0, 0.0, 0.0, r0, fixr, NULL, (double **) 0, 0, 1);
 
 
@@ -804,7 +815,7 @@ int main (int argc, char **argv) {
 
 					err += CRSLogLikelihood(LLs+p, Ldums0+p, Nev+p, I+p, &r, Nsur, DCFS, eqkfm_aft,
 										  	eqkfm_co, flags, crst, AllCoeff, AllCoeff_aseis,
-										  	L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, &seed, cat,
+										  	L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec, cat,
 										  	times2, tstartLL, tstartLL, tendLL, tw, Mag_main, Asig, ta, r0, fixr, NULL,
 										  	gammas_new, 0, !tai && !as);
 
@@ -920,7 +931,7 @@ int main (int argc, char **argv) {
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
 			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, crst, AllCoeff, AllCoeff_aseis, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec,
-					&seed, cat, times2,tstart_calc, Tstart, Tend, fore_dt, maxAsig, maxta, maxr, gammasfore, multi_gammas, 1,
+					 cat, times2,tstart_calc, Tstart, Tend, fore_dt, maxAsig, maxta, maxr, gammasfore, multi_gammas, 1,
 					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL, !LLinversion);
 
 			print_logfile("Output files written: %s, %s, %s, %s, %s, %s, %s.\n",

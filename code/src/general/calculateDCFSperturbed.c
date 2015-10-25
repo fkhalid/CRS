@@ -45,7 +45,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							double *times, int Nmain, int NA, struct crust crst,
 							struct Coeff_LinkList *AllCoeff,
 							struct Coeff_LinkList *AllCoeffaft, int NTScont,
-							double **focmec, int *fmzoneslim, int NFM, long *seed,
+							double **focmec, int *fmzoneslim, int NFM,
 							double tdata0, double tdata1, int refresh, int which_recfault) {
 
 /* Input:
@@ -332,8 +332,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 			for (int fmzone=0; fmzone<crst.nofmzones; fmzone++){
 				first=fmzoneslim[fmzone];
 				last=fmzoneslim[fmzone+1]-1;
-				rand= (int) ((last-first)*ran1(seed)+first);
-				*seed=-*seed;
+				rand= (int) ((last-first)*ran1()+first);
 				strike0[fmzone]=focmec[1][rand];
 				dip0[fmzone]=focmec[2][rand];
 				rake0[fmzone]=focmec[3][rand];	//only used for splines==1 (see below).
@@ -425,13 +424,13 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 					}
 					if (gridpoints_err==1) {
 						//if vary_recfault==0, the field hasn't changed and cmb0 should be used.
-						smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, seed, vary_recfault==0, nn);
+						smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, vary_recfault==0, nn);
 					}
 				}
 				else {
 					//if the earthquake does not have a slip model, the isotropic field does not change between iterations and has already been calculated.
 					//only need to calculated error from gridpoints.
-					if (gridpoints_err==1) smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, seed, 1, nn);
+					if (gridpoints_err==1) smoothen_DCFS(DCFS[temp->which_main], crst.nLat, crst.nLon, crst.nD, 1, nn);
 				}
 
 				NFsofar+=temp->NF;
@@ -441,14 +440,13 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 	}
 }
 
-void smoothen_DCFS(struct pscmp DCFS, int nlat, int nlon, int nd, long *seed, int use_cmb0, int **nn){
+void smoothen_DCFS(struct pscmp DCFS, int nlat, int nlon, int nd, int use_cmb0, int **nn){
 	/* Calculates perturbed stress field by estimating the gradients within each cell from the difference with neighbor ones.
 	 * Only works with regular grids.
 	 *
 	 * Input
 	 *  DCFS: already contains stress field (cmb)
 	 *  nlat, nlon, nd: number of elements along each dimension.
-	 *  seed: for random number generation
 	 *  use_cmb0: flag. if set to 0, the values in DCFS.cmb are perturbed and overwritten.
 	 *  				if set to 1, it will take the values from DCFS.cmb0 and perturb them within a precalculated range given by DCFS.Dcmb.
 	 *  						With this option, DCFS.cmb0= mean value of field; DCFS.cmb=range of values. This method is faster, and
@@ -473,8 +471,7 @@ void smoothen_DCFS(struct pscmp DCFS, int nlat, int nlon, int nd, long *seed, in
 
 		for (int i=1; i<=DCFS.nsel; i++) {
 			int p=DCFS.which_pts[i];
-			randcmb=interp_DCFS[p][1]+ran1(seed)*(interp_DCFS[p][2]-interp_DCFS[p][1]);
-			*seed=-*seed;
+			randcmb=interp_DCFS[p][1]+ran1()*(interp_DCFS[p][2]-interp_DCFS[p][1]);
 			DCFS.cmb[i]=randcmb;
 		}
 
@@ -483,8 +480,7 @@ void smoothen_DCFS(struct pscmp DCFS, int nlat, int nlon, int nd, long *seed, in
 	}
 	else{
 		for (int i=1; i<=DCFS.nsel; i++) {
-			randcmb=-0.5*DCFS.Dcmb[i]+ran1(seed)*DCFS.Dcmb[i];
-			*seed=-*seed;
+			randcmb=-0.5*DCFS.Dcmb[i]+ran1()*DCFS.Dcmb[i];
 			DCFS.cmb[i]=DCFS.cmb0[i]+randcmb;
 		}
 	}

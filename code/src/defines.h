@@ -59,6 +59,7 @@
 #define error_quit(...) error_quit_fun(__func__, __VA_ARGS__)
 
 #include <stdio.h>
+#include <gsl/gsl_rng.h>
 
 #define logfolder "output/log/"
 
@@ -66,6 +67,8 @@ extern char cmb_format[120];
 extern int extra_verbose, quiet;	//control level of verbosity (screen = log file)
 extern double DCFS_cap;
 extern FILE *flog;
+extern gsl_rng * global_rand;
+extern long global_seed;
 
 // Note: if the "flags" struct is updated, BCAST_FLAGS_SIZE should be updated
 //		 accordingly. Also, the broadcast code in read_modelparmeters() should

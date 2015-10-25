@@ -29,7 +29,6 @@ void copy_matrix( double **m1, double ***m2, int a, int b);
 void copy_vector(double *m1, double **m2, int a);
 char ***tmatrix(long nrl, long nrh, long ncl, long nch, long length);
 void mysort(unsigned long n, double *old_arr, int **ind, double **arr);
-void mysort2(unsigned long n, double *old_arr, int **ind, double **arr);
 void free_tmatrix(char ***m, long nrl, long nrh, long ncl, long nch, long length);
 double **mtimesm3(double **m1, double **m2, double ***);
 double * mtimesv(double **M, double *v, double *v2, int D1, int D2);

@@ -21,6 +21,12 @@ old_numrec_folder="/home/des/camcat/masterdes_exthd1/sec21/NumericalRecipes/2.11
 # Put the path to the Numerical Recipes source code here:
 new_numrec_folder="/home/des/camcat/masterdes_exthd1/sec21/NumericalRecipes/2.11/C_211/"
 
+#Change the path to the GNU scientific library:
+old_gsl_folder="/usr/local/include/"
+new_gsl_folder="/home/des/camcat/code/"
+
+
+
 
 #---------------Don't need to change anything below here--------------------------------%
 

@@ -29,7 +29,7 @@ C_DEPS += \
 code/src/test/%.o: ../code/src/test/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C Compiler'
-	 gcc -g -pg -Wall -D_no_numericalrecipes -O0 -c -fmessage-length=0 -std=c99 -fopenmp -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	gcc -g -pg -Wall -D_no_numericalrecipes -O0 -c -fmessage-length=0 -std=c99 -fopenmp -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

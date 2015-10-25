@@ -38,11 +38,11 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 							struct eqkfm *eqkfm0, struct flags flag,
 							double *times, int Nmain, int NA, struct crust crst,
 							struct Coeff_LinkList *AllCoeff, struct Coeff_LinkList *AllCoeff_aseis, int NTScont,
-							double **focmec, int *fmzoneslim, int NFM, long *seed,
+							double **focmec, int *fmzoneslim, int NFM,
 							double tdata0, double tdata1,
 							int refresh, int which_recfault);
 
-void smoothen_DCFS(struct pscmp DCFS, int, int, int, long *seed, int, int **);
+void smoothen_DCFS(struct pscmp DCFS, int, int, int, int, int **);
 void smoothen_vector(int NgridT, int nLat, int nLon, int nD, double *values, long *seed, int**, int);
 
 #endif /* CALCULATEDCFSPERTURBED_H_ */

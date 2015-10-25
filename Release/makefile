@@ -35,7 +35,7 @@ all: run_crs
 run_crs: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc -o "run_crs" $(OBJS) $(USER_OBJS) $(LIBS) -lm -lgomp
+	gcc -o "run_crs" $(OBJS) $(USER_OBJS) $(LIBS) -lm -lgomp -lgsl -lgslcblas
 	@echo 'Finished building target: $@'
 	@echo ' '
 
