@@ -42,7 +42,7 @@ fm	iso
 # 6. Controls the time windows to be excluded from the LogLikelihood calculation due to incomplete catalog.
 #    tw, Magmain: tw=length of time window to skip (days); Magmain= min. magnitude of mainshocks following which a time window should be skipped;
 #    If no time should be skipped, set Mag_main to a large value (setting Mag_main to a small value and tw=0.0 leads to longer computation times).
-0
+1
 1      0.022
 0      8000   12000   2	lin
 0      7000   10000   2	lin

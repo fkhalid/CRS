@@ -9,9 +9,7 @@
 # ...
 1
 fsp	0	
-2004-09-28T17:15:24Z	6.0	4
-0 tutorial/input/fsp/s2004PARKFI01SIMPLE.fsp
+2004-09-28T17:15:24Z	6.0	3
 0 tutorial/input/fsp/s2004PARKFI01DREG.fsp  
 0 tutorial/input/fsp/s2004PARKFI01CUST.fsp  
 0 tutorial/input/fsp/s2004PARKFI01JIxx.fsp
-

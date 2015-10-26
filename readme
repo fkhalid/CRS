@@ -18,7 +18,9 @@ CRS depends on the following:
 gcc (C compiler)
 mpicc (MPI compiler, for running MPI code)
 openMP libraries
-numerical recipes (source code in C). http://www.nr.com/
+GNU scientific libraries (http://www.gnu.org/software/gsl/)
+
+some functionalities require the Numerical Recipes (source code in C). http://www.nr.com/
 
 The code was tested with gcc version 4.4.0.
 
@@ -28,19 +30,24 @@ Installation
 
 The following steps are needed to install CRS:
 
-1. Set up paths to the numerical recipes source code 
-   in the script config_numrec.sh (more details in the script itself), and run it.
+1. Install the GNU Scientific Libraries (http://www.gnu.org/software/gsl/)
+   The compiler expects the libraries to be located /usr/local/lib, and the source code at /usr/local/include/gsl/
 
-2. Configure makefiles for compiling serial or mpi version by running the script switch_compiler.sh.
-   For the serial version, type: switch_compiler.sh mpicc2gcc
+2. Set up paths to the numerical recipes source code in the script config_numrec.sh (more details in the script itself), and run it.
+   If you don't plan to use spline interpolation for continuous stresses, you can skip this step.
+
+3. Configure makefiles for compiling serial or parallel(mpi) version by running the script switch_compiler.sh.
+   For the serial version, type: switch_compiler.sh mpicc2gcc (choose the option if you are not running CRS on a cluster)
    For the MPI version, type: switch_compiler.sh gcc2mpicc
-  
-3. Compile the code:
+   You will need to run this script again to compile a different version of the code (serial/parallel) in the future.
+
+4. Compile the code:
     cd Release
+    make clean
     make all
     cd ..
 
-  This will create file run_crs or run_mpi_crs, depending on whether you are compiling the serial or parallel version.
+  This will create file run_crs or run_mpi_crs, depending on whether you are compiling the serial or parallel version. 
 
 
 Running the program
@@ -62,4 +69,13 @@ Running the program
    where N is the desired no. of ranks.
 
 
-A description of the input file can be found in the template file provided with the code.
+Additional documentation
+------------------------
+
+A description of the input file can be found in: example/example_inputfile.txt
+The formats of the input files and output files are described in doc/inputformats.readme and doc/outputformats.readme
+Template input files are provided in the folder: examples/
+The folder: tutorial/ contains input and output files for a tutorial described in the file Manual.pdf
+
+
+

@@ -1,4 +1,4 @@
-Sat Oct 24 14:59:54 UTC 2015
+Mon Oct 26 03:43:29 UTC 2015
 !--------------------------!
 !------input file: --------!
 !--------------------------!
@@ -63,7 +63,7 @@ fm	iso
 # 6. Controls the time windows to be excluded from the LogLikelihood calculation due to incomplete catalog.
 #    tw, Magmain: tw=length of time window to skip (days); Magmain= min. magnitude of mainshocks following which a time window should be skipped;
 #    If no time should be skipped, set Mag_main to a large value (setting Mag_main to a small value and tw=0.0 leads to longer computation times).
-0
+1
 1      0.022
 0      8000   12000   2	lin
 0      7000   10000   2	lin
@@ -137,7 +137,6 @@ Real int.resolution: dlat=2.78 km, dlon=2.25 km, ddep=5.00 km.
 Slip input file: tutorial/input/slipmodels.txt.
 1 seismic slip models:
 	 time 	 mag 	 name
-	-12.00	6.00	tutorial/input/fsp/s2004PARKFI01SIMPLE.fsp
 	-12.00	6.00	tutorial/input/fsp/s2004PARKFI01DREG.fsp
 	-12.00	6.00	tutorial/input/fsp/s2004PARKFI01CUST.fsp
 	-12.00	6.00	tutorial/input/fsp/s2004PARKFI01JIxx.fsp
@@ -156,15 +155,15 @@ Warning - one of the eqkfm structures is empty! (combine_eqkfm)
 Will use 62 receiver focal mechanisms up to t=0.00 (ForecastStartDate)
 
 Building mainshock slip models (eqkfm_addslipmodels).
-Using slip model tutorial/input/fsp/s2004PARKFI01SIMPLE.fsp for large event at t=-1.20000e+01, mag=5.97
+Using slip model tutorial/input/fsp/s2004PARKFI01DREG.fsp for large event at t=-1.20000e+01, mag=5.97
 ** Warning: could not find field named RAKE. Will use global value (180.000). **
 Slip model set to no. 1.
 Using isotropic stress field for 7 earthquakes
-Using 10 iterations.
+Inversion time period: [-12 -  0]days, Using 10 iterations.
 Okada Coefficients structure set up.
 DCFS structure set up.
 Depth of surface: 0.000 km.
-Calculating Okada solutions (1 patches, 3772 grid points)...
+Calculating Okada solutions (162 patches, 3772 grid points)...
 Okada Coefficients structure updated.
 Okada Coefficients structure updated.
 Setting up variables in CRSLogLikelihood...
@@ -176,24 +175,6 @@ Default values of background rate:
 Mw>=2.00	 r=0.02200
 Slip model set to no. 1.
 Using slip models:
-	tutorial/input/fsp/s2004PARKFI01SIMPLE.fsp
-	Synthetic slip model (or isotropic field)
-	Synthetic slip model (or isotropic field)
-	Synthetic slip model (or isotropic field)
-	Synthetic slip model (or isotropic field)
-	Synthetic slip model (or isotropic field)
-	Synthetic slip model (or isotropic field)
-	Synthetic slip model (or isotropic field)
-
-Final values of background rate: Mw>=2.00	 r=0.02200
-Background rate used for forecast: Mw>=2.00	 r=0.02200
-
-Calculating forecast...
-Using steady state starting rates: Calculation starting time -12.00. Forecast start time 0.00.
-RS parameters: Asig=8000.000000, ta=7000.000000
-Output files written: tutorial/output/out1_cmbmap, tutorial/output/out1_foremap, tutorial/output/out1_forecast, tutorial/output/out1_cmbmap_all, tutorial/output/out1_foremap_all, tutorial/output/out1_forecast_all, tutorial/output/out1_LLevents.
-Slip model set to no. 2.
-Using slip models:
 	tutorial/input/fsp/s2004PARKFI01DREG.fsp
 	Synthetic slip model (or isotropic field)
 	Synthetic slip model (or isotropic field)
@@ -202,17 +183,27 @@ Using slip models:
 	Synthetic slip model (or isotropic field)
 	Synthetic slip model (or isotropic field)
 	Synthetic slip model (or isotropic field)
-Depth of surface: 0.000 km.
-Calculating Okada solutions (162 patches, 3772 grid points)...
-Okada Coefficients structure updated.
+
+Performing grid search...
+Asig 	 ta 	 r 	 LL 
+8000.00000 	 7000.00000 	 0.02200 	 -574.56060 	1
+8000.00000 	 8500.00000 	 0.02200 	 39.73064 	1
+8000.00000 	 10000.00000 	 0.02200 	 -1667.47755 	1
+10000.00000 	 7000.00000 	 0.02200 	 -1445.88327 	1
+10000.00000 	 8500.00000 	 0.02200 	 -812.04343 	1
+10000.00000 	 10000.00000 	 0.02200 	 -696.18612 	1
+12000.00000 	 7000.00000 	 0.02200 	 -1309.41624 	1
+12000.00000 	 8500.00000 	 0.02200 	 -1132.14882 	1
+12000.00000 	 10000.00000 	 0.02200 	 -421.38988 	1
 
 Final values of background rate: Mw>=2.00	 r=0.02200
 Background rate used for forecast: Mw>=2.00	 r=0.02200
 
 Calculating forecast...
-RS parameters: Asig=8000.000000, ta=7000.000000
-Output files written: tutorial/output/out2_cmbmap, tutorial/output/out2_foremap, tutorial/output/out2_forecast, tutorial/output/out2_cmbmap_all, tutorial/output/out2_foremap_all, tutorial/output/out2_forecast_all, tutorial/output/out2_LLevents.
-Slip model set to no. 3.
+Using starting rates results from LL inversion: Calculation starting time 0.00. Forecast start time 0.00.
+RS parameters: Asig=8000.000000, ta=8500.000000
+Output files written: tutorial/output/out1_cmbmap, tutorial/output/out1_foremap, tutorial/output/out1_forecast, tutorial/output/out1_cmbmap_all, tutorial/output/out1_foremap_all, tutorial/output/out1_forecast_all, tutorial/output/out1_LLevents.
+Slip model set to no. 2.
 Using slip models:
 	tutorial/input/fsp/s2004PARKFI01CUST.fsp
 	Synthetic slip model (or isotropic field)
@@ -226,13 +217,25 @@ Depth of surface: 0.000 km.
 Calculating Okada solutions (189 patches, 3772 grid points)...
 Okada Coefficients structure updated.
 
+Performing grid search...
+Asig 	 ta 	 r 	 LL 
+8000.00000 	 7000.00000 	 0.02200 	 -1022.68008 	2
+8000.00000 	 8500.00000 	 0.02200 	 -574.80774 	2
+8000.00000 	 10000.00000 	 0.02200 	 109.64063 	2
+10000.00000 	 7000.00000 	 0.02200 	 -51.05575 	2
+10000.00000 	 8500.00000 	 0.02200 	 -144.82363 	2
+10000.00000 	 10000.00000 	 0.02200 	 -405.71005 	2
+12000.00000 	 7000.00000 	 0.02200 	 -91.29582 	2
+12000.00000 	 8500.00000 	 0.02200 	 -13.56085 	2
+12000.00000 	 10000.00000 	 0.02200 	 106.84890 	2
+
 Final values of background rate: Mw>=2.00	 r=0.02200
 Background rate used for forecast: Mw>=2.00	 r=0.02200
 
 Calculating forecast...
-RS parameters: Asig=8000.000000, ta=7000.000000
-Output files written: tutorial/output/out3_cmbmap, tutorial/output/out3_foremap, tutorial/output/out3_forecast, tutorial/output/out3_cmbmap_all, tutorial/output/out3_foremap_all, tutorial/output/out3_forecast_all, tutorial/output/out3_LLevents.
-Slip model set to no. 4.
+RS parameters: Asig=8000.000000, ta=10000.000000
+Output files written: tutorial/output/out2_cmbmap, tutorial/output/out2_foremap, tutorial/output/out2_forecast, tutorial/output/out2_cmbmap_all, tutorial/output/out2_foremap_all, tutorial/output/out2_forecast_all, tutorial/output/out2_LLevents.
+Slip model set to no. 3.
 Using slip models:
 	tutorial/input/fsp/s2004PARKFI01JIxx.fsp
 	Synthetic slip model (or isotropic field)
@@ -246,17 +249,28 @@ Depth of surface: 0.000 km.
 Calculating Okada solutions (200 patches, 3772 grid points)...
 Okada Coefficients structure updated.
 
+Performing grid search...
+Asig 	 ta 	 r 	 LL 
+8000.00000 	 7000.00000 	 0.02200 	 -1336.49572 	3
+8000.00000 	 8500.00000 	 0.02200 	 106.68934 	3
+8000.00000 	 10000.00000 	 0.02200 	 -433.26579 	3
+10000.00000 	 7000.00000 	 0.02200 	 -392.11585 	3
+10000.00000 	 8500.00000 	 0.02200 	 448.95785 	3
+10000.00000 	 10000.00000 	 0.02200 	 -1127.58683 	3
+12000.00000 	 7000.00000 	 0.02200 	 -1378.04933 	3
+12000.00000 	 8500.00000 	 0.02200 	 -251.10964 	3
+12000.00000 	 10000.00000 	 0.02200 	 -1482.34967 	3
+
 Final values of background rate: Mw>=2.00	 r=0.02200
 Background rate used for forecast: Mw>=2.00	 r=0.02200
 
 Calculating forecast...
-RS parameters: Asig=8000.000000, ta=7000.000000
-Output files written: tutorial/output/out4_cmbmap, tutorial/output/out4_foremap, tutorial/output/out4_forecast, tutorial/output/out4_cmbmap_all, tutorial/output/out4_foremap_all, tutorial/output/out4_forecast_all, tutorial/output/out4_LLevents.
+RS parameters: Asig=10000.000000, ta=8500.000000
+Output files written: tutorial/output/out3_cmbmap, tutorial/output/out3_foremap, tutorial/output/out3_forecast, tutorial/output/out3_cmbmap_all, tutorial/output/out3_foremap_all, tutorial/output/out3_forecast_all, tutorial/output/out3_LLevents.
 
 Final Rate-and-State parameters (used for forecast):
-Slip model(s) no. 1:	->	Asig=8000.00000 	 ta=7000.00000 	 r=0.02200 
-Slip model(s) no. 2:	->	Asig=8000.00000 	 ta=7000.00000 	 r=0.02200 
-Slip model(s) no. 3:	->	Asig=8000.00000 	 ta=7000.00000 	 r=0.02200 
-Slip model(s) no. 4:	->	Asig=8000.00000 	 ta=7000.00000 	 r=0.02200 
+Slip model(s) no. 1:	->	Asig=10000.00000 	 ta=8500.00000 	 r=0.02200 
+Slip model(s) no. 2:	->	Asig=10000.00000 	 ta=8500.00000 	 r=0.02200 
+Slip model(s) no. 3:	->	Asig=10000.00000 	 ta=8500.00000 	 r=0.02200 
 Program completed successfully.
-Sat Oct 24 15:00:01 UTC 2015
+Mon Oct 26 03:43:36 UTC 2015
