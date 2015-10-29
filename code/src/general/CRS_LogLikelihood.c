@@ -131,7 +131,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	FILE *fforex, *fcmb, *fforet1, *fforet2, *fLLev;
 	FILE *fforet_avg, *foutallsnap;
 
-	int all_snapshots=1;	//todo pass to function.
+	int all_snapshots=0;	//todo pass to function.
 
 	if (all_gammas0==NULL)	uniform_bg_rate=1;
 
@@ -226,12 +226,12 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		}
 
 		if (printall_foret) {
-			sprintf(fname, "%s_cumu.dat",printall_foret);
+			sprintf(fname, "%s_nev.dat",printall_foret);
 			MPI_File_open(MPI_COMM_WORLD, fname,
 						  MPI_MODE_CREATE|MPI_MODE_WRONLY,
 						  MPI_INFO_NULL, &fhw_foret1);
 
-			sprintf(fname, "%s_rates.dat",printall_foret);
+			sprintf(fname, "%s_rate.dat",printall_foret);
 			MPI_File_open(MPI_COMM_WORLD, fname,
 						  MPI_MODE_CREATE|MPI_MODE_WRONLY,
 						  MPI_INFO_NULL, &fhw_foret2);

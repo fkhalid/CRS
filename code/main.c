@@ -103,7 +103,7 @@ int main (int argc, char **argv) {
 
 	int err=0;
 
-	FILE *fout, *fin, *foutfore;
+	FILE *fout, *fin, *foutfore, *slipmodfile;
 
 	int LLinversion, forecast;	//flags indicating if parameter inversion should be done, an if forecast should be produced.
 	int Nchar=120;
@@ -668,6 +668,9 @@ int main (int argc, char **argv) {
 
 	if(procId == 0) {
 
+		sprintf(fname,"%s_slipmodlist.dat", outname);
+		slipmodfile=fopen(fname,"w");
+
 		if (LLinversion){
 			sprintf(fname,"%s_ParamSearch.dat", outname);
 			fout=fopen(fname,"w");
@@ -744,14 +747,19 @@ int main (int argc, char **argv) {
 		nf=0;
 		int i=0, nn0=0; //counter: slip model names, events which have a slip model.
 		print_logfile("Using slip models:\n");
+		if (procId==0) fprintf(slipmodfile,"Slip model combination no. %d\n", mod);
 		for (int n=0; n<Nco; n++) {
 			//fixme this is wrong if a slip model in the list is not used.
 			if (eqkfm_co[nf].parent_set_of_models->Nmod) {
 				print_logfile("\t%s\n",all_slipmodels.slipmodels[i+Nsm[n]-1]);
+				if (procId==0) fprintf(slipmodfile,"\t%s\n",all_slipmodels.slipmodels[i+Nsm[n]-1]);
 				i+=all_slipmodels.no_slipmodels[nn0];
 				nn0+=1;
 			}
-			else print_logfile("\t%s\n","Synthetic slip model (or isotropic field)");
+			else {
+				print_logfile("\t%s\n","Synthetic slip model (or isotropic field)");
+				if (procId==0) fprintf(slipmodfile,"\t%s\n","Synthetic slip model (or isotropic field)");
+			}
 			nf+=Nfaults_co[n];
 		}
 
@@ -832,8 +840,9 @@ int main (int argc, char **argv) {
 							}
 						}
 						if(procId == 0) {
-							fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",
-									Asig,ta,r,Ldums0[p],Nev[p],I[p],LLs[p], mod);
+							//fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",
+							fprintf(fout, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",
+									Asig,ta,r,LLs[p], mod);
 							fflush(fout);
 							print_logfile("%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n", Asig, ta, r, LLs[p], mod);
 
@@ -1025,6 +1034,7 @@ int main (int argc, char **argv) {
 	#endif
 
 	if(procId == 0) {
+		fclose(slipmodfile);
 		if (LLinversion) fclose(fout);
 		if (forecast) fclose(foutfore);
 	}
