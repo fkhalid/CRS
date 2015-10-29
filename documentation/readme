@@ -1,0 +1,65 @@
+Licence
+-------
+
+CRS is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with CRS.  If not, see <http://www.gnu.org/licenses/>.
+
+
+Dependencies
+------------
+
+CRS depends on the following:
+
+gcc (C compiler)
+mpicc (MPI compiler, for running MPI code)
+openMP libraries
+numerical recipes (source code in C). http://www.nr.com/
+
+The code was tested with gcc version 4.4.0.
+
+
+Installation
+------------
+
+The following steps are needed to install CRS:
+
+1. Set up paths to the numerical recipes source code 
+   in the script config_numrec.sh (more details in the script itself), and run it.
+
+2. Configure makefiles for compiling serial or mpi version by running the script switch_compiler.sh.
+   For the serial version, type: switch_compiler.sh mpicc2gcc
+   For the MPI version, type: switch_compiler.sh gcc2mpicc
+  
+3. Compile the code:
+    cd Release
+    make all
+    cd ..
+
+  This will create file run_crs or run_mpi_crs, depending on whether you are compiling the serial or parallel version.
+
+
+Running the program
+-------------------
+
+1. Serial version:   
+
+	Release/run_crs [options] name_of_input_file
+
+   [options] are one of the following:
+	-v --verbose: more output will be printed on the screen, including the name of each function producing output.
+	-q, --quiet: screen messages are suppressed.
+
+
+2. MPI version:
+
+	mpirun -n N Release/run_mpi_crs [options] name_of_input_file
+
+   where N is the desired no. of ranks.
+
+
+A description of the input file can be found in the template file provided with the code.
