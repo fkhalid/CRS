@@ -3,7 +3,7 @@
 #------------------------------------------------------#
 
 Output files are named: [OutputForecastFile]_[filetype].dat, where OutputForecastFile is defined by the user in the input file, and filetype refers to the data (gridded seismicity, temporal evolution, stress field etc).
-In the examples below, "OutputForecastFile=output"
+In the examples below, "OutputForecastFile=output".
 
 
 

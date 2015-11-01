@@ -89,7 +89,7 @@ Catalog files. ZMAP format:
 [12.Depth error]*
 [13.Magnitude error]*
 
-* optional columns. If not given, will use default values [TODO write where these are].
+* optional columns. If not given, will use default values: 1km (hor. error), 5km (vert. error), 0.1 (magnitude error). There are hardwired in the source file: code/src/inp_out/read_zmap.c
 
 6.InputCatalogFocMecFile
 ----------------------
