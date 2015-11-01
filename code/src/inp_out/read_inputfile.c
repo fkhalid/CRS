@@ -578,6 +578,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		(*allslipmodels).disc= NULL;
 		(*allslipmodels).Nfaults=NULL;
 		(*allslipmodels).no_slipmodels=NULL;
+		(*allslipmodels).is_used=NULL;
 		(*allslipmodels).cut_surf=NULL;
 		return 0;
 	}
@@ -606,6 +607,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		(*allslipmodels).disc= NULL;
 		(*allslipmodels).Nfaults=NULL;
 		(*allslipmodels).no_slipmodels=NULL;
+		(*allslipmodels).is_used=NULL;
 		(*allslipmodels).cut_surf=NULL;
 		return 1;
 	}
@@ -676,6 +678,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 		(*allslipmodels).disc=darray(0,Nm0-1);
 		(*allslipmodels).Nfaults=iarray(0,Nm0-1);
 		(*allslipmodels).no_slipmodels=iarray(0,Nm0-1);
+		(*allslipmodels).is_used=iarray(0,Nm0-1);
 		(*allslipmodels).slipmodels = malloc(Nm0*sizeof(char*));
 		(*allslipmodels).tsnap= NULL;	// will allocate if needed later on.
 		nsm=0;
@@ -816,7 +819,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 	nsm=0;
 	if (is_aseismic) print_logfile("\nAfterslip input file: %s.\n", input_fname);
 	else print_logfile("\nSlip input file: %s.\n", input_fname);
-	print_logfile("%d %s slip models:\n", (*allslipmodels).NSM, is_aseismic? "aseismic" : "seismic");
+	print_logfile("%d %s events:\n", (*allslipmodels).NSM, is_aseismic? "aseismic" : "seismic");
 	for (int m=0; m<(*allslipmodels).NSM; m++){
 		if (is_aseismic){
 			if (m==0) print_logfile("\t time \t name\n");

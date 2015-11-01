@@ -225,7 +225,8 @@ struct slipmodels_list{
 	int is_aseismic;
 	int NSM;	//no. of events.
 	int *Nfaults;
-	int *no_slipmodels;
+	int *no_slipmodels;	//no. of alternative slip models for each mainshock
+	int *is_used;	//flag indicating whether the event is selected as source.
 	int *cut_surf;	//flags indicating is free surface should be assumed at the top.
 	double *tmain;	//times of mainshocks;
 	double *tsnap;	//times for aseismic snapshots

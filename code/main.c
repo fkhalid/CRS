@@ -757,8 +757,12 @@ int main (int argc, char **argv) {
 		print_logfile("Using slip models:\n");
 		if (procId==0) fprintf(slipmodfile,"Slip model combination no. %d\n", mod);
 		for (int n=0; n<Nco; n++) {
-			//fixme this is wrong if a slip model in the list is not used.
 			if (eqkfm_co[nf].parent_set_of_models->Nmod) {
+				//must skip events which are not used:
+				while (all_slipmodels.is_used[nn0]==0){
+				    i+=all_slipmodels.no_slipmodels[nn0];
+				    nn0+=1;
+				}
 				print_logfile("\t%s\n",all_slipmodels.slipmodels[i+Nsm[n]-1]);
 				if (procId==0) fprintf(slipmodfile,"\t%s\n",all_slipmodels.slipmodels[i+Nsm[n]-1]);
 				i+=all_slipmodels.no_slipmodels[nn0];
