@@ -88,7 +88,11 @@ void copy_matrix( double **m1, double ***m2, int a, int b){
 	 * if *m2==NULL, memory allocated. Otherwise, m2 must have correct no. of elements.
 	 */
 
-	if (!(*m2)) *m2=d2array(1,a,1,b);
+	if (!(*m2)) {
+		*m2=d2array(1,a,1,b);
+		if (!(*m2)) memory_error_quit;
+
+	}
 
 	for (int ns=1; ns<=a; ns++){
 		for (int n=1; n<=b; n++) (*m2)[ns][n]=m1[ns][n];

@@ -231,6 +231,8 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 		allslip_str_temp[nf]=d2array(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 		allslip_dip_temp[nf]=d2array(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
 		allslip_open_temp[nf]=d2array(0,no_snap-1,1, eqkfm0[nf].np_st*eqkfm0[nf].np_di);
+		if (!allslip_str_temp | !allslip_dip_temp |! allslip_open_temp) memory_error_quit;
+
 	}
 
 	//read in values for slip:

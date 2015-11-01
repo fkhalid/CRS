@@ -196,6 +196,7 @@ int main (int argc, char **argv) {
 			**gammas_maxLL=NULL, 	// If forecast==1, LLinversion==1 and  Tstart>=tendLL, the calculations from LL inversion will be used as starting values for forecast calculations.
 									// gammas_maxLL contains the values of gamma for all iterations, saved from LL inversion and used as starting values for forecast.
 			**gammasfore=NULL;		// this will be set to gammas_maxLL if (forecast==1, LLinversion==1 and  Tstart>=tendLL), to NULL otherwise.
+	int enough_memory=1;	//flag set to 0 if gammas_new or gammas_maxLL can not be allocated.
 
 	//to switch between slip models.
 	int slipmodel_combinations=1;	//number of slip model combinations (since each earthquake may have multiple alternative slip models).
@@ -598,14 +599,22 @@ int main (int argc, char **argv) {
 
 	// if (LLinversion && forecast &&  tendLL<=Tstart) the results from LLinversion will be saved and used for forecast calculation.
 	// gammas_new is overwritten for each (Asig, ta) value; the values for the optimal value are saved in gammas_maxLL.
-	// TODO: these variables may be too large to be stored in memory (for large Nsur). In this case, they should not be used (and the starting rates results from LL inversion should
-	// never be used in the forecast: see if condition below).
+	// TODO: these variables (gammas_new and gammas_maxLL may be too large to be stored in memory (for large Nsur). 
 
 	print_screen("Setting up variables needed for grid search...");
 
 	if (LLinversion && forecast &&  tendLL<=Tstart) {
+
 		gammas_new=d2array(1,Nsur,1,NgridT);
 		gammas_maxLL=d2array(1,Nsur,1,NgridT);
+
+		if (!gammas_maxLL | !gammas_new){
+		  gammas_maxLL=NULL;
+		  gammas_new=NULL;	// since there is no point in filling it if it can't be save in gammas_maxLL.
+		  enough_memory=0;
+		  print_screen("Warning: not enough memory to save gamma values from all iterations: will perform the calculations again in the forecast phase.\n");
+		  print_logfile("Warning: not enough memory to save gamma values from all iterations: will perform the calculations again in the forecast phase.\n");
+		}
 	}
 
 	LLs=darray(1,(1+nAsig)*(1+nta));
@@ -836,7 +845,7 @@ int main (int argc, char **argv) {
 							maxr=r;
 							if (forecast &&  tendLL<=Tstart) {
 								//copy gamma values into gammas_maxLL; they will be used for forecast.
-								copy_matrix(gammas_new, &gammas_maxLL, Nsur, NgridT);
+								if (gammas_new!=NULL & gammas_maxLL!=NULL) copy_matrix(gammas_new, &gammas_maxLL, Nsur, NgridT);
 							}
 						}
 						if(procId == 0) {
@@ -896,7 +905,7 @@ int main (int argc, char **argv) {
 			print_screen("Calculating forecast...\n");
 			print_logfile("\nCalculating forecast...\n");
 
-			if (LLinversion &&  tendLL<=Tstart){
+			if (LLinversion &&  tendLL<=Tstart & enough_memory){
 				if(mod==1) {
 					print_logfile("Using starting rates results from LL inversion: ");
 				}

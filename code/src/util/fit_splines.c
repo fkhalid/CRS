@@ -60,7 +60,10 @@
     double grenz0=1.5, grenz, dum;
     float *tf, *t2f, *sp, *sp2, **s2f, **ds2dt2, sp_value, sp_value2; //same as t, but floats(needed by spline function).
     
-    if ((*slip_after)==(double **) 0) (*slip_after)=d2array(1,N,1,TS2);
+    if ((*slip_after)==(double **) 0) {
+	(*slip_after)=d2array(1,N,1,TS2);
+	if (!(*slip_after)) memory_error_quit;
+    }
     
     float **a, **b;
     int n=3;

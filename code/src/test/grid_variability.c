@@ -87,6 +87,7 @@ int grid_variability(){
 	crst.x=darray(1,NP);
 	crst.y=darray(1,NP);
 	interp_DCFS=d2array(1,NP, 1,2);
+	if (!interp_DCFS) memory_error_quit;	
 
 	for (int i=1; i<=NP; i++) allp[i]=i;
 

@@ -31,7 +31,7 @@
 #endif
 
 
-void error_quit_fun(const char *fun, const char * format, ...){
+void error_quit_fun(const char *fun, int quit, const char * format, ...){
     char buffer[3000];
     va_list args;
     va_start (args, format);
@@ -67,7 +67,7 @@ void error_quit_fun(const char *fun, const char * format, ...){
 		  va_end (args);
 	}
 
-	exit(EXIT_FAILURE);
+	if (quit) exit(EXIT_FAILURE);
 }
 
 void print_logfile_fun(const char *fun, const char * format, ...){

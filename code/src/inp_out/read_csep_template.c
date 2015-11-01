@@ -140,6 +140,7 @@ int read_csep_template(char *fname, int *no_magbins, int *nlat, int *nlon,
 
 	if (NL>0 && NC>0) {
 		data = d2array(1,NC, 1, NL+1);
+		if (!data) memory_error_quit;	
 
 		if(procId == 0) {
 			print_screen("Reading template file %s\n", fname);

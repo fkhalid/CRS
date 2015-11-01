@@ -45,6 +45,7 @@ void splines_eqkfm(struct eqkfm **eqkfm_aft, int Nas, int NF, double *times1, do
 	slip_after_di=d2array(1,NP_tot,1,L);
 	slipbefore_op=d2array(1,NP_tot,1,Nas);
 	slip_after_op=d2array(1,NP_tot,1,L);
+	if (!slipbefore_st | !slip_after_st | !slipbefore_di | !slip_after_di | !slipbefore_op | !slip_after_op) memory_error_quit;
 
 
 	for (int f=0; f<NF; f++){

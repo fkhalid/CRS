@@ -54,12 +54,15 @@ void lin_interp_eqkfm(struct eqkfm **eqkfm_aft, int NF, int L, double *times2, i
 		NP_tot=MAX(NP_tot,NP[f]);
 	}
 
+	//TODO should not allocate memory which may not be needed.
 	slipbefore_st=d2array(1,NP_tot,0,Nas);
 	slip_after_st=d2array(1,NP_tot,0,L);
 	slipbefore_di=d2array(1,NP_tot,0,Nas);
 	slip_after_di=d2array(1,NP_tot,0,L);
 	slipbefore_op=d2array(1,NP_tot,0,Nas);
 	slip_after_op=d2array(1,NP_tot,0,L);
+	
+	if(!slipbefore_st | !slip_after_st | !slip_after_st | !slip_after_di | !slip_after_op | !slip_after_op)	memory_error_quit;
 
 	times1=darray(0,Nas);
 	times1[0]=(*eqkfm_aft)[0].t;	//start time when stress=0.

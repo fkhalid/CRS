@@ -188,6 +188,7 @@ void calculateDCFSperturbed(double **DCFSrand, struct pscmp *DCFS, struct eqkfm 
 
 			if (multisnap) {
 				cmb_cumu=d2array(0,NA-1,1,NgridT);
+				if (!cmb_cumu) memory_error_quit;
 				for (int a=0; a<NA; a++){
 					for (int n=1; n<=NgridT; n++) cmb_cumu[a][n]=0.0;
 				}

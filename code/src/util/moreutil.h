@@ -24,7 +24,6 @@ int search_string(char *str1, char *str2);
 int scan_nth(char *string, int n, double *result);
 int closest_element(double *v, int N, double value, double toll);
 int *nth_index(int i, int Ndim, int *dim);
-void error_quit_funsoft(char error_text[]);
 void copy_matrix( double **m1, double ***m2, int a, int b);
 void copy_vector(double *m1, double **m2, int a);
 char ***tmatrix(long nrl, long nrh, long ncl, long nch, long length);

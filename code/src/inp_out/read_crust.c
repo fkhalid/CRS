@@ -294,6 +294,7 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 		NP= (*crst).uniform? (*crst).nLat_out*(*crst).nLon_out*(*crst).nD_out : (*crst).N_allP;	//expected no. of lines in file (no. of forecast points).
 
 	data=d2array(1,2,1,NP);
+	if (!data) memory_error_quit;	
 
 	if(procId == 0) {
 		err = read_matrix(fname, 2, 0, data, &NL);

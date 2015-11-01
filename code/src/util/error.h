@@ -21,7 +21,7 @@
 #ifndef ERROR_H_
 #define ERROR_H_
 
-void error_quit_fun(const char *fun, const char * format, ...);
+void error_quit_fun(const char *fun, int quit, const char * format, ...);
 void print_logfile_fun(const char *fun, const char * format, ...);
 void print_screen_fun(const char *fun, const char * format, ...);
 

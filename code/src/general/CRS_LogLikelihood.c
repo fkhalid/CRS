@@ -136,9 +136,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	if (all_gammas0==NULL)	uniform_bg_rate=1;
 
 	//Initialize stress fields:
-	DCFSrand= (flags.aseismic) ? d2array(0,NTScont,1,NgridT) : NULL;
 	if (flags.aseismic){
 		DCFSrand= d2array(0,NTScont,1,NgridT);
+		if (!DCFSrand) memory_error_quit;	
 		for (int i=0; i<NTScont; i++){
 			for (int j=1; j<=NgridT; j++){
 				DCFSrand[i][j]=0;
@@ -180,6 +180,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		flat_grid=darray(1, NgridTsnaps);
 		nev_allsnapshots= d2array(1,Ntts, 1, NgridT);
 		nev_allsnapdum=d2array(0,Ntts-1, 1, NgridT);	//indices are like this because of how array is address in rate_state_evolution.
+		if (!nev_allsnapshots | !nev_allsnapdum) memory_error_quit;	
 	}
 
 	for (int n=1; n<=NgridT; n++) {
@@ -722,14 +723,17 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		#endif
 
 		//Initialize stress fields:
-		DCFSrand= (flags.aseismic) ? d2array(0,NTScont,1,NgridT) : NULL;
 		if (flags.aseismic){
 			DCFSrand= d2array(0,NTScont,1,NgridT);
+			if (!DCFSrand) memory_error_quit;
 			for (int i=0; i<NTScont; i++){
 				for (int j=1; j<=NgridT; j++){
 					DCFSrand[i][j]=0;
 				}
 			}
+		}
+		else {
+			DCFSrand=NULL;
 		}
 
 		dumrate=darray(1,cat.Z);

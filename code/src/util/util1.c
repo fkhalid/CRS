@@ -90,13 +90,19 @@ double **d2array(long x1, long xN, long y1, long yN)
 
 	/* Set pointers to rows */
 	m=(double **) malloc((size_t)((nx+offset)*sizeof(double*)));
-	if (!m) error_quit("Could not allocate memory (matrix)\n");
+	if (!m) {
+		error_noquit("Could not allocate memory (matrix)\n");
+		return NULL;
+	}
 	m += offset;
 	m -= x1;
 
 	/* Allocate rows and set pointers */
 	m[x1]=(double *) malloc((size_t)((nx*ny+offset)*sizeof(double)));
-	if (!m[x1]) error_quit("Could not allocate memory (matrix)\n");
+	if (!m[x1]) {
+		error_noquit("Could not allocate memory (matrix)\n");
+		return NULL;
+	}
 	m[x1] += offset;
 	m[x1] -= y1;
 

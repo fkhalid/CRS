@@ -101,6 +101,7 @@ int readmultiplefocmec(char **focmecfiles, int nofiles,
 
 	if(focmec) {
 		*focmec = d2array(1,4,1,ntotmax);
+		if (!(*focmec)) memory_error_quit;	
 	}
 	if (firstelements) *firstelements=iarray(0,nofiles);
 	if (eqkfm) *eqkfm=eqkfm_array(0,ntotmax-1);
@@ -248,6 +249,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 	H=1;
 
 	focmec0=d2array(1,NC,1,NFMmax);
+	if (!focmec0) memory_error_quit;	
 	selected=iarray(1,NFMmax);
 	selectedsources=iarray(1,NFMmax);
 	times=darray(1,NFMmax);
@@ -307,6 +309,7 @@ int readfocmec(char *focmecfile, struct crust crst,
 	if (NFM) *NFM= (focmec)? (fm2 ? 2*NFM2 : NFM2) : 0;
 	if (focmec){
 		*focmec=d2array(1,4,1,*NFM);
+		if (!(*focmec)) memory_error_quit;	
 		for (int p0=1; p0<=NFM2; p0++){
 			p=selected[p0];
 			(*focmec)[1][p0]=focmec0[str_col][p];

@@ -56,7 +56,9 @@
 //macros defining functions to be called to output messages:
 #define print_logfile(...) print_logfile_fun(__func__, __VA_ARGS__)
 #define print_screen(...) print_screen_fun(__func__, __VA_ARGS__)
-#define error_quit(...) error_quit_fun(__func__, __VA_ARGS__)
+#define error_quit(...) error_quit_fun(__func__, 1, __VA_ARGS__)	//give error and exit.
+#define error_noquit(...) error_quit_fun(__func__, 0, __VA_ARGS__)	//give error and exit.
+#define memory_error_quit error_quit("Not enough memory to allocate variables. Exiting.\n")
 
 #include <stdio.h>
 #include <gsl/gsl_rng.h>

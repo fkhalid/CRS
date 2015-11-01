@@ -1,4 +1,4 @@
-
+memory_error_quit;
 /*   Copyright (C) 2015 by Camilla Cattania and Fahad Khalid.
  *
  *   This file is part of CRS.
@@ -219,6 +219,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 
   //Rprivate is used for parallelization (a barrier creates a bottleneck and poor performance):
   Rprivate=d2array(0,nthreadstot-1, 0, cat.Z);
+  if (!Rprivate) memory_error_quit;
   for (int t=0; t<omp_get_max_threads(); t++){
 	  for (int eq=0; eq<=cat.Z; eq++) Rprivate[t][eq]=0.0;
   }
@@ -232,6 +233,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 
   NeTprivate=d2array(0,nthreadstot-1, 0, nts-1);
   ReTprivate=d2array(0,nthreadstot-1, 0, nts-1);
+  if (!NeTprivate | !ReTprivate) memory_error_quit;
   for (int t=0; t<omp_get_max_threads(); t++){
 	  if (NeT) for (int i=0; i<nts; i++) NeTprivate[t][i]=0.0;
 	  if (ReT) for (int i=0; i<nts; i++) ReTprivate[t][i]=0.0;
