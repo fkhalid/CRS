@@ -498,9 +498,6 @@ int setup_aseismic_single_log(double t0, double t1, double ts,
 
 	err=timesteps_omori(t0, t1, eqk_aft, NA, Nfaults, L, times2, smallstepstime);
 
-//todo delete
-	print_screen("L=%d\n",*L);
-
 	// Temporal evolution of aseismic slip.//
 	nfaults=0;
 	for (int nev=0; nev<NA; nev++){

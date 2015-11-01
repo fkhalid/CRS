@@ -212,7 +212,7 @@ int setup_aseismic_element(struct eqkfm *eqkfm0res, char **slipmodels, char *cmb
 	 *  eqkfm0res is populated. size [0...Nfaults] (Nfaults is read from the slip model below).
 	 */
 
-	//TODO may also want to allow individual snapshots of allslip_xxx to be NULL (e.g. eqkfm0res[f].allslip_xxx[t]=NULL if there is no slip at time t).
+	//todo to save memory, may also want to allow individual snapshots of allslip_xxx to be NULL (e.g. eqkfm0res[f].allslip_xxx[t]=NULL if there is no slip at time t).
 	int err=0, NF;
 	double 	toll=1e-10;
 	struct eqkfm *eqkfm0;	//used to read individual slip models (one per snapshot), later copied into eqkfm0res structure.
@@ -477,7 +477,7 @@ int setup_CoeffsDCFS(struct Coeff_LinkList **Coefficients, struct Coeff_LinkList
 
     if (Coefficients!=NULL) {
     	//Create elements of structure (allocate memory):
-    	AllCoeff= malloc( sizeof(struct Coeff_LinkList));	//TODO deallocate at the end.
+    	AllCoeff= malloc( sizeof(struct Coeff_LinkList));
 		temp= AllCoeff;
 		for(int i=0; i<Nm; i++) {
 			temp->borrow_coeff_from=NULL;	// coefficients must be be calculated for all seismic sources.

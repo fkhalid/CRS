@@ -40,7 +40,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 		char *model_parameters_file, char *Logfile, struct tm *reftime,
 		double *Tstart, double *Tend, double *tstartLL, double *tendLL, long *seed, int *num_fm){
 
-	//todo check string length is enough?
+	// todo: could check string length is enough
 	/* Read master input file.
 	 *
 	 * input: file name input_fname

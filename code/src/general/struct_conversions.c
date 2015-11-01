@@ -592,7 +592,7 @@ void eqkfm2dist(struct eqkfm *eqkfm1, double *lats, double *lons, double *depths
 
 			latlon2localcartesian(eqkfm1[i].lat, eqkfm1[i].lon, lat0, lon0, &y, &x);
 			Depth=eqkfm1[i].depth;
-			eqkfm1[i].distance=darray(1,nsel);	//TODO deallocate.
+			eqkfm1[i].distance=darray(1,nsel);
 
 			for (int p=1; p<=nsel; p++) {
 				pt=eqkfm1[i].selpoints[p];

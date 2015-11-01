@@ -52,7 +52,7 @@ void prestress(double s1, double s2, double s3, double strike, double dip, doubl
       double  ns[3],ts[3],rst[3],rdi[3];
       double  sig[3],rot[3][3];
 
-      *s=d2array(1,3,1,3);	//TODO deallocate at the end
+      *s=d2array(1,3,1,3);
       if(s1==0.0 && s2==0.0 && s3==0.0) return;
 
       cmb1=0.5*fabs(s2-s3)*sqrt(1+f*f)+f*(0.5*(s2+s3)+p);
@@ -119,7 +119,7 @@ void prestress(double s1, double s2, double s3, double strike, double dip, doubl
       }
       for (int j=0; j<3; j++) for (int i=2; i>j; i--)(*s)[i+1][j+1]=(*s)[j+1][i+1];
 
-      
+     free_d2array(*s,1,3,1,3);
      return;
 }
 

@@ -221,6 +221,9 @@ int readfocmec(char *focmecfile, struct crust crst,
 			depthmin=fmin(0.0, crst.depmin-dz), \
 			depthmax=crst.depmax+dz;
 
+	int adjust_fault_depth=0;	//flag: if set to 1, synthetic slip models whose top edge is above the surface are shifted down so the top is ad depth=0.
+
+
 	if(procId == 0) {
 		NFMmax = (fm2==1)? 2*countline(focmecfile) : countline(focmecfile);
 		NC = countcol_header(focmecfile,1);	//assume one header line (safer than counting columns in header, which may have unwanted spaces);
@@ -384,9 +387,8 @@ int readfocmec(char *focmecfile, struct crust crst,
 
 			//by convention, slip_xxx[2] contains the slip for second foc mech (for single patch events only!).
 			if (!(*eqkfm)[p0].whichfm){
-				if ((*eqkfm)[p0].depth<0.5*(*eqkfm)[p0].W*sin(DEG2RAD*(*eqkfm)[p0].dip2)) {
-					//(*eqkfm)[p0].depth=0.5*(*eqkfm)[p0].W*sin(DEG2RAD*(*eqkfm)[p0].dip2);
-					//TODO see above
+				if (adjust_fault_depth & (*eqkfm)[p0].depth<0.5*(*eqkfm)[p0].W*sin(DEG2RAD*(*eqkfm)[p0].dip2)) {
+					(*eqkfm)[p0].depth=0.5*(*eqkfm)[p0].W*sin(DEG2RAD*(*eqkfm)[p0].dip2);
 				}
 				(*eqkfm)[p0].slip_str[2]=slip*cos(DEG2RAD*(*eqkfm)[p0].rake2);
 				(*eqkfm)[p0].slip_dip[2]=-slip*sin(DEG2RAD*(*eqkfm)[p0].rake2);

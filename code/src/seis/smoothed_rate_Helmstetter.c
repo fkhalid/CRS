@@ -60,7 +60,8 @@ double *smoothed_rate_Helmstetter(double *xgrid, double *ygrid, double dx, doubl
 			return NULL;
 	}
 
-	for (int eq=1; eq<=N; eq++){	//todo parallel.
+	//todo could parallelize (omp)
+	for (int eq=1; eq<=N; eq++){
 		if (!weights || (weights[eq]>0.0)){	//skip if weight=0.0
 			d=fmax(dist[eq],err[eq]);
 			find_gridpoints_exact(ygrid, xgrid, NULL, dx, dy, 0.0, Ngrid, Ngrid, ys[eq], xs[eq], d, 0.0, 0.0, 10000, &no_ind, &ind, &rate, 1, 0);
@@ -115,7 +116,8 @@ double *smoothed_rate_Helmstetter_nonuni(double *xgrid, double *ygrid, int Ngrid
 			return NULL;
 	}
 
-	for (int eq=1; eq<=N; eq++){	//todo parallel.
+	//todo could parallelize (omp)
+	for (int eq=1; eq<=N; eq++){
 		if (!weights || (weights[eq]>0.0)){
 			d=fmax(dist[eq],err[eq]);
 			// smooth event based on coordinates of the center of each grid point (not exact calculation as in Helmstetter function).
@@ -176,8 +178,8 @@ double *fit_depth(double *zgrid, double dz, int Ngrid, double *zs, double *err, 
 
 	for (int n=1; n<=Ngrid; n++) prob[n]=0;
 
-
-	for (int eq=1; eq<=N; eq++){	//todo parallel.
+	//todo could parallelize(omp)
+	for (int eq=1; eq<=N; eq++){
 		probCum=0;
 		for (int n=1; n<=Ngrid; n++){
 			rz=fabs(zgrid[n]-zs[eq]);

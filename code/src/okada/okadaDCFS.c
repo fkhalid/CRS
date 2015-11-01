@@ -24,8 +24,6 @@
 	#include "mpi.h"
 #endif
 
-//todo make all these functions return error code.
-//todo check if there are memory leaks.
 
 //---------------------------------------------------------------------//
 //-----					Top level functions						  -----//
@@ -272,9 +270,7 @@ int okadaCoeff_mpi(float ****Coeffs_st,
 			++p2;
 
 			#pragma omp parallel for private(Sxx, Syy, Szz, Sxy, Syz, Sxz, north, east, i, afslip, noslip_str, noslip_dip, noopen)
-			for(int i0=0; i0<Nsel; i0++) {	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
-				//todo it may also be better to process each of the 3 tensors (Coeffs_XX) separately: less likely to run out of memory.
-
+			for(int i0=0; i0<Nsel; i0++) {	
 
 				i=eqkfm1[0].selpoints[i0+1];	// Added '+1' to the index
 				north=crst.y[i];
@@ -447,9 +443,6 @@ int okadaCoeff(float ****Coeffs_st, float ****Coeffs_dip, float ****Coeffs_open,
 		if (flag_open && flag_sslip && flag_dslip) break;
 	}
 
-	//todo could use array of pointers for smarter memory allocation (and avoid allocating if a subfault, or even a single patch, has no slip):
-
-	//allocate memory and set to 0 (inside f3array).	//todo could use array of pointers for smarter memory allocation...
 	*Coeffs_st= (flag_sslip) ? f3array(1,NP_tot,1,Nsel,1,6) : NULL;
 	*Coeffs_dip= (flag_dslip) ? f3array(1,NP_tot,1,Nsel,1,6) : NULL;
 	*Coeffs_open= (flag_open) ? f3array(1,NP_tot,1,Nsel,1,6) : NULL;

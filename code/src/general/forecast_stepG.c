@@ -107,7 +107,7 @@ int rate_state_evolution(struct catalog cat, double *times, double **cmpdata, st
 		firsttimein=0;
 
 		//allocate memory:
-		NeXdum=darray(1,N);	//todo this and the one below are never deallocated.
+		NeXdum=darray(1,N);
 		ReX=darray(1,N);
 
 		//----------------------------------------------------------------------------------------------//

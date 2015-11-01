@@ -599,7 +599,6 @@ int main (int argc, char **argv) {
 
 	// if (LLinversion && forecast &&  tendLL<=Tstart) the results from LLinversion will be saved and used for forecast calculation.
 	// gammas_new is overwritten for each (Asig, ta) value; the values for the optimal value are saved in gammas_maxLL.
-	// TODO: these variables (gammas_new and gammas_maxLL may be too large to be stored in memory (for large Nsur). 
 
 	print_screen("Setting up variables needed for grid search...");
 
@@ -1068,7 +1067,5 @@ int main (int argc, char **argv) {
 	#endif
 
 	return 0;
-
-	//todo free memory.
 
 }

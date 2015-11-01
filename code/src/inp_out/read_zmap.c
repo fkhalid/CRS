@@ -66,14 +66,14 @@ int readZMAP (struct catalog *cat, struct eqkfm **eqfm, int *Ntot, char *file,
 		MPI_Comm_rank(MPI_COMM_WORLD, &procId);
 	#endif
 
-	double std_merr=0.1, std_verr=20.0, std_herr=4.0;	//fixme read from somewhere!
+	double std_merr=0.1, std_verr=5.0, std_herr=1.0;	//standard error (km), used if not given in the catalog.
 	int line_length=2000;
 	int hh, lines=0, valid=0, empty=0, missing_values=0;
 	int * old2new;
 	FILE *fin;
 	char line[line_length], *st;
 	int Z;
-	double Mc_offset=0.3, dM=0.9;	//todo don't hardwide Mc_offset; dM should be passed.
+	double Mc_offset=0.3, dM=0.9;	//Mc_offset since max curvature method tends to underestimate it, and we should not use an incomplete catalog.
 	int cut_sd=3.0;	//no. of s.dev. for cutting off gaussian.
 	double t_last_large;
 	int k;
