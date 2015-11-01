@@ -119,7 +119,6 @@ void prestress(double s1, double s2, double s3, double strike, double dip, doubl
       }
       for (int j=0; j<3; j++) for (int i=2; i>j; i--)(*s)[i+1][j+1]=(*s)[j+1][i+1];
 
-     free_d2array(*s,1,3,1,3);
      return;
 }
 
