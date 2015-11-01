@@ -210,7 +210,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		MPI_File fhw_foret1, fhw_foret2, fhw_forex, fhw_cmb;
 		MPI_Status status;
 
-		all_snapshots=0;	//fixme implement this.
+		all_snapshots=0;	//todo implement this.
 
 		if (printall_cmb) {
 			sprintf(fname, "%s.dat",printall_cmb);

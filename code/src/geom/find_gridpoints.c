@@ -28,6 +28,38 @@
 
 #include "../util/util1.h"
 
+int find_closest_point(double *ys, double *xs, double *depths, int N, double y, double x, double Depth){
+
+	/* Selects the closest point associated with a given source.
+	 *
+	 * Input:
+	 *  ys, xs, depths: arrays with grid points coordinates. Range [1...N]
+	 *  y,x: earthquake coordinates
+	 *  Depth: earthquake depth
+	 *
+	 * Returns:
+	 *  index of selected points
+	 *
+	 */
+
+	double r, rmin=1e30, dz, probCum, *prob;
+	int p,p2;
+	int closestp;
+	int ngridj;
+	double y1, y2, x1, x2, D1, D2, A, Vfrac=1;
+
+	for (p=1; p<=N; p++){
+		r= sqrt(pow(ys[p]-y,2)+pow(xs[p]-x,2)+pow(depths[p]-Depth,2));
+		if (r<rmin){
+			rmin=r;
+			closestp=p;
+		}
+	}
+	return closestp;
+
+}
+
+	
 
 int find_gridpoints(double *ys, double *xs, double *dAs, double *depths, int N, double y, double x, double SD, double Depth, double SDd,
 		int cut_sd, int *ngridj0, int **ngridpointj, double **weightsj, int inside, int d3){

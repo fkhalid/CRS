@@ -110,7 +110,7 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	};
 
 
-	// NB: arguments 5,6,17 are alternative (different ways to treat receiver faults)
+	// NB: arguments 5,6 are alternative (one or single receiver fault catalog).
 
 	// If there is a file error, only root will know about it.
 	// So it is important that the error is broadcast to all
@@ -299,9 +299,9 @@ int read_inputfile(char *input_fname, char *outname, char *fore_template,
 	// Print out warnings or errors for missing or redundant parameters:
 	if(procId == 0) {
 
-		if ((value_found[6] + value_found[5] + value_found[15])>1){
-			print_screen("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
-			print_logfile("Error: parameters %s, %s, %s are alternative to each other. Exit.\n", keys[5], keys[6], keys[15]);
+		if ((value_found[6] + value_found[5])>1){
+			print_screen("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[5], keys[6]);
+			print_logfile("Error: parameters %s, %s are alternative to each other. Exit.\n", keys[5], keys[6]);
 			err=1;
 
 		}

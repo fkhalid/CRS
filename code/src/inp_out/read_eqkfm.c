@@ -65,7 +65,7 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 	int *nf2, nsm, nfaults;
 	int c2=0, c3=0;	//counters.
 	int err=0, err0, j;
-	int *all_pts;
+	int *all_pts, p;
 	int no_synthetic_slipmodels=0, no_slipmodels=0;
 	static struct set_of_models dummy_parentsetofmodels;
 	char *cmb_format=all_slipmodels.cmb_format;
@@ -154,9 +154,19 @@ int eqkfm_addslipmodels(struct eqkfm *eqfm1, struct slipmodels_list all_slipmode
 				else{
 					//event does not have foc. mech. but a fixed one should be used (flags.sources_without_focmec==2)
 					if (!eqfm1[i].is_slipmodel && flags.sources_without_focmec==2){
-						(*eqfm_comb)[c3].str1=crst.str0[0];	//fixme should use different regions.
-						(*eqfm_comb)[c3].dip1=crst.dip0[0];	//fixme should use different regions.
-						(*eqfm_comb)[c3].rake1=crst.rake0[0];
+						if ( crst.variable_fixmec==1){
+							p=find_closest_point(crst.y, crst.x, crst.depth, crst.N_allP, eqfm1[i].y, eqfm1[i].x, eqfm1[i].depth);
+							(*eqfm_comb)[c3].str1=crst.str0[p];	
+							(*eqfm_comb)[c3].dip1=crst.dip0[p];
+							(*eqfm_comb)[c3].rake1=crst.rake0[p];
+
+	
+						}
+						else{
+							(*eqfm_comb)[c3].str1=crst.str0[0];	
+							(*eqfm_comb)[c3].dip1=crst.dip0[0];	
+							(*eqfm_comb)[c3].rake1=crst.rake0[0];
+						}
 						(*eqfm_comb)[c3].whichfm=1;
 						err0 = focmec2slipmodel(crst, (*eqfm_comb)+c3, res, 1, 1);
 						if (err0){
