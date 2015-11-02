@@ -229,7 +229,6 @@ int read_crust(char *fnametemplate, char *focmecgridfile, struct crust *crst, do
 		}
 
 		//copy regional mechanism into 0th element:
-		//print_screen("*Ln 227 %d*\n", (*crst).str0[0]);
 		(*crst).str0[0]=str0tmp;
 		(*crst).dip0[0]=dip0tmp;
 
@@ -342,7 +341,6 @@ int read_focmecgridfile(char *fname, struct crust *crst) {
 
 	free_d2array(data, 1,2,1,NP);
 
-	print_screen("*Ln 346, %d, %f*\n", (*crst).str0, (*crst).str0[0]);
 
 	return 0;
 }

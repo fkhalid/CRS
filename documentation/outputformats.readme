@@ -14,18 +14,6 @@ The file has the same format as the input template file (ForecastTemplate in inp
 Seismicity rate (9th/6th column) has units of (earthquakes/day).
 
 
-output_cmbmap.dat
------------------
-Gridded coulomb stress changes. It is the sum of stress changes from seismic source.
-Same format as foremap, with magnitude values set to 0.
-Coulomb stress changes (9th/6th column) have units of Pascals.
-
-
-output_cmbmap_post.dat
-----------------------
-Gridded map of postseismic stress changes. Same format as output_cmbmap.
-
-
 output_LLevents.dat
 -------------------
 List of events in the forecast interval and their individual log likelihood value, defined as LLev= log(Ri), with Ri being the modelled seismicity rate at the location and time of the event. Note that Ri is calculated at the exact time of each event (not a time bin). It is expressed as daily rate of events in the forecast magnitude range.
@@ -54,9 +42,9 @@ Asig	ta	r	LL	mod
 Same as output_LogLikelihood, but for all parameters tested during the grid search. The LogLikelihood values refer to the inversion period.
 
 
-output_cmbmap_all.dat and output_foremap_all.dat
-------------------------------------------------
-Coulomb map and forecast for all Monte Carlo iterations. Each line is one iteration, each column is a grid point.
+output_foremap_all.dat
+----------------------
+Forecast for all Monte Carlo iterations. Each line is one iteration, each column is a grid point.
 
 
 output_forecast.dat

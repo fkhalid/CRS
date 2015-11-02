@@ -988,9 +988,9 @@ int main (int argc, char **argv) {
 					 binaryToAsciiCmd_foret_rate[500],
 					 rmCmd[500], mvCmd[500];
 
-				sprintf(binaryToAsciiCmd_cmb,
-						"%s '%d/8 \"%%.6e\\t\"' -e '\"\\n\"' %s.dat > %s.txt", "hexdump -v -e",
-						NgridT, printall_cmb, printall_cmb);
+//				sprintf(binaryToAsciiCmd_cmb,
+//						"%s '%d/8 \"%%.6e\\t\"' -e '\"\\n\"' %s.dat > %s.txt", "hexdump -v -e",
+//						NgridT, printall_cmb, printall_cmb);
 
 				sprintf(binaryToAsciiCmd_forex,
 						"%s '%d/8 \"%%.6e\\t\"' -e '\"\\n\"' %s.dat > %s.txt", "hexdump -v -e",
@@ -1004,13 +1004,13 @@ int main (int argc, char **argv) {
 						"%s '%d/8 \"%%f\\t\"' -e '\"\\n\"' %s_rate.dat > %s_rate.txt", "hexdump -v -e",
 						Ntts, printall_foret, printall_foret);
 
-				system(binaryToAsciiCmd_cmb);
+//				system(binaryToAsciiCmd_cmb);
 				system(binaryToAsciiCmd_forex);
 				system(binaryToAsciiCmd_foret_nev);
 				system(binaryToAsciiCmd_foret_rate);
 
-				sprintf(mvCmd, "mv %s.txt %s.dat", printall_cmb, printall_cmb);
-				system(mvCmd);
+//				sprintf(mvCmd, "mv %s.txt %s.dat", printall_cmb, printall_cmb);
+//				system(mvCmd);
 
 				sprintf(mvCmd, "mv %s.txt %s.dat", printall_forex, printall_forex);
 				system(mvCmd);

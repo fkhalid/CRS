@@ -307,6 +307,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 		end = start + partitionSize;
 
 		//*seed = (*seed) * (procId+numProcs);
+		gsl_rng_set (global_rand, -1*global_seed*(procId+numProcs));
 	#else
 		start = 1;
 		end = Nsur + 1;
@@ -325,7 +326,6 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				}
 			}
 		}
-
 
 		print_screen("%d...",nsur);
 
@@ -798,6 +798,8 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 		}
 
 		//*seed = (*seed) * (procId+numProcs);
+		gsl_rng_set (global_rand, -1*global_seed*(procId+numProcs));
+
 	#else
 		start = 1;
 		end = Nsur + 1;
