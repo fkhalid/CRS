@@ -93,7 +93,7 @@ int main (int argc, char **argv) {
 		//test_merge_multiple();
 		//log_aseismic();
 		//test_readZMAP_catindex();
-		//background_rates();
+		//background_rate();
 		//test_forecast_stepG2_new();
 		//test_countcolheader();
 		//test_allOkada();
@@ -943,20 +943,22 @@ int main (int argc, char **argv) {
 			if (slipmodel_combinations>1) sprintf(outnamemod,"%s%d",outname, mod);
 			else sprintf(outnamemod,"%s",outname);
 
-			sprintf(print_cmb,"%s_cmbmap", outnamemod);
+			//print_cmb and printall_cmb have been commented out since they only print out the stresses calculated in the forecast phase, and not those from the LL period'
+			//in some cases this gives all 0s, which doesn't make a lot of sense.
+			//sprintf(print_cmb,"%s_cmbmap", outnamemod);
 			sprintf(print_forex,"%s_foremap", outnamemod);
 			sprintf(print_foret,"%s_forecast", outnamemod);
-			sprintf(printall_cmb,"%s_cmbmap_all", outnamemod);
+			//sprintf(printall_cmb,"%s_cmbmap_all", outnamemod);
 			sprintf(printall_forex,"%s_foremap_all", outnamemod);
 			sprintf(printall_foret,"%s_forecast_all", outnamemod);
 			sprintf(print_LL,"%s_LLevents", outnamemod);
 
 			CRSforecast(&LL, Nsur, DCFS, eqkfm_aft, eqkfm_co, flags, crst, AllCoeff, AllCoeff_aseis, L, Nco, Naf, NgridT, focmec, fmzonelimits, Nfocmec,
 					 cat, times2,tstart_calc, Tstart, Tend, fore_dt, maxAsig, maxta, maxr, gammasfore, multi_gammas, 1,
-					 print_cmb, print_forex, print_foret, printall_cmb, printall_forex, printall_foret, print_LL, !LLinversion);
+					 NULL/*print_cmb*/, print_forex, print_foret, /*printall_cmb*/NULL, printall_forex, printall_foret, print_LL, !LLinversion);
 
-			print_logfile("Output files written: %s, %s, %s, %s, %s, %s, %s.\n",
-								  print_cmb, print_forex, print_foret, printall_cmb, printall_forex,
+			print_logfile("Output files written: %s, %s, %s, %s, %s.\n",
+								  /*print_cmb,*/ print_forex, print_foret, /*printall_cmb,*/ printall_forex,
 								  printall_foret, print_LL);
 			if(procId == 0) {
 				fprintf(foutfore, "%.5lf \t %.5lf \t %.5lf \t %.5lf \t%d\n",maxAsig, maxta, maxr, LL, mod);
@@ -982,8 +984,8 @@ int main (int argc, char **argv) {
 			if(procId == 0) {
 				char binaryToAsciiCmd_cmb[500],
 					 binaryToAsciiCmd_forex[500],
-					 binaryToAsciiCmd_foret_cumu[500],
-					 binaryToAsciiCmd_foret_rates[500],
+					 binaryToAsciiCmd_foret_nev[500],
+					 binaryToAsciiCmd_foret_rate[500],
 					 rmCmd[500], mvCmd[500];
 
 				sprintf(binaryToAsciiCmd_cmb,
@@ -994,18 +996,18 @@ int main (int argc, char **argv) {
 						"%s '%d/8 \"%%.6e\\t\"' -e '\"\\n\"' %s.dat > %s.txt", "hexdump -v -e",
 						NgridT, printall_forex, printall_forex);
 
-				sprintf(binaryToAsciiCmd_foret_cumu,
-						"%s '%d/8 \"%%f\\t\"' -e '\"\\n\"' %s_cumu.dat > %s_cumu.txt", "hexdump -v -e",
+				sprintf(binaryToAsciiCmd_foret_nev,
+						"%s '%d/8 \"%%f\\t\"' -e '\"\\n\"' %s_nev.dat > %s_nev.txt", "hexdump -v -e",
 						Ntts, printall_foret, printall_foret);
 
-				sprintf(binaryToAsciiCmd_foret_rates,
-						"%s '%d/8 \"%%f\\t\"' -e '\"\\n\"' %s_rates.dat > %s_rates.txt", "hexdump -v -e",
+				sprintf(binaryToAsciiCmd_foret_rate,
+						"%s '%d/8 \"%%f\\t\"' -e '\"\\n\"' %s_rate.dat > %s_rate.txt", "hexdump -v -e",
 						Ntts, printall_foret, printall_foret);
 
 				system(binaryToAsciiCmd_cmb);
 				system(binaryToAsciiCmd_forex);
-				system(binaryToAsciiCmd_foret_cumu);
-				system(binaryToAsciiCmd_foret_rates);
+				system(binaryToAsciiCmd_foret_nev);
+				system(binaryToAsciiCmd_foret_rate);
 
 				sprintf(mvCmd, "mv %s.txt %s.dat", printall_cmb, printall_cmb);
 				system(mvCmd);
@@ -1013,10 +1015,10 @@ int main (int argc, char **argv) {
 				sprintf(mvCmd, "mv %s.txt %s.dat", printall_forex, printall_forex);
 				system(mvCmd);
 
-				sprintf(mvCmd, "mv %s_cumu.txt %s_cumu.dat", printall_foret, printall_foret);
+				sprintf(mvCmd, "mv %s_nev.txt %s_nev.dat", printall_foret, printall_foret);
 				system(mvCmd);
 
-				sprintf(mvCmd, "mv %s_rates.txt %s_rates.dat", printall_foret, printall_foret);
+				sprintf(mvCmd, "mv %s_rate.txt %s_rate.dat", printall_foret, printall_foret);
 				system(mvCmd);
 			}
 

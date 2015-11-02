@@ -80,7 +80,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	 * refresh: flag to be set to 1 if the slip models have changed from previous function call;
 	 *
 	 *
-	 * the following are filenames to which output is written (ignored if NULL is passed). all with extension, except printall_foret(will add _cumu.dat, _rate.dat)
+	 * the following are filenames to which output is written (ignored if NULL is passed). all with extension, except printall_foret(will add _nev.dat, _rate.dat)
 	 * printall_cmb, printall_forex: prints out a file containing the values at each gridpoint for all iterations (cmb value is for DCFS[0]).
 	 * printall_foret: prints out a file containing time evolution of forecast for all iterations.
 	 * print_LL: prints out a file containing log(r_ek) for all events ek.
@@ -248,9 +248,9 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				fforex=fopen(fname,"w");
 			}
 			if (printall_foret) {
-				sprintf(fname, "%s_cumu.dat",printall_foret);
+				sprintf(fname, "%s_nev.dat",printall_foret);
 				fforet1=fopen(fname,"w");
-				sprintf(fname, "%s_rates.dat",printall_foret);
+				sprintf(fname, "%s_rate.dat",printall_foret);
 				fforet2=fopen(fname,"w");
 			}
 		}
@@ -569,6 +569,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 				if (flags.aseismic) csep_cmbmap(print_cmbpost, crst, cmbpost_avg, 0);
 			}
 		}
+		
 		if (print_LL || LL){
 
 			if (use_catalog){
@@ -902,7 +903,7 @@ int CRSLogLikelihood(double *LL, double *Ldum0_out, double *Nev, double *I, doub
 
 	#ifdef _CRS_MPI
 		double temp_integral;
-		double *recv_rate, *recv_rates_x;
+		double *recv_rate, *recv_rate_x;
 
 		recv_rate = darray(1, cat.Z);
 
