@@ -745,6 +745,7 @@ int read_listslipmodel(char *input_fname, struct tm reftime, struct slipmodels_l
 //						(*allslipmodels).Nfaults[nsm]=1; //actual value found later.
 						sscanf(line,"%lf %s", (*allslipmodels).tsnap+nsm, (*allslipmodels).slipmodels[nsm]);
 						(*allslipmodels).tsnap[nsm]+=(*allslipmodels).tmain[nn];
+						(*allslipmodels).cut_surf[nsm]=0;
 					}
 			
 					else{

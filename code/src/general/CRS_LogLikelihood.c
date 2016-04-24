@@ -131,7 +131,7 @@ int CRSforecast(double *LL, int Nsur, struct pscmp *DCFS, struct eqkfm *eqkfm_af
 	FILE *fforex, *fcmb, *fforet1, *fforet2, *fLLev;
 	FILE *fforet_avg, *foutallsnap;
 
-	int all_snapshots=0;	//todo pass to function.
+	int all_snapshots=1;	//todo pass to function.
 
 	if (all_gammas0==NULL)	uniform_bg_rate=1;
 

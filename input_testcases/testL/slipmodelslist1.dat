@@ -9,8 +9,10 @@
 # path to second slip model
 # ...
 # ...
-1
+2
 fsp	0
+1960-09-28T17:15:24Z	6.0	1
+0 input/slipmodels/fsp/s2011TOHOKU01YAMA.fsp
 2011-03-11T14:46:18Z	9.0	2
 0 input_testcases/slipmodels/fake_s2011TOHOKU01FUJI.fsp
 0 input_testcases/slipmodels/fake_s2011TOHOKU01GUSM.fsp
